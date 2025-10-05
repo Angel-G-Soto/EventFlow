@@ -13,8 +13,6 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
-            $table->softDeletes();
             $table->foreignId('user_id')->constrained('users');
             $table->foreignId('venue_id')->constrained('venues');
             $table->string('e_student_id');
@@ -29,6 +27,8 @@ return new class extends Migration
             $table->datetimes('e_start_date');
             $table->datetimes('e_end_date');
             $table->string('e_guests');
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

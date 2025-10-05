@@ -21,6 +21,7 @@ return new class extends Migration
             $table->integer('v_capacity');
             $table->string('v_test_capacity');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

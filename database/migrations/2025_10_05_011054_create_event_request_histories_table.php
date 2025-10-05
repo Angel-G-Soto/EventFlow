@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('eh_action');
             $table->comment('eh_comment');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

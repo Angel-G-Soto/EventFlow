@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('us_doc_drive');
             $table->text('us_instructions');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
