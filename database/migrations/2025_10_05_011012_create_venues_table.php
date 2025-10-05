@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('venues', function (Blueprint $table) {
             $table->id();
-            $table->$table->foreignId('use_requirement_id')->constrained('use_requirements');
+            //$table->foreignId('user_id')->constrained('Users');
             $table->string('v_name');
             $table->string('v_code');
             $table->string('v_department');

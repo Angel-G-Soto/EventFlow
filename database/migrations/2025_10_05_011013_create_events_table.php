@@ -24,8 +24,8 @@ return new class extends Migration
             $table->string('e_title');
             $table->text('e_description');
             $table->string('e_status');
-            $table->datetimes('e_start_date');
-            $table->datetimes('e_end_date');
+            $table->dateTime('e_start_date');
+            $table->dateTime('e_end_date');
             $table->string('e_guests');
             $table->timestamps();
             $table->softDeletes();
