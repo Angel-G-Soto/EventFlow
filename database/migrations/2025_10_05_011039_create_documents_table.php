@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('documents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('event_id')->constrained('events');
-            $table->string('e_name');
+            $table->string('d_name');
             $table->string('d_file_path');
             $table->timestamps();
             $table->softDeletes();
