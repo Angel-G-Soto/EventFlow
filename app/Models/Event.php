@@ -35,6 +35,7 @@ class Event extends Model
         'e_advisor_email',
         'e_advisor_phone',
         'e_title',
+        'e_category',
         'e_description',
         'e_status',
         'e_start_date',

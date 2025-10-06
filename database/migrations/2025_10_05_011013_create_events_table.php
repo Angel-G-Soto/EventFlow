@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('e_advisor_email');
             $table->string('e_advisor_phone');
             $table->string('e_title');
+            $table->string('e_category');
             $table->text('e_description');
             $table->string('e_status');
             $table->dateTime('e_start_date');
