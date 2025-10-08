@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Http\Request;
 
 class Event extends Model
 {
@@ -40,7 +42,8 @@ class Event extends Model
         'e_status',
         'e_start_date',
         'e_end_date',
-        'e_guests'
+        'e_guests',
+        'venue_id'
     ];
 
     /**
@@ -49,7 +52,7 @@ class Event extends Model
      */
     public function requester(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -58,7 +61,7 @@ class Event extends Model
      */
     public function venue(): BelongsTo
     {
-        return $this->belongsTo(Venue::class, 'venue_id');
+        return $this->belongsTo(Venue::class);
     }
 
     /**
@@ -67,7 +70,7 @@ class Event extends Model
      */
     public function documents(): HasMany
     {
-        return $this->hasMany(Document::class, 'document_id');
+        return $this->hasMany(Document::class);
     }
 
     /**
@@ -76,6 +79,66 @@ class Event extends Model
      */
     public function history(): HasMany
     {
-        return $this->hasMany(EventRequestHistory::class, 'event_request_id');
+        return $this->hasMany(EventRequestHistory::class);
     }
+
+    /**
+     * Determine if the event has any attached documents.
+     *
+     * @return bool
+     */
+    public function hasDocuments(): bool
+    {
+        return $this->documents()->exists();
+    }
+
+    /**
+     * Get the venue associated with the event.
+     *
+     * @return Venue|null
+     */
+    public function getVenue(): ?Venue
+    {
+        return $this->venue;
+    }
+
+//    /**
+//     * This method is used to update or create an event based on the request input.
+//     * NOTE: This function does not update the documents. Use the documents equivalent
+//     * method to update or create files.
+//     *
+//     * @param Request $request
+//     * @return Event
+//     */
+//    public function updateOrCreateEvent(Request $request): Event
+//    {
+//
+//        if (request()->has('event_id'))
+//        {
+//            $event = self::find($request->event_id);
+//        }
+//        else
+//        {
+//            $event = new self();
+//        }
+//
+//        if ($request->has('e_student_id')) $event->e_student_id = $request->e_student_id;
+//        if ($request->has('e_student_phone')) $event->e_student_phone = $request->e_student_phone;
+//        if ($request->has('e_organization')) $event->e_organization = $request->e_organization;
+//        if ($request->has('e_advisor_name')) $event->e_advisor_name = $request->e_advisor_name;
+//        if ($request->has('e_advisor_email')) $event->e_advisor_email = $request->e_advisor_email;
+//        if ($request->has('e_advisor_phone')) $event->e_advisor_phone = $request->e_advisor_phone;
+//        if ($request->has('e_title')) $event->e_title = $request->e_title;
+//        if ($request->has('e_category')) $event->e_category = $request->e_category;
+//        if ($request->has('e_description')) $event->e_description = $request->e_description;
+//        if ($request->has('e_status')) $event->e_status = $request->e_status;
+//        if ($request->has('e_start_date')) $event->e_start_date = $request->e_start_date;
+//        if ($request->has('e_end_date')) $event->e_end_date = $request->e_end_date;
+//        if ($request->has('e_guests')) $event->e_guests = $request->e_guests;
+//        if ($request->has('venue_id')) $event->venue_id = $request->venue_id;
+//
+//        $event->save();
+//
+//        return $event;
+//    }
 }
