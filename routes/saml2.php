@@ -19,6 +19,7 @@ Route::get('/auth/saml/login', function () {
 Route::any('/auth/callback', function () {
 
     $saml = Socialite::driver('saml2')->user();
+//    $saml = Socialite::driver('saml2')->stateless()->user();
     $user = User::updateOrCreate([
         'email' => $saml->getEmail(),
     ], [
@@ -32,6 +33,6 @@ Route::any('/auth/callback', function () {
     return redirect('/dashboard');
 })->name("saml.callback");
 
-Route::get('/auth/saml/metadata', function () {
-    return Socialite::driver('saml2')->getServiceProviderMetadata();
-})->name("saml.metadata");
+//Route::get('/auth/saml/metadata', function () {
+//    return Socialite::driver('saml2')->getServiceProviderMetadata();
+//})->name("saml.metadata");

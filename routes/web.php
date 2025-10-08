@@ -7,4 +7,4 @@ Route::get('/', function () {
 });
 
 require __DIR__.'/saml2.php';
-require __DIR__.'/auth.php';
+//require __DIR__.'/auth.php';
