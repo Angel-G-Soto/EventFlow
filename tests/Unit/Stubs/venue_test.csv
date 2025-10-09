@@ -1,0 +1,5 @@
+name,room_code,department_name,capacity,final_exams_capacity,allow_teaching_with_multimedia,allow_teaching_with_computers,allow_lending,allow_teaching_online
+Main Auditorium,AUD-101,Arts and Sciences,150,120,1,0,1,0
+Computer Lab,COMP-202,Engineering,40,40,1,1,0,1
+Empty Room,,Facilities,10,0,0,0,0,0
+Lecture Hall,LEC-303,Humanities,80,0,0,1,1,0
