@@ -9,41 +9,37 @@ use Illuminate\Http\Request;
 
 class Venue extends Model
 {
-    /**
-     * The primary key associated with the table.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'venue_id';
+    protected $table = 'venue';                 // @var string The table associated with the model.
+    protected $primaryKey = 'venue_id';         // @var string The primary key associated with the table.
+    protected $connection = 'mariadb';          // @var string The database connection that should be used by the model.
 
-    /**
-     * The database connection that should be used by the model.
-     *
-     * @var string
-     */
-    protected $connection = 'mariadb';
+    // Enable timestamps and specify custom timestamp column names
+    public $timestamps = true;
+    const CREATED_AT = 'v_created_at';
+    const UPDATED_AT = 'v_updated_at';    
 
     /**
      * The attributes that are mass assignable.
      * @var string[]
      */
     protected $fillable = [
+        'v_department',
         'v_name',
         'v_code',
-        'v_department',
         'v_features',
         'v_capacity',
         'v_test_capacity',
+        'v_is_active'
     ];
 
     /**
-     * Relationship between the Venue and User
+     * Relationship between the Venue and Deparment
      * @return BelongsTo
      */
-//    public function user(): BelongsTo
-//    {
-//        return $this->belongsTo(User::class, 'user_id');
-//    }
+   public function deparment(): BelongsTo
+   {
+       return $this->belongsTo(Department::class);
+   }
 
     /**
      * Relationship between the Venue and Use Requirement
@@ -58,32 +54,32 @@ class Venue extends Model
      * Relationship between the Venue and Event
      * @return HasMany
      */
-    public function requests(): HasMany
+    public function events(): HasMany
     {
         return $this->hasMany(Event::class);
     }
 
-    /**
-     * Returns the venue usage requirements
-     *
-     * @param int $requirementId
-     * @return UseRequirements|null
-     */
-    public function getRequirementById(int $requirementId): ?UseRequirements
-    {
-        return $this->requirements()->where('use_requirement_id', $requirementId)->first();
-    }
+    // /**
+    //  * Returns the venue usage requirements
+    //  *
+    //  * @param int $requirementId
+    //  * @return UseRequirements|null
+    //  */
+    // public function getRequirementById(int $requirementId): ?UseRequirements
+    // {
+    //     return $this->requirements()->where('use_requirement_id', $requirementId)->first();
+    // }
 
-    /**
-     *  Returns the requests associated to the venue
-     *
-     * @param int $eventId
-     * @return Event|null
-     */
-    public function getRequestByEventId(int $eventId): ?Event
-    {
-        return $this->requests()->where('event_id', $eventId)->first();
-    }
+    // /**
+    //  *  Returns the requests associated to the venue
+    //  *
+    //  * @param int $eventId
+    //  * @return Event|null
+    //  */
+    // public function getRequestByEventId(int $eventId): ?Event
+    // {
+    //     return $this->requests()->where('event_id', $eventId)->first();
+    // }
 
 
 //    public function updateOrCreateVenue(Request $request): ?Venue

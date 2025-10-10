@@ -8,27 +8,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UseRequirements extends Model
 {
-    /**
-     * The primary key associated with the table.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'venue_id';
+    protected $table = 'use_requirements';   // @var string The table associated with the model.
+    protected $primaryKey = 'ur_id';        // @var string The primary key associated with the table.
+    protected $connection = 'mariadb';      // @var string The database connection that should be used by the model.
 
-    /**
-     * The database connection that should be used by the model.
-     *
-     * @var string
-     */
-    protected $connection = 'mariadb';
+    // Enable timestamps and specify custom timestamp column names
+    public $timestamps = true;
+    const CREATED_AT = 'ur_created_at';
+    const UPDATED_AT = 'ur_updated_at';    
 
-    /**
-     * The attributes that are mass assignable.
-     * @var string[]
-     */
     protected $fillable = [
-        'us_doc_drive',
-        'us_instructions',
+        'venue_id',         // FK to Venue
+        'ur_doc_drive',
+        'ur_instructions',
     ];
 
     /**

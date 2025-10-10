@@ -11,17 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('venues', function (Blueprint $table) {
-            $table->id();
-            //$table->foreignId('user_id')->constrained('Users');
+        Schema::create('venue', function (Blueprint $table) {
+            $table->id('venue_id');
+            $table->foreignId('deparment_id')->constrained('deparment', 'deparment_id');
             $table->string('v_name');
-            $table->string('v_code');
-            $table->string('v_department');
+            $table->string('v_code')->unique();
             $table->integer('v_features');
-            $table->integer('v_capacity');
-            $table->string('v_test_capacity');
+            $table->integer('v_capacity')->default(0);
+            $table->integer('v_test_capacity')->default(0);
+            $table->softDeletes('v_is_active');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('venues');
+        Schema::dropIfExists('venue');
     }
 };

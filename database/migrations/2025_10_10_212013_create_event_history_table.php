@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('use_requirements', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('venue_id')->constrained('venues');
-            $table->text('us_doc_drive');
-            $table->text('us_instructions');
+        Schema::create('event_history', function (Blueprint $table) {
+            $table->id('eh_id');
+            $table->foreignId('event_id')->constrained('Event', 'event_id');
+            $table->foreignId('user_id')->nullable()->constrained('user', 'user_id');
+            $table->string('eh_action');
+            $table->string('eh_comment');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('use_requirements');
+        Schema::dropIfExists('event_history');
     }
 };

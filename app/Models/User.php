@@ -1,66 +1,67 @@
 <?php
 
-namespace App\Models;
+nnamespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Str;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable;
+
+    protected $table = 'user';              // @var string The table associated with the model.
+    protected $primaryKey = 'user_id';      // @var string The primary key associated with the table.
+    protected $connection = 'mariadb';      // @var string The database connection that should be used by the model.
+
+    // Enable timestamps and specify custom timestamp column names
+    public $timestamps = true;
+    const CREATED_AT = 'u_created_at';
+    const UPDATED_AT = 'u_updated_at';
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
-        /*'name',*/
-        'email',
-        'password',
-        'first_name',
-        'last_name',
-        'auth_type',
+        'department_id',            // FK (Nullable) to Deparments
+        'u_name',
+        'u_email'
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Get the department that the user belongs to.
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function department(): BelongsTo
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsTo(Department::class);
     }
 
     /**
-     * Get the user's initials
+     * The roles that belong to the user.
      */
-    public function initials(): string
+    public function roles(): BelongsToMany
     {
-        return Str::of($this->name)
-            ->explode(' ')
-            ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
-            ->implode('');
+        return $this->belongsToMany(Role::class, 'Role Assignment', 'user_id', 'role_id');
+    }
+
+    /**
+     * Get the event requests created by the user.
+     */
+    public function createdEventRequests(): HasMany
+    {
+        return $this->hasMany(EventRequest::class, 'e_creator_id');
+    }
+
+    /**
+     * Get the event requests currently assigned to the user for approval.
+     */
+    public function assignedEventRequests(): HasMany
+    {
+        return $this->hasMany(EventRequest::class, 'e_current_approver_id');
     }
 }

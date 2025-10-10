@@ -7,27 +7,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Document extends Model
 {
-    /**
-     * The primary key associated with the table.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'document_id';
+    protected $table = 'document';                  // @var string The table associated with the model.
+    protected $primaryKey = 'document_id';          // @var string The primary key associated with the table.
+    protected $connection = 'mariadb';              // @var string The database connection that should be used by the model.
 
-    /**
-     * The database connection that should be used by the model.
-     *
-     * @var string
-     */
-    protected $connection = 'mariadb';
+    // Enable timestamps and specify custom timestamp column names
+    public $timestamps = true;
+    const CREATED_AT = 'doc_created_at';
+    const UPDATED_AT = 'doc_updated_at';
 
     /**
      * The attributes that are mass assignable.
      * @var string[]
      */
     protected $fillable = [
-        'd_name',
-        'd_file_path',
+        'event_id',         // FK to Event
+        'doc_name',
+        'doc_path'
     ];
 
     /**

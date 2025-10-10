@@ -11,53 +11,43 @@ use Illuminate\Http\Request;
 
 class Event extends Model
 {
-    /**
-     * The primary key associated with the table.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'event_id';
+    protected $table = 'Event';              // @var string The table associated with the model.
+    protected $primaryKey = 'event_id';      // @var string The primary key associated with the table.
+    protected $connection = 'mariadb';       // @var string The database connection that should be used by the model.
 
-    /**
-     * The database connection that should be used by the model.
-     *
-     * @var string
-     */
-    protected $connection = 'mariadb';
+    // Enable timestamps and specify custom timestamp column names
+    public $timestamps = true;
+    const CREATED_AT = 'e_created_at';
+    const UPDATED_AT = 'e_updated_at';    
 
     /**
      * The attributes that are mass assignable.
      * @var string[]
      */
     protected $fillable = [
+        'e_creator_id',             // FK (Static) to User
+        'e_current_approver_id',    // FK (Dynamic) to User
+        'venue_id',                 // FK to Venue
         'e_student_id',
         'e_student_phone',
-        'e_organization',
-        'e_advisor_name',
-        'e_advisor_email',
-        'e_advisor_phone',
         'e_title',
-        'e_category',
+        'e_category',               // Define what will fill this field
         'e_description',
         'e_status',
+        'e_status_code',
         'e_start_date',
         'e_end_date',
-        'e_guests',
-        'venue_id'
+        'e_guests',                 // Unsure of this field
+        // Nexo Data
+        'e_organization_nexo_id',
+        'e_organization_nexo_name',
+        'e_advisor_name',
+        'e_advisor_email',
+        'e_advisor_phone'
     ];
 
     /**
-     * Relationship between the Event and User
-     * @return BelongsTo
-     */
-    public function requester(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Relationship between the Event and Venue
-     * @return BelongsTo
+     * Get the venue for the event request.
      */
     public function venue(): BelongsTo
     {
@@ -65,41 +55,35 @@ class Event extends Model
     }
 
     /**
-     * Relationship between the Event and Document
-     * @return HasMany
+     * Get the user who created the event request.
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'e_creator_id', 'user_id');
+    }
+
+    /**
+     * Get the user who is currently assigned to approve the request.
+     */
+    public function currentApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'e_current_approver_id', 'user_id');
+    }
+
+    /**
+     * The documents that belong to the event request.
      */
     public function documents(): HasMany
     {
-        return $this->hasMany(Document::class);
+        return $this->HasMany(Document::class);
     }
 
     /**
-     * Relationship between the Event and Event History
-     * @return HasMany
+     * Get the history for the event request.
      */
     public function history(): HasMany
     {
-        return $this->hasMany(EventRequestHistory::class);
-    }
-
-    /**
-     * Determine if the event has any attached documents.
-     *
-     * @return bool
-     */
-    public function hasDocuments(): bool
-    {
-        return $this->documents()->exists();
-    }
-
-    /**
-     * Get the venue associated with the event.
-     *
-     * @return Venue|null
-     */
-    public function getVenue(): ?Venue
-    {
-        return $this->venue;
+        return $this->hasMany(EventHistory::class);
     }
 
 //    /**
