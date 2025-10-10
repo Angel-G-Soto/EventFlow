@@ -12,7 +12,7 @@ class EventRequestHistory extends Model
      *
      * @var string
      */
-    protected $primaryKey = 'event_request_history_id';
+    protected $primaryKey = 'id';
 
     /**
      * The database connection that should be used by the model.

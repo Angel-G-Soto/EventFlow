@@ -13,7 +13,7 @@ class UseRequirements extends Model
      *
      * @var string
      */
-    protected $primaryKey = 'venue_id';
+    protected $primaryKey = 'id';
 
     /**
      * The database connection that should be used by the model.
@@ -29,14 +29,15 @@ class UseRequirements extends Model
     protected $fillable = [
         'us_doc_drive',
         'us_instructions',
+        'id',
     ];
 
     /**
      * Relationship between the Use Requirement and Venue
-     * @return BelongsTo
+     * @return HasMany
      */
-    public function venue(): BelongsTo
+    public function venue(): HasMany
     {
-        return $this->belongsTo(Venue::class);
+        return $this->HasMany(Venue::class);
     }
 }

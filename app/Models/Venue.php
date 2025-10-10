@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Http\Request;
 
 class Venue extends Model
 {
@@ -14,7 +14,7 @@ class Venue extends Model
      *
      * @var string
      */
-    protected $primaryKey = 'venue_id';
+    protected $primaryKey = 'id';
 
     /**
      * The database connection that should be used by the model.
@@ -34,6 +34,7 @@ class Venue extends Model
         'v_features',
         'v_capacity',
         'v_test_capacity',
+        'use_requirement_id'
     ];
 
     /**
@@ -47,11 +48,11 @@ class Venue extends Model
 
     /**
      * Relationship between the Venue and Use Requirement
-     * @return HasMany
+     * @return BelongsTo
      */
-    public function requirements(): HasMany
+    public function requirements(): BelongsTo
     {
-        return $this->hasMany(UseRequirements::class);
+        return $this->belongsTo(UseRequirements::class);
     }
 
     /**
@@ -105,4 +106,5 @@ class Venue extends Model
 //
 //        return $venue;
 //    }
+
 }

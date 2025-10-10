@@ -12,7 +12,7 @@ class Document extends Model
      *
      * @var string
      */
-    protected $primaryKey = 'document_id';
+    protected $primaryKey = 'id';
 
     /**
      * The database connection that should be used by the model.

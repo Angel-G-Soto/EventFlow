@@ -16,7 +16,7 @@ class Event extends Model
      *
      * @var string
      */
-    protected $primaryKey = 'event_id';
+    protected $primaryKey = 'id';
 
     /**
      * The database connection that should be used by the model.
