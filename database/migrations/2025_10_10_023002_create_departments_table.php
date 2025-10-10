@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('departments', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users');
+            $table->string('d_name');
+            $table->string('d_code');
             $table->timestamps();
         });
     }

@@ -57,14 +57,11 @@ class VenueService {
         return $updatedVenues;
     }
 
-    public function assignManager(Venue $venue, User $manager)
+    public function deactivateVenues(array $venues)
     {
-
-    }
-
-    public function deactivateAllVenues(): bool
-    {
-        return true;
+        foreach ($venues as $venue) {
+            $venue->delete();
+        };
     }
 
     /**
