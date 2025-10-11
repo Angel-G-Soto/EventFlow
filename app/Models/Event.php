@@ -19,32 +19,37 @@ class Event extends Model
     protected $primaryKey = 'id';
 
     /**
+     * The attributes that are mass assignable.
+     * @var string[]
+     */
+    protected $fillable = [
+        'creator_id',
+        'current_approver_id',
+        'venue_id',
+        'e_organization_nexo_id',
+        'e_advisor_name',
+        'e_advisor_email',
+        'e_advisor_phone',
+        'e_organization_name',
+        'e_title',
+        'e_type',
+        'e_description',
+        'e_status',
+        'e_status_code',
+        'e_upload_status',
+        'e_start_time',
+        'e_end_time',
+        'e_student_id',
+        'e_student_phone',
+        'e_guests',
+    ];
+
+    /**
      * The database connection that should be used by the model.
      *
      * @var string
      */
     protected $connection = 'mariadb';
-
-    /**
-     * The attributes that are mass assignable.
-     * @var string[]
-     */
-    protected $fillable = [
-        'e_student_id',
-        'e_student_phone',
-        'e_organization',
-        'e_advisor_name',
-        'e_advisor_email',
-        'e_advisor_phone',
-        'e_title',
-        'e_category',
-        'e_description',
-        'e_status',
-        'e_start_date',
-        'e_end_date',
-        'e_guests',
-        'venue_id'
-    ];
 
     /**
      * Relationship between the Event and User
@@ -82,25 +87,25 @@ class Event extends Model
         return $this->hasMany(EventRequestHistory::class);
     }
 
-    /**
-     * Determine if the event has any attached documents.
-     *
-     * @return bool
-     */
-    public function hasDocuments(): bool
-    {
-        return $this->documents()->exists();
-    }
+//    /**
+//     * Determine if the event has any attached documents.
+//     *
+//     * @return bool
+//     */
+//    public function hasDocuments(): bool
+//    {
+//        return $this->documents()->exists();
+//    }
 
-    /**
-     * Get the venue associated with the event.
-     *
-     * @return Venue|null
-     */
-    public function getVenue(): ?Venue
-    {
-        return $this->venue;
-    }
+//    /**
+//     * Get the venue associated with the event.
+//     *
+//     * @return Venue|null
+//     */
+//    public function getVenue(): ?Venue
+//    {
+//        return $this->venue;
+//    }
 
 //    /**
 //     * This method is used to update or create an event based on the request input.

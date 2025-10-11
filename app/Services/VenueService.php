@@ -5,6 +5,7 @@ use App\Models\Event;
 use App\Models\UseRequirements;
 use App\Models\Venue;
 use App\Models\EventRequestHistory;
+use http\Exception\InvalidArgumentException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Psy\Util\Str;
@@ -14,10 +15,21 @@ class VenueService {
     public function getAvailableVenues(\DateTime $startTime, \DateTime $endTime): Collection
     {
         // Check for error
+        if ($startTime >= $endTime) {
+            throw new InvalidArgumentException('Start time must be before end time.');
+        }
         // Get events that occur on between the date parameters
-        // Extract id's from venues within the collection
-        // Get venues whose id is no in said list.
-       return Venue::query()->get();
+        $events = Event::where('e_start_time', '>=', $startTime)
+            ->where('e_end_time', '<=', $endTime)
+            ->where('e_status', '<>', 'Approved')
+            ->get();
+
+        // Get the unique venues being used
+        $venueIds = $events->pluck('venue_id')->unique();
+
+        // Get venues that are not in the approved events.
+        return  Venue::whereNotIn('id', $venueIds)->get();
+
     }
 
     /**
@@ -53,6 +65,8 @@ class VenueService {
 
         //Update department assignments (IF INCLUDED IN ARRAY)
 
+        //Place audit trail for admin. Auth::user()
+
         // Return collection of updated values
         return $updatedVenues;
     }
@@ -61,7 +75,10 @@ class VenueService {
     {
         foreach ($venues as $venue) {
             $venue->delete();
+            $venue->save();
         };
+
+        //Place audit trail for admin. Auth::user()
     }
 
     /**
