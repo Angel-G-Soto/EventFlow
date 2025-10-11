@@ -24,6 +24,7 @@ class Venue extends Model
      */
     protected $fillable = [
         'v_department',
+        'v_manager_id',
         'v_name',
         'v_code',
         'v_features',
@@ -40,6 +41,14 @@ class Venue extends Model
    {
        return $this->belongsTo(Department::class);
    }
+
+    /**
+     * Get the manager (user) for the venue.
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'v_manager_id', 'user_id');
+    }
 
     /**
      * Relationship between the Venue and Use Requirement

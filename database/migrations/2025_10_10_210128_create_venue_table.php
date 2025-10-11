@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('venue', function (Blueprint $table) {
             $table->id('venue_id');
             $table->foreignId('deparment_id')->constrained('deparment', 'deparment_id');
+            $table->foreignId('v_manager_id')->constrained('user', 'user_id');
             $table->string('v_name');
             $table->string('v_code')->unique();
             $table->integer('v_features');
