@@ -29,6 +29,8 @@ class UseRequirements extends Model
     protected $fillable = [
         'us_doc_drive',
         'us_instructions',
+        'us_alcohol_policy',
+        'us_cleanup_policy',
         'id',
     ];
 

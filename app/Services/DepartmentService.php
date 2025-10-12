@@ -3,26 +3,24 @@ namespace App\Services;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\Venue;
-use Psy\Util\Str;
-use Ramsey\Collection\Collection;
-use function Laravel\Prompts\error;
+use \Illuminate\Database\Eloquent\Collection;
 
 class DepartmentService {
 
-    public function updateDepartmentAssignment(Department $department, Venue $venue)
+    public function updateDepartmentAssignment(Department $department, Venue $venue): void
     {
         $venue->department_id = $department->id;
         $venue->save();
     }
 
-    public function updateUserDepartment(Department $department, User $user)
+    public function updateUserDepartment(Department $department, User $manager): void
     {
-        $user->department_id = $department->id;
-        $user->save();
+        $manager->department_id = $department->id;
+        $manager->save();
     }
 
     public function getDepartmentVenues(Department $department): Collection
     {
-        return $department->venues;
+        return Department::with('venues')->where('id', $department->id)->get();
     }
 }
