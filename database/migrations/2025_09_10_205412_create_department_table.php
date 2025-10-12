@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('deparment', function (Blueprint $table) {
-            $table->id('deparment_id');
+        Schema::create('department', function (Blueprint $table) {
+            $table->id('department_id');
             $table->string('d_name')->unique();
             $table->string('d_code')->unique();
             $table->timestamps();

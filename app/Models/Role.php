@@ -12,12 +12,6 @@ class Role extends Model
 
     protected $table = 'role';                  // @var string The table associated with the model.
     protected $primaryKey = 'role_id';          // @var string The primary key associated with the table.
-    protected $connection = 'mariadb';          // @var string The database connection that should be used by the model.
-
-    // Enable timestamps and specify custom timestamp column names
-    public $timestamps = true;
-    const CREATED_AT = 'r_created_at';
-    const UPDATED_AT = 'r_updated_at';
 
     /**
      * The attributes that are mass assignable.

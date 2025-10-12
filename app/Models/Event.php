@@ -13,12 +13,8 @@ class Event extends Model
 {
     protected $table = 'Event';              // @var string The table associated with the model.
     protected $primaryKey = 'event_id';      // @var string The primary key associated with the table.
-    protected $connection = 'mariadb';       // @var string The database connection that should be used by the model.
 
-    // Enable timestamps and specify custom timestamp column names
-    public $timestamps = true;
-    const CREATED_AT = 'e_created_at';
-    const UPDATED_AT = 'e_updated_at';    
+  
 
     /**
      * The attributes that are mass assignable.

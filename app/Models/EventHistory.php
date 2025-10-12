@@ -9,12 +9,6 @@ class EventHistory extends Model
 {
     protected $table = 'event_history';      // @var string The table associated with the model.
     protected $primaryKey = 'eh_id';        // @var string The primary key associated with the table.
-    protected $connection = 'mariadb';      // @var string The database connection that should be used by the model.
-
-    // Enable timestamps and specify custom timestamp column names
-    public $timestamps = true;
-    const CREATED_AT = 'eh_created_at';
-    const UPDATED_AT = 'eh_updated_at';    
 
     /**
      * The attributes that are mass assignable.

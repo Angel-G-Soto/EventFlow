@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('event_history', function (Blueprint $table) {
             $table->id('eh_id');
-            $table->foreignId('event_id')->constrained('Event', 'event_id');
+            $table->foreignId('event_id')->constrained('event', 'event_id');
             $table->foreignId('user_id')->nullable()->constrained('user', 'user_id');
             $table->string('eh_action');
             $table->string('eh_comment');

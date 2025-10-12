@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('use_requirements', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('venue_id')->constrained('Venue', 'venue_id');
+            $table->foreignId('venue_id')->constrained('venue', 'venue_id');
             $table->text('ur_instructions')->nullable();
             $table->string('ur_doc_link')->nullable();
             $table->timestamps();

@@ -1,6 +1,6 @@
 <?php
 
-nnamespace App\Models;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,12 +15,6 @@ class User extends Authenticatable
 
     protected $table = 'user';              // @var string The table associated with the model.
     protected $primaryKey = 'user_id';      // @var string The primary key associated with the table.
-    protected $connection = 'mariadb';      // @var string The database connection that should be used by the model.
-
-    // Enable timestamps and specify custom timestamp column names
-    public $timestamps = true;
-    const CREATED_AT = 'u_created_at';
-    const UPDATED_AT = 'u_updated_at';
 
     /**
      * The attributes that are mass assignable.

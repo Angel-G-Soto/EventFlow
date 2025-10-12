@@ -11,12 +11,6 @@ class Venue extends Model
 {
     protected $table = 'venue';                 // @var string The table associated with the model.
     protected $primaryKey = 'venue_id';         // @var string The primary key associated with the table.
-    protected $connection = 'mariadb';          // @var string The database connection that should be used by the model.
-
-    // Enable timestamps and specify custom timestamp column names
-    public $timestamps = true;
-    const CREATED_AT = 'v_created_at';
-    const UPDATED_AT = 'v_updated_at';    
 
     /**
      * The attributes that are mass assignable.
