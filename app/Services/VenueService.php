@@ -7,7 +7,6 @@ use App\Models\UseRequirements;
 use App\Models\Venue;
 use DateTime;
 use Exception;
-use http\Exception\InvalidArgumentException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Services\DepartmentService;
@@ -21,17 +20,18 @@ class VenueService {
      * @return Collection
      * @throws Exception
      */
-    public function getAvailableVenues(DateTime $startTime, DateTime $endTime): Collection
+    public static function getAvailableVenues(DateTime $startTime, DateTime $endTime): Collection
     {
+        // Check for error
+        if ($startTime >= $endTime) {
+            throw new \InvalidArgumentException('Start time must be before end time.');
+        }
         try {
-            // Check for error
-            if ($startTime >= $endTime) {
-                throw new InvalidArgumentException('Start time must be before end time.');
-            }
             // Get events that occur on between the date parameters
             $events = Event::where('e_start_time', '>=', $startTime)
                 ->where('e_end_time', '<=', $endTime)
                 ->where('e_status', '<>', 'Approved')
+                ->where('e_status', '<>', 'Completed')
                 ->get();
 
             // Get the unique venues being used
@@ -40,7 +40,7 @@ class VenueService {
             // Add audit trail
 
             // Return venues that are not in the approved events.
-            return  Venue::whereNotIn('id', $venueIds)->where('deleted_at', null)->get();
+            return Venue::whereNotIn('id', $venueIds)->where('deleted_at', null)->get();
         } catch (\Throwable $exception) {throw new Exception('Unable to extract available venues.');}
     }
 
@@ -54,7 +54,7 @@ class VenueService {
      * @return Collection
      * @throws Exception
      */
-    public function updateOrCreateFromImportData(array $venueData): Collection
+    public static function updateOrCreateFromImportData(array $venueData): Collection
     {
         try {
             // Iterate through the array
@@ -89,7 +89,9 @@ class VenueService {
 
             // Return collection of updated values
             return $updatedVenues;
-        } catch (\Throwable $exception) {throw new Exception('Unable to synchronize venue data.');}
+        }
+        catch (ModelNotFoundException $exception) {throw $exception;}
+        catch (\Throwable $exception) {throw new Exception('Unable to synchronize venue data.');}
     }
 
     /**
@@ -103,7 +105,7 @@ class VenueService {
      * @return void
      * @throws Exception
      */
-    public function assignManager(Venue $venue, User $manager, User $admin): void
+    public static function assignManager(Venue $venue, User $manager, User $admin): void
     {
         try {
             // Validate admin and manager have the appropriate roles
@@ -128,16 +130,19 @@ class VenueService {
      * @return void
      * @throws Exception
      */
-    public function deactivateVenues(array $venues): void
+    public static function deactivateVenues(array $venues): void
     {
         try {
             foreach ($venues as $venue) {
-                $venue->softDelete();
+                if (!$venue instanceof Venue) {throw new \InvalidArgumentException('List contains elements that are not venues.');}
+                $venue->delete();
             };
 
             // Add audit trail
 
-        } catch (\Throwable $exception) {throw new Exception('Unable to remove the venues.');}
+        }
+        catch (\InvalidArgumentException $exception) {throw $exception;}
+        catch (\Throwable) {throw new Exception('Unable to remove the venues.');}
 
     }
 
@@ -149,19 +154,20 @@ class VenueService {
      * @param String $instructions
      * @param bool $alcohol_policy
      * @param bool $cleanup_policy
+     * @param User $manager
      * @return Collection
      * @throws Exception
      */
-    public function updateOrCreateVenueRequirements(Venue $venue, String $hyperlink, String $instructions, Bool $alcohol_policy, Bool $cleanup_policy, User $manager): Collection
+    public static function updateOrCreateVenueRequirements(Venue $venue, String $hyperlink, String $instructions, Bool $alcohol_policy, Bool $cleanup_policy, User $manager): Venue
     {
 
-        try {
+       try {
             //Update requirements through the requirements() relation for Venue
             $requirement = Venue::find($venue->id)->requirements;
 
             $requirement = UseRequirements::updateOrCreate(
                 [
-                    'id' => $requirement->id,
+                    'id' => $requirement ? $requirement->id : null,
                 ],
                 [
                     'us_doc_drive' => $hyperlink,
@@ -175,7 +181,7 @@ class VenueService {
 
             //Place audit trail for manager. Auth::user()
 
-            return $requirement;
-        } catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
+            return $venue;
+       } catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
     }
 }

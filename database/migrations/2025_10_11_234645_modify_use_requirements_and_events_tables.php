@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('use_requirements', function (Blueprint $table) {
-            $table->binary('us_alcohol_policy');
-            $table->binary('us_cleanup_policy');
+            $table->boolean('us_alcohol_policy');
+            $table->boolean('us_cleanup_policy');
         });
         Schema::table('events', function (Blueprint $table) {
-            $table->binary('e_alcohol_policy_agreement');
-            $table->binary('e_cleanup_policy_agreement');
+            $table->boolean('e_alcohol_policy_agreement');
+            $table->boolean('e_cleanup_policy_agreement');
         });
     }
 
