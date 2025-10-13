@@ -60,6 +60,22 @@ return [
             'report' => false,
         ],
 
+        'uploads_temp' => [
+            'driver' => 'local',
+            'root' => storage_path('app/tmp/uploads'),
+            'url' => env('APP_URL').'/storage',
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
+        'documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/documents'),
+            'url' => env('APP_URL').'/storage',
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
     ],
 
     /*
