@@ -21,9 +21,9 @@ class AuditService
      * @param string $description A human-readable sentence describing the action.
      * @return AuditTrail The newly created AuditTrail Eloquent model instance.
      */
-    public function logAction(int $userId, string $actionCode, string $description): AuditTrail
+    public function logAction(int $userId, string $userName, string $actionCode, string $description): AuditTrail
     {
-        return $this->write($userId, $actionCode, $description);
+        return $this->write($userId, $userName, $actionCode, $description);
     }
 
     /**
@@ -35,9 +35,9 @@ class AuditService
      * @param string|null $ipAddress Optional. The IP address from which the request originated.
      * @return AuditTrail The newly created AuditTrail Eloquent model instance.
      */
-    public function logAdminAction(int $adminId, string $actionCode, string $description): AuditTrail
+    public function logAdminAction(int $adminId, string $userName, string $actionCode, string $description): AuditTrail
     {
-        return $this->write($adminId, $actionCode, $description);
+        return $this->write($adminId, $userName, $actionCode, $description);
     }
 
     /**
@@ -48,13 +48,14 @@ class AuditService
      * @param string $description
      * @return AuditTrail
      */
-    protected function write(int $userId, string $actionCode, string $description): AuditTrail
+    protected function write(int $userId, string $userName, string $actionCode, string $description): AuditTrail
     {
         // Create the record using the fields defined in the ERD.
         return AuditTrail::create([
             'user_id' => $userId,
             'at_action' => $actionCode,
             'at_description' => $description,
+            'at_user'=> $userName
         ]);
     }
 }

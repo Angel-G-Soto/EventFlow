@@ -41,13 +41,14 @@ class AuditServiceTest extends TestCase
         $description = "User {$user->u_name} created event 'Spring Fling'.";
 
         // Act: Call the logAction method
-        $this->auditService->logAction($user->user_id, $actionCode, $description);
+        $this->auditService->logAction($user->user_id, $user->u_name, $actionCode, $description);
 
         // Assert: Verify that the record exists in the database
         $this->assertDatabaseHas('audit_trail', [
             'user_id' => $user->user_id,
             'at_action' => $actionCode,
             'at_description' => $description,
+            'at_user' => $user->u_name
         ]);
     }
 
@@ -61,13 +62,14 @@ class AuditServiceTest extends TestCase
         $description = "Admin force-approved event #123.";
 
         // Act: Call the logAdminAction method
-        $this->auditService->logAdminAction($admin->user_id, $actionCode, $description);
+        $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
 
         // Assert: Verify that the record exists in the database
         $this->assertDatabaseHas('audit_trail', [
             'user_id' => $admin->user_id,
             'at_action' => $actionCode,
             'at_description' => $description,
+            'at_user' => $admin->u_name
         ]);
     }
 
@@ -81,10 +83,11 @@ class AuditServiceTest extends TestCase
         $description = 'Event was withdrawn.';
 
         // Act: Call the method and capture the return value
-        $auditTrailInstance = $this->auditService->logAction($user->user_id, $actionCode, $description);
+        $auditTrailInstance = $this->auditService->logAction($user->user_id, $user->u_name, $actionCode, $description);
 
         // Assert: Check that the return value is an instance of the AuditTrail model
         $this->assertInstanceOf(AuditTrail::class, $auditTrailInstance);
         $this->assertEquals($user->user_id, $auditTrailInstance->user_id);
+        $this->assertEquals($user->u_name, $auditTrailInstance->at_user);
     }
 }

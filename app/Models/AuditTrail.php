@@ -16,7 +16,8 @@ class AuditTrail extends Model
     protected $fillable = [
         'user_id',          // FK to User
         'at_action',
-        'at_description'
+        'at_description',
+        'at_user'
     ];
 
     /**
