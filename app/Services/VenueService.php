@@ -62,9 +62,9 @@ class VenueService {
             $updatedVenues = new Collection();
             foreach ($venueData as $venue) {
 
-                // Model Not Found Error
                 $department = Department::where('d_name', $venue['v_department'])->first();
 
+                // Model Not Found Error
                 If($department->id == null) {
                     throw new ModelNotFoundException('Department ['.$venue['v_department'].'] does not exist.');
                 }
