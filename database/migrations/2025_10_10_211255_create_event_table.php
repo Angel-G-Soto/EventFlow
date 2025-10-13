@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('event', function (Blueprint $table) {
             $table->id('event_id');
             $table->foreignId('venue_id')->constrained('venue', 'venue_id');
-            $table->foreignId('e_creator_id')->constrained('user', 'user_id');
-            $table->foreignId('e_current_approver_id')->nullable()->constrained('User', 'user_id')->onDelete('set null');
+            $table->foreignId('e_creator_id')->nullable()->onstrained('user', 'user_id')->onDelete('set null');
+            $table->foreignId('e_current_approver_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
             $table->string('e_title');
             $table->text('e_description')->nullable();
             $table->string('e_status');
