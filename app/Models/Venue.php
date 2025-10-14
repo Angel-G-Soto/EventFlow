@@ -45,7 +45,7 @@ class Venue extends Model
      */
     public function requirements(): HasMany
     {
-        return $this->HasMany(VenueRequirement::class);
+        return $this->HasMany(UseRequirement::class);
     }
 
     /**
@@ -70,9 +70,9 @@ class Venue extends Model
      * Returns the venue usage requirements
      *
      * @param int $requirementId
-     * @return UseRequirements|null
+     * @return UseRequirement|null
      */
-    public function getRequirementById(int $requirementId): ?UseRequirements
+    public function getRequirementById(int $requirementId): ?UseRequirement
     {
         return $this->requirements()->where('use_requirement_id', $requirementId)->first();
     }

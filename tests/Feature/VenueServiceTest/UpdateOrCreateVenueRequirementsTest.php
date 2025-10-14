@@ -2,7 +2,7 @@
 
 use App\Models\Venue;
 use App\Models\User;
-use App\Models\UseRequirements;
+use App\Models\UseRequirement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Services\VenueService;
 
@@ -25,7 +25,7 @@ it('successfully creates venue requirements', function () {
         $manager
     );
 
-    expect($updatedVenue->requirements)->toBeInstanceOf(UseRequirements::class);
+    expect($updatedVenue->requirements)->toBeInstanceOf(UseRequirement::class);
     expect($updatedVenue->requirements->us_doc_drive)->toBe($hyperlink);
     expect($updatedVenue->requirements->us_instructions)->toBe($instructions);
     expect((bool)$updatedVenue->requirements->us_alcohol_policy)->toBe($alcohol_policy);
