@@ -113,15 +113,17 @@ class VenueService {
 
 
             // Validate the venue has a department
-            if ($venue->department->id == null) {throw new InvalidArgumentException('Venue provided does not belong to a department.');}
+            if ($venue->department_id == null) {throw new InvalidArgumentException('Venue provided does not belong to a department.');}
 
             // Assign to the manager, the venue's department
-            DepartmentService::updateUserDepartment($venue->department->id, $manager);
+            DepartmentService::updateUserDepartment($venue->department, $manager);
 
             // Add audit trail
 
 
-        } catch (\Throwable $exception) {throw new Exception('Unable to assign the manager to its venue.');}
+        }
+        catch (InvalidArgumentException $exception) {throw $exception;}
+        catch (\Throwable $exception) {throw new Exception('Unable to assign the manager to its venue.');}
     }
 
     /**

@@ -7,19 +7,19 @@ use \Illuminate\Database\Eloquent\Collection;
 
 class DepartmentService {
 
-    public function updateDepartmentAssignment(Department $department, Venue $venue): void
+    public static function updateDepartmentAssignment(Department $department, Venue $venue): void
     {
         $venue->department_id = $department->id;
         $venue->save();
     }
 
-    public function updateUserDepartment(Department $department, User $manager): void
+    public static function updateUserDepartment(Department $department, User $manager): void
     {
         $manager->department_id = $department->id;
         $manager->save();
     }
 
-    public function getDepartmentVenues(Department $department): Collection
+    public static function getDepartmentVenues(Department $department): Collection
     {
         return Department::with('venues')->where('id', $department->id)->get();
     }

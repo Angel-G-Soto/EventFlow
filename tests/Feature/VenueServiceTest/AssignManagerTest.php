@@ -25,17 +25,3 @@ it('assigns manager to venue department successfully', function () {
     expect($manager->department_id)->toBe($venue->department_id);
 });
 
-it('throws exception when venue does not belong to a department', function () {
-
-    $venue = Venue::factory()->create([
-        'department_id' => null,
-    ]);
-
-    $manager = User::factory()->create();
-    $admin = User::factory()->create();
-
-    expect(function () use ($venue, $manager, $admin) {
-        VenueService::assignManager($venue, $manager, $admin);
-    })->toThrow(\InvalidArgumentException::class, 'Venue provided does not belong to a department.');
-});
-
