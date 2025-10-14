@@ -36,13 +36,6 @@ return new class extends Migration
             $table->dropForeign(['creator_id']);
             $table->dropForeign(['current_approver_id']);
 
-            $table->foreignId('user_id')->constrained('users');
-            $table->renameColumn('e_start_time', 'e_start_date');
-            $table->renameColumn('e_end_time', 'e_end_date');
-
-            $table->string('e_category')->nullable();
-            $table->string('e_organization')->nullable();
-
             $table->dropColumn([
                 'creator_id',
                 'current_approver_id',
@@ -53,7 +46,12 @@ return new class extends Migration
                 'e_upload_status',
             ]);
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users');
+            $table->renameColumn('e_start_time', 'e_start_date');
+            $table->renameColumn('e_end_time', 'e_end_date');
+
+            $table->string('e_category')->nullable();
+            $table->string('e_organization')->nullable();
         });
     }
 };

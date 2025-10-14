@@ -40,12 +40,12 @@ class Venue extends Model
     ];
 
     /**
-     * Relationship between the Venue and Use Requirement
-     * @return BelongsTo
+     * Relationship between the Venue and Requirement
+     * @return HasMany
      */
-    public function requirements(): BelongsTo
+    public function requirements(): HasMany
     {
-        return $this->belongsTo(UseRequirements::class, 'use_requirement_id');
+        return $this->HasMany(VenueRequirement::class);
     }
 
     /**

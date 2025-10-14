@@ -27,7 +27,7 @@ class VenueFactory extends Factory
             'v_features' => fake()->numberBetween(0000, 9999),
             'v_capacity' => fake()->numberBetween(50, 500),
             'v_test_capacity' => fake()->numberBetween(20, 100),
-            'use_requirement_id' => UseRequirements::factory(),
+            //'use_requirement_id' => UseRequirements::factory(),
             'department_id' => Department::factory(),
         ];
     }

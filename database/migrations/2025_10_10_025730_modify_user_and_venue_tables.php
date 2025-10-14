@@ -30,11 +30,11 @@ return new class extends Migration
             $table->dropForeign(['department_id']);
             $table->dropColumn('department_id');
             $table->string('v_department');
-            $table->unsignedBigInteger('use_requirement_id')->nullable(false)->change();
         });
         Schema::table('venues', function (Blueprint $table) {
             $table->dropForeign(['department_id']);
             $table->dropColumn('department_id');
+            $table->unsignedBigInteger('use_requirement_id')->nullable(false)->change();
         });
     }
 };
