@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Collection;
  * It handles user creation, retrieval, and the management of internal roles.
  */
 class UserService
-{   
+{   private AuditService $auditService;
     public function __construct(AuditService $auditService)
     {
         $this->auditService = $auditService;
