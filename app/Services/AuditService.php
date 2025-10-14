@@ -21,7 +21,7 @@ class AuditService
      * @param string $description A human-readable sentence describing the action.
      * @return AuditTrail The newly created AuditTrail Eloquent model instance.
      */
-    public function logAction(int $userId, string $userName, string $actionCode, string $description): AuditTrail
+    public function logAction(?int $userId, ?string $userName, ?string $actionCode, ?string $description): AuditTrail
     {
         return $this->write($userId, $userName, $actionCode, $description);
     }
@@ -35,7 +35,7 @@ class AuditService
      * @param string|null $ipAddress Optional. The IP address from which the request originated.
      * @return AuditTrail The newly created AuditTrail Eloquent model instance.
      */
-    public function logAdminAction(int $adminId, string $userName, string $actionCode, string $description): AuditTrail
+    public function logAdminAction(?int $adminId, ?string $userName, ?string $actionCode, ?string $description): AuditTrail
     {
         return $this->write($adminId, $userName, $actionCode, $description);
     }
@@ -48,14 +48,18 @@ class AuditService
      * @param string $description
      * @return AuditTrail
      */
-    protected function write(int $userId, string $userName, string $actionCode, string $description): AuditTrail
+    protected function write(?int $userId, ?string $userName, ?string $actionCode, ?string $description): AuditTrail
     {
+        if (is_null($userId) || is_null($userName) || is_null($actionCode) || is_null($description)) {
+            throw new \TypeError('Required argument was null.');
+        }
+
         // Create the record using the fields defined in the ERD.
         return AuditTrail::create([
-            'user_id' => $userId,
-            'at_action' => $actionCode,
-            'at_description' => $description,
-            'at_user'=> $userName
+            'user_id'       => $userId,
+            'at_action'     => mb_substr($actionCode, 0, 255),
+            'at_description' => mb_substr($description, 0, 255),
+            'at_user'       => mb_substr($userName, 0, 255),
         ]);
     }
 }
