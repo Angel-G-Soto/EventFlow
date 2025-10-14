@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
@@ -34,31 +35,27 @@ class ProcessFileUpload implements ShouldQueue
             // Validate that the collection only has Document elements.
             if (!$document instanceof Document) throw new InvalidArgumentException();
 
-            // Get full path to where the document is located.
-            $fullPath = Storage::disk('uploads_temp')->path($document->d_file_path);
+            // Get path to where the document is located.
+            $path = Storage::disk('uploads_temp')->path($document->d_name);
 
             // Create scanning process
-            $scan = new Process(['clamdscan file', $fullPath]);
+            $scan = new Process(['clamscan', $path]);
 
             // Run process
             $scan->run();
 
-            if (! $scan->isSuccessful()) {
-                throw new ProcessFailedException($scan);
-            }
-
             // Examine output and take decision (move to public folder or delete)
-            if ($scan->getOutput() == '0')
+            if (Str::contains($scan->getOutput(), 'OK'))
             {
                 // Move file
-                $contents = Storage::disk('uploads_temp')->get($this->d_file_path);
-                Storage::disk('documents')->put($this->d_file_path, $contents);
-                Storage::disk('uploads_temp')->delete($this->d_file_path);
+                $contents = Storage::disk('uploads_temp')->get($document->d_name);
+                Storage::disk('documents')->put($document->d_name, $contents);
+                Storage::disk('uploads_temp')->delete($document->d_name);
             }
-            elseif ($scan->getOutput() == '1')
+            elseif(Str::contains($scan->getOutput(), 'FOUND'))
             {
                 // Delete file
-                Storage::disk('uploads_temp')->delete($document->d_file_path);
+                Storage::disk('uploads_temp')->delete($document->d_name);
             }
             else throw new ProcessFailedException($scan);
         }

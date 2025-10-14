@@ -72,7 +72,7 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/documents'),
             'url' => env('APP_URL').'/storage',
-            'visibility' => 'private',
+            'visibility' => 'public',
             'throw' => true,
         ],
 
