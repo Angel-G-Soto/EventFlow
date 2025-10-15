@@ -220,23 +220,24 @@ class VenueService {
      *  ]
      *
      * @param array $filters
-     * @param bool $paginate
-     * @return Collection|LengthAwarePaginator
+     * @return LengthAwarePaginator
+     * @throws Exception
      */
-    public static function getAllVenues(array $filters, bool $paginate): Collection|LengthAwarePaginator
+    public static function getAllVenues(array $filters): LengthAwarePaginator
     {
-        $query = Venue::query();
+        try {
+            $query = Venue::query();
 
-        $fillable = new Venue()->getFillable();
+            $fillable = new Venue()->getFillable();
 
-        foreach ($filters as $key => $value) {
-            if (in_array($key, $fillable) && !is_null($value)) {
-                $query->where($key, $value);
+            foreach ($filters as $key => $value) {
+                if (in_array($key, $fillable) && !is_null($value)) {
+                    $query->where($key, $value);
+                }
             }
-        }
 
-        if ($paginate) {return $query->paginate(15);}
-        return $query->get();
+            return $query->paginate(10);
+        }catch (\Throwable $exception) {throw new Exception('Unable to fetch the venues.');}
     }
 
     /**
