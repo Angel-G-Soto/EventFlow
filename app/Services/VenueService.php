@@ -150,7 +150,7 @@ class VenueService {
     }
 
     /**
-     * Updates or creates the usage requirements for a specific venue
+     * Updates or creates the usage requirements for a specific venue.
      *
      * The requirements must be organized as in the following structure:
      *

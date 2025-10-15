@@ -1,69 +1,131 @@
 <?php
 
-use App\Models\Venue;
 use App\Models\User;
+use App\Models\Venue;
 use App\Models\UseRequirement;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Services\VenueService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-it('successfully creates venue requirements', function () {
+uses(RefreshDatabase::class);
 
+it('creates requirements for a venue', function () {
     $venue = Venue::factory()->create();
     $manager = User::factory()->create();
+    $data = [
+        'documents' => [
+            [
+                'name' => 'Food Certificate',
+                'description' => 'Authorization to sell food.',
+                'template_url' => 'https://example.com/insurance.pdf'
+            ]
+        ],
+        'checkboxes' => [
+            [
+                'label' => 'You agree to not sell or consume alcohol beverages'
+            ]
+        ]];
 
-    $hyperlink = 'http://example.com';
-    $instructions = 'Follow the guidelines.';
-    $alcohol_policy = true;
-    $cleanup_policy = false;
+    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
 
-    $updatedVenue = VenueService::updateOrCreateVenueRequirements(
-        $venue,
-        $hyperlink,
-        $instructions,
-        $alcohol_policy,
-        $cleanup_policy,
-        $manager
-    );
+    expect(UseRequirement::count())->toBe(2);
 
-    expect($updatedVenue->requirements)->toBeInstanceOf(UseRequirement::class);
-    expect($updatedVenue->requirements->us_doc_drive)->toBe($hyperlink);
-    expect($updatedVenue->requirements->us_instructions)->toBe($instructions);
-    expect((bool)$updatedVenue->requirements->us_alcohol_policy)->toBe($alcohol_policy);
-    expect((bool)$updatedVenue->requirements->us_cleanup_policy)->toBe($cleanup_policy);
+    $document = UseRequirement::whereNotNull('ur_document_link')->first();
+    expect($document)->not()->toBeNull()
+        ->and($document->venue_id)->toBe($venue->id)
+        ->and($document->ur_name)->toBe($data['documents'][0]['name'])
+        ->and($document->ur_description)->toBe($data['documents'][0]['description'])
+        ->and($document->ur_document_link)->toBe($data['documents'][0]['template_url']);
 
-    $updatedVenue->refresh();
-    expect($updatedVenue->use_requirement_id)->toBe($updatedVenue->requirements->id);
+    $checkbox = UseRequirement::whereNotNull('ur_label')->first();
+    expect($checkbox)->not()->toBeNull()
+        ->and($checkbox->ur_label)->toBe($data['checkboxes'][0]['label']);
 });
 
-it('successfully updates venue requirements', function () {
-
+it('deletes old requirements before inserting new ones', function () {
     $venue = Venue::factory()->create();
     $manager = User::factory()->create();
-    $existingRequirement = UseRequirements::factory()->create();
 
-    $venue->use_requirement_id = $existingRequirement->id;
-    $venue->save();
+    // Insert old requirements
+    UseRequirement::factory()->create([
+        'venue_id' => $venue->id,
+        'ur_label' => 'Old rule'
+    ]);
 
-    $newHyperlink = 'http://updated-example.com';
-    $newInstructions = 'Updated instructions for the venue.';
-    $newAlcoholPolicy = false;
-    $newCleanupPolicy = true;
+    expect(UseRequirement::where('venue_id', $venue->id)->count())->toBe(1);
 
-    $updatedVenue = VenueService::updateOrCreateVenueRequirements(
-        $venue,
-        $newHyperlink,
-        $newInstructions,
-        $newAlcoholPolicy,
-        $newCleanupPolicy,
-        $manager
-    );
+    $data = [
+        'documents' => [
+            [
+                'name' => 'Food Certificate',
+                'description' => 'Authorization to sell food.',
+                'template_url' => 'https://example.com/insurance.pdf'
+            ]
+        ],
+        'checkboxes' => [
+            [
+                'label' => 'You agree to not sell or consume alcohol beverages'
+            ]
+        ]];
 
-    expect($updatedVenue->requirements)->toBeInstanceOf(UseRequirements::class);
-    expect($updatedVenue->requirements->us_doc_drive)->toBe($newHyperlink);
-    expect($updatedVenue->requirements->us_instructions)->toBe($newInstructions);
-    expect((bool)$updatedVenue->requirements->us_alcohol_policy)->toBe($newAlcoholPolicy);
-    expect((bool)$updatedVenue->requirements->us_cleanup_policy)->toBe($newCleanupPolicy);
+    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
 
-    $updatedVenue->refresh();
-    expect($updatedVenue->use_requirement_id)->toBe($updatedVenue->requirements->id);
+    $requirements = UseRequirement::where('venue_id', $venue->id)->get();
+    expect($requirements)->toHaveCount(2);
+    expect($requirements->pluck('ur_label'))->not()->toContain('Old rule');
+});
+
+it('handles empty documents and only creates checkboxes', function () {
+    $venue = Venue::factory()->create();
+    $manager = User::factory()->create();
+
+    $data = [
+        'documents' => [],
+        'checkboxes' => [
+            ['label' => 'No alcohol allowed']
+        ]
+    ];
+
+    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
+
+    expect(UseRequirement::count())->toBe(1);
+    expect(UseRequirement::first()->ur_label)->toBe($data['checkboxes'][0]['label']);
+});
+
+it('handles empty checkboxes and only creates documents', function () {
+    $venue = Venue::factory()->create();
+    $manager = User::factory()->create();
+
+    $data = [
+        'documents' => [
+            [
+                'name' => 'Safety Form',
+                'description' => 'To be submitted before event.',
+                'template_url' => 'https://example.com/safety.pdf'
+            ]
+        ],
+        'checkboxes' => []
+    ];
+
+    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
+
+    expect(UseRequirement::count())->toBe(1);
+    $doc = UseRequirement::first();
+    expect($doc->ur_name)->toBe($data['documents'][0]['name']);
+});
+
+it('throws exception if something goes wrong', function () {
+    $venue = Venue::factory()->create();
+    $manager = User::factory()->create();
+
+    // Missing required keys to simulate failure
+    $badData = [
+        'documents' => [
+            ['description' => 'No name or URL'] // missing 'name' and 'template_url'
+        ]
+    ];
+
+    $this->expectException(Exception::class);
+    $this->expectExceptionMessage('Unable to update or create the venue requirements.');
+
+    VenueService::updateOrCreateVenueRequirements($venue, $badData, $manager);
 });
