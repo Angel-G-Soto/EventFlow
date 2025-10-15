@@ -4,9 +4,6 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Models\UseRequirement;
 use App\Services\VenueService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 it('creates requirements for a venue', function () {
     $venue = Venue::factory()->create();
