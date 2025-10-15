@@ -36,6 +36,7 @@ class UseRequirement extends Model
         'ur_document_link',
         'ur_name',
         'ur_description',
+        'ur_label',
     ];
 
     /**

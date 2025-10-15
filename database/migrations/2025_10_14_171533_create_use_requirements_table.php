@@ -16,8 +16,9 @@ return new class extends Migration
             $table->foreignId('department_id')->nullable()->constrained('departments');
             $table->foreignId('venue_id')->nullable()->constrained('venues');
             $table->text('ur_document_link')->nullable();
-            $table->string('ur_name');
-            $table->text('ur_description');
+            $table->string('ur_name')->nullable();
+            $table->text('ur_description')->nullable();
+            $table->string('ur_label')->nullable();
             $table->timestamps();
         });
     }

@@ -3,13 +3,13 @@ namespace App\Services;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\Event;
-use App\Models\UseRequirements;
+use App\Models\UseRequirement;
 use App\Models\Venue;
 use DateTime;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Services\DepartmentService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
 
 class VenueService {
@@ -152,39 +152,165 @@ class VenueService {
     /**
      * Updates or creates the usage requirements for a specific venue
      *
+     * The requirements must be organized as in the following structure:
+     *
+     * [
+     * 'documents' => [
+     *          [
+     *              'name' => string,
+     *              'description' => string,
+     *              'template_url' => string
+     *          ],
+     *          ...
+     *      ],
+     * 'checkboxes' => [
+     *          [
+     *              'label' => string
+     *          ],
+     *          ...
+     *      ]
+     * ]
+     *
+     *
      * @param Venue $venue
-     * @param String $hyperlink
-     * @param String $instructions
-     * @param bool $alcohol_policy
-     * @param bool $cleanup_policy
+     * @param array $requirementsData
      * @param User $manager
+     * @return Void
+     * @throws Exception
+     */
+    public static function updateOrCreateVenueRequirements(Venue $venue, array $requirementsData, User $manager): Void
+    {
+       try {
+
+           UseRequirement::where('venue_id', $venue->id)->delete();
+
+           if (!empty($requirementsData['documents'])) {
+               foreach ($requirementsData['documents'] as $document) {
+                   $requirement = new UseRequirement();
+                   $requirement->venue_id = $venue->id;
+                   $requirement->ur_document_link = $document['template_url'];
+                   $requirement->ur_name = $document['name'];
+                   $requirement->ur_description = $document['description'];
+                   $requirement->save();
+               }
+           }
+
+           if (!empty($requirementsData['checkboxes'])) {
+               foreach ($requirementsData['checkboxes'] as $checkbox) {
+                   $requirement = new UseRequirement();
+                   $requirement->venue_id = $venue->id;
+                   $requirement->ur_label = $checkbox['label'];
+                   $requirement->save();
+               }
+           }
+
+       } catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
+    }
+
+    /**
+     * Creates a custom query for venues based on the filter parameters.
+     * The filters parameter must follow the following structure:
+     *
+     * [
+     *     'v_name' => value1
+     *     'v_code' => value2
+     *     'v_features' => value3
+     *     'v_capacity' => value4
+     *     'v_test_capacity' => value5
+     *  ]
+     *
+     * @param array $filters
+     * @param bool $paginate
+     * @return Collection|LengthAwarePaginator
+     */
+    public static function getAllVenues(array $filters, bool $paginate): Collection|LengthAwarePaginator
+    {
+        $query = Venue::query();
+
+        $fillable = new Venue()->getFillable();
+
+        foreach ($filters as $key => $value) {
+            if (in_array($key, $fillable) && !is_null($value)) {
+                $query->where($key, $value);
+            }
+        }
+
+        if ($paginate) {return $query->paginate(15);}
+        return $query->get();
+    }
+
+    /**
+     * Retrieves the venue that contains the provided ID
+     *
+     * @param int $venueId
+     * @return Venue|null
+     * @throws Exception
+     */
+    public static function getVenueById(int $venueId): ?Venue
+    {
+        try {
+            if ($venueId < 0) {throw new InvalidArgumentException('Venue id must be greater than 0.');}
+            return Venue::find($venueId);
+        }
+        catch (InvalidArgumentException $exception) {throw $exception;}
+        catch (\Throwable $exception) {throw new Exception('Unable get the venue.');}
+    }
+
+    /**
+     * Updates the attributes of the given menu.
+     * Attributes must be given on the following array format:
+     *
+     * [
+     *    'v_name' => value1
+     *    'v_code' => value2
+     *    'v_features' => value3
+     *    'v_capacity' => value4
+     *    'v_test_capacity' => value5
+     * ]
+     *
+     * @param Venue $venue
+     * @param array $data
+     * @param User $admin
+     * @return Venue
+     * @throws Exception
+     */
+    public static function updateVenue(Venue $venue, array $data, User $admin): Venue
+    {
+        try {
+
+            // Validate admin role
+
+            // Remove the keys that contain null values
+            $filteredData = array_filter($data, function($value) {
+                return $value != null;
+            });
+
+            // Update the venue with the filtered data
+            Venue::updateOrCreate(
+                [
+                    'id' => $venue->id
+                ],
+                $filteredData
+            );
+
+            return $venue;
+        }
+        catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
+    }
+
+    /**
+     * Gets the venues assigned to the provided department
+     *
+     * @param Department $department
      * @return Collection
      * @throws Exception
      */
-    public static function updateOrCreateVenueRequirements(Venue $venue, String $hyperlink, String $instructions, Bool $alcohol_policy, Bool $cleanup_policy, User $manager): Venue
+    public static function getVenuesForDepartment(Department $department): Collection
     {
-
-       try {
-            //Update requirements through the requirements() relation for Venue
-            $requirement = Venue::find($venue->id)->requirements;
-
-            $requirement = UseRequirements::updateOrCreate(
-                [
-                    'id' => $requirement ? $requirement->id : null,
-                ],
-                [
-                    'us_doc_drive' => $hyperlink,
-                    'us_instructions' => $instructions,
-                    'us_alcohol_policy' => $alcohol_policy,
-                    'us_cleanup_policy' => $cleanup_policy,
-                ]);
-
-            $venue->use_requirement_id = $requirement->id;
-            $venue->save();
-
-            //Place audit trail for manager. Auth::user()
-
-            return $venue;
-       } catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
+        try {
+            return $department->venues;
+        }
+        catch (\Throwable $exception) {throw new Exception('Unable to get the venues of the department.');}
     }
+
 }
