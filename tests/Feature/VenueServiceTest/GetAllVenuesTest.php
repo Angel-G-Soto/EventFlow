@@ -2,6 +2,7 @@
 
 use App\Models\Venue;
 use App\Services\VenueService;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 beforeEach(function () {
     Venue::factory()->create([
@@ -84,7 +85,7 @@ it('returns paginated results when paginate is true', function () {
 
     $paginated = VenueService::getAllVenues([]);
 
-    expect($paginated)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class)
+    expect($paginated)->toBeInstanceOf(LengthAwarePaginator::class)
         ->and($paginated->count())->toBeLessThanOrEqual(10)
         ->and($paginated->total())->toBeGreaterThanOrEqual(23);
 });
