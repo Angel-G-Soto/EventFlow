@@ -13,7 +13,6 @@ class VenueRequirement extends Model
 
     protected $table = 'venue_requirement';
     protected $primaryKey = 'vr_id';
-    public $timestamps = false; // Assuming no timestamps as per previous models
 
     /**
      * The attributes that are mass assignable.
@@ -21,9 +20,9 @@ class VenueRequirement extends Model
      */
     protected $fillable = [
         'venue_id',
-        'vr_name',         // The new name/label field
+        'vr_name',         
         'vr_type',         // The new type field ('document' or 'acknowledgement')
-        'vr_content',      // The new content field (URL or description)
+        'vr_content',      // The content field (URL or description)
     ];
 
     /**
