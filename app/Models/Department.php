@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Department extends Model
 {
+    use HasFactory;
     /**
      * The primary key associated with the table.
      *
@@ -26,7 +28,6 @@ class Department extends Model
      * @var string[]
      */
     protected $fillable = [
-        'user_id',
         'd_name',
         'd_code',
     ];
@@ -47,5 +48,14 @@ class Department extends Model
     public function managers(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * Relationship between the Department and Requirement
+     * @return HasMany
+     */
+    public function requirements(): HasMany
+    {
+        return $this->HasMany(UseRequirement::class);
     }
 }

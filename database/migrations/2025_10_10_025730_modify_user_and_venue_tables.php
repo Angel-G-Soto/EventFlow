@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::table('venues', function (Blueprint $table) {
             $table->foreignId('department_id')->constrained('departments');
+            $table->dropColumn('v_department');
+            $table->unsignedBigInteger('use_requirement_id')->nullable()->change();
         });
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('department_id')->constrained('departments');
@@ -27,10 +29,12 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['department_id']);
             $table->dropColumn('department_id');
+            $table->string('v_department');
         });
         Schema::table('venues', function (Blueprint $table) {
             $table->dropForeign(['department_id']);
             $table->dropColumn('department_id');
+            $table->unsignedBigInteger('use_requirement_id')->nullable(false)->change();
         });
     }
 };
