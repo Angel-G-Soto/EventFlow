@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
-use DateTimeInterface;
+use DateTime;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
-use Illuminate\Http\Request;
 
 class Event extends Model
 {
-    protected $table = 'Event';              // @var string The table associated with the model.
+    use HasFactory;
+
+    protected $table = 'event';              // @var string The table associated with the model.
     protected $primaryKey = 'event_id';      // @var string The primary key associated with the table.
 
   
@@ -21,8 +23,8 @@ class Event extends Model
      * @var string[]
      */
     protected $fillable = [
-        'e_creator_id',             // FK (Static) to User
-        'e_current_approver_id',    // FK (Dynamic) to User
+        'creator_id',             // FK (Static) to User
+        'current_approver_id',    // FK (Dynamic) to User
         'venue_id',                 // FK to Venue
         'e_student_id',
         'e_student_phone',
@@ -47,7 +49,7 @@ class Event extends Model
      */
     public function venue(): BelongsTo
     {
-        return $this->belongsTo(Venue::class);
+        return $this->belongsTo(Venue::class, 'venue_id','venue_id');
     }
 
     /**
@@ -55,7 +57,7 @@ class Event extends Model
      */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'e_creator_id', 'user_id');
+        return $this->belongsTo(User::class, 'creator_id', 'user_id');
     }
 
     /**
@@ -63,7 +65,7 @@ class Event extends Model
      */
     public function currentApprover(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'e_current_approver_id', 'user_id');
+        return $this->belongsTo(User::class, 'current_approver_id', 'user_id');
     }
 
     /**
@@ -71,7 +73,7 @@ class Event extends Model
      */
     public function documents(): HasMany
     {
-        return $this->HasMany(Document::class);
+        return $this->HasMany(Document::class, 'event_id','event_id');
     }
 
     /**
@@ -79,46 +81,46 @@ class Event extends Model
      */
     public function history(): HasMany
     {
-        return $this->hasMany(EventHistory::class);
+        return $this->hasMany(EventHistory::class,'event_id','event_id');
     }
 
-//    /**
-//     * This method is used to update or create an event based on the request input.
-//     * NOTE: This function does not update the documents. Use the documents equivalent
-//     * method to update or create files.
-//     *
-//     * @param Request $request
-//     * @return Event
-//     */
-//    public function updateOrCreateEvent(Request $request): Event
-//    {
-//
-//        if (request()->has('event_id'))
-//        {
-//            $event = self::find($request->event_id);
-//        }
-//        else
-//        {
-//            $event = new self();
-//        }
-//
-//        if ($request->has('e_student_id')) $event->e_student_id = $request->e_student_id;
-//        if ($request->has('e_student_phone')) $event->e_student_phone = $request->e_student_phone;
-//        if ($request->has('e_organization')) $event->e_organization = $request->e_organization;
-//        if ($request->has('e_advisor_name')) $event->e_advisor_name = $request->e_advisor_name;
-//        if ($request->has('e_advisor_email')) $event->e_advisor_email = $request->e_advisor_email;
-//        if ($request->has('e_advisor_phone')) $event->e_advisor_phone = $request->e_advisor_phone;
-//        if ($request->has('e_title')) $event->e_title = $request->e_title;
-//        if ($request->has('e_category')) $event->e_category = $request->e_category;
-//        if ($request->has('e_description')) $event->e_description = $request->e_description;
-//        if ($request->has('e_status')) $event->e_status = $request->e_status;
-//        if ($request->has('e_start_date')) $event->e_start_date = $request->e_start_date;
-//        if ($request->has('e_end_date')) $event->e_end_date = $request->e_end_date;
-//        if ($request->has('e_guests')) $event->e_guests = $request->e_guests;
-//        if ($request->has('venue_id')) $event->venue_id = $request->venue_id;
-//
-//        $event->save();
-//
-//        return $event;
-//    }
+     /**
+     * An accessor to check if the event is in a pending (non-terminal) state.
+     * Usage: if ($eventRequest->is_pending) { ... }
+     */
+    public function getIsPendingAttribute(): bool
+    {
+        $terminalStates = ['Approved', 'Denied', 'Canceled', 'Withdrawn', 'Completed'];
+        return !in_array($this->er_status, $terminalStates);
+    }
+
+    /**
+     * Scope a query to only include events awaiting approval from a specific user.
+     * Usage: EventRequest::awaitingApprovalFrom($user)->get();
+     */
+    public function scopeAwaitingApprovalFrom(Builder $query, User $user): void
+    {
+        $query->where('current_approver_id', $user->user_id);
+    }
+
+      /**
+     * Scope a query to only include upcoming, approved events.
+     * Usage: EventRequest::upcoming()->get();
+     */
+    public function scopeUpcoming(Builder $query): void
+    {
+        $query->where('er_status', 'Approved')->where('start_time', '>=', now());
+    }
+
+    /**
+     * A business logic method to check if this event conflicts with a given time range.
+     */
+    public function isOverlappingWith(DateTime $startTime, DateTime $endTime): bool
+    {
+        $eventStart = $this->start_time;
+        $eventEnd = $this->end_time;
+
+        // The logic to check for any overlap between the two time ranges.
+        return $startTime < $eventEnd && $endTime > $eventStart;
+    }
 }

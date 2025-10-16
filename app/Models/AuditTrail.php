@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,8 @@ class AuditTrail extends Model
         'user_id',          // FK to User
         'at_action',
         'at_description',
-        'at_user'
+        'at_user',
+        'is_admin_action'
     ];
 
     /**
@@ -25,6 +27,41 @@ class AuditTrail extends Model
      */
     public function actor(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id','user_id');
+    }
+
+    /**
+     * Scope a query to only include actions performed by a specific user.
+     * Usage: AuditTrail::forUser($user)->get();
+     */
+    public function scopeForUser(Builder $query, User $user): void
+    {
+        $query->where('u_id', $user->user_id);
+    }
+    /**
+     * An accessor to get the timestamp in a human-readable "time ago" format.
+     * Usage: $auditTrail->time_ago
+     */
+    public function getTimeAgoAttribute(): string
+    {
+        return $this->audit_timestamp ? $this->audit_timestamp->diffForHumans() : 'N/A';
+    }
+
+    /**
+     * Scope a query to only include actions of a specific type.
+     * Usage: AuditTrail::ofType('EVENT_CREATED')->get();
+     */
+    public function scopeOfType(Builder $query, string $actionCode): void
+    {
+        $query->where('at_action', $actionCode);
+    }
+
+     /**
+     * Scope a query to only include actions performed by administrators.
+     * Usage: AuditTrail::adminActions()->get();
+     */
+    public function scopeAdminActions(Builder $query): void
+    {
+        $query->where('is_admin_action', true);
     }
 }

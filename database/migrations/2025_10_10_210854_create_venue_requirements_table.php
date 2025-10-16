@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('use_requirements', function (Blueprint $table) {
-            $table->id();
+        Schema::create('venue_requirements', function (Blueprint $table) {
+            $table->id('vr_id');
             $table->foreignId('venue_id')->constrained('venue', 'venue_id');
-            $table->text('ur_instructions')->nullable();
-            $table->string('ur_doc_link')->nullable();
+            $table->text('vr_instructions')->nullable();
+            $table->string('vr_doc_link')->nullable();
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('use_requirements');
+        Schema::dropIfExists('venue_requirements');
     }
 };

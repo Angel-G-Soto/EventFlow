@@ -14,14 +14,16 @@ return new class extends Migration
         Schema::create('venue', function (Blueprint $table) {
             $table->id('venue_id');
             $table->foreignId('department_id')->constrained('department', 'department_id');
-            $table->foreignId('v_manager_id')->constrained('user', 'user_id');
+            $table->foreignId('manager_id')->nullable()->constrained('user', 'user_id');
             $table->string('v_name');
             $table->string('v_code')->unique();
-            $table->integer('v_features');
+            $table->string('v_features');
             $table->integer('v_capacity')->default(0);
             $table->integer('v_test_capacity')->default(0);
-            $table->softDeletes('v_is_active');
+            $table->boolean('v_is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
+
         });
     }
 

@@ -13,13 +13,19 @@ return new class extends Migration
     {
         Schema::create('event', function (Blueprint $table) {
             $table->id('event_id');
+            $table->foreignId('creator_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
+            $table->foreignId('current_approver_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
             $table->foreignId('venue_id')->constrained('venue', 'venue_id');
-            $table->foreignId('e_creator_id')->nullable()->onstrained('user', 'user_id')->onDelete('set null');
-            $table->foreignId('e_current_approver_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
+            $table->string('e_student_id');
+            $table->string('e_student_phone');
             $table->string('e_title');
+            $table->string('e_category');
             $table->text('e_description')->nullable();
             $table->string('e_status');
-            $table->dateTime('e_date');
+            $table->string('e_status_code');
+            $table->dateTime('e_start_date');
+            $table->dateTime('e_end_date');
+            $table->string('e_guest');
 
             // For "just-in-time" Nexo data
             $table->string('organization_nexo_id');

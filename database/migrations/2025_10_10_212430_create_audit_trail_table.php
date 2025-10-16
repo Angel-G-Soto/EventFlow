@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('audit_trail', function (Blueprint $table) {
             $table->id('at_id');
             $table->foreignId('user_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
-            $table->string('at_user');
             $table->string('at_action');
             $table->string('at_description');
+            $table->boolean('is_admin_action');
             $table->timestamps();
         });
     }

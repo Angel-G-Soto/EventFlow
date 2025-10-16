@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -32,7 +33,7 @@ class User extends Authenticatable
      */
     public function department(): BelongsTo
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsTo(Department::class,'department_id','department_id');
     }
 
     /**
@@ -43,12 +44,31 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class, 'Role Assignment', 'user_id', 'role_id');
     }
 
+      /**
+     * Check if the user has a specific role by its code or name.
+     */
+    public function hasRole(string $roleIdentifier): bool
+    {
+        return $this->roles()->where('r_code', $roleIdentifier)->orWhere('r_name', $roleIdentifier)->exists();
+    }
+
+    /**
+     * An accessor to quickly check if the user is a system administrator.
+     * This is very useful and readable in Blade templates and policies.
+     *
+     * Usage: if ($user->is_admin) { ... }
+     */
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->hasRole('system-admin');
+    }
+
     /**
      * Get the event requests created by the user.
      */
     public function createdEventRequests(): HasMany
     {
-        return $this->hasMany(EventRequest::class, 'e_creator_id');
+        return $this->hasMany(Event::class, 'e_creator_id','user_id');
     }
 
     /**
@@ -56,6 +76,39 @@ class User extends Authenticatable
      */
     public function assignedEventRequests(): HasMany
     {
-        return $this->hasMany(EventRequest::class, 'e_current_approver_id');
+        return $this->hasMany(Event::class, 'e_current_approver_id','user_id');
+    }
+    
+    /**
+     * A business logic method to check if this user is the assigned manager of a specific venue.
+     * Centralizes this logic for use in policies.
+     */
+    public function isManagerOf(Venue $venue): bool
+    {
+        return $this->user_id === $venue->manager_id;
+    }
+    
+    /**
+     * Assign a role to this user.
+     * A convenient and readable helper method.
+     *
+     * Usage: $user->assignRole('system-admin');
+     */
+    public function assignRole(string $roleCode): void
+    {
+        $role = Role::findByCode($roleCode)->first();
+        if ($role) {
+            $this->roles()->syncWithoutDetaching($role->role_id);
+        }
+    }
+
+    /**
+     * Scope a query to only include users with the 'system-admin' role.
+     *
+     * Usage: User::admins()->get();
+     */
+    public function scopeAdmins(Builder $query): void
+    {
+        $query->whereHas('roles', fn ($q) => $q->where('r_code', 'system-admin'));
     }
 }
