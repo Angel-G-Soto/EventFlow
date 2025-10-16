@@ -94,12 +94,18 @@ class User extends Authenticatable
      *
      * Usage: $user->assignRole('system-admin');
      */
-    public function assignRole(string $roleCode): void
+    public function assignRole(string $roleIdentifier): void
     {
-        $role = Role::findByCode($roleCode)->first();
+        $role = Role::findByIdentifier($roleIdentifier)->first();
         if ($role) {
             $this->roles()->syncWithoutDetaching($role->role_id);
         }
+    }
+
+    public static function findByIdentifier(string $identifier)
+    {        
+        return static::where('r_code', $identifier)
+                    ->orWhere('r_name', $identifier);
     }
 
     /**
@@ -109,6 +115,6 @@ class User extends Authenticatable
      */
     public function scopeAdmins(Builder $query): void
     {
-        $query->whereHas('roles', fn ($q) => $q->where('r_code', 'system-admin'));
+        $query->whereHas('roles', fn ($q) => $q->where('r_code', 'system-admin')->orWhere('r_name', 'System Administrator'));
     }
 }
