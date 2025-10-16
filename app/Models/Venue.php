@@ -66,26 +66,4 @@ class Venue extends Model
     {
         return $this->belongsTo(Department::class);
     }
-
-    /**
-     * Returns the venue usage requirements
-     *
-     * @param int $requirementId
-     * @return UseRequirement|null
-     */
-    public function getRequirementById(int $requirementId): ?UseRequirement
-    {
-        return $this->requirements()->where('use_requirement_id', $requirementId)->first();
-    }
-
-    /**
-     *  Returns the requests associated to the venue
-     *
-     * @param int $eventId
-     * @return Event|null
-     */
-    public function getRequestByEventId(int $eventId): ?Event
-    {
-        return $this->requests()->where('event_id', $eventId)->first();
-    }
 }

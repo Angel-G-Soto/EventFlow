@@ -231,7 +231,7 @@ class VenueService {
             $fillable = new Venue()->getFillable();
 
             foreach ($filters as $key => $value) {
-                if (in_array($key, $fillable) && !is_null($value)) {
+                if (in_array($key, $fillable) && $value != null) {
                     $query->where($key, $value);
                 }
             }
@@ -281,10 +281,12 @@ class VenueService {
 
             // Validate admin role
 
-            // Remove the keys that contain null values
-            $filteredData = array_filter($data, function($value) {
-                return $value != null;
-            });
+            // Remove the keys that contain null values or are not fillable
+            $fillable= new Venue()->getFillable();
+
+            $filteredData = array_filter($data, function($value, $key) use ($fillable) {
+                return $value != null && in_array($key, $fillable);
+            }, ARRAY_FILTER_USE_BOTH);
 
             // Update the venue with the filtered data
             Venue::updateOrCreate(
