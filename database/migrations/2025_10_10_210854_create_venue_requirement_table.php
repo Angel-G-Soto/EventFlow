@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('venue_requirements', function (Blueprint $table) {
+        Schema::create('venue_requirement', function (Blueprint $table) {
             $table->id('vr_id');
             $table->foreignId('venue_id')->constrained('venue', 'venue_id');
-            $table->text('vr_instructions')->nullable();
-            $table->string('vr_doc_link')->nullable();
+            $table->string('vr_name')->nullable();
+            $table->string('vr_type')->index();
+            $table->text('vr_content')->nullable();
+     
             $table->timestamps();
         });
     }
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('venue_requirements');
+        Schema::dropIfExists('venue_requirement');
     }
 };
