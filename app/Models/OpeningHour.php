@@ -85,18 +85,18 @@ class OpeningHour extends Model
      * Scope a query to only include hours for a specific day of the week.
      * Usage: OpeningHour::forDay(1)->get(); // Get all hours for Monday
      */
-    public function scopeForDay(Builder $query, int $dayOfWeek): void
+    public function scopeForDay(Builder $query, int $dayOfWeek): Builder
     {
-        $query->where('day_of_week', $dayOfWeek);
+        return $query->where('day_of_week', $dayOfWeek);
     }
 
     /**
      * Scope a query to find all opening hour records that are active at a given time.
      * Usage: OpeningHour::openAt(Carbon::now())->get();
      */
-    public function scopeOpenAt(Builder $query, Carbon $dateTime): void
+    public function scopeOpenAt(Builder $query, Carbon $dateTime): Builder
     {
-        $query->where('day_of_week', $dateTime->dayOfWeekIso)
+        return $query->where('day_of_week', $dateTime->dayOfWeekIso)
               ->where('open_time', '<=', $dateTime->format('H:i:s'))
               ->where('close_time', '>=', $dateTime->format('H:i:s'));
     }

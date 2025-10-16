@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Bus;
 
 class Event extends Model
 {
@@ -98,18 +99,18 @@ class Event extends Model
      * Scope a query to only include events awaiting approval from a specific user.
      * Usage: EventRequest::awaitingApprovalFrom($user)->get();
      */
-    public function scopeAwaitingApprovalFrom(Builder $query, User $user): void
+    public function scopeAwaitingApprovalFrom(Builder $query, User $user): Builder
     {
-        $query->where('current_approver_id', $user->user_id);
+        return $query->where('current_approver_id', $user->user_id);
     }
 
       /**
      * Scope a query to only include upcoming, approved events.
      * Usage: EventRequest::upcoming()->get();
      */
-    public function scopeUpcoming(Builder $query): void
+    public function scopeUpcoming(Builder $query): Builder
     {
-        $query->where('er_status', 'Approved')->where('start_time', '>=', now());
+        return $query->where('er_status', 'Approved')->where('start_time', '>=', now());
     }
 
     /**

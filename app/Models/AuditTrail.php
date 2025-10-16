@@ -50,17 +50,17 @@ class AuditTrail extends Model
      * Scope a query to only include actions of a specific type.
      * Usage: AuditTrail::ofType('EVENT_CREATED')->get();
      */
-    public function scopeOfType(Builder $query, string $actionCode): void
+    public function scopeOfType(Builder $query, string $actionCode): Builder
     {
-        $query->where('at_action', $actionCode);
+        return $query->where('at_action', $actionCode);
     }
 
      /**
      * Scope a query to only include actions performed by administrators.
      * Usage: AuditTrail::adminActions()->get();
      */
-    public function scopeAdminActions(Builder $query): void
+    public function scopeAdminActions(Builder $query, bool $isAdmin = true): Builder
     {
-        $query->where('is_admin_action', true);
+        return $query->where('is_admin_action', $isAdmin);
     }
 }

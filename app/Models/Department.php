@@ -60,9 +60,9 @@ class Department extends Model
      *
      * Usage: Department::findByCode('ENG')->first();
      */
-    public function scopeFindByCode(Builder $query, string $code): void
+    public function scopeFindByCode(Builder $query, string $code): Builder
     {
-        $query->where('d_code', $code);
+        return $query->where('d_code', $code);
     }
 
      /**

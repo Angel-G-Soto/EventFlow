@@ -163,9 +163,9 @@ class Venue extends Model
      *
      * Usage: Venue::active()->get();
      */
-    public function scopeActive(Builder $query): void
+    public function scopeActive(Builder $query): Builder
     {
-        $query->where('v_is_active', true);
+        return $query->where('v_is_active', true);
     }
 
     /**
@@ -173,8 +173,8 @@ class Venue extends Model
      *
      * Usage: Venue::managedBy($user)->get();
      */
-    public function scopeManagedBy(Builder $query, User $manager): void
+    public function scopeManagedBy(Builder $query, User $manager): Builder
     {
-        $query->where('manager_id', $manager->user_id);
+        return $query->where('manager_id', $manager->user_id);
     }
 }

@@ -37,9 +37,9 @@ class Role extends Model
      *
      * Usage: Role::findByCode('system-admin')->first();
      */
-    public function scopeFindByCode(Builder $query, string $code): void
+    public function scopeFindByCode(Builder $query, string $code): Builder
     {
-        $query->where('r_code', $code);
+        return $query->where('r_code', $code);
     }
 
     /**

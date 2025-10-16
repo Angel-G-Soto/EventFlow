@@ -53,16 +53,16 @@ class VenueRequirement extends Model
     /**
      * Scope a query to only include document-type requirements.
      */
-    public function scopeDocuments(Builder $query): void
+    public function scopeDocuments(Builder $query): Builder
     {
-        $query->where('vr_type', 'document');
+        return $query->where('vr_type', 'document');
     }
 
     /**
      * Scope a query to only include acknowledgement-type requirements.
      */
-    public function scopeAcknowledgements(Builder $query): void
+    public function scopeAcknowledgements(Builder $query): Builder
     {
-        $query->where('vr_type', 'acknowledgement');
+        return $query->where('vr_type', 'acknowledgement');
     }
 }

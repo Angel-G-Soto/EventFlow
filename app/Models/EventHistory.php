@@ -53,17 +53,17 @@ class EventHistory extends Model
      * Scope a query to only include history records for a specific event.
      * Usage: EventRequestHistory::forEvent($event)->get();
      */
-    public function scopeForEvent(Builder $query, Event $event): void
+    public function scopeForEvent(Builder $query, Event $event): Builder
     {
-        $query->where('event_id', $event->er_id);
+       return $query->where('event_id', $event->er_id);
     }
 
     /**
      * Scope a query to only include actions performed by a specific user.
      * Usage: EventRequestHistory::byActor($user)->get();
      */
-    public function scopeByActor(Builder $query, User $user): void
+    public function scopeByActor(Builder $query, User $user): Builder
     {
-        $query->where('user_id', $user->user_id);
+        return $query->where('user_id', $user->user_id);
     }
 }

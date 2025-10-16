@@ -113,8 +113,8 @@ class User extends Authenticatable
      *
      * Usage: User::admins()->get();
      */
-    public function scopeAdmins(Builder $query): void
+    public function scopeAdmins(Builder $query): Builder
     {
-        $query->whereHas('roles', fn ($q) => $q->where('r_code', 'system-admin')->orWhere('r_name', 'System Administrator'));
+        return $query->whereHas('roles', fn ($q) => $q->where('r_code', 'system-admin')->orWhere('r_name', 'System Administrator'));
     }
 }
