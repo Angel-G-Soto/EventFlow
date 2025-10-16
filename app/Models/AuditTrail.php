@@ -18,7 +18,6 @@ class AuditTrail extends Model
         'user_id',          // FK to User
         'at_action',
         'at_description',
-        'at_user',
         'is_admin_action'
     ];
 
@@ -36,7 +35,7 @@ class AuditTrail extends Model
      */
     public function scopeForUser(Builder $query, User $user): void
     {
-        $query->where('u_id', $user->user_id);
+        $query->where('user_id', $user->user_id);
     }
     /**
      * An accessor to get the timestamp in a human-readable "time ago" format.
