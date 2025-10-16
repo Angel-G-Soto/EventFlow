@@ -42,7 +42,6 @@ it('deletes old requirements before inserting new ones', function () {
     $venue = Venue::factory()->create();
     $manager = User::factory()->create();
 
-    // Insert old requirements
     UseRequirement::factory()->create([
         'venue_id' => $venue->id,
         'ur_label' => 'old label'
@@ -117,7 +116,7 @@ it('throws exception if something goes wrong', function () {
     // Missing required keys to simulate failure
     $badData = [
         'documents' => [
-            ['description' => 'No name or URL'] // missing 'name' and 'template_url'
+            ['description' => 'No name or URL']
         ]
     ];
 

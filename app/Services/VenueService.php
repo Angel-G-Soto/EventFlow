@@ -226,7 +226,7 @@ class VenueService {
     public static function getAllVenues(array $filters): LengthAwarePaginator
     {
         try {
-            $query = Venue::query();
+            $query = Venue::query()->where('deleted_at', null);
 
             $fillable = new Venue()->getFillable();
 
@@ -251,7 +251,7 @@ class VenueService {
     {
         try {
             if ($venueId < 0) {throw new InvalidArgumentException('Venue id must be greater than 0.');}
-            return Venue::find($venueId);
+            return Venue::where('deleted_at', null)->find($venueId);
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
         catch (\Throwable $exception) {throw new Exception('Unable get the venue.');}
@@ -311,7 +311,7 @@ class VenueService {
     public static function getVenuesForDepartment(Department $department): Collection
     {
         try {
-            return $department->venues;
+            return Venue::where('deleted_at', null)->where('department_id', $department->id)->get();
         }
         catch (\Throwable $exception) {throw new Exception('Unable to get the venues of the department.');}
     }

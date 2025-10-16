@@ -5,7 +5,7 @@ use App\Models\Venue;
 use App\Services\VenueService;
 
 it('returns only venues not in approved events within time range', function () {
-    // Create venues
+
     $venue1 = Venue::factory()->create();
     $venue2 = Venue::factory()->create();
     $venue3 = Venue::factory()->create();

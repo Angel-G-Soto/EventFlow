@@ -80,7 +80,7 @@ it('ignores filters with null values', function () {
 });
 
 it('returns paginated results when paginate is true', function () {
-    // Create additional venues to test pagination
+
     Venue::factory()->count(20)->create();
 
     $paginated = VenueService::getAllVenues([]);
