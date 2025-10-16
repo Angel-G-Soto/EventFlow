@@ -45,7 +45,7 @@ it('deletes old requirements before inserting new ones', function () {
     // Insert old requirements
     UseRequirement::factory()->create([
         'venue_id' => $venue->id,
-        'ur_label' => 'Old rule'
+        'ur_label' => 'old label'
     ]);
 
     expect(UseRequirement::where('venue_id', $venue->id)->count())->toBe(1);
@@ -67,8 +67,8 @@ it('deletes old requirements before inserting new ones', function () {
     VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
 
     $requirements = UseRequirement::where('venue_id', $venue->id)->get();
-    expect($requirements)->toHaveCount(2);
-    expect($requirements->pluck('ur_label'))->not()->toContain('Old rule');
+    expect($requirements)->toHaveCount(2)
+        ->and($requirements->pluck('ur_label'))->not()->toContain('old label');
 });
 
 it('handles empty documents and only creates checkboxes', function () {
@@ -84,8 +84,8 @@ it('handles empty documents and only creates checkboxes', function () {
 
     VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
 
-    expect(UseRequirement::count())->toBe(1);
-    expect(UseRequirement::first()->ur_label)->toBe($data['checkboxes'][0]['label']);
+    expect(UseRequirement::count())->toBe(1)
+        ->and(UseRequirement::first()->ur_label)->toBe($data['checkboxes'][0]['label']);
 });
 
 it('handles empty checkboxes and only creates documents', function () {
