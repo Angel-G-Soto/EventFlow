@@ -8,8 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('opening_hours', function (Blueprint $table) {
-            $table->id();
+        Schema::create('opening_hour', function (Blueprint $table) {
+            $table->id('oh_id');
 
             // Foreign key to the Venue table. Deletes hours if the venue is deleted.
             $table->foreignId('venue_id')->constrained('Venue', 'venue_id')->onDelete('cascade');
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('opening_hours');
+        Schema::dropIfExists('opening_hour');
     }
 };

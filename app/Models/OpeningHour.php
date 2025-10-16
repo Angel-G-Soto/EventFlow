@@ -12,7 +12,8 @@ class OpeningHour extends Model
 {
     use HasFactory;
 
-    protected $table = 'opening_hours';
+    protected $table = 'opening_hour';
+    protected $primaryKey = 'oh_id';
     public $timestamps = false; // This table doesn't need created_at/updated_at
 
     protected $fillable = [
