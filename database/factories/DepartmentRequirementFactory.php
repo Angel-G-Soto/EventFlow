@@ -17,9 +17,9 @@ class DepartmentRequirementFactory extends Factory
     public function definition(): array
     {
         return [
-            'dr_document_link' => $this->faker->url(),
-            'dr_document_name' => $this->faker->name(),
-            'dr_document_description' => $this->faker->text(),
+            'dr_document_link' => fake()->url(),
+            'dr_document_name' => fake()->name(),
+            'dr_document_description' => fake()->text(),
         ];
     }
 }

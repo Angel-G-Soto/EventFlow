@@ -21,9 +21,9 @@ class UseRequirementFactory extends Factory
         return [
             'department_id' => Department::factory(),
             'venue_id' => Venue::factory(),
-            'ur_document_link' => $this->faker->url(),
-            'ur_name' => $this->faker->name(),
-            'ur_description' => $this->faker->realText(),
+            'ur_document_link' => fake()->url(),
+            'ur_name' => fake()->name(),
+            'ur_description' => fake()->realText(),
         ];
     }
 }

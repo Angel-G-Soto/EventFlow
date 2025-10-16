@@ -17,9 +17,9 @@ class VenueRequirementFactory extends Factory
     public function definition(): array
     {
         return [
-            'vr_document_link' => $this->faker->url(),
-            'vr_document_name' => $this->faker->name(),
-            'vr_document_description' => $this->faker->text(),
+            'vr_document_link' => fake()->url(),
+            'vr_document_name' => fake()->name(),
+            'vr_document_description' => fake()->text(),
         ];
     }
 }
