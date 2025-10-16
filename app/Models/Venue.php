@@ -36,16 +36,17 @@ class Venue extends Model
         'v_capacity',
         'v_test_capacity',
         'use_requirement_id',
-        'department_id'
+        'department_id',
+        'id'
     ];
 
     /**
-     * Relationship between the Venue and Use Requirement
-     * @return BelongsTo
+     * Relationship between the Venue and Requirement
+     * @return HasMany
      */
-    public function requirements(): BelongsTo
+    public function requirements(): HasMany
     {
-        return $this->belongsTo(UseRequirements::class, 'use_requirement_id');
+        return $this->HasMany(UseRequirement::class);
     }
 
     /**
@@ -64,27 +65,5 @@ class Venue extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
-    }
-
-    /**
-     * Returns the venue usage requirements
-     *
-     * @param int $requirementId
-     * @return UseRequirements|null
-     */
-    public function getRequirementById(int $requirementId): ?UseRequirements
-    {
-        return $this->requirements()->where('use_requirement_id', $requirementId)->first();
-    }
-
-    /**
-     *  Returns the requests associated to the venue
-     *
-     * @param int $eventId
-     * @return Event|null
-     */
-    public function getRequestByEventId(int $eventId): ?Event
-    {
-        return $this->requests()->where('event_id', $eventId)->first();
     }
 }

@@ -49,4 +49,13 @@ class Department extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    /**
+     * Relationship between the Department and Requirement
+     * @return HasMany
+     */
+    public function requirements(): HasMany
+    {
+        return $this->HasMany(UseRequirement::class);
+    }
 }
