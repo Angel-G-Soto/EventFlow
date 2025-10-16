@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('document', function (Blueprint $table) {
-            $table->id('document_id');
-            $table->foreignId('event_id')->constrained('event', 'event_id');
-            $table->string('doc_name'); // Original filename
-            $table->string('doc_path'); // Path on disk
+        Schema::create('use_requirements', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('venue_id')->constrained('venues');
+            $table->text('us_doc_drive');
+            $table->text('us_instructions');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('document');
+        Schema::dropIfExists('use_requirements');
     }
 };

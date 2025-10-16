@@ -2,23 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Document extends Model
 {
-    protected $table = 'document';                  // @var string The table associated with the model.
-    protected $primaryKey = 'document_id';          // @var string The primary key associated with the table.
+    use HasFactory;
+    protected $table = 'documents';                 // @var string The table associated with the model.
+    protected $primaryKey = 'id';                   // @var string The primary key associated with the table.
 
-   
+
     /**
      * The attributes that are mass assignable.
      * @var string[]
      */
     protected $fillable = [
         'event_id',         // FK to Event
-        'doc_name',
-        'doc_path'
+        'd_name',
+        'd_file_path'
     ];
 
     /**

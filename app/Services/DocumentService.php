@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-use App\Exceptions\FileInfectedException;
 use App\Exceptions\StorageException;
 use App\Models\Document;
-use App\Models\User;
+use App\Jobs\ProcessFileUpload;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 
 /**
  * DocumentService
@@ -25,24 +23,15 @@ use Illuminate\Support\Facades\Log;
 class DocumentService
 {
     /**
-     * Virus scanner adapter contract.
-     * Your ClamAV adapter should implement this.
-     */
-    public function __construct(
-        private readonly FileVirusScanner $scanner
-    ) {}
-
-    /**
      * Process a single file upload end-to-end:
      *  1) Save to a temp location
      *  2) Virus scan the temp file
      *  3) Move to the final storage disk
      *  4) Create DB record
      *
-     * @throws FileInfectedException
      * @throws StorageException
      */
-    public function handleUpload(UploadedFile $file, int $uploaderId, int $eventId): Document
+    public function handleUpload(UploadedFile $file, int $userId, int $eventId): Document
     {
         // 1) Save to quarantine (uploads_temp)
         $tmpRelativePath = $file->store('', ['disk' => $this->tempDisk()]);
@@ -54,80 +43,18 @@ class DocumentService
                 retryable: true
             );
         }
-        $tmpAbsolutePath = Storage::disk($this->tempDisk())->path($tmpRelativePath);
 
-        try {
-            // 2) Virus scan
-            try {
-                $clean = $this->scanner->scan($tmpAbsolutePath);
-            } catch (\Throwable $scanErr) {
-                $this->safeTempDelete($tmpRelativePath);
-                $engineMsg = method_exists($this->scanner, 'lastReport')
-                    ? (string) $this->scanner->lastReport()
-                    : $scanErr->getMessage();
+        // 2) Create DB record pointing to the TEMP path
+        $doc = Document::create([
+            'event_id' => $eventId,
+            'd_name' => $file->getClientOriginalName(),
+            'd_file_path' => $tmpRelativePath, // temp name; job will replace with final path
+        ]);
 
-                throw new FileInfectedException(
-                    message: 'Security scan unavailable.',
-                    reason: 'scanner_error',
-                    signature: null,
-                    engineMessage: $engineMsg ?: null
-                );
-            }
+        // 3) Queue virus scan & move to final storage
+        ProcessFileUpload::dispatch([$doc->getKey()]);
 
-            if (!$clean) {
-                // Optional: get signature/why from adapter
-                $signature = method_exists($this->scanner, 'lastReport')
-                    ? (string) $this->scanner->lastReport()
-                    : null;
-
-                $this->safeTempDelete($tmpRelativePath);
-
-                throw new FileInfectedException(
-                    message: 'Upload blocked. File is infected.',
-                    reason: 'infected',
-                    signature: $signature
-                );
-            }
-
-            // 3) Move to final disk
-            $finalName = $file->hashName();
-            $finalPath = "events/{$eventId}/{$finalName}";
-            $stream = @fopen($tmpAbsolutePath, 'rb');
-            if (!$stream) {
-                $this->safeTempDelete($tmpRelativePath);
-                throw new StorageException(
-                    message: 'Failed to open temp file for streaming.',
-                    operation: 'write',
-                    path: $tmpAbsolutePath,
-                    retryable: true
-                );
-            }
-
-            $ok = Storage::disk($this->finalDisk())->put($finalPath, $stream);
-            @fclose($stream);
-            $this->safeTempDelete($tmpRelativePath);
-
-
-            if (!$ok) {
-                throw new StorageException(
-                    message: 'Failed to persist file to documents disk.',
-                    operation: 'write',
-                    path: $this->finalDisk() . '://' . $finalPath,
-                    retryable: true
-                );
-            }
-
-            // 4) Create DB record
-            return Document::create([
-                'event_id'    => $eventId,
-                'd_name'      => $file->getClientOriginalName(),
-                'd_file_path' => $finalName,
-            ]);
-        } catch (\Throwable $e) {
-            // Best-effort cleanup if something else blew up mid-flight
-            $this->safeTempDelete($tmpRelativePath);
-            throw $e;
-        }
+        return $doc;
     }
 
     /**
@@ -137,12 +64,12 @@ class DocumentService
      */
     public function deleteDocument(Document $document): bool
     {
-        $path = $document->doc_path;
+        $path = $document->d_file_path;
 
         // 1) Remove physical file
         try {
             // If file does not exist, treat as deleted (idempotent delete)
-            if (Storage::disk($this->finalDisk())->exists($path)) {
+            if ($path && Storage::disk($this->finalDisk())->exists($path)) {
                 $deleted = Storage::disk($this->finalDisk())->delete($path);
                 if (!$deleted) {
                     throw new StorageException(
@@ -157,7 +84,7 @@ class DocumentService
             throw new StorageException(
                 message: 'Storage driver error while deleting file.',
                 operation: 'delete',
-                path: $this->finalDisk() . '://' . $path,
+                path: ($path ? $path : '(null)'),
                 retryable: true
             );
         }
@@ -176,9 +103,9 @@ class DocumentService
      */
     public function getDocumentStream(Document $document)
     {
-        $path = $document->doc_path;
+        $path = $document->d_file_path;
 
-        if (!Storage::disk($this->finalDisk())->exists($path)) {
+        if (!$path || !Storage::disk($this->finalDisk())->exists($path)) {
             // Let caller decide how to present this (404 vs soft message)
             throw new FileNotFoundException("File not found on disk: {$path}");
         }
@@ -216,7 +143,7 @@ class DocumentService
         return 'documents';
     }
 
-    private function safeTempDelete(string $tmpRelativePath): void
+    /*private function safeTempDelete(string $tmpRelativePath): void
     {
         try {
             Storage::disk($this->tempDisk())->delete($tmpRelativePath);
@@ -227,24 +154,5 @@ class DocumentService
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-}
-
-/**
- * Minimal scanner contract the service relies on.
- * Your ClamAV adapter should implement this interface.
- */
-interface FileVirusScanner
-{
-    /**
-     * Scan a local, readable file path.
-     * Return true if clean; false if infected.
-     * Throw on scanner/engine unavailability.
-     */
-    public function scan(string $absolutePath): bool;
-
-    /**
-     * Optional: last engine report/signature string.
-     */
-    public function lastReport(): ?string;
+    }*/
 }
