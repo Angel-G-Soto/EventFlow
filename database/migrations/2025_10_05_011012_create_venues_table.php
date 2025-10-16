@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('v_name');
             $table->string('v_code');
             $table->string('v_department');
-            $table->integer('v_features');
+            $table->string('v_features');
             $table->integer('v_capacity');
             $table->string('v_test_capacity');
             $table->timestamps();
