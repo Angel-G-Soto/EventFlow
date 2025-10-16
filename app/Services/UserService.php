@@ -30,10 +30,12 @@ class UserService
      */
     public function findOrCreateUser(string $email, string $name): User 
     {
-        return User::firstOrCreate(
+        $user = User::firstOrCreate(
             ['u_email' => $email],
             ['u_name' => $name], 
         );
+
+        return $user;
     }
 
     /**
@@ -83,7 +85,7 @@ class UserService
      * @param int $admin_id The id of the administrator performing the action.
      * @return User The updated User object.
      */
-    public function assignUserToDepartment(User $user, int $departmentId, User $admin): User
+    public function assignUserToDepartment(User $user, int $departmentId, User $asigner): User
     {
         // Ensure the department exists before assigning
         $department = Department::findOrFail($departmentId);
@@ -93,8 +95,8 @@ class UserService
 
         // Audit the action
         $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->u_name,
+            $asigner->user_id,
+            $asigner->u_name,
             'USER_DEPT_ASSIGNED',
             "Assigned user '{$user->u_name}' to department '{$department->d_name}'."
         );
@@ -139,7 +141,7 @@ class UserService
      */
     public function deleteUser(User $user, User $admin): void
     {
-        // It's important to get the user's name *before* deleting them for the audit log.
+        // Get the user's name *before* deleting them for the audit log.
         $deletedUserName = $user->u_name;
         $deletedUserEmail = $user->u_email;
         $deletedUserId = $user->user_id;
