@@ -3,13 +3,14 @@
 namespace App\Services;
 
 use App\Models\AuditTrail;
+use App\Models\User;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * AuditService
  *
- * This service is a critical component responsible for creating an immutable, chronological log
- * of all significant actions performed within EventFlow. It is designed to be a lightweight,
- * decoupled utility that receives all necessary data as simple parameters.
+ * This service is a critical component for creating and retrieving an immutable log
+ * of all significant actions performed within EventFlow.
  */
 class AuditService
 {
@@ -19,11 +20,11 @@ class AuditService
      * @param int    $userId The ID of the authenticated user performing the action.
      * @param string $actionCode A machine-readable string identifying the action (e.g., EVENT_CREATED).
      * @param string $description A human-readable sentence describing the action.
-     * @return AuditTrail The newly created AuditTrail Eloquent model instance.
+     * @return AuditTrail
      */
-    public function logAction(int $userId, string $userName, string $actionCode, string $description): AuditTrail
+    public function logAction(int $userId, string $actionCode, string $description): AuditTrail
     {
-        return $this->write($userId, $userName, $actionCode, $description);
+        return $this->write($userId, $actionCode, $description, false);
     }
 
     /**
@@ -32,30 +33,58 @@ class AuditService
      * @param int    $adminId The ID of the authenticated admin performing the action.
      * @param string $actionCode A concise, machine-readable action code (e.g., ADMIN_OVERRIDE).
      * @param string $description A human-readable description of what happened.
-     * @param string|null $ipAddress Optional. The IP address from which the request originated.
-     * @return AuditTrail The newly created AuditTrail Eloquent model instance.
+     * @return AuditTrail
      */
-    public function logAdminAction(int $adminId, string $userName, string $actionCode, string $description): AuditTrail
+    public function logAdminAction(int $adminId, string $actionCode, string $description): AuditTrail
     {
-        return $this->write($adminId, $userName, $actionCode, $description);
+        return $this->write($adminId, $actionCode, $description, true);
+    }
+
+    /**
+     * Retrieves a paginated and filterable list of audit trail records.
+     * This method demonstrates the use of the in-model query scopes.
+     *
+     * @param array $filters An associative array of filters (e.g., ['user_id' => 1, 'action_code' => '...']).
+     * @return LengthAwarePaginator
+     */
+    public function getAuditTrail(array $filters = []): LengthAwarePaginator
+    {
+        $query = AuditTrail::query()->with('actor')->latest('audit_timestamp');
+
+        // Use the 'forUser' scope if a user_id is provided
+        if (!empty($filters['user_id'])) {
+            $user = User::find($filters['user_id']);
+            if ($user) {
+                $query->forUser($user);
+            }
+        }
+
+        // Use the 'ofType' scope if an action_code is provided
+        if (!empty($filters['at_action'])) {
+            $query->ofType($filters['at_action']);
+        }
+        
+       
+        // Use the 'adminActions' scope if the filter is set.
+        if (array_key_exists('is_admin_action', $filters)) {
+            $query->adminActions((bool) $filters['is_admin_action']);
+        }
+
+        return $query->paginate(50);
     }
 
     /**
      * Core writer method that creates the audit trail record in the database.
-     *
-     * @param int $userId
-     * @param string $actionCode
-     * @param string $description
-     * @return AuditTrail
      */
-    protected function write(int $userId, string $userName, string $actionCode, string $description): AuditTrail
+    protected function write(int $userId, string $actionCode, string $description, bool $isAdmin): AuditTrail
     {
-        // Create the record using the fields defined in the ERD.
+        // Create the record using the correct column names from your ERD and model.
         return AuditTrail::create([
             'user_id' => $userId,
             'at_action' => $actionCode,
             'at_description' => $description,
-            'at_user'=> $userName
+            'is_admin_action' => $isAdmin
         ]);
     }
 }
+
