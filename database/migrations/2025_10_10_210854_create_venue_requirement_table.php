@@ -13,11 +13,16 @@ return new class extends Migration
     {
         Schema::create('venue_requirement', function (Blueprint $table) {
             $table->id('vr_id');
+
+            // --- Foreign Keys -- 
             $table->foreignId('venue_id')->constrained('venue', 'venue_id');
+
+            // --- Venue Requirement Details ---
             $table->string('vr_name')->nullable();
             $table->string('vr_type')->index();
             $table->text('vr_content')->nullable();
      
+            // --- Timestamps ---
             $table->timestamps();
         });
     }

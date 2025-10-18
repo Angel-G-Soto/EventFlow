@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('department', function (Blueprint $table) {
             $table->id('department_id');
+
+            //--- Department Details ---
             $table->string('d_name')->unique();
             $table->string('d_code')->unique();
+
+            // --- Timestamps --- 
             $table->timestamps();
         });
     }

@@ -16,7 +16,6 @@ return new class extends Migration
 
             // Day of the week (e.g., 1 for Monday, 7 for Sunday)
             $table->tinyInteger('day_of_week');
-
             $table->time('open_time');
             $table->time('close_time');
 

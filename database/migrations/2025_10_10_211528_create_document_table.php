@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::create('document', function (Blueprint $table) {
             $table->id('document_id');
+
+            // --- Foreign Keys --- 
             $table->foreignId('event_id')->constrained('event', 'event_id');
+
+            // --- Document Details ---
             $table->string('doc_name'); // Original filename
             $table->string('doc_path'); // Path on disk
+
+            // --- Timestamps --- 
             $table->timestamps();
         });
     }

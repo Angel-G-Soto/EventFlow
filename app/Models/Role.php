@@ -29,7 +29,7 @@ class Role extends Model
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'Role Assignment', 'role_id', 'user_id');
+        return $this->belongsToMany(User::class, 'role_assignment', 'role_id', 'user_id');
     }
      /**
      * Scope a query to find a role by its unique machine-readable code.
