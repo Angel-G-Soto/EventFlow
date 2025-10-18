@@ -20,6 +20,7 @@ return new class extends Migration
             //--- User Details ---
             $table->string('u_name');
             $table->string('u_email')->unique();
+            $table->boolean('u_is_active')->default(true);
 
             // --- Timestamps --- 
             $table->timestamps();

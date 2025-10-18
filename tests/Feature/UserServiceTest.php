@@ -41,7 +41,7 @@ class UserServiceTest extends TestCase
         // Arrange: Create a user that already exists in the database.
         $existingUser = User::factory()->create([
             'u_email' => 'jane.doe@example.com',
-            'u_name' => 'Jane Doe',
+            'u_name' => 'Jane Doe'
         ]);
 
         // Act: Call the method with the same email.

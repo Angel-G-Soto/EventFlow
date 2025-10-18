@@ -66,12 +66,9 @@ class UserService
         $user->roles()->sync($roleIds);
 
         // Audit the action
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->u_name,
-            'USER_ROLES_UPDATED',
-            "Updated roles for user '{$user->u_name}' (ID: {$user->user_id}) to: " . implode(', ', $roleCodes)
-        );
+        $description =  "Updated roles for user '{$user->u_name}' (ID: {$user->user_id}) to: " . implode(', ', $roleCodes);
+        $actionCode = 'USER_ROLES_UPDATED';
+        $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
 
         // Return the user with the fresh roles loaded
         return $user->load('roles');
@@ -94,12 +91,9 @@ class UserService
         $user->save();
 
         // Audit the action
-        $this->auditService->logAdminAction(
-            $asigner->user_id,
-            $asigner->u_name,
-            'USER_DEPT_ASSIGNED',
-            "Assigned user '{$user->u_name}' to department '{$department->d_name}'."
-        );
+        $description = "Assigned user '{$user->u_name}' to department '{$department->d_name}'.";
+        $actionCode = 'USER_DEPT_ASSIGNED';
+        $this->auditService->logAdminAction($asigner->user_id, $asigner->u_name, $actionCode, $description);
 
         return $user;
     }
@@ -116,17 +110,14 @@ class UserService
     public function updateUserProfile(User $user, array $data, User $admin): User
     {
         // Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
-        $fillableData = Arr::only($data, ['u_name', 'u_email']);
-
+        $fillableData = Arr::only($data, ['u_name', 'u_email', 'u_is_active']);
         $user->fill($fillableData);
         $user->save();
 
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->u_name,
-            'USER_PROFILE_UPDATED',
-            "Updated profile for user '{$user->u_name}' (ID: {$user->user_id})."
-        );
+        // Audit the action
+        $description = "Updated profile for user '{$user->u_name}' (ID: {$user->user_id}).";
+        $actionCode = 'USER_PROFILE_UPDATED';
+        $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
 
         return $user;
     }
@@ -148,13 +139,12 @@ class UserService
 
         $user->delete();
 
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->u_name,
-            'USER_DELETED',
-            "Permanently deleted user '{$deletedUserName}' (Email: {$deletedUserEmail}) (ID: {$deletedUserId})."
-        );
+        //Audit the action
+        $description = "Permanently deleted user '{$deletedUserName}' (Email: {$deletedUserEmail}) (ID: {$deletedUserId}).";
+        $actionCode =  'USER_DELETED';
+        $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
     }
+
      /**
      * Retrieves a collection of all users who have a specific role.
      *

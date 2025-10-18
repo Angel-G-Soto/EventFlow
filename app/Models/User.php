@@ -25,7 +25,12 @@ class User extends Authenticatable
     protected $fillable = [
         'department_id',            // FK (Nullable) to Deparments
         'u_name',
-        'u_email'
+        'u_email',
+        'u_is_active'
+    ];
+
+    protected $casts = [
+        'u_is_active' => 'boolean',
     ];
 
     /**
@@ -41,7 +46,7 @@ class User extends Authenticatable
      */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'Role Assignment', 'user_id', 'role_id');
+        return $this->belongsToMany(Role::class, 'role_assignment', 'user_id', 'role_id');
     }
 
       /**
