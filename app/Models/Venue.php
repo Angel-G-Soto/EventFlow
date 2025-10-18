@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Venue extends Model
@@ -51,7 +52,8 @@ class Venue extends Model
    }
 
     /**
-     * Get the manager (user) for the venue.
+     * Relationship between manager (User) and the Venue.
+     * @return BelongsTo
      */
     public function manager(): BelongsTo
     {
@@ -77,11 +79,21 @@ class Venue extends Model
     }
 
     /**
-     * Get the opening hours for the venue.
+     * Relationship of opening hours for the venue.
      */
     public function openingHours(): HasMany
     {
         return $this->hasMany(OpeningHour::class, 'venue_id', 'venue_id');
+    }
+
+    /**
+     * The event types that are EXCLUDED from this venue.
+     * This defines the many-to-many relationship via the pivot table.
+     * @return BelongsToMany
+     */
+    public function excludedEventTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(EventType::class, 'venue_event_type_exclusions', 'venue_id', 'event_type_id');
     }
 
     /**
@@ -117,7 +129,6 @@ class Venue extends Model
 
     /**
      * Checks if the venue is currently open right now.
-     *
      * @return bool
      */
     public function isOpenNow(): bool
@@ -141,10 +152,10 @@ class Venue extends Model
         return $this->manager?->u_name ?? 'Not Assigned';
     }
 
-    
     /**
      * A business logic method to check if the venue has a booking conflict.
      * This centralizes the logic for checking for approved, overlapping events.
+     * @return bool
      */
     public function hasConflict(DateTime $startTime, DateTime $endTime): bool
     {
@@ -176,5 +187,17 @@ class Venue extends Model
     public function scopeManagedBy(Builder $query, User $manager): Builder
     {
         return $query->where('manager_id', $manager->user_id);
+    }
+
+    /**
+     * A business logic method to check if a specific event type is disallowed.
+     * This makes the service layer code much cleaner.
+     *
+     * Usage: if ($venue->isEventTypeExcluded($eventType)) { ... }
+     */
+    public function isEventTypeExcluded(EventType $eventType): bool
+    {
+        // This checks if a record exists in the pivot table for this venue and event type.
+        return $this->excludedEventTypes()->wherePivot('event_type_id', $eventType->event_type_id)->exists();
     }
 }

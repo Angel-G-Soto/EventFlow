@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Bus;
 
 class Event extends Model
 {
@@ -26,23 +25,39 @@ class Event extends Model
     protected $fillable = [
         'creator_id',             // FK (Static) to User
         'current_approver_id',    // FK (Dynamic) to User
-        'venue_id',                 // FK to Venue
+        'venue_id',               // FK to Venue
+        'event_type_id',          // FK to EventType
+        
+        // Event Details
         'e_student_id',
         'e_student_phone',
         'e_title',
-        'e_category',               // Define what will fill this field
         'e_description',
         'e_status',
         'e_status_code',
         'e_start_date',
         'e_end_date',
-        'e_guests',                 // Unsure of this field
+        'sells_food',
+        'uses_institutional_funds',
+        'has_external_guest',
+        
         // Nexo Data
         'e_organization_nexo_id',
         'e_organization_nexo_name',
         'e_advisor_name',
         'e_advisor_email',
         'e_advisor_phone'
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     */
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+        'sells_food' => 'boolean',
+        'uses_institutional_funds' => 'boolean',
+        'has_external_guest' => 'boolean',
     ];
 
     /**
@@ -69,6 +84,16 @@ class Event extends Model
         return $this->belongsTo(User::class, 'current_approver_id', 'user_id');
     }
 
+     /**
+     * Get the event type for this request.
+     * This defines the "one" side of the one-to-many relationship.
+     */
+    public function eventType(): BelongsTo
+    {
+        return $this->belongsTo(EventType::class, 'event_type_id','event_type_id');
+    }
+
+
     /**
      * The documents that belong to the event request.
      */
@@ -92,7 +117,7 @@ class Event extends Model
     public function getIsPendingAttribute(): bool
     {
         $terminalStates = ['Approved', 'Denied', 'Canceled', 'Withdrawn', 'Completed'];
-        return !in_array($this->er_status, $terminalStates);
+        return !in_array($this->e_status, $terminalStates);
     }
 
     /**
@@ -110,7 +135,7 @@ class Event extends Model
      */
     public function scopeUpcoming(Builder $query): Builder
     {
-        return $query->where('er_status', 'Approved')->where('start_time', '>=', now());
+        return $query->where('e_status', 'Approved')->where('e_start_time', '>=', now());
     }
 
     /**
