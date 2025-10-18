@@ -223,7 +223,7 @@ class VenueService {
      * @return LengthAwarePaginator
      * @throws Exception
      */
-    public static function getAllVenues(array $filters): LengthAwarePaginator
+    public static function getAllVenues(?array $filters): LengthAwarePaginator
     {
         try {
             $query = Venue::query()->where('deleted_at', null);

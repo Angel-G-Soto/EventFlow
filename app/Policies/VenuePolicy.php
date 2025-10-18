@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Auth\Access\Response;
+use function Pest\Laravel\isAuthenticated;
 
 class VenuePolicy
 {
@@ -13,7 +14,8 @@ class VenuePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return ($user->roleAssignment->role->r_name == 'manager'
+            || $user->roleAssignment->role->r_name == 'admin');
     }
 
     /**
@@ -21,7 +23,9 @@ class VenuePolicy
      */
     public function view(User $user, Venue $venue): bool
     {
-        return false;
+        return ($user->department->id == $venue->department->id
+            && $user->roleAssignment->role->r_name == 'manager')
+            || $user->roleAssignment->role->r_name == 'admin';
     }
 
     /**
@@ -29,7 +33,7 @@ class VenuePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->roleAssignment->role->r_name == 'admin';
     }
 
     /**
@@ -37,7 +41,9 @@ class VenuePolicy
      */
     public function update(User $user, Venue $venue): bool
     {
-        return false;
+        return ($user->department->id == $venue->department->id
+            && $user->roleAssignment->role->r_name == 'manager')
+            || $user->roleAssignment->role->r_name == 'admin';
     }
 
     /**
@@ -45,7 +51,7 @@ class VenuePolicy
      */
     public function delete(User $user, Venue $venue): bool
     {
-        return false;
+        return $user->department->id = $venue->department->id && $user->roleAssignment->role->r_name == 'manager';;
     }
 
     /**
@@ -61,6 +67,6 @@ class VenuePolicy
      */
     public function forceDelete(User $user, Venue $venue): bool
     {
-        return false;
+        return $user->department->id = $venue->department->id && $user->roleAssignment->role->r_name == 'manager';
     }
 }

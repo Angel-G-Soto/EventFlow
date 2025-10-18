@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Venue;
+use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
+use App\Services\VenueService;
+use App\Policies\VenuePolicy;
 
 class VenueController extends Controller
 {
@@ -12,7 +16,11 @@ class VenueController extends Controller
      */
     public function index()
     {
-        //
+        // Policy
+
+        $venues = new VenueService()->getAllVenues(['department_id'=>Auth::user()->department_id]);
+
+        return view('venues.index', ['venues' => $venues]);
     }
 
     /**
@@ -20,7 +28,9 @@ class VenueController extends Controller
      */
     public function create()
     {
-        //
+        // Policy
+
+        return view('venues.create');
     }
 
     /**
@@ -34,23 +44,31 @@ class VenueController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Venue $venue)
+    public function show(int $venue_id)
     {
-        //
+        // Policy
+
+        $venue = VenueService::getVenueById($venue_id);
+
+        return view('venues.show', ['venue' => $venue]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Venue $venue)
+    public function edit(int $venue_id)
     {
-        //
+        // Policy
+
+        $venue = VenueService::getVenueById($venue_id);
+
+        return view('venues.show', ['venue' => $venue]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Venue $venue)
+    public function update(Request $request, int $venue_id)
     {
         //
     }
@@ -58,8 +76,35 @@ class VenueController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Venue $venue)
+    public function destroy(int $venue_id)
     {
         //
+    }
+
+    public function show_requirements(int $venue_id)
+    {
+        // Policy
+
+        $venue = VenueService::getVenueById($venue_id);
+
+        $requirements = $venue->requirements; //Create service
+
+        return view('venues.showRequirements', ['venue' => $venue, 'requirements' => $requirements]);
+    }
+
+    public function edit_requirements(int $venue_id)
+    {
+        // Policy
+
+        $venue = VenueService::getVenueById($venue_id);
+
+        $requirements = $venue->requirements; //Create service
+
+        return view('venues.editRequirements', ['venue' => $venue, 'requirements' => $requirements]);
+    }
+
+    public function update_requirements(int $venue_id)
+    {
+
     }
 }
