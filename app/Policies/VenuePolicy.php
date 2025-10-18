@@ -51,7 +51,7 @@ class VenuePolicy
      */
     public function delete(User $user, Venue $venue): bool
     {
-        return $user->department->id = $venue->department->id && $user->roleAssignment->role->r_name == 'manager';;
+        return $user->department->id = $venue->department->id && $user->roleAssignment->role->r_name == 'manager';
     }
 
     /**
