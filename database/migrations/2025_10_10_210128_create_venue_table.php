@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('venue_id');
 
             // --- Foreign Keys ---
-            $table->foreignId('department_id')->constrained('department', 'department_id');
+            $table->foreignId('department_id')->nullable()->constrained('department', 'department_id')->onDelete('set null');
             $table->foreignId('manager_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
             
             // --- Venue Details -- 

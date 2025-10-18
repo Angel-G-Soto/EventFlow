@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 use App\Models\Venue;
+use App\Models\VenueRequirement;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -9,6 +10,13 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class VenueRequirementFactory extends Factory
 {
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var string
+     */
+    protected $model = VenueRequirement::class;
+
     /**
      * Define the model's default state.
      *

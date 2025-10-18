@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('user_id');
 
             // --- Foreign Keys -- 
-            $table->foreignId('department_id')->nullable()->constrained('department', 'department_id');
+            $table->foreignId('department_id')->nullable()->constrained('department', 'department_id')->onDelete('set null');
 
             //--- User Details ---
             $table->string('u_name');
