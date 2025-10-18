@@ -23,6 +23,7 @@ class VenueService {
         $this->auditService = $auditService;
         //this->EventService = $eventService
     }
+    
    /**
      * Retrieves a collection of active venues that are available during a specified time window.
      */
@@ -54,26 +55,26 @@ class VenueService {
      */
     public function updateOrCreateFromImportData(array $venueData): Venue
     {
-        try {
-            $department = Department::where('d_name', $venueData['department_name_raw'])->firstOrFail();
+        // 1. Determine the department of the incoming Venue
+        $department = Department::where('d_name', $venueData['department_name_raw'])->firstOrFail();
 
-            $attributesToSave = [
-                'v_name' => $venueData['v_name'],
-                'v_features' => $venueData['v_features'],
-                'v_capacity' => $venueData['v_capacity'],
-                'v_test_capacity' => $venueData['v_test_capacity'],
-                'department_id' => $department->department_id,
-                'v_is_active' => true // Re-activate the venue as it's in the new file
-            ];
+        // 2. Map the incoming venueData to the Venue Schema 
+        $attributesToSave = [
+            'v_name' => $venueData['v_name'],
+            'v_features' => $venueData['v_features'],
+            'v_capacity' => $venueData['v_capacity'],
+            'v_test_capacity' => $venueData['v_test_capacity'],
+            'department_id' => $department->department_id,
+            'v_is_active' => true // Re-activate the venue as it's in the new file
+        ];
 
-            return Venue::updateOrCreate(
-                ['v_code' => $venueData['v_code']], // Find by the unique code
-                $attributesToSave
-            );
-        }catch (\Throwable $exception) {throw new \Exception('Unable to update or create from imported data.'. $exception->getMessage(), 0, $exception);}    
+        // 3. Return updated/created Venue object
+        return Venue::updateOrCreate(['v_code' => $venueData['v_code']], $attributesToSave);
     }
 
     /**
+     * ---- ADD AUTOMATED RE-ROUTING FOR ORPHANED REQUESTS ---- 
+     * 
      * This function assigns the manager to the department of the provided menu.
      * Assigning the manager to a venue of another department, removes privileges
      * from the other.
@@ -86,25 +87,28 @@ class VenueService {
      */
     public function assignManager(Venue $venue, User $manager, User $assigner): Venue
     {   
-        try {
-            $venue->manager_id = $manager->user_id;
-            $venue->save();
+        // 1. Update the venue manager and sync
+        $venue->manager_id = $manager->user_id;
+        $oldManagerId = $venue->manager_id;
+        $venue->save();
 
-            if($assigner->hasRole('system-admin'))
-                $this->auditService->logAdminAction(
-                    $assigner->user_id,
-                    'VENUE_MANAGER_ASSIGNED',
-                    "Assigned user '{$manager->u_name}' as manager for venue '{$venue->v_name}'."
-                );
-            else{
-                $this->auditService->logAction(
-                    $assigner->user_id,
-                    'VENUE_MANAGER_ASSIGNED',
-                    "Assigned user '{$manager->u_name}' as manager for venue '{$venue->v_name}'."
-                );
-            }
-            return $venue;
-        }catch (\Throwable $exception) {throw new \Exception('Unable assign manager to venue.'. $exception->getMessage(), 0, $exception);}
+        // 2. Automated re-routing of orphaned requests
+        if($oldManagerId){
+            // --> RE-ROUTE FUNCTION CALL HERE <--
+        }
+
+        // 3. Audit the Action
+        $description = "Assigned user '{$manager->u_name}' as manager for venue '{$venue->v_name}'.";
+        $actionCode = 'VENUE_MANAGER_ASSIGNED';
+
+        if($assigner->hasRole('system-admin'))
+            $this->auditService->logAdminAction($assigner->user_id, $assigner->u_name, $actionCode, $description);
+        else{
+            $this->auditService->logAction($assigner->user_id, $assigner->u_name, $actionCode, $description);
+        }
+
+        // 4. Return venue object with assigned manager.
+        return $venue;
     }
 
     /**
@@ -112,12 +116,14 @@ class VenueService {
      */
     public function deactivateAllVenues(User $admin): int
     {
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            'ALL_VENUES_DEACTIVATED',
-            'Deactivated all venues as part of the CSV import process.'
-        );
-      return Venue::query()->update(['v_is_active' => false]);
+        // 1. Audit the Action
+        $description = 'Deactivated all venues as part of the CSV import process.';
+        $actionCode = 'ALL_VENUES_DEACTIVATED';
+
+        $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
+       
+        // 2. Return cunt of deactivated Venues
+        return Venue::query()->update(['v_is_active' => false]);
     }
 
     /**
@@ -125,19 +131,12 @@ class VenueService {
      *
      * The requirements must be organized as in the following structure:
      *
-     * [
-     * 'documents' => [
-     *          [
-     *              'name' => string,
-     *              'description' => string,
-     *              'template_url' => string
-     *          ],
+     * ['documents' => [
+     *          ['vr_name' => string,'vr_type' => string,'vr_content' => string],
      *          ...
      *      ],
-     * 'checkboxes' => [
-     *          [
-     *              'label' => string
-     *          ],
+     * 'acknowledgements' => [
+     *          ['vr_name' => string, 'vr_type' => string,'vr_content' => string],
      *          ...
      *      ]
      * ]
@@ -148,45 +147,52 @@ class VenueService {
      * @return Void
      * @throws Exception
      */
-    public function updateOrCreateVenueRequirement(Venue $venue, array $requirementData, User $editor): Void
+    /**
+     * Synchronizes the usage requirements for a given venue based on the schema.
+     *
+     * @param Venue $venue
+     * @param array $requirementData
+     * @param User  $editor
+     * @return void
+     */
+    public function updateOrCreateVenueRequirement(Venue $venue, array $requirementData, User $editor): void
     {
         DB::transaction(function () use ($venue, $requirementData, $editor) {
-
-            // Delete all exisitng requirements for this venue
+            // 1. Delete all existing requirements for this venue to ensure a clean sync.
             VenueRequirement::where('venue_id', $venue->venue_id)->delete();
 
-           if (!empty($requirementData['documents'])) {
-               foreach ($requirementData['documents'] as $document) {
-                   $requirement = new VenueRequirement();
-                   $requirement->venue_id = $venue->venue_id;
-                   $requirement->vr_drive_link = $document['drive_url'];
-                   $requirement->vr_label = $document['label'];
-                   $requirement->vr_description = $document['description'];
-                   $requirement->save();
-               }
-           }
+            // 2. Process and create new 'document' type requirements.
+            if (!empty($requirementData['documents'])) {
+                foreach ($requirementData['documents'] as $document) {
+                    VenueRequirement::create([
+                        'venue_id'   => $venue->venue_id,
+                        'vr_name'    => $document['name'],          // The user-facing name of the document
+                        'vr_type'    => 'document',                 // Set the type explicitly
+                        'vr_content' => $document['template_url'],  // The content is the URL to the template
+                    ]);
+                }
+            }
 
-           if (!empty($requirementData['acknowledgements'])) {
-               foreach ($requirementData['acknowledgements'] as $acknowledgement) {
-                   $requirement = new VenueRequirement();
-                   $requirement->venue_id = $venue->id;
-                   $requirement->vr_label = $acknowledgement['label'];
-                   $requirement->vr_description = $acknowledgement['description'];
-                   $requirement->save();
-               }
-           }
-           if($editor->hasRole('system-admin'))
-                $this->auditService->logAdminAction(
-                    $editor->user_id,
-                    'VENUE_REQUIREMENTS_UPDATED',
-                    "Updated usage requirements for venue '{$venue->v_name}'."
-                );
-            else{
-                $this->auditService->logAction(
-                    $editor->user_id,
-                   'VENUE_REQUIREMENTS_UPDATED',
-                "Updated usage requirements for venue '{$venue->v_name}'."
-                );
+            // 3. Process and create new 'acknowledgement' type requirements.
+            if (!empty($requirementData['acknowledgements'])) {
+                foreach ($requirementData['acknowledgements'] as $acknowledgement) {
+                    VenueRequirement::create([
+                        'venue_id'   => $venue->venue_id,
+                        'vr_name'    => $acknowledgement['label'],          // The user-facing label of the checkbox
+                        'vr_type'    => 'acknowledgement',                  // Set the type explicitly
+                        'vr_content' => $acknowledgement['description'],    // The content is the descriptive text
+                    ]);
+                }
+            }
+
+            // 4. Log the administrative action.
+            $description = "Updated usage requirements for venue '{$venue->v_name}'.";
+            $actionCode = 'VENUE_REQUIREMENTS_UPDATED';
+
+            if ($editor->hasRole('system-admin')) {
+                $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
+            } else {
+                $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
             }
         });
     }
@@ -211,22 +217,22 @@ class VenueService {
     {
         $query = Venue::query();
 
-        // Handle text search for 'v_name' using a LIKE query
+        // 1. Handle text search for 'v_name' using a LIKE query
         if (!empty($filters['v_name'])) {
             $query->where('v_name', 'LIKE', '%' . $filters['v_name'] . '%');
         }
 
-        // Handle exact match for 'v_code'
+        // 2. Handle exact match for 'v_code'
         if (!empty($filters['v_code'])) {
             $query->where('v_code', $filters['v_code']);
         }
 
-        // Handle minimum capacity search
+        // 3. Handle minimum capacity search
         if (!empty($filters['v_capacity'])) {
             $query->where('v_capacity', '>=', $filters['v_capacity']);
         }
 
-        // Always return a paginator to match the return type
+        // 4. Always return a paginator to match the return type
         return $query->orderBy('v_name')->paginate(15);
     }
 
@@ -239,7 +245,7 @@ class VenueService {
     }
 
     /**
-     * Updates the attributes of the given menu.
+     * Updates the core attributes of the given venue.
      * Attributes must be given on the following array format:
      *
      * [
@@ -258,29 +264,48 @@ class VenueService {
      */
     public function updateVenue(Venue $venue, array $data, User $editor): Venue
     {
-        try {
-            // Remove the keys that contain null values
-            $filteredData = array_filter($data, fn($value)=>!is_null($value));
+        // 1. Remove the keys that contain null values
+        $filteredData = array_filter($data, fn($value)=>!is_null($value));
 
-            // Update the venue with the filtered data
-            $venue->update($filteredData);
-            
-           if($editor->hasRole('system-admin'))
-                $this->auditService->logAdminAction(
-                    $editor->user_id,
-                    'VENUE_REQUIREMENTS_UPDATED',
-                    "Updated usage requirements for venue '{$venue->v_name}'."
-                );
-            else{
-                $this->auditService->logAction(
-                    $editor->user_id,
-                   'VENUE_REQUIREMENTS_UPDATED',
-                "Updated usage requirements for venue '{$venue->v_name}'."
-                );
-            }
-            
-            return $venue->refresh();
-        } catch (\Throwable $exception) {throw new \Exception('Unable to update or create the venue requirements.'. $exception->getMessage(), 0, $exception);}
+        // 2. Update the venue with the filtered data
+        $venue->update($filteredData);
+        
+        // 3. Audit the action
+        $description = "Updated venue details'{$venue->v_name}'.";
+        $actionCode =  'VENUE_UPDATED';
+
+        if($editor->hasRole('system-admin'))
+            $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
+        else{
+            $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
+        }
+        
+        // 4. Return updated Venue object
+        return $venue->refresh();
+    }
+
+    /**
+     * Synchronizes the event type exclusions for a given venue.
+     *
+     * @param Venue $venue The venue to configure.
+     * @param int[] $eventTypeIds An array of IDs for the event types to be excluded.
+     * @param User  $editor The manager or admin performing the action.
+     * @return void
+     */
+    public function updateEventTypeExclusions(Venue $venue, array $eventTypeIds, User $editor): void
+    {
+        // 1. Use the sync() method to update the pivot table.
+        $venue->excludedEventTypes()->sync($eventTypeIds);
+
+        // 2. Log the administrative action.
+        $description = "Updated event type exclusions for venue '{$venue->v_name}'.";
+        $actionCode = 'VENUE_EXCLUSIONS_UPDATED';
+
+        if ($editor->hasRole('system-admin')) {
+            $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
+        } else {
+            $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
+        }
     }
 
     /**
@@ -311,22 +336,16 @@ class VenueService {
             }
         });
 
-       if($editor->hasRole('system-admin'))
-                $this->auditService->logAdminAction(
-                    $editor->user_id,
-                    'VENUE_REQUIREMENTS_UPDATED',
-                    "Updated usage requirements for venue '{$venue->v_name}'."
-                );
+        $description = "Updated opening hours for venue '{$venue->v_name}'.";
+        $actionCode =  'VENUE_HOURS_UPDATED';
+        if($editor->hasRole('system-admin'))
+            $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
         else{
-            $this->auditService->logAction(
-                $editor->user_id,
-                'VENUE_REQUIREMENTS_UPDATED',
-                "Updated usage requirements for venue '{$venue->v_name}'."
-            );
+            $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
         }
     }
 
-     /**
+    /**
      * Retrieves a collection of all venues managed by a specific user.
      */
     public function getVenuesForManager(User $manager): Collection

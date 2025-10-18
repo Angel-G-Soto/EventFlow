@@ -7,6 +7,8 @@ use App\Models\Event;
 use App\Models\OpeningHour;
 use App\Models\User;
 use App\Models\Venue;
+use App\Models\EventType;
+use App\Models\VenueRequirement;
 use App\Services\AuditService;
 use App\Services\EventService;
 use App\Services\VenueService;
@@ -46,7 +48,7 @@ class VenueServiceTest extends TestCase
     //     // Arrange
     //     $startTime = Carbon::parse('2025-10-20 10:00:00');
     //     $endTime = Carbon::parse('2025-10-20 12:00:00');
-
+    //
     //     // Venue 1: Available and Open
     //     $availableVenue = Venue::factory()->create(['v_is_active' => true]);
     //     OpeningHour::factory()->create([
@@ -88,6 +90,22 @@ class VenueServiceTest extends TestCase
     //     $this->assertFalse($availableVenues->contains($closedVenue));
     // }
 
+    // #[Test]
+    // public function assign_manager_updates_venue_audits_and_reroutes_requests(): void
+    // {
+    //     $admin = User::factory()->create()->assignRole('system-admin');
+    //     $oldManager = User::factory()->create();
+    //     $newManager = User::factory()->create();
+    //     $venue = Venue::factory()->create(['manager_id' => $oldManager->user_id]);
+
+    //     $this->auditServiceMock->shouldReceive('logAdminAction')->once();
+    //     $this->eventServiceMock->shouldReceive('reroutePendingVenueApprovals')->once()->with($venue->venue_id, $oldManager->user_id, $newManager->user_id);
+
+    //     $this->venueService->assignManager($venue, $newManager, $admin);
+
+    //     $this->assertEquals($newManager->user_id, $venue->fresh()->manager_id);
+    // }
+    
     #[Test]
     public function update_or_create_from_import_data_creates_new_venue(): void
     {
@@ -167,6 +185,80 @@ class VenueServiceTest extends TestCase
     }
 
     #[Test]
+    public function it_correctly_syncs_event_type_exclusions_and_audits(): void
+    {
+        // Arrange
+        $editor = User::factory()->create();
+        $venue = Venue::factory()->create();
+        $eventTypeToKeep = EventType::factory()->create();
+        $eventTypeToRemove = EventType::factory()->create();
+        $eventTypeToAdd = EventType::factory()->create();
+
+        // Set the initial state: The venue excludes two event types.
+        $venue->excludedEventTypes()->attach([$eventTypeToKeep->event_type_id, $eventTypeToRemove->event_type_id]);
+
+        // Define the new state: The venue should now only exclude the one we keep and the new one.
+        $newEventExclusionIds = [$eventTypeToKeep->event_type_id, $eventTypeToAdd->event_type_id];
+
+        // Expect the AuditService to be called correctly.
+        $this->auditServiceMock
+             ->shouldReceive('logAction')
+             ->once()
+             ->with(
+                 $editor->user_id,
+                 $editor->u_name,
+                 'VENUE_EXCLUSIONS_UPDATED',
+                 "Updated event type exclusions for venue '{$venue->v_name}'."
+             );
+
+        // Act: Call the method to synchronize the exclusions.
+        $this->venueService->updateEventTypeExclusions($venue, $newEventExclusionIds, $editor);
+
+        // Assert
+        // Check that the total number of exclusions is now correct.
+        $this->assertCount(2, $venue->fresh()->excludedEventTypes);
+
+        // Check that the pivot table has the correct associations.
+        $this->assertDatabaseHas('venue_event_type_exclusions', [
+            'venue_id' => $venue->venue_id,
+            'event_type_id' => $eventTypeToKeep->event_type_id,
+        ]);
+        $this->assertDatabaseHas('venue_event_type_exclusions', [
+            'venue_id' => $venue->venue_id,
+            'event_type_id' => $eventTypeToAdd->event_type_id,
+        ]);
+        // Crucially, check that the old, removed association is gone.
+        $this->assertDatabaseMissing('venue_event_type_exclusions', [
+            'venue_id' => $venue->venue_id,
+            'event_type_id' => $eventTypeToRemove->event_type_id,
+        ]);
+    }
+
+    #[Test]
+    public function update_venue_requirements_replaces_old_requirements_and_audits(): void
+    {
+        $editor = User::factory()->create();
+        $venue = Venue::factory()->create();
+        VenueRequirement::factory()->create(['venue_id' => $venue->venue_id, 'vr_name' => 'Old Requirement', 'vr_type'=>'...']);
+        
+        $newRequirements = [
+            'documents' => [['name' => 'New Document', 'template_url' => 'http://example.com']],
+            'acknowledgements' => [['label' => 'New Checkbox', 'description' => '...']],
+        ];
+
+        $this->auditServiceMock->shouldReceive('logAction')->once();
+
+        $this->venueService->updateOrCreateVenueRequirement($venue, $newRequirements, $editor);
+
+        $this->assertDatabaseCount('venue_requirement', 2);
+        $this->assertDatabaseHas('venue_requirement', ['vr_name' => 'New Document', 'vr_type' => 'document']);
+        $this->assertDatabaseHas('venue_requirement', ['vr_name' => 'New Checkbox', 'vr_type' => 'acknowledgement']);
+        $this->assertDatabaseMissing('venue_requirement', ['vr_name' => 'Old Requirement']);
+    }
+
+
+    
+    #[Test]
     public function get_venue_by_id_returns_correct_venue(): void
     {
         // Arrange
@@ -218,5 +310,18 @@ class VenueServiceTest extends TestCase
         $this->assertTrue($deptAVenues->contains($venueA1));
         $this->assertTrue($deptAVenues->contains($venueA2));
         $this->assertFalse($deptAVenues->contains($venueB1));
+    }
+
+    #[Test]
+    public function get_all_venues_filters_by_name_and_paginates(): void
+    {
+        Venue::factory()->create(['v_name' => 'Main Auditorium']);
+        Venue::factory()->create(['v_name' => 'Small Auditorium']);
+        Venue::factory()->create(['v_name' => 'Lecture Hall A']);
+
+        $results = $this->venueService->getAllVenues(['v_name' => 'Auditorium']);
+
+        $this->assertCount(2, $results);
+        $this->assertEquals('Main Auditorium', $results->first()->v_name);
     }
 }
