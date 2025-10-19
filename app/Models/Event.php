@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use DateTime;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,20 @@ class Event extends Model
     protected $table = 'event';              // @var string The table associated with the model.
     protected $primaryKey = 'event_id';      // @var string The primary key associated with the table.
 
-  
+    protected static function booted()
+    {
+        static::creating(function ($event) {
+            if (empty($event->e_status_code) && !empty($event->e_status)) {
+                $event->e_status_code = Str::slug($event->e_status);
+            }
+        });
+
+        static::updating(function ($event) {
+            if ($event->isDirty('e_status')) {
+                $event->e_status_code = Str::slug($event->e_status);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -34,7 +48,6 @@ class Event extends Model
         'e_title',
         'e_description',
         'e_status',
-        'e_status_code',
         'e_start_date',
         'e_end_date',
         'sells_food',

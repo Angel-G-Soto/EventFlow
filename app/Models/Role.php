@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,21 @@ class Role extends Model
 
     protected $table = 'role';                  // @var string The table associated with the model.
     protected $primaryKey = 'role_id';          // @var string The primary key associated with the table.
+
+    protected static function booted()
+    {
+        static::creating(function ($role) {
+            if (empty($role->r_code) && !empty($role->r_name)) {
+                $role->r_code = Str::slug($role->r_code);
+            }
+        });
+
+        static::updating(function ($role) {
+            if ($role->isDirty('r_name')) {
+                $role->r_code = Str::slug($role->r_code);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,21 @@ class Department extends Model
     protected $table = 'department';                // @var string The table associated with the model.
     protected $primaryKey = 'department_id';        // @var string The primary key associated with the table.
     
+    protected static function booted()
+    {
+        static::creating(function ($department) {
+            if (empty($department->d_code) && !empty($department->d_name)) {
+                $department->d_code = Str::slug($department->d_name);
+            }
+        });
+
+        static::updating(function ($department) {
+            if ($department->isDirty('e_status')) {
+                $department->e_status_code = Str::slug($department->e_status);
+            }
+        });
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -58,11 +74,11 @@ class Department extends Model
      * Scope a query to find a department by its unique code.
      * This makes controller code cleaner and more readable.
      *
-     * Usage: Department::findByCode('ENG')->first();
+     * Usage: Department::findByIdentifier('Deparment Engineering' || department-engineering)->first();
      */
-    public function scopeFindByCode(Builder $query, string $code): Builder
+    public function scopeFindByIdentifier(Builder $query, string $deptIndentifier): Builder
     {
-        return $query->where('d_code', $code);
+        return $query->where('d_code', $deptIndentifier)->orWhere('d_name', $deptIndentifier);
     }
 
      /**
