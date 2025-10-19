@@ -17,6 +17,7 @@ return new class extends Migration
             // --- Event Type Details -- 
             $table->string('et_name')->unique();
             $table->string('et_code')->unique();
+            $table->boolean('et_is_active')->default(true); 
 
             // --- Timestamps ---
             $table->timestamps();

@@ -54,23 +54,23 @@ class UserService
      *
      * @param User $user The user account whose roles are being modified.
      * @param array $roleCodes A simple array of role codes (e.g., ['space-manager']).
-     * @param int $admin_id The id of the administrator performing the action.
+     * @param User $admin The administrator performing the action.
      * @return User The updated User object.
      */
     public function updateUserRoles(User $user, array $roleCodes, User $admin): User
     {
-        // Find the Role model IDs corresponding to the codes
+        // 1. Find the Role model IDs corresponding to the codes
         $roleIds = Role::whereIn('r_code', $roleCodes)->pluck('role_id');
 
-        // Sync the roles in the pivot table
+        // 2. Sync the roles in the pivot table
         $user->roles()->sync($roleIds);
 
-        // Audit the action
+        // 3. Audit the action
         $description =  "Updated roles for user '{$user->u_name}' (ID: {$user->user_id}) to: " . implode(', ', $roleCodes);
         $actionCode = 'USER_ROLES_UPDATED';
         $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
 
-        // Return the user with the fresh roles loaded
+        // 4. Return the user with the fresh roles loaded
         return $user->load('roles');
     }
 
@@ -78,68 +78,70 @@ class UserService
      * Assigns a staff member to a specific department.
      *
      * @param User $user The user account to be assigned.
-     * @param int $departmentId The primary key (d_id) of the department.
-     * @param int $admin_id The id of the administrator performing the action.
+     * @param int $departmentId The primary key (department_id) of the department.
+     * @param User $admin The the administrator performing the action.
      * @return User The updated User object.
      */
-    public function assignUserToDepartment(User $user, int $departmentId, User $asigner): User
+    public function assignUserToDepartment(User $user, int $departmentId, User $admin): User
     {
-        // Ensure the department exists before assigning
+        // 1. Ensure the department exists before assigning
         $department = Department::findOrFail($departmentId);
 
+        // 2. Assign the department to the user
         $user->department_id = $department->department_id;
         $user->save();
 
-        // Audit the action
+        // 3. Audit the action
         $description = "Assigned user '{$user->u_name}' to department '{$department->d_name}'.";
         $actionCode = 'USER_DEPT_ASSIGNED';
-        $this->auditService->logAdminAction($asigner->user_id, $asigner->u_name, $actionCode, $description);
+        $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
 
+        // 4. Return updated User object
         return $user;
     }
 
     /**
      * Updates a user's profile information.
      *
-     * @param int $userId The ID of the user to update.
+     * @param User $user The the user to update.
      * @param array $data An associative array of data to update (e.g., ['u_name' => 'New Name']).
-     * @param int $adminId The ID of the administrator performing the action.
-     * @param string $adminName The name of the administrator performing the action.
+     * @param User $admin The the administrator performing the action.
      * @return User The updated User object.
      */
     public function updateUserProfile(User $user, array $data, User $admin): User
     {
-        // Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
+        // 1. Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
         $fillableData = Arr::only($data, ['u_name', 'u_email', 'u_is_active']);
         $user->fill($fillableData);
         $user->save();
 
-        // Audit the action
+        // 2. Audit the action
         $description = "Updated profile for user '{$user->u_name}' (ID: {$user->user_id}).";
         $actionCode = 'USER_PROFILE_UPDATED';
         $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
 
+        // 3. Return updated user object
         return $user;
     }
 
     /**
      * Permanently deletes a user account.
      *
-     * @param int $userId The ID of the user to delete.
-     * @param int $adminId The ID of the administrator performing the action.
-     * @param string $adminName The name of the administrator performing the action.
+     * @param User $user The the user to delete.
+     * @param User $admin The administrator performing the action.
      * @return void
      */
     public function deleteUser(User $user, User $admin): void
     {
-        // Get the user's name *before* deleting them for the audit log.
+        // 1. Get the user's name *before* deleting them for the audit log.
         $deletedUserName = $user->u_name;
         $deletedUserEmail = $user->u_email;
         $deletedUserId = $user->user_id;
 
+        // 2. Delete the user
         $user->delete();
 
-        //Audit the action
+        // 3. Audit the action
         $description = "Permanently deleted user '{$deletedUserName}' (Email: {$deletedUserEmail}) (ID: {$deletedUserId}).";
         $actionCode =  'USER_DELETED';
         $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
@@ -148,13 +150,13 @@ class UserService
      /**
      * Retrieves a collection of all users who have a specific role.
      *
-     * @param string $roleCode The machine-readable code for the role (e.g., 'dsca-staff').
+     * @param string $roleIdentifier The idenfier for the role (e.g., 'dsca-staff' || DSCA Staff).
      * @return Collection An Eloquent Collection of User objects.
      */
-    public function getUsersWithRole(string $roleCode): Collection
+    public function getUsersWithRole(string $roleIdentifier): Collection
     {
-        return User::whereHas('roles', function ($query) use ($roleCode) {
-            $query->where('r_code', $roleCode);
+        return User::whereHas('roles', function ($query) use ($roleIdentifier) {
+            $query->where('r_code', $roleIdentifier)->orWhere('r_name', $roleIdentifier);
         })->get();
     }
 }

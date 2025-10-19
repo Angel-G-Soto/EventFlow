@@ -51,7 +51,7 @@ class AuditService
     {
         $query = AuditTrail::query()->with('actor')->latest('audit_timestamp');
 
-        // Use the 'forUser' scope if a user_id is provided
+        // 1. Use the 'forUser' scope if a user_id is provided
         if (!empty($filters['user_id'])) {
             $user = User::find($filters['user_id']);
             if ($user) {
@@ -59,17 +59,18 @@ class AuditService
             }
         }
 
-        // Use the 'ofType' scope if an action_code is provided
+        // 2. Use the 'ofType' scope if an action_code is provided
         if (!empty($filters['at_action'])) {
             $query->ofType($filters['at_action']);
         }
         
        
-        // Use the 'adminActions' scope if the filter is set.
+        // 3. Use the 'adminActions' scope if the filter is set.
         if (array_key_exists('is_admin_action', $filters)) {
             $query->adminActions((bool) $filters['is_admin_action']);
         }
 
+        // 4. Return Paginator with filtered audit entries
         return $query->paginate(50);
     }
 
@@ -78,7 +79,7 @@ class AuditService
      */
     protected function write(int $userId, string $actionCode, string $description, bool $isAdmin): AuditTrail
     {
-        // Create the record using the correct column names from your ERD and model.
+        // Create the AuditTrail record
         return AuditTrail::create([
             'user_id' => $userId,
             'at_action' => $actionCode,

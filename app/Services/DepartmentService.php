@@ -27,6 +27,9 @@ class DepartmentService {
     
     /**
      * Retrieves a single department by its primary key.
+     * 
+     * @param int $departmentId The primary key (department_id) of the Department to find.
+     * @return Department|Error The Eloquent Department object or Excemption if not found.
      */
     public function getDepartmentById(int $departmentId): ?Department
     {
@@ -35,19 +38,15 @@ class DepartmentService {
 
     /**
      * Creates a new department record.
-     * The Department data must be structured as such
-     * '$data' => [
-     *        'd_name' => string,
-     *        'd_code' => string
-     *  ] 
+     * 
+     * @param string $name Name of department to be created
+     * @param User $admin The admnistrator performing the action.
+     * @return Department The newly created Eloquent Department object 
      */
-    public function createDepartment(array $data, User $admin): Department
+    public function createDepartment(string $name, User $admin): Department
     {   
-        // 1. Create department based on data values.
-        $department = Department::create([
-            'd_name' => $data['d_name'],
-            'd_code' => $data['d_code']
-        ]);
+        // 1. Create department based on data value.
+        $department = Department::create(['d_name' => $name]);
 
         // 2. Audit the action
         $description = "Created new department '{$department->d_name}' with ID: '{$department->department_id}'";
@@ -60,30 +59,24 @@ class DepartmentService {
 
     /**
      * Updates an existing department's details.
-     * The Department data must be structured as such
-     * '$data' => [
-     *        'd_name' => string,
-     *        'd_code' => string
-     *  ] 
+     *
+     * @param Department Department that is being updated.
+     * @param string $name The updatable field.
+     * @param User $admin The administrator performing the action.
      */
-    public function updateDepartment(Department $department, array $data, User $editor): Department
+    public function updateDepartment(Department $department, string $name, User $admin): Department
     {
         // 1. Update Department attributes to data fields
-        $department->update([
-            'd_name' => $data['d_name'],
-            'd_code' => $data['d_code']
-        ]);
+        $department->update(['d_name' => $name]);
 
-         // 2. Audit the action
+        // 2. Audit the action
         $description = "Updated department name to '{$department->d_name} code updated to '{$department->d_code}' (ID: {$department->department_id}).";
         $actionCode =  'DEPARTMENT_UPDATED';
 
-        if($editor->hasRole('system-admin')){
-            $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
-        } else{ 
-            $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
-        }
-
+        // 3. Audit the action 
+        $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
+        
+        // 4. Return the updated Department object
         return $department;
     }
 
@@ -111,19 +104,23 @@ class DepartmentService {
 
    /**
      * Retrieves all venues associated with a specific department.
+     * 
+     * @param Department $department Target Department to retrive assigned Venues.
+     * @return Collection Collection of Venue objects assosiated to the Department. 
      */
     public function getDepartmentVenues(Department $department): Collection
     {
-        // The 'venues' relationship should be defined on the Department model.
         return $department->venues;
     }
 
     /**
      * Retrieves all users assigned to a specific department.
+     * 
+     * @param Department $department Target Department to retrive assigned Users.
+     * @return Collection Collection of Users objects assosiated to the Department. 
      */
     public function getDepartmentUsers(Department $department): Collection
     {
-        // The 'users' relationship should be defined on the Department model.
         return $department->users;
     }
 
