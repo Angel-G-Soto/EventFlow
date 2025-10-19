@@ -14,8 +14,7 @@ class VenuePolicy
      */
     public function viewAny(User $user): bool
     {
-        return ($user->roleAssignment->role->r_name == 'manager'
-            || $user->roleAssignment->role->r_name == 'admin');
+        return $user->roleAssignment->role->r_name == 'system-admin';
     }
 
     /**
@@ -25,7 +24,7 @@ class VenuePolicy
     {
         return ($user->department->id == $venue->department->id
             && $user->roleAssignment->role->r_name == 'manager')
-            || $user->roleAssignment->role->r_name == 'admin';
+            || $user->roleAssignment->role->r_name == 'system-admin';
     }
 
     /**
@@ -33,7 +32,7 @@ class VenuePolicy
      */
     public function create(User $user): bool
     {
-        return $user->roleAssignment->role->r_name == 'admin';
+        return $user->roleAssignment->role->r_name == 'system-admin';
     }
 
     /**
@@ -41,9 +40,9 @@ class VenuePolicy
      */
     public function update(User $user, Venue $venue): bool
     {
-        return ($user->department->id == $venue->department->id
-            && $user->roleAssignment->role->r_name == 'manager')
-            || $user->roleAssignment->role->r_name == 'admin';
+        return $user->hasRole('system-admin')
+            || ($user->hasRole('department-director')
+                && $user->department_id == $venue->department_id);
     }
 
     /**
@@ -51,22 +50,27 @@ class VenuePolicy
      */
     public function delete(User $user, Venue $venue): bool
     {
-        return $user->department->id = $venue->department->id && $user->roleAssignment->role->r_name == 'manager';
+        return $user->hasRole('system-admin')
+            || ($user->hasRole('department-director')
+                && $user->department_id == $venue->department_id);
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Determine whether the user can assign the manager to the venue
      */
-    public function restore(User $user, Venue $venue): bool
+    public function assignManager(User $user, Venue $venue): bool
     {
-        return false;
+        return $user->hasRole('system-admin')
+            || ($user->hasRole('department-director')
+                && $user->department_id == $venue->department_id);
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Determine whether the user can update the model.
      */
-    public function forceDelete(User $user, Venue $venue): bool
+    public function updateRequirements(User $user, Venue $venue): bool
     {
-        return $user->department->id = $venue->department->id && $user->roleAssignment->role->r_name == 'manager';
+        return $user->id == $venue->manager_id
+            || $user->roleAssignment->role->r_name == 'system-admin';
     }
 }

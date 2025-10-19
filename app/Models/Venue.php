@@ -39,7 +39,7 @@ class Venue extends Model
         'v_test_capacity',
         'use_requirement_id',
         'department_id',
-        'category_id',
+        'manager_id',
         'id'
     ];
 
@@ -73,5 +73,10 @@ class Venue extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class);
+    }
+
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
     }
 }
