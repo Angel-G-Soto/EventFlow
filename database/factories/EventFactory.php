@@ -25,17 +25,20 @@ class EventRequestFactory extends Factory
     public function definition(): array
     {
         return [
-            'e_title' => $this->faker->sentence(4),
-            'e_description' => $this->faker->paragraph(),
-            'e_status' => 'Approved',
-            'start_time' => Carbon::now()->addDay(),
-            'end_time' => Carbon::now()->addDay()->addHours(2),
-            'organization_nexo_id' => $this->faker->uuid(),
-            'organization_name' => $this->faker->company() . ' Club',
-            'advisor_email' => $this->faker->safeEmail(),
             'creator_id' => User::factory(),
             'current_approver_id' => null,
             'venue_id' => Venue::factory(),
+            'e_title' => $this->faker->sentence(4),
+            'e_student_id' => $this->faker()->numerify('#########'),
+            'e_student_phone' => $this->faker()->phoneNumber,
+            'e_description' => $this->faker->paragraph(),
+            'e_status' => 'Approved',
+            'e_start_time' => Carbon::now()->addDay(),
+            'e_end_time' => Carbon::now()->addDay()->addHours(2),
+            'organization_nexo_id' => $this->faker->uuid(),
+            'organization_name' => $this->faker->company() . ' Club',
+            'advisor_email' => $this->faker->safeEmail(),
+            'e_advisor_phone' => $this->faker()->phoneNumber,
         ];
     }
 }
