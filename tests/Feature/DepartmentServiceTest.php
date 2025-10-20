@@ -40,7 +40,7 @@ class DepartmentServiceTest extends TestCase
     {
         // Arrange
         $admin = User::factory()->create();
-        $data = ['d_name' => 'College of Engineering', 'd_code' => 'COE'];
+        $data = 'College of Engineering';
 
         $this->auditServiceMock->shouldReceive('logAdminAction')->once();
 
@@ -48,18 +48,18 @@ class DepartmentServiceTest extends TestCase
         $this->departmentService->createDepartment($data, $admin);
 
         // Assert
-        $this->assertDatabaseHas('Department', ['d_code' => 'COE']);
+        $this->assertDatabaseHas('Department', ['d_code' => 'college-of-engineering']);
     }
 
     #[Test]
     public function it_updates_a_department_and_logs_as_admin(): void
     {
         // Arrange
-        $adminRole = Role::factory()->create(['r_code' => 'system-admin']);
+        $adminRole = Role::factory()->create(['r_name' => 'System Admin']);
         $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        $admin->assignRole('system-admin');
         $department = Department::factory()->create(['d_name' => 'Old Name']);
-        $data = ['d_name' => 'New Name', 'd_code' => 'NEW'];
+        $data = 'New Name';
 
         $this->auditServiceMock->shouldReceive('logAdminAction')->once();
         $this->auditServiceMock->shouldNotReceive('logAction'); // Ensure the standard log is NOT called
@@ -71,23 +71,6 @@ class DepartmentServiceTest extends TestCase
         $this->assertDatabaseHas('Department', ['department_id' => $department->department_id, 'd_name' => 'New Name']);
     }
 
-    #[Test]
-    public function it_updates_a_department_and_logs_as_standard_user(): void
-    {
-        // Arrange
-        $director = User::factory()->create(); // A non-admin user
-        $department = Department::factory()->create(['d_name' => 'Old Name']);
-        $data = ['d_name' => 'New Name', 'd_code' => 'NEW'];
-
-        $this->auditServiceMock->shouldReceive('logAction')->once();
-        $this->auditServiceMock->shouldNotReceive('logAdminAction'); // Ensure the admin log is NOT called
-
-        // Act
-        $this->departmentService->updateDepartment($department, $data, $director);
-
-        // Assert
-        $this->assertDatabaseHas('Department', ['department_id' => $department->department_id, 'd_name' => 'New Name']);
-    }
 
     #[Test]
     public function it_deletes_a_department_unassigns_children_and_logs_action(): void

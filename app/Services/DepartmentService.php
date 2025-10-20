@@ -51,6 +51,7 @@ class DepartmentService {
         // 2. Audit the action
         $description = "Created new department '{$department->d_name}' with ID: '{$department->department_id}'";
         $actionCode =  'DEPARTMENT_CREATED';
+        
         $this->auditService->logAdminAction($admin->user_id, $admin->u_name, $actionCode, $description);
 
         // 3. Return created Department object

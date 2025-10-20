@@ -182,7 +182,7 @@ class VenueService {
             $description = "Updated usage requirements for venue '{$venue->v_name}'.";
             $actionCode = 'VENUE_REQUIREMENTS_UPDATED';
 
-            if ($editor->hasRole('system-admin')) {
+            if ($editor->is_admin) {
                 $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
             } else {
                 $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
@@ -269,7 +269,7 @@ class VenueService {
         $description = "Updated venue details'{$venue->v_name}'.";
         $actionCode =  'VENUE_UPDATED';
 
-        if($editor->hasRole('system-admin'))
+        if($editor->is_admin)
             $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
         else{
             $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
@@ -296,7 +296,7 @@ class VenueService {
         $description = "Updated event type exclusions for venue '{$venue->v_name}'.";
         $actionCode = 'VENUE_EXCLUSIONS_UPDATED';
 
-        if ($editor->hasRole('system-admin')) {
+        if ($editor->is_admin) {
             $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
         } else {
             $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
@@ -335,7 +335,7 @@ class VenueService {
         $description = "Updated opening hours for venue '{$venue->v_name}'.";
         $actionCode =  'VENUE_HOURS_UPDATED';
 
-        if($editor->hasRole('system-admin'))
+        if($editor->is_admin)
             $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
         else{
             $this->auditService->logAction($editor->user_id, $editor->u_name, $actionCode, $description);
