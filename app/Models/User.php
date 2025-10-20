@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -49,12 +50,17 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class, 'role_assignment', 'user_id', 'role_id');
     }
 
-      /**
+    /**
      * Check if the user has a specific role by its code or name.
      */
     public function hasRole(string $roleIdentifier): bool
     {
-        return $this->roles()->where('r_code', $roleIdentifier)->orWhere('r_name', $roleIdentifier)->exists();
+        return $this->roles()
+                ->where(function ($query) use ($roleIdentifier) {
+                    $query->where('r_code', $roleIdentifier)
+                        ->orWhere('r_name', $roleIdentifier);
+                })
+                ->exists();    
     }
 
     /**
@@ -107,12 +113,15 @@ class User extends Authenticatable
         }
     }
 
-    public static function findByIdentifier(string $identifier)
-    {        
-        return static::where('r_code', $identifier)
-                    ->orWhere('r_name', $identifier);
-    }
-
+    /**
+     * Get the users with a particular role.
+     */
+    public function getUsersWithRole(string $roleIdentifier): Collection
+    {
+        return User::whereHas('roles', function ($query) use ($roleIdentifier) {
+            $query->where('r_code', $roleIdentifier)->orWhere('r_name', $roleIdentifier);
+        })->get();
+    }    
     /**
      * Scope a query to only include users with the 'system-admin' role.
      *

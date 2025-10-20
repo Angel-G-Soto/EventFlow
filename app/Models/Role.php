@@ -19,7 +19,7 @@ class Role extends Model
     {
         static::creating(function ($role) {
             if (empty($role->r_code) && !empty($role->r_name)) {
-                $role->r_code = Str::slug($role->r_code);
+                $role->r_code = Str::slug($role->r_name);
             }
         });
 
@@ -48,14 +48,16 @@ class Role extends Model
         return $this->belongsToMany(User::class, 'role_assignment', 'role_id', 'user_id');
     }
      /**
-     * Scope a query to find a role by its unique machine-readable code.
-     * This makes controller and service code much cleaner.
+     * Scope a query to find a role by its unique machine or human readable code.
      *
-     * Usage: Role::findByCode('system-admin')->first();
+     * Usage: Role::findByIdentifier('system-admin' || 'System Admin')->first();
      */
-    public function scopeFindByCode(Builder $query, string $code): Builder
+    public function scopeFindByIdentifier(Builder $query, string $roleIdentifier): Builder
     {
-        return $query->where('r_code', $code);
+        return $query->where(function ($q) use ($roleIdentifier) {
+                $q->where('r_code', $roleIdentifier)
+                ->orWhere('r_name', $roleIdentifier);
+        });        
     }
 
     /**

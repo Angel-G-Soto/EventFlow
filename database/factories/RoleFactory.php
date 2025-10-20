@@ -25,8 +25,7 @@ class RoleFactory extends Factory
         $name = $this->faker->unique()->jobTitle();
 
         return [
-            'r_name' => $name,
-            'r_code' => Str::slug($name), // e.g., "Lead Developer" becomes "lead-developer"
+            'r_name' => $name
         ];
     }
 }
