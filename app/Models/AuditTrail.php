@@ -21,6 +21,10 @@ class AuditTrail extends Model
         'is_admin_action'
     ];
 
+    protected $casts = [
+        'is_admin_action' => 'boolean'
+    ];
+    
     /**
      * Get the user (actor) who performed the audited action.
      */

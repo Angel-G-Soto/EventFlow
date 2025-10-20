@@ -64,7 +64,6 @@ class AuditService
             $query->ofType($filters['at_action']);
         }
         
-       
         // 3. Use the 'adminActions' scope if the filter is set.
         if (array_key_exists('is_admin_action', $filters)) {
             $query->adminActions((bool) $filters['is_admin_action']);
