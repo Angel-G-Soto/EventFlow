@@ -46,6 +46,10 @@ class EventType extends Model
         'et_is_active'
     ];
 
+    protected $casts = [
+        'et_is_active' => 'boolean'
+    ];
+
     /**
      * Get all of the event requests that are of this type.
      */

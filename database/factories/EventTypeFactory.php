@@ -26,6 +26,7 @@ class EventTypeFactory extends Factory
         return [
             'et_name' => ucfirst($name),
             'et_code' => Str::slug($name),
+            'et_is_active' => true,
         ];
     }
 }

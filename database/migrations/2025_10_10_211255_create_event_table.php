@@ -34,11 +34,10 @@ return new class extends Migration
             $table->boolean('has_external_guest');
             
             // For "just-in-time" Nexo data (denormalized)
-            $table->string('organization_nexo_id');
-            $table->string('organization_nexo_name');
-            $table->string('advisor_name');
-            $table->string('advisor_email');
-            $table->string('advisor_phone');      // Does not come from Nexo
+            $table->string('organization_nexo_id')->nullable();
+            $table->string('organization_nexo_name')->nullable();
+            $table->string('advisor_email')->nullable();
+            $table->string('advisor_phone')->nullable();      // Does not come from Nexo
 
             // --- Timestamps -- 
             $table->timestamps();
