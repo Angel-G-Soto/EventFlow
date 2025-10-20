@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use DateTime;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\Venue;
@@ -13,35 +14,35 @@ use Illuminate\Support\Facades\DB;
 class VenueService {
 
     protected AuditService $auditService;
-    //protected EventService $eventService
+    protected EventService $eventService;
 
     /**
      * Inject dependencies.
      */
-    public function __construct(AuditService $auditService)
+    public function __construct(AuditService $auditService, EventService $eventService)
     {
         $this->auditService = $auditService;
-        //this->EventService = $eventService
+        $this->eventService = $eventService;
     }
     
    /**
      * Retrieves a collection of active venues that are available during a specified time window.
      */
-    // public function getAvailableVenues(DateTime $startTime, DateTime $endTime): Collection
-    // {
-    //    if ($startTime >= $endTime) {
-    //             throw new \InvalidArgumentException('Start time must be before end time.');
-    //         }
+    public function getAvailableVenues(DateTime $startTime, DateTime $endTime): Collection
+    {
+       if ($startTime >= $endTime) {
+                throw new \InvalidArgumentException('Start time must be before end time.');
+            }
 
-    //         $bookedVenueIds = $this->eventService->getBookedVenueIdsAtTime($startTime, $endTime);
+            $bookedVenueIds = $this->eventService->getBookedVenueIdsAtTime($startTime, $endTime);
 
-    //         $potentiallyAvailableVenues = Venue::where('is_active', true)
-    //             ->whereNotIn('venue_id', $bookedVenueIds)
-    //             ->orderBy('v_name')
-    //             ->get();
+            $potentiallyAvailableVenues = Venue::where('v_is_active', true)
+                ->whereNotIn('venue_id', $bookedVenueIds)
+                ->orderBy('v_name')
+                ->get();
                 
-    //         return $potentiallyAvailableVenues->filter(fn(Venue $venue) => $venue->isAvailableDuring($startTime, $endTime));
-    // }
+            return $potentiallyAvailableVenues->filter(fn(Venue $venue) => $venue->isAvailableDuring($startTime, $endTime));
+    }
 
     /**
      * This process is intended to iterate through the submitted array of
@@ -49,8 +50,8 @@ class VenueService {
      * of each room as key identifiers to perform the update. If no record,
      * contains these identifiers, a new record will be created.
      *
-     * @param array $venueData
-     * @return Collection
+     * @param array $venueData Data array of values related to the Buildings database.
+     * @return Collection A collection of newly updated or created venues based on import data.
      * @throws Exception
      */
     public function updateOrCreateFromImportData(array $venueData): Venue
@@ -58,14 +59,14 @@ class VenueService {
         // 1. Determine the department of the incoming Venue
         $department = Department::where('d_name', $venueData['department_name_raw'])->firstOrFail();
 
-        // 2. Map the incoming venueData to the Venue Schema 
+        // 2. Map the incoming venueData values to the Venue Schema 
         $attributesToSave = [
             'v_name' => $venueData['v_name'],
             'v_features' => $venueData['v_features'],
             'v_capacity' => $venueData['v_capacity'],
             'v_test_capacity' => $venueData['v_test_capacity'],
             'department_id' => $department->department_id,
-            'v_is_active' => true // Re-activate the venue as it's in the new file
+            'v_is_active' => true
         ];
 
         // 3. Return updated/created Venue object
@@ -73,35 +74,33 @@ class VenueService {
     }
 
     /**
-     * ---- ADD AUTOMATED RE-ROUTING FOR ORPHANED REQUESTS ---- 
-     * 
      * This function assigns the manager to the department of the provided menu.
      * Assigning the manager to a venue of another department, removes privileges
-     * from the other.
+     * from the other and reroutes npending venue requests to the new manager. 
      *
-     * @param Venue $venue
-     * @param User $manager
-     * @param User $admin
-     * @return void
+     * @param Venue $venue The venue being assigned a manager
+     * @param User $manager The user being assigened a venue
+     * @param User $assigner The user (Department Director or Admin) doing the action. 
+     * @return Venue Newly updated venue with assigned manager. 
      * @throws Exception
      */
-    public function assignManager(Venue $venue, User $manager, User $assigner): Venue
+    public function assignManager(Venue $venue, User $newManager, User $assigner): Venue
     {   
         // 1. Update the venue manager and sync
-        $venue->manager_id = $manager->user_id;
         $oldManagerId = $venue->manager_id;
+        $venue->manager_id = $newManager->user_id;
         $venue->save();
 
         // 2. Automated re-routing of orphaned requests
         if($oldManagerId){
-            // --> RE-ROUTE FUNCTION CALL HERE <--
+            $this->eventService->reroutePendingVenueApprovals($venue->venue_id, $oldManagerId, $newManager->user_id);
         }
 
-        // 3. Audit the Action
-        $description = "Assigned user '{$manager->u_name}' as manager for venue '{$venue->v_name}'.";
+        // 3. Audit the action
+        $description = "Assigned user '{$newManager->u_name}' as manager for venue '{$venue->v_name}'.";
         $actionCode = 'VENUE_MANAGER_ASSIGNED';
 
-        if($assigner->hasRole('system-admin'))
+        if($assigner->is_admin)
             $this->auditService->logAdminAction($assigner->user_id, $assigner->u_name, $actionCode, $description);
         else{
             $this->auditService->logAction($assigner->user_id, $assigner->u_name, $actionCode, $description);
@@ -113,6 +112,9 @@ class VenueService {
 
     /**
      * Soft deletes all the venues provided on the array
+     * 
+     * @param User $admin The administrator doing the action.
+     * @return int Count of deactivated venues.
      */
     public function deactivateAllVenues(User $admin): int
     {
@@ -128,32 +130,23 @@ class VenueService {
 
     /**
      * Updates or creates the usage requirements for a specific venue
-     *
      * The requirements must be organized as in the following structure:
      *
      * ['documents' => [
-     *          ['vr_name' => string,'vr_type' => string,'vr_content' => string],
+     *          ['vr_name' => string, 'vr_content' => string],
      *          ...
      *      ],
      * 'acknowledgements' => [
-     *          ['vr_name' => string, 'vr_type' => string,'vr_content' => string],
+     *          ['vr_name' => string, 'vr_content' => string],
      *          ...
      *      ]
      * ]
      *
-     * @param Venue $venue
-     * @param array $requirementData
-     * @param User $manager
+     * @param Venue $venue The venue being updated
+     * @param array $requirementData An array containing the requirements data structured as stated above.
+     * @param User $editor The user (Venue Manager or Admin) doing the action
      * @return Void
      * @throws Exception
-     */
-    /**
-     * Synchronizes the usage requirements for a given venue based on the schema.
-     *
-     * @param Venue $venue
-     * @param array $requirementData
-     * @param User  $editor
-     * @return void
      */
     public function updateOrCreateVenueRequirement(Venue $venue, array $requirementData, User $editor): void
     {
@@ -185,7 +178,7 @@ class VenueService {
                 }
             }
 
-            // 4. Log the administrative action.
+            // 4. Log the action.
             $description = "Updated usage requirements for venue '{$venue->v_name}'.";
             $actionCode = 'VENUE_REQUIREMENTS_UPDATED';
 
@@ -202,16 +195,14 @@ class VenueService {
      * The filters parameter must follow the following structure:
      *
      * [
-     *     'v_name' => value1
-     *     'v_code' => value2
-     *     'v_features' => value3
-     *     'v_capacity' => value4
-     *     'v_test_capacity' => value5
-     *  ]
+     *     'v_name' => string,
+     *     'v_code' => string,
+     *     'v_features' => string,
+     *     'v_capacity' => int,
+     * ]
      *
-     * @param array $filters
-     * @param bool $paginate
-     * @return Collection|LengthAwarePaginator
+     * @param array $filters Desired fileds to filter venues.
+     * @return LengthAwarePaginator Paginator containing filtered venues.
      */
     public function getAllVenues(array $filters): LengthAwarePaginator
     {
@@ -238,6 +229,9 @@ class VenueService {
 
      /**
      * Retrieves a single venue by its primary key.
+     * 
+     * @param int $venueId The primary key (venue_id) of the venue to find.
+     * @return User|Error The Eloquent venue object or Excemption if not found.
      */
     public function getVenueById(int $venueId): ?Venue
     {
@@ -249,17 +243,18 @@ class VenueService {
      * Attributes must be given on the following array format:
      *
      * [
-     *    'v_name' => value1
-     *    'v_code' => value2
-     *    'v_features' => value3
-     *    'v_capacity' => value4
-     *    'v_test_capacity' => value5
+     *    'v_name' => string,
+     *    'v_code' => string,
+     *    'v_features' => string,
+     *    'v_capacity' => int,
+     *    'v_test_capacity' => int,
+     *    'v_is_active' => bool
      * ]
      *
-     * @param Venue $venue
-     * @param array $data
-     * @param User $admin
-     * @return Venue
+     * @param Venue $venue The venue being updated
+     * @param array $data  The values to update.
+     * @param User $editor The user (Venue Manager or Admin) taking the action
+     * @return Venue The newly updated Eloquent Venue object
      * @throws Exception
      */
     public function updateVenue(Venue $venue, array $data, User $editor): Venue
@@ -310,23 +305,23 @@ class VenueService {
 
     /**
      * Updates or creates the opening hours for a specific venue.
+     * The hoursData must be structured as such:
+     * ['day_of_week' => value1, 'open_time'=> value2, 'close_time' => value3]
      *
      * @param Venue $venue The venue to be configured.
      * @param array $hoursData An array of opening hours data.
-     * @param User $admin The administrator performing the action.
+     * @param User $editor The user (Venue Manager or Admin) performing the action.
      * @return void
      */
     public function updateOpeningHours(Venue $venue, array $hoursData, User $editor): void
     {
         // Use a database transaction to ensure data integrity.
-        // If any part of this process fails, all changes will be rolled back.
         DB::transaction(function () use ($venue, $hoursData) {
-            // First, delete all existing opening hours for this venue.
+            // 1. Delete all existing opening hours for this venue.
             $venue->openingHours()->delete();
 
-            // Loop through the new data and create a record for each day.
+            // 2. Loop through the new data and create a record for each day.
             foreach ($hoursData as $dayData) {
-                // The controller should validate that the required keys exist.
                 OpeningHour::create([
                     'venue_id' => $venue->venue_id,
                     'day_of_week' => $dayData['day_of_week'],
@@ -336,8 +331,10 @@ class VenueService {
             }
         });
 
+        // 3. Audit the action
         $description = "Updated opening hours for venue '{$venue->v_name}'.";
         $actionCode =  'VENUE_HOURS_UPDATED';
+
         if($editor->hasRole('system-admin'))
             $this->auditService->logAdminAction($editor->user_id, $editor->u_name, $actionCode, $description);
         else{
@@ -347,6 +344,9 @@ class VenueService {
 
     /**
      * Retrieves a collection of all venues managed by a specific user.
+     * 
+     * @param User $manager The manager being searched
+     * @return Collection|Error A collection of venues managed by target user or Excemption if not found. 
      */
     public function getVenuesForManager(User $manager): Collection
     {
@@ -356,9 +356,8 @@ class VenueService {
     /**
      * Gets the venues assigned to the provided department
      *
-     * @param Department $department
-     * @return Collection
-     * @throws Exception
+     * @param Department $department The department being searched
+     * @return Collection|Error  A collection of venues managed by target deapartment or Excemption if not found. 
      */
     public function getVenuesForDepartment(Department $department): Collection
     {

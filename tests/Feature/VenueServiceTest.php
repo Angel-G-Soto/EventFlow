@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Department;
 use App\Models\Event;
+use App\Models\Role;
 use App\Models\OpeningHour;
 use App\Models\User;
 use App\Models\Venue;
@@ -18,6 +19,8 @@ use Mockery;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Illuminate\Support\Facades\Log;
+
 
 class VenueServiceTest extends TestCase
 {
@@ -25,7 +28,7 @@ class VenueServiceTest extends TestCase
 
     private VenueService $venueService;
     private MockInterface $auditServiceMock;
-    // private MockInterface $eventServiceMock;
+    private MockInterface $eventServiceMock;
 
     /**
      * Set up the test environment.
@@ -36,75 +39,79 @@ class VenueServiceTest extends TestCase
 
         // Create mocks for the service's dependencies.
         $this->auditServiceMock = Mockery::mock(AuditService::class);
-        // $this->eventServiceMock = Mockery::mock(EventService::class);
+        $this->eventServiceMock = Mockery::mock(EventService::class);
 
         // Manually create an instance of VenueService, injecting our mocks.
-        $this->venueService = new VenueService($this->auditServiceMock);
+        $this->venueService = new VenueService($this->auditServiceMock, $this->eventServiceMock);
     }
 
-    // #[Test]
-    // public function get_available_venues_filters_out_booked_and_closed_venues(): void
-    // {
-    //     // Arrange
-    //     $startTime = Carbon::parse('2025-10-20 10:00:00');
-    //     $endTime = Carbon::parse('2025-10-20 12:00:00');
-    //
-    //     // Venue 1: Available and Open
-    //     $availableVenue = Venue::factory()->create(['v_is_active' => true]);
-    //     OpeningHour::factory()->create([
-    //         'venue_id' => $availableVenue->venue_id,
-    //         'day_of_week' => 1, // Monday
-    //         'open_time' => '08:00',
-    //         'close_time' => '17:00',
-    //     ]);
+    #[Test]
+    public function get_available_venues_filters_out_booked_and_closed_venues(): void
+    {
+        // Arrange
+        $startTime = Carbon::parse('2025-10-20 10:00:00');
+        $endTime = Carbon::parse('2025-10-20 12:00:00');
+    
+        // Venue 1: Available and Open
+        $availableVenue = Venue::factory()->create(['v_is_active' => true]);
+        OpeningHour::factory()->create([
+            'venue_id' => $availableVenue->venue_id,
+            'day_of_week' => 1, // Monday
+            'open_time' => '08:00',
+            'close_time' => '17:00',
+        ]);
 
-    //     // Venue 2: Booked
-    //     $bookedVenue = Venue::factory()->create(['v_is_active' => true]);
+        // Venue 2: Booked
+        $bookedVenue = Venue::factory()->create(['v_is_active' => true]);
 
-    //     // Venue 3: Closed at the requested time
-    //     $closedVenue = Venue::factory()->create(['v_is_active' => true]);
-    //     OpeningHour::factory()->create([
-    //         'venue_id' => $closedVenue->venue_id,
-    //         'day_of_week' => 1, // Monday
-    //         'open_time' => '13:00', // Opens after the requested time
-    //         'close_time' => '20:00',
-    //     ]);
+        // Venue 3: Closed at the requested time
+        $closedVenue = Venue::factory()->create(['v_is_active' => true]);
+        OpeningHour::factory()->create([
+            'venue_id' => $closedVenue->venue_id,
+            'day_of_week' => 1, // Monday
+            'open_time' => '13:00', // Opens after the requested time
+            'close_time' => '20:00',
+        ]);
 
-    //     // Venue 4: Inactive
-    //     Venue::factory()->create(['v_is_active' => false]);
+        // Venue 4: Inactive
+        Venue::factory()->create(['v_is_active' => false]);
 
-    //     // Mock the EventService to return the ID of the booked venue.
-    //     $this->eventServiceMock
-    //         ->shouldReceive('getBookedVenueIdsAtTime')
-    //         ->once()
-    //         ->with($startTime, $endTime)
-    //         ->andReturn([$bookedVenue->venue_id]);
+        // Mock the EventService to return the ID of the booked venue.
+        $this->eventServiceMock
+            ->shouldReceive('getBookedVenueIdsAtTime')
+            ->once()
+            ->with($startTime, $endTime)
+            ->andReturn([$bookedVenue->venue_id]);
 
-    //     // Act
-    //     $availableVenues = $this->venueService->getAvailableVenues($startTime, $endTime);
+        // Act
+        $availableVenues = $this->venueService->getAvailableVenues($startTime, $endTime);
 
-    //     // Assert
-    //     $this->assertCount(1, $availableVenues);
-    //     $this->assertTrue($availableVenues->contains($availableVenue));
-    //     $this->assertFalse($availableVenues->contains($bookedVenue));
-    //     $this->assertFalse($availableVenues->contains($closedVenue));
-    // }
+        // Assert
+        $this->assertCount(1, $availableVenues);
+        $this->assertTrue($availableVenues->contains($availableVenue));
+        $this->assertFalse($availableVenues->contains($bookedVenue));
+        $this->assertFalse($availableVenues->contains($closedVenue));
+    }
 
-    // #[Test]
-    // public function assign_manager_updates_venue_audits_and_reroutes_requests(): void
-    // {
-    //     $admin = User::factory()->create()->assignRole('system-admin');
-    //     $oldManager = User::factory()->create();
-    //     $newManager = User::factory()->create();
-    //     $venue = Venue::factory()->create(['manager_id' => $oldManager->user_id]);
+    #[Test]
+    public function assign_manager_updates_venue_audits_and_reroutes_requests(): void
+    {
+        $adminRole = Role::factory()->create(['r_name' => 'System Admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('system-admin');
+        Log::debug('Debugging', ['var' => (string)$admin->is_admin]);
 
-    //     $this->auditServiceMock->shouldReceive('logAdminAction')->once();
-    //     $this->eventServiceMock->shouldReceive('reroutePendingVenueApprovals')->once()->with($venue->venue_id, $oldManager->user_id, $newManager->user_id);
+        $oldManager = User::factory()->create();
+        $newManager = User::factory()->create();
+        $venue = Venue::factory()->create(['manager_id' => $oldManager->user_id]);
 
-    //     $this->venueService->assignManager($venue, $newManager, $admin);
+        $this->auditServiceMock->shouldReceive('logAdminAction')->once();
+        $this->eventServiceMock->shouldReceive('reroutePendingVenueApprovals')->once()->with($venue->venue_id, $oldManager->user_id, $newManager->user_id);
 
-    //     $this->assertEquals($newManager->user_id, $venue->fresh()->manager_id);
-    // }
+        $this->venueService->assignManager($venue, $newManager, $admin);
+
+        $this->assertEquals($newManager->user_id, $venue->fresh()->manager_id);
+    }
     
     #[Test]
     public function update_or_create_from_import_data_creates_new_venue(): void
