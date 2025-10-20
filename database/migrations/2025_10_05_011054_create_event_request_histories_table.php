@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('event_id')->constrained('events');
             $table->foreignId('user_id')->constrained('users');
             $table->string('eh_action');
-            $table->comment('eh_comment');
+            $table->text('eh_comment');
             $table->timestamps();
             $table->softDeletes();
         });

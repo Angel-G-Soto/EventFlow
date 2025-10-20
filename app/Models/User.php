@@ -24,6 +24,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         /*'name',*/
+        'department_id',
         'email',
         'password',
         'first_name',
@@ -67,7 +68,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Relationship between the Venue and Department
+     * Relationship between the User and Department
      * @return BelongsTo
      */
     public function department(): BelongsTo
@@ -75,8 +76,30 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
+    /**
+     * Relationship between the User and Venue
+     * @return HasMany
+     */
     public function manages(): HasMany
     {
-        return $this->hasMany(Venue::class);
+        return $this->hasMany(Venue::class, 'manager_id');
+    }
+
+    /**
+     * Relation between User and Event Request History
+     * @return HasMany
+     */
+    public function requestActionLog(): HasMany
+    {
+        return $this->hasMany(EventRequestHistory::class);
+    }
+
+    /**
+     * Relation between User and Events
+     * @return HasMany
+     */
+    public function requests(): HasMany
+    {
+        return $this->hasMany(Event::class, 'creator_id');
     }
 }

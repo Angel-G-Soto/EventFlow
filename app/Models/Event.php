@@ -35,7 +35,6 @@ class Event extends Model
         'e_advisor_phone',
         'e_organization_name',
         'e_title',
-        'e_type',
         'e_description',
         'e_status',
         'e_status_code',
@@ -45,8 +44,6 @@ class Event extends Model
         'e_student_id',
         'e_student_phone',
         'e_guests',
-        'e_alcohol_policy_agreement',
-        'e_cleanup_policy_agreement',
     ];
 
     /**
@@ -62,7 +59,7 @@ class Event extends Model
      */
     public function requester(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'creator_id');
     }
 
     /**

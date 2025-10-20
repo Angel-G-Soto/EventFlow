@@ -21,7 +21,7 @@ class VenueFactory extends Factory
     public function definition(): array
     {
         return [
-            'v_name' => fake()->company() . ' Hall',
+            'v_name' => fake()->company(),
             'v_code' => fake()->bothify('V??##'),
             //'v_department' => fake()->word(),
             'v_features' => fake()->numberBetween(0000, 9999),

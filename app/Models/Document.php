@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Document extends Model
 {
+    use HasFactory;
     /**
      * The primary key associated with the table.
      *
@@ -26,6 +28,7 @@ class Document extends Model
      * @var string[]
      */
     protected $fillable = [
+        'event_id',
         'd_name',
         'd_file_path',
     ];

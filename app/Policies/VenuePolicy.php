@@ -48,11 +48,9 @@ class VenuePolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Venue $venue): bool
+    public function delete(User $user): bool
     {
-        return $user->hasRole('system-admin')
-            || ($user->hasRole('department-director')
-                && $user->department_id == $venue->department_id);
+        return $user->roleAssignment->role->r_name == 'system-admin';
     }
 
     /**

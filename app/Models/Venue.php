@@ -37,10 +37,8 @@ class Venue extends Model
         'v_features',
         'v_capacity',
         'v_test_capacity',
-        'use_requirement_id',
         'department_id',
-        'manager_id',
-        'id'
+        'manager_id'
     ];
 
     /**
