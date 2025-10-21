@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Venue;
-use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
 use App\Services\VenueService;
 use App\Policies\VenuePolicy;
+use Illuminate\Support\Facades\Auth;
 
 class VenueController extends Controller
 {
@@ -18,9 +18,9 @@ class VenueController extends Controller
     {
         // Policy
 
-        $venues = new VenueService()->getAllVenues(['department_id'=>Auth::user()->department_id]);
+        //$venues = new VenueService()->getAllVenues(['department_id' => Auth::user()->department_id]);
 
-        return view('venues.index', ['venues' => $venues]);
+        return view('venues.index', /*['venues' => $venues]*/);
     }
 
     /**
@@ -28,9 +28,7 @@ class VenueController extends Controller
      */
     public function create()
     {
-        // Policy
-
-        return view('venues.create');
+        //
     }
 
     /**
@@ -62,7 +60,7 @@ class VenueController extends Controller
 
         $venue = VenueService::getVenueById($venue_id);
 
-        return view('venues.show', ['venue' => $venue]);
+        return view('venues.edit', ['venue' => $venue]);
     }
 
     /**
@@ -87,7 +85,7 @@ class VenueController extends Controller
 
         $venue = VenueService::getVenueById($venue_id);
 
-        $requirements = $venue->requirements; //Create service
+        $requirements = VenueService::getUseRequirements($venue_id);
 
         return view('venues.showRequirements', ['venue' => $venue, 'requirements' => $requirements]);
     }
@@ -98,7 +96,7 @@ class VenueController extends Controller
 
         $venue = VenueService::getVenueById($venue_id);
 
-        $requirements = $venue->requirements; //Create service
+        $requirements = VenueService::getUseRequirements($venue_id);
 
         return view('venues.editRequirements', ['venue' => $venue, 'requirements' => $requirements]);
     }

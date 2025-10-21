@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('use_requirement_id')->nullable()->change();
         });
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('department_id')->constrained('departments');
+            $table->foreignId('department_id')->nullable()->constrained('departments');
         });
     }
 

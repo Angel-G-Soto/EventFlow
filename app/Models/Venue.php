@@ -47,7 +47,7 @@ class Venue extends Model
      */
     public function requirements(): HasMany
     {
-        return $this->HasMany(UseRequirement::class);
+        return $this->hasMany(UseRequirement::class, 'venue_id');
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Venue;
 use Exception;
 use \Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 use Throwable;
 
@@ -105,10 +106,11 @@ class CategoryService {
         {
             try {
                 if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
-
-                return Category::find($id)->requirements;
+                $category = Category::find($id);
+                if ($category == null) {throw new ModelNotFoundException();}
+                return $category->requirements;
             }
-            catch (InvalidArgumentException $exception) {throw $exception;}
+            catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
             catch (Throwable $exception) {throw new Exception('We were not able to find the requirements for the category.');}
         }
     }

@@ -328,15 +328,16 @@ class VenueService {
      * @return Collection
      * @throws Exception
      */
-    public static function getUseRequirement(int $id): Collection
+    public static function getUseRequirements(int $id): Collection
     {
         {
             try {
                 if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
-
-                return Venue::find($id)->requirements;
+                $venue = Venue::find($id);
+                if ($venue == null) {throw new ModelNotFoundException();}
+                return $venue->requirements;
             }
-            catch (InvalidArgumentException $exception) {throw $exception;}
+            catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
             catch (Throwable $exception) {throw new Exception('We were not able to find the requirements for the venue.');}
         }
     }

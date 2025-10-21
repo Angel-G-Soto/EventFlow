@@ -1,9 +1,10 @@
 <?php
 namespace App\Services;
-use App\Models\Category;
 use App\Models\Department;
+use App\Models\User;
 use Exception;
 use \Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 use Throwable;
 
@@ -115,10 +116,11 @@ class DepartmentService {
         {
             try {
                 if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
-
-                return Department::find($id)->requirements;
+                $department = Department::find($id);
+                if ($department == null) {throw new ModelNotFoundException();}
+                return $department->requirements;
             }
-            catch (InvalidArgumentException $exception) {throw $exception;}
+            catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
             catch (Throwable $exception) {throw new Exception('We were not able to find the requirements for the department.');}
         }
     }
