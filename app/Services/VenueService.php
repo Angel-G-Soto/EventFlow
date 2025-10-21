@@ -1,5 +1,6 @@
 <?php
 namespace App\Services;
+use App\Models\Category;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\Event;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
+use Throwable;
 
 class VenueService {
     /**
@@ -262,11 +264,14 @@ class VenueService {
      * Attributes must be given on the following array format:
      *
      * [
-     *    'v_name' => value1
-     *    'v_code' => value2
-     *    'v_features' => value3
-     *    'v_capacity' => value4
-     *    'v_test_capacity' => value5
+     *    [
+     *      'v_name' => value1
+     *     'v_code' => value2
+     *     'v_features' => value3
+     *     'v_capacity' => value4
+     *     'v_test_capacity' => value5
+     *     ],
+     *      ...
      * ]
      *
      * @param Venue $venue
@@ -314,6 +319,26 @@ class VenueService {
             return Venue::where('deleted_at', null)->where('department_id', $department->id)->get();
         }
         catch (\Throwable $exception) {throw new Exception('Unable to get the venues of the department.');}
+    }
+
+    /**
+     * Returns the use requirements of the specified venue
+     *
+     * @param int $id
+     * @return Collection
+     * @throws Exception
+     */
+    public static function getUseRequirement(int $id): Collection
+    {
+        {
+            try {
+                if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
+
+                return Venue::find($id)->requirements;
+            }
+            catch (InvalidArgumentException $exception) {throw $exception;}
+            catch (Throwable $exception) {throw new Exception('We were not able to find the requirements for the venue.');}
+        }
     }
 
 }

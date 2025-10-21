@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('department_id')->nullable()->constrained('departments');
             $table->foreignId('venue_id')->nullable()->constrained('venues');
+            $table->foreignId('category_id')->nullable()->constrained('categories');
             $table->text('ur_document_link')->nullable();
             $table->string('ur_name')->nullable();
             $table->text('ur_description')->nullable();

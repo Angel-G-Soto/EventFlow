@@ -56,4 +56,13 @@ class UseRequirement extends Model
     {
         return $this->belongsTo(Department::class);
     }
+
+    /**
+     * Relationship between the Use Requirement and Category
+     * @return BelongsTo
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(UseRequirement::class);
+    }
 }
