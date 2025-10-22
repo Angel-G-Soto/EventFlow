@@ -14,18 +14,15 @@ class DepartmentService {
      * Returns the department that has the provided id
      *
      * @param int $id
-     * @return Department
-     * @throws Exception
+     * @return Department|null
      */
-    public static function getDepartmentByID(int $id): Department
+    public static function getDepartmentByID(int $id): Department|null
     {
-        try {
-            if ($id < 0 || $id == null) throw new \InvalidArgumentException();
-
-            return Department::find($id);
+        if ($id < 0) {
+            throw new \InvalidArgumentException('Department ID must be a positive integer.');
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('We were not able to find a department with that ID.');}
+
+        return Department::find($id);
     }
 
     /**
@@ -39,7 +36,7 @@ class DepartmentService {
         try {
             return Department::all();
         }
-        catch (Throwable $exception) {throw new Exception('We were not able to find a department with that ID.');}
+        catch (Throwable $exception) {throw new Exception('Unable to retrieve departments.');}
     }
 
     /**
@@ -61,6 +58,17 @@ class DepartmentService {
     public static function updateOrCreateDepartment(array $departmentData): Collection
     {
         try {
+            // Validate the input data
+            foreach ($departmentData as $index => $department) {
+                if (!isset($department['d_name'], $department['d_code'])) {
+                    throw new InvalidArgumentException("Missing required keys 'd_name' or 'd_code' in department at index $index.");
+                }
+
+                if (!is_string($department['d_name']) || !is_string($department['d_code'])) {
+                    throw new InvalidArgumentException("Invalid data types in department at index $index. Both 'd_name' and 'd_code' must be strings.");
+                }
+            }
+
             // Iterate through the array
             $updatedDepartments = new Collection();
             foreach ($departmentData as $department) {
@@ -96,12 +104,13 @@ class DepartmentService {
     public static function deleteDepartment(int $id): bool
     {
         try {
-            if ($id < 0 || $id == null) throw new InvalidArgumentException();
+            if ($id < 0) throw new InvalidArgumentException('Department ID must be a positive integer.');
 
-            return Department::find($id)->delete();
+            return Department::findOrFail($id)->delete();
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('We were not able to delete the specified department.');}
+        catch (ModelNotFoundException $exception) {throw $exception;}
+        catch (Throwable $exception) {throw new Exception('Unable to delete the specified department.');}
     }
 
     /**
@@ -115,13 +124,13 @@ class DepartmentService {
     {
         {
             try {
-                if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
-                $department = Department::find($id);
-                if ($department == null) {throw new ModelNotFoundException();}
+                if ($id < 0) {throw new InvalidArgumentException('Department ID must be a positive integer.');}
+                $department = Department::findOrFail($id);
                 return $department->requirements;
             }
-            catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
-            catch (Throwable $exception) {throw new Exception('We were not able to find the requirements for the department.');}
+            catch (InvalidArgumentException $exception) {throw $exception;}
+            catch (ModelNotFoundException $exception) {throw $exception;}
+            catch (Throwable $exception) {throw new Exception('Unable to retrieve department requirements.');}
         }
     }
 
@@ -132,10 +141,35 @@ class DepartmentService {
 //        $venue->save();
 //    }
 //
-    public static function updateUserDepartment(Department $department, User $manager): void
+
+    /**
+     * The method assigns the given department to the given user
+     *
+     * @param Department $department
+     * @param User $manager
+     * @return void
+     * @throws Exception
+     */
+    public static function updateUserDepartment(Department $department, User $manager): User
     {
-        $manager->department_id = $department->id;
-        $manager->save();
+        try {
+            // Validate that both models exist in the database
+            if (!Department::find($department->id) || !User::find($manager->id)) {
+                throw new ModelNotFoundException('Either the department or the user does not exist in the database.');
+            }
+
+            // Update user department
+            $manager->department_id = $department->id;
+            $manager->save();
+
+            return $manager;
+        }
+        catch (ModelNotFoundException $exception) {
+            throw $exception;
+        }
+        catch (Throwable $exception) {
+            throw new \Exception('Failed to update the user(s) department.');
+        }
     }
 //
 //    public static function getDepartmentVenues(Department $department): Collection
