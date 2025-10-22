@@ -25,8 +25,8 @@ return new class extends Migration
             $table->integer('v_capacity')->default(0);
             $table->integer('v_test_capacity')->default(0);
             $table->boolean('v_is_active')->default(true);
-            $table->time('open_time');
-            $table->time('close_time');
+            $table->time('open_time')->nullable();
+            $table->time('close_time')->nullable();
 
             // --- Tiemstamps & Deletes
             $table->timestamps();
