@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use DateTime;
-use Illuminate\Support\Str;
+use LogicException;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,28 +18,12 @@ class Event extends Model
     protected $table = 'event';              // @var string The table associated with the model.
     protected $primaryKey = 'event_id';      // @var string The primary key associated with the table.
 
-    protected static function booted()
-    {
-        static::creating(function ($event) {
-            if (empty($event->e_status_code) && !empty($event->e_status)) {
-                $event->e_status_code = Str::slug($event->e_status);
-            }
-        });
-
-        static::updating(function ($event) {
-            if ($event->isDirty('e_status')) {
-                $event->e_status_code = Str::slug($event->e_status);
-            }
-        });
-    }
-
     /**
      * The attributes that are mass assignable.
      * @var string[]
      */
     protected $fillable = [
         'creator_id',             // FK (Static) to User
-        'current_approver_id',    // FK (Dynamic) to User
         'venue_id',               // FK to Venue
         'event_type_id',          // FK to EventType
         
@@ -59,7 +44,10 @@ class Event extends Model
         'e_organization_nexo_name',
         'e_advisor_name',
         'e_advisor_email',
-        'e_advisor_phone'
+        'e_advisor_phone',
+        'handles_food',
+        'use_institutional_funds',
+        'external_guest'
     ];
 
     /**
@@ -68,9 +56,9 @@ class Event extends Model
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
-        'sells_food' => 'boolean',
-        'uses_institutional_funds' => 'boolean',
-        'has_external_guest' => 'boolean',
+        'handles_food' => 'boolean',
+        'use_institutional_funds' => 'boolean',
+        'external_guest' => 'boolean',
     ];
 
     /**
@@ -87,14 +75,6 @@ class Event extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'creator_id', 'user_id');
-    }
-
-    /**
-     * Get the user who is currently assigned to approve the request.
-     */
-    public function currentApprover(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'current_approver_id', 'user_id');
     }
 
      /**
@@ -134,15 +114,6 @@ class Event extends Model
     }
 
     /**
-     * Scope a query to only include events awaiting approval from a specific user.
-     * Usage: EventRequest::awaitingApprovalFrom($user)->get();
-     */
-    public function scopeAwaitingApprovalFrom(Builder $query, User $user): Builder
-    {
-        return $query->where('current_approver_id', $user->user_id);
-    }
-
-      /**
      * Scope a query to only include upcoming, approved events.
      * Usage: EventRequest::upcoming()->get();
      */
@@ -161,5 +132,35 @@ class Event extends Model
 
         // The logic to check for any overlap between the two time ranges.
         return $startTime < $eventEnd && $endTime > $eventStart;
+    }
+
+    
+    /**
+     * Get the user currently responsible for the event's approval process.
+     *
+     * @return User
+     * @throws LogicException If the event is in a terminal state (e.g., Approved, Denied).
+     */
+    protected function currentApprover(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if (!$this->is_pending) {
+                    throw new LogicException(
+                        "Cannot get a current approver for an event with a terminal status '{$this->e_status}'."
+                    );
+                }
+
+                $latestHistoryEntry = $this->history()->latest()->first();
+
+                if (!$latestHistoryEntry || !$latestHistoryEntry->actor) {
+                    throw new LogicException(
+                        "Event ID {$this->event_id} is pending but has no valid history or approver."
+                    );
+                }
+
+                return $latestHistoryEntry->actor;
+            }
+        );
     }
 }

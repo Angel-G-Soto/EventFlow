@@ -17,7 +17,7 @@ class EventHistory extends Model
     protected $fillable = [
         'event_id',         // FK to Event
         'user_id',          // FK to User
-        'eh_action',
+        'eh_status',
         'eh_comment',
     ];
 
@@ -55,7 +55,7 @@ class EventHistory extends Model
      */
     public function scopeForEvent(Builder $query, Event $event): Builder
     {
-       return $query->where('event_id', $event->er_id);
+       return $query->where('event_id', $event->event_id);
     }
 
     /**

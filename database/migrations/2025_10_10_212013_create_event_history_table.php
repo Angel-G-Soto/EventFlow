@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
 
             // --- Event History Details -- 
-            $table->string('eh_action');
+            $table->string('eh_status');
             $table->string('eh_comment');
 
             // --- Timestamps ---

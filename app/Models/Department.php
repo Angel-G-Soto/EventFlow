@@ -11,23 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Department extends Model
 {
     use HasFactory;
+
     protected $table = 'department';                // @var string The table associated with the model.
     protected $primaryKey = 'department_id';        // @var string The primary key associated with the table.
-    
-    protected static function booted()
-    {
-        static::creating(function ($department) {
-            if (empty($department->d_code) && !empty($department->d_name)) {
-                $department->d_code = Str::slug($department->d_name);
-            }
-        });
-
-        static::updating(function ($department) {
-            if ($department->isDirty('e_status')) {
-                $department->e_status_code = Str::slug($department->e_status);
-            }
-        });
-    }
 
     /**
      * The attributes that are mass assignable.
@@ -66,8 +52,9 @@ class Department extends Model
     {
         // Find the first user in this department who has the 'department-director' role.
         return $this->users()->whereHas('roles', function ($query) {
-            $query->where('r_code', 'department-director');
+            $query->where('r_code', 'department-director')->orWhere('r_name', 'Department Director');
         })->first();
+        
     }
 
     /**
@@ -78,7 +65,12 @@ class Department extends Model
      */
     public function scopeFindByIdentifier(Builder $query, string $deptIndentifier): Builder
     {
-        return $query->where('d_code', $deptIndentifier)->orWhere('d_name', $deptIndentifier);
+        return $this->users()
+            ->where(function ($query) use ($deptIndentifier) {
+                $query->where('d_code', $deptIndentifier)
+                    ->orWhere('d_name', $deptIndentifier);
+                })
+            ->exists();   
     }
 
      /**

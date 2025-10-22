@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Venue extends Model
@@ -31,7 +30,9 @@ class Venue extends Model
         'v_features',
         'v_capacity',
         'v_test_capacity',
-        'v_is_active'
+        'v_is_active',
+        'open_time',
+        'close_time'
     ];
 
      /**
@@ -40,6 +41,8 @@ class Venue extends Model
      */
     protected $casts = [
         'v_is_active' => 'boolean',
+        'open_time' => 'datetime:H:i:s',
+        'close_time' => 'datetime:H:i:s'
     ];
 
     /**
@@ -76,74 +79,6 @@ class Venue extends Model
     public function events(): HasMany
     {
         return $this->hasMany(Event::class,'venue_id','venue_id');
-    }
-
-    /**
-     * Relationship of opening hours for the venue.
-     */
-    public function openingHours(): HasMany
-    {
-        return $this->hasMany(OpeningHour::class, 'venue_id', 'venue_id');
-    }
-
-    /**
-     * The event types that are EXCLUDED from this venue.
-     * This defines the many-to-many relationship via the pivot table.
-     * @return BelongsToMany
-     */
-    public function excludedEventTypes(): BelongsToMany
-    {
-        return $this->belongsToMany(EventType::class, 'venue_event_type_exclusions', 'venue_id', 'event_type_id');
-    }
-
-    /**
-     * Checks if the venue is open during a specified time window.
-     *
-     * @param DateTime $startTime The desired start time for an event.
-     * @param DateTime $endTime The desired end time for an event.
-     * @return bool
-     */
-    public function isAvailableDuring(DateTime $startTime, DateTime $endTime): bool
-    {
-        // Carbon is a date/time library included with Laravel.
-        $start = Carbon::instance($startTime);
-        $end = Carbon::instance($endTime);
-
-        // Get the day of the week (Monday = 1, Sunday = 7)
-        $dayOfWeek = $start->dayOfWeekIso;
-
-        // Find the opening hours for that specific day.
-        $hoursForDay = $this->openingHours()->where('day_of_week', $dayOfWeek)->first();
-
-        // If no record exists, the venue is closed on that day.
-        if (!$hoursForDay) {
-            return false;
-        }
-
-        // Check if the event's start time is on or after the venue's open time,
-        // and the event's end time is on or before the venue's close time.
-        // We compare only the time part of the dates.
-        return $start->format('H:i:s') >= $hoursForDay->open_time &&
-               $end->format('H:i:s') <= $hoursForDay->close_time;
-    }
-
-    /**
-     * Checks if the venue is currently open right now.
-     * @return bool
-     */
-    public function isOpenNow(): bool
-    {
-        $now = Carbon::now();
-        $dayOfWeek = $now->dayOfWeekIso;
-        $currentTime = $now->format('H:i:s');
-
-        $hoursForToday = $this->openingHours()->where('day_of_week', $dayOfWeek)->first();
-
-        if (!$hoursForToday) {
-            return false;
-        }
-
-        return $currentTime >= $hoursForToday->open_time && $currentTime <= $hoursForToday->close_time;
     }
 
     public function getManagerNameAttribute(): string
@@ -190,14 +125,46 @@ class Venue extends Model
     }
 
     /**
-     * A business logic method to check if a specific event type is disallowed.
-     * This makes the service layer code much cleaner.
+     * Checks if the venue is open at a specific point in time.
      *
-     * Usage: if ($venue->isEventTypeExcluded($eventType)) { ... }
+     * @param DateTime $dateTime The time to check.
+     * @return bool
      */
-    public function isEventTypeExcluded(EventType $eventType): bool
+    public function isOpenAt($dateTime): bool
     {
-        // This checks if a record exists in the pivot table for this venue and event type.
-        return $this->excludedEventTypes()->wherePivot('event_type_id', $eventType->event_type_id)->exists();
+        // If no hours are set, assume it's always open.
+        if (!$this->open_time || !$this->close_time) {
+            return true;
+        }
+
+        // We use Carbon for cleaner time comparisons.
+        $timeToCheck = Carbon::parse($dateTime);
+
+        // Check if the time falls between the opening and closing hours.
+        return $timeToCheck->isBetween($this->open_time, $this->close_time);
+    }
+
+    /**
+     * Checks if the venue is available for a given time interval.
+     * A venue is available if it is open AND has no booking conflicts.
+     *
+     * @param DateTime $startTime The start of the interval.
+     * @param DateTime $endTime The end of the interval.
+     * @return bool
+     */
+    public function isAvailable($startTime, $endTime): bool
+    {
+        // 1. Check if the venue is open during the entire interval.
+        if (!$this->isOpenAt($startTime) || !$this->isOpenAt($endTime)) {
+            return false;
+        }
+
+        // 2. Check if there are any conflicting approved events.
+        if ($this->hasConflict($startTime, $endTime)) {
+            return false;
+        }
+
+        // If both checks pass, the venue is available.
+        return true;
     }
 }

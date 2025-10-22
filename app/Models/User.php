@@ -81,14 +81,6 @@ class User extends Authenticatable
     {
         return $this->hasMany(Event::class, 'e_creator_id','user_id');
     }
-
-    /**
-     * Get the event requests currently assigned to the user for approval.
-     */
-    public function assignedEventRequests(): HasMany
-    {
-        return $this->hasMany(Event::class, 'e_current_approver_id','user_id');
-    }
     
     /**
      * A business logic method to check if this user is the assigned manager of a specific venue.
@@ -130,5 +122,43 @@ class User extends Authenticatable
     public function scopeAdmins(Builder $query): Builder
     {
         return $query->whereHas('roles', fn ($q) => $q->where('r_code', 'system-admin')->orWhere('r_name', 'System Administrator'));
+    }
+
+    /**
+     * Get the events that are currently pending this user's approval.
+     *
+     * @return HasMany
+     */
+    public function pendingApprovals(): HasMany
+    {
+        $terminalStates = ['Approved', 'Denied', 'Canceled', 'Withdrawn', 'Completed'];
+
+        // This relationship finds all events...
+        return $this->hasMany(Event::class, 'e_creator_id', 'user_id')
+            ->join('event_history', 'event.event_id', '=', 'event_history.event_id')
+
+            // ...that are not in a terminal state...
+            ->whereNotIn('event.e_status', $terminalStates)
+
+            // ...and where this user is the actor of the LATEST history entry for that event.
+            ->where('event_history.user_id', $this->user_id)
+            ->whereIn('event_history.eh_id', function ($query) {
+                $query->selectRaw('MAX(eh_id)')
+                    ->from('event_history')
+                    ->groupBy('event_id');
+            });
+    }
+
+    /**
+     * Get the event requests created by the user that are still pending.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function createdPendingEvents(): HasMany
+    {
+        $terminalStates = ['Approved', 'Denied', 'Canceled', 'Withdrawn', 'Completed'];
+
+        // Reuse the existing 'createdEventRequests' relationship and add a condition.
+        return $this->createdEventRequests()->whereNotIn('e_status', $terminalStates);
     }
 }

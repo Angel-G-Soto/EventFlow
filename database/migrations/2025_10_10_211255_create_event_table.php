@@ -16,7 +16,6 @@ return new class extends Migration
 
             // --- Foreign Keys -- 
             $table->foreignId('creator_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
-            $table->foreignId('current_approver_id')->nullable()->constrained('user', 'user_id')->onDelete('set null');
             $table->foreignId('venue_id')->constrained('venue', 'venue_id');
             $table->foreignId('event_type_id')->constrained('event_type', 'event_type_id');
 
@@ -24,14 +23,13 @@ return new class extends Migration
             $table->string('e_student_id');
             $table->string('e_student_phone');
             $table->string('e_title');
-            $table->text('e_description')->nullable();
+            $table->text('e_description');
             $table->string('e_status');
-            $table->string('e_status_code');
             $table->dateTime('e_start_date');
             $table->dateTime('e_end_date');
-            $table->boolean('sells_food');
-            $table->boolean('uses_instutional_funds');
-            $table->boolean('has_external_guest');
+            $table->boolean('handles_food');
+            $table->boolean('use_instutional_funds');
+            $table->boolean('external_guest');
             
             // For "just-in-time" Nexo data (denormalized)
             $table->string('organization_nexo_id')->nullable();
