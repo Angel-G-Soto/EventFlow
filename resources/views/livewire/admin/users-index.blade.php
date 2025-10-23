@@ -3,8 +3,11 @@
     <h1 class="h4 mb-0">User Management</h1>
 
     <div class="d-none d-md-flex gap-2">
-      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#inviteModal">
-        <i class="bi bi-person-plus me-1"></i> Invite User
+      <button class="btn btn-outline-success btn-sm" wire:click="restoreUsers" type="button">
+        <i class="bi bi-arrow-clockwise me-1"></i> Restore Deleted
+      </button>
+      <button class="btn btn-primary btn-sm" wire:click="openCreate" type="button">
+        <i class="bi bi-person-plus me-1"></i> Add User
       </button>
     </div>
   </div>
@@ -30,18 +33,19 @@
           <label class="form-label">Role</label>
           <select class="form-select" wire:model.live="role">
             <option value="">All roles</option>
-            <option>Student</option>
-            <option>Approver</option>
-            <option>Space Manager</option>
+            <option>Student Org Rep</option>
+            <option>Student Org Advisor</option>
+            <option>Venue Manager</option>
+            <option>DSCA Staff</option>
+            <option>Dean of Administration</option>
             <option>Admin</option>
           </select>
         </div>
 
-
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button
             class="btn btn-outline-secondary w-100"
-            wire:click="$set('search','');$set('role','')"
+            wire:click="clearFilters"
             type="button"
           >
             <i class="bi bi-x-circle me-1"></i> Clear
@@ -54,13 +58,7 @@
   {{-- Bulk + page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-2">
     <div class="btn-group">
-      <button class="btn btn-outline-secondary btn-sm" wire:click="bulkActivate" @disabled(empty($selected ?? []))>
-        <i class="bi bi-check2-circle me-1"></i> Activate
-      </button>
-      <button class="btn btn-outline-secondary btn-sm" wire:click="bulkSuspend" @disabled(empty($selected ?? []))>
-        <i class="bi bi-slash-circle me-1"></i> Suspend
-      </button>
-      <button class="btn btn-outline-danger btn-sm" wire:click="bulkDelete" @disabled(empty($selected ?? []))>
+      <button class="btn btn-outline-danger btn-sm" wire:click="bulkDelete" @disabled(empty($selected ?? [])) type="button">
         <i class="bi bi-trash3 me-1"></i> Delete
       </button>
     </div>
@@ -83,9 +81,11 @@
           <tr>
             <th style="width:36px;">
               <input
+              id="master"
                 type="checkbox"
                 class="form-check-input"
                 wire:change="selectAllOnPage($event.target.checked, @json($visibleIds ?? []))"
+                wire:key="select-all-{{ $page }}"
               >
             </th>
             <th>Name</th>
@@ -104,6 +104,7 @@
                   class="form-check-input"
                   wire:change="toggleSelect({{ $u['id'] }}, $event.target.checked)"
                   @checked(data_get($selected ?? [], $u['id'], false))
+                  wire:key="select-{{ $u['id'] }}-{{ $page }}"
                 >
               </td>
               <td class="fw-medium">{{ $u['name'] }}</td>
@@ -139,13 +140,13 @@
         <small class="text-secondary">{{ $rows->total() }} result{{ $rows->total()===1?'':'s' }}</small>
         <div>
           <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary" wire:click="$set('page',1)" @disabled($rows->currentPage()===1)>&laquo;</button>
-            <button class="btn btn-outline-secondary" wire:click="$set('page', max(1, $page-1))" @disabled($rows->currentPage()===1)>&lsaquo;</button>
+            <button class="btn btn-outline-secondary" wire:click="$set('page', 1)" @disabled($rows->currentPage()===1)>&laquo;</button>
+            <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() - 1 }})" @disabled($rows->currentPage()===1)>&lsaquo;</button>
             <span class="btn btn-outline-secondary disabled">
               Page {{ $rows->currentPage() }} / {{ $rows->lastPage() }}
             </span>
-            <button class="btn btn-outline-secondary" wire:click="$set('page', min($rows->lastPage(), $page+1))" @disabled($rows->currentPage()===$rows->lastPage())>&rsaquo;</button>
-            <button class="btn btn-outline-secondary" wire:click="$set('page', $rows->lastPage())" @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
+            <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() + 1 }})" @disabled($rows->currentPage()===$rows->lastPage())>&rsaquo;</button>
+            <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->lastPage() }})" @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
           </div>
         </div>
       @else
@@ -159,7 +160,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <form class="modal-content" wire:submit.prevent="save">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>Edit User</h5>
+          <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>{{ $editId ? 'Edit User' : 'Add User' }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
                   wire:click="$set('editId', null)"></button>
         </div>
@@ -168,19 +169,33 @@
           <div class="row g-3">
             <div class="col-12 col-md-6">
               <label class="form-label">Name</label>
-              <input type="text" class="form-control" required wire:model.live="editName">
+              <input type="text" class="form-control @error('editName') is-invalid @enderror" 
+                     required wire:model.live="editName" 
+                     pattern="[a-zA-Z\s]+" 
+                     placeholder="Full Name">
+              @error('editName')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Email</label>
-              <input type="email" class="form-control" required wire:model.live="editEmail">
+              <input type="email" class="form-control @error('editEmail') is-invalid @enderror" 
+                     required wire:model.live="editEmail" 
+                     pattern=".*@upr\.edu$" 
+                     placeholder="username@upr.edu">
+              @error('editEmail')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Role</label>
               <select class="form-select" required wire:model.live="editRole">
-                <option>Student</option>
-                <option>Approver</option>
-                <option>Space Manager</option>
-                <option>Admin</option>
+            <option>Student Org Rep</option>
+            <option>Student Org Advisor</option>
+            <option>Venue Manager</option>
+            <option>DSCA Staff</option>
+            <option>Dean of Administration</option>
+            <option>Admin</option>
               </select>
             </div>
           </div>
@@ -194,55 +209,76 @@
     </div>
   </div>
 
-  {{-- Invite Modal (placeholder so the header button works) --}}
-  <div class="modal fade" id="inviteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Invite User</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <input type="email" class="form-control" placeholder="email@upr.edu">
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-          <button class="btn btn-primary">Send Invite</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  {{-- Justification for save/delete --}}
+  <x-justification id="userJustify" submit="{{ $isBulkDeleting ? 'confirmBulkDelete' : ($isDeleting ? 'confirmDelete' : 'confirmSave') }}" model="justification" :showDeleteType="$isDeleting || $isBulkDeleting" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
-    <div id="appToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive">
+    <div id="userToast" class="toast text-bg-success" role="alert">
       <div class="d-flex">
-        <div class="toast-body" id="toastMsg">Saved!</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        <div class="toast-body" id="userToastMsg">Done</div>
+        <button type="button" class="btn-close  me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
   </div>
 
-  {{-- Livewire ↔ Bootstrap JS bridge --}}
   <script>
     document.addEventListener('livewire:init', () => {
-      const toastEl = document.getElementById('appToast');
+          // --- Focus-restore support (REUSABLE) ---
+    // Remembers which element had focus when a modal was opened,
+    // and returns focus to it after the modal fully closes.
+    const focusMap = new Map(); // modalId -> HTMLElement | null
 
-      Livewire.on('bs:open', ({ id }) => {
-        const el = document.getElementById(id);
-        if (el) new bootstrap.Modal(el).show();
+    function attachHiddenOnce(modalEl, modalId) {
+      const onHidden = () => {
+        const opener = focusMap.get(modalId);
+        if (opener && typeof opener.focus === 'function') {
+          // tiny delay to let backdrops/scroll lock settle
+          setTimeout(() => opener.focus(), 30);
+        }
+        focusMap.delete(modalId);
+        modalEl.removeEventListener('hidden.bs.modal', onHidden);
+      };
+      modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
+    }
+    Livewire.on('bs:open', ({ id }) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      // remember the element that currently has focus
+      const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      focusMap.set(id, opener);
+
+      // show modal
+      const modal = new bootstrap.Modal(el);
+      modal.show();
+
+      // optional: move focus into the modal (first focusable control)
+      queueMicrotask(() => {
+        const first = el.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
+        if (first && typeof first.focus === 'function') first.focus();
       });
 
-      Livewire.on('bs:close', ({ id }) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const inst = bootstrap.Modal.getInstance(el);
-        if (inst) inst.hide();
-      });
-
+      // ensure we restore focus when it fully hides (X, backdrop, ESC, or programmatic)
+      attachHiddenOnce(el, id);
+    });      
+      Livewire.on('bs:close', ({ id }) => { const el = document.getElementById(id); 
+        if(!el) return; const m = bootstrap.Modal.getInstance(el); 
+        if(m) m.hide(); });
       Livewire.on('toast', ({ message }) => {
-        document.getElementById('toastMsg').textContent = message || 'Done';
-        new bootstrap.Toast(toastEl, { delay: 2200 }).show();
+        document.getElementById('userToastMsg').textContent = message || 'Done';
+        const toastEl = document.getElementById('userToast');
+        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 2200 });
+        toast.show();
+      });
+          // NEW: keep the master checkbox correct (checked/indeterminate) after any render
+      Livewire.on('selectionHydrate', ({ visible, selected }) => {
+        const master = document.getElementById('master');
+        if (!master) return;
+        const set = new Set(selected);
+        const onPageSelected = visible.filter(id => set.has(id));
+        master.indeterminate = onPageSelected.length > 0 && onPageSelected.length < visible.length;
+        master.checked = visible.length > 0 && onPageSelected.length === visible.length;
       });
     });
   </script>

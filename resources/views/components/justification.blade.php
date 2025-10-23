@@ -9,6 +9,23 @@
       </div>
 
       <div class="modal-body">
+        @if(isset($showDeleteType) && $showDeleteType)
+        <div class="mb-3">
+          <label class="form-label">Delete Type</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" value="soft" wire:model.live="deleteType" id="soft">
+            <label class="form-check-label" for="soft">
+              <strong>Soft Delete</strong> - User can be restored later
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" value="hard" wire:model.live="deleteType" id="hard">
+            <label class="form-check-label" for="hard">
+              <strong>Hard Delete</strong> - Permanently remove user
+            </label>
+          </div>
+        </div>
+        @endif
         <div class="mb-3">
           <label class="form-label">Reason</label>
           <textarea class="form-control" rows="4" required

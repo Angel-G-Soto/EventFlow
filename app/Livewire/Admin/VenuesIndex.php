@@ -8,7 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
-class VenueIndex extends Component
+class VenuesIndex extends Component
 {
     // Filters
     public string $search = '';
@@ -23,10 +23,9 @@ class VenueIndex extends Component
     // Selection + edit modal
     public ?int $editId = null;
     public string $vName = '';
-    public string $vBuilding = '';
+    public string $vDepartment = '';
     public string $vRoom = '';
     public ?int $vCapacity = 0;
-    public string $vDepartment = '';
     public string $vManager = '';
     public string $vStatus = 'Active';
     public array  $vFeatures = [];   // ['A/V','Wheelchair','Tiered Seating']
@@ -37,6 +36,7 @@ class VenueIndex extends Component
     public array $blackouts = [];
 
     public string $justification = '';
+    public bool $isDeleting = false;
 
     // --- Demo dataset -------------------------------------------------------
     protected function allVenues(): Collection
@@ -45,51 +45,47 @@ class VenueIndex extends Component
             [
                 'id' => 1,
                 'name' => 'Auditorium A',
-                'building' => 'Main',
+                'department' => 'Arts',
                 'room' => '101',
                 'capacity' => 300,
-                'department' => 'Arts',
                 'manager' => 'jdoe',
                 'status' => 'Active',
-                'features' => ['A/V', 'Wheelchair'],
+                'features' => ['A/V Equipment', 'Wheelchair Accessible'],
                 'availability' => 'Most weekdays 8–18'
             ],
             [
                 'id' => 2,
                 'name' => 'Lab West',
-                'building' => 'Science',
+                'department' => 'Biology',
                 'room' => 'B12',
                 'capacity' => 32,
-                'department' => 'Biology',
                 'manager' => 'mruiz',
                 'status' => 'Inactive',
-                'features' => ['A/V'],
+                'features' => ['A/V Equipment', 'Projector', 'Whiteboard'],
                 'availability' => 'Contact dept.'
             ],
             [
                 'id' => 3,
                 'name' => 'Courtyard',
-                'building' => 'North',
+                'department' => 'Facilities',
                 'room' => 'OUT',
                 'capacity' => 120,
-                'department' => 'Facilities',
                 'manager' => 'lortiz',
                 'status' => 'Active',
-                'features' => ['Open Air'],
+                'features' => ['Open Air', 'Stage/Platform', 'Sound System'],
                 'availability' => 'Evenings only'
             ],
         ]);
     }
 
-    // --- Validation rules (you asked to expand)
+    // --- Validation rules
     protected function rules(): array
     {
         return [
             'vName'      => ['required', 'string', 'max:150'],
-            'vBuilding'  => ['required', 'string', 'max:100'],
             'vRoom'      => ['required', 'string', 'max:50'],
+            'vDepartment' => ['required', 'string', 'max:120'],
             'vCapacity'  => ['required', 'integer', 'min:0'], // >= 0
-            'vDepartment' => ['nullable', 'string', 'max:120'],
             'vManager'   => ['nullable', 'string', 'max:120'],
             'vStatus'    => ['required', 'in:Active,Inactive'],
             'vFeatures'  => ['array'],
@@ -110,17 +106,15 @@ class VenueIndex extends Component
         return $this->allVenues()->filter(function ($v) use ($needle) {
             $hit = $needle === '' ||
                 str_contains(mb_strtolower($v['name']), $needle) ||
-                str_contains(mb_strtolower($v['building']), $needle) ||
-                str_contains(mb_strtolower($v['manager']), $needle) ||
-                str_contains(mb_strtolower($v['department']), $needle);
+                str_contains(mb_strtolower($v['manager']), $needle);
 
-            $depOk = $this->department === '' || $v['department'] === $this->department;
+            $deptOk = $this->department === '' || $v['department'] === $this->department;
 
             $capOk = true;
             if ($this->capMin !== null) $capOk = $capOk && ($v['capacity'] >= $this->capMin);
             if ($this->capMax !== null) $capOk = $capOk && ($v['capacity'] <= $this->capMax);
 
-            return $hit && $depOk && $capOk;
+            return $hit && $deptOk && $capOk;
         })->values();
     }
 
@@ -154,7 +148,6 @@ class VenueIndex extends Component
         if (!$v) return;
         $this->editId    = $v['id'];
         $this->vName     = $v['name'];
-        $this->vBuilding = $v['building'];
         $this->vRoom     = $v['room'];
         $this->vCapacity = $v['capacity'];
         $this->vDepartment = $v['department'];
@@ -180,7 +173,7 @@ class VenueIndex extends Component
     public function save(): void
     {
         $this->validate();
-
+        $this->isDeleting = false;
         // require justification for mutating actions
         $this->dispatch('bs:open', id: 'venueJustify');
     }
@@ -191,12 +184,13 @@ class VenueIndex extends Component
         $this->dispatch('bs:close', id: 'venueJustify');
         $this->dispatch('bs:close', id: 'venueModal');
         $this->dispatch('toast', message: 'Venue saved');
-        $this->reset('justification');
+        $this->reset(['justification', 'isDeleting']);
     }
 
     public function delete(int $id): void
     {
         $this->editId = $id;
+        $this->isDeleting = true;
         $this->dispatch('bs:open', id: 'venueJustify');
     }
     public function confirmDelete(): void
@@ -204,7 +198,7 @@ class VenueIndex extends Component
         // hard/soft delete switch could be added later
         $this->dispatch('bs:close', id: 'venueJustify');
         $this->dispatch('toast', message: 'Venue deleted');
-        $this->reset(['editId', 'justification']);
+        $this->reset(['editId', 'justification', 'isDeleting']);
     }
 
     protected function resetEdit(): void
@@ -212,10 +206,9 @@ class VenueIndex extends Component
         $this->reset([
             'editId',
             'vName',
-            'vBuilding',
+            'vDepartment',
             'vRoom',
             'vCapacity',
-            'vDepartment',
             'vManager',
             'vStatus',
             'vFeatures',
@@ -231,6 +224,6 @@ class VenueIndex extends Component
     public function render()
     {
         $rows = $this->paginated();
-        return view('livewire.admin.venue-index', ['rows' => $rows]);
+        return view('livewire.admin.venues-index', ['rows' => $rows]);
     }
 }

@@ -13,8 +13,7 @@
   <nav class="navbar navbar-expand-lg bg-success navbar-dark">
     <div class="container">
       <a class="navbar-brand fw-semibold" href="{{ url('/') }}">EventFlow</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
-              aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <button class="navbar-toggler" type="button" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
 
@@ -23,6 +22,11 @@
           <li class="nav-item">
             <a class="fw-bold nav-link {{ Route::is('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">
               Users
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="fw-bold nav-link {{ Route::is('admin.departments') ? 'active' : '' }}" href="{{ route('admin.departments') }}">
+              Departments
             </a>
           </li>
           <li class="nav-item">
@@ -62,29 +66,43 @@
   </main>
 
   @livewireScripts
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Livewire ⇄ Bootstrap modal bridge (global, once)
-  document.addEventListener('livewire:init', () => {
-    Livewire.on('bs:open', ({ id }) => {
-      const el = document.getElementById(id);
-      if (el) new bootstrap.Modal(el).show();
+  document.addEventListener('DOMContentLoaded', function() {
+    const navCollapse = document.getElementById('navMain');
+    const navToggler = document.querySelector('.navbar-toggler');
+    
+    // Toggle menu when hamburger is clicked
+    navToggler.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = navCollapse.classList.contains('show');
+      if (isOpen) {
+        navCollapse.classList.remove('show');
+        navToggler.setAttribute('aria-expanded', 'false');
+      } else {
+        navCollapse.classList.add('show');
+        navToggler.setAttribute('aria-expanded', 'true');
+      }
     });
-    Livewire.on('bs:close', ({ id }) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const inst = bootstrap.Modal.getInstance(el);
-      if (inst) inst.hide();
+    
+    // Close menu when nav links are clicked
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        navCollapse.classList.remove('show');
+        navToggler.setAttribute('aria-expanded', 'false');
+      });
     });
-    Livewire.on('toast', ({ id = 'appToast', message = 'Done', delay = 2200 }) => {
-      const toastEl = document.getElementById(id);
-      if (!toastEl) return;
-      const body = toastEl.querySelector('.toast-body');
-      if (body) body.textContent = message;
-      new bootstrap.Toast(toastEl, { delay }).show();
+    
+    // Close menu when scrolling
+    window.addEventListener('scroll', () => {
+      if (navCollapse.classList.contains('show')) {
+        navCollapse.classList.remove('show');
+        navToggler.setAttribute('aria-expanded', 'false');
+      }
     });
   });
 </script>
+<x-bs-bridge />
 </body>
 </html>
