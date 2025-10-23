@@ -19,11 +19,10 @@ class UseRequirementFactory extends Factory
     public function definition(): array
     {
         return [
-            'department_id' => Department::factory(),
             'venue_id' => Venue::factory(),
-            'ur_document_link' => fake()->url(),
-            'ur_name' => fake()->name(),
-            'ur_description' => fake()->realText(),
+            'hyperlink' => fake()->url(),
+            'name' => fake()->name(),
+            'description' => fake()->realText(),
         ];
     }
 }

@@ -32,13 +32,15 @@ class Venue extends Model
      * @var string[]
      */
     protected $fillable = [
-        'v_name',
-        'v_code',
-        'v_features',
-        'v_capacity',
-        'v_test_capacity',
+        'manager_id',
         'department_id',
-        'manager_id'
+        'name',
+        'code',
+        'features',
+        'capacity',
+        'test_capacity',
+        'opening_time',
+        'closing_time',
     ];
 
     /**

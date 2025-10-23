@@ -48,11 +48,15 @@ return new class extends Migration {
             $table->string('auth_type');
             $table->softDeletes();
             $table->foreignId('department_id')->constrained('departments');
+            $table->dropColumn('name');
+            $table->string('first_name');
+            $table->string('last_name');
         });
 
         Schema::create('venues', function (Blueprint $table) {
             $table->id();
             $table->foreignId('department_id')->constrained('departments');
+            $table->foreignId('manager_id')->constrained('users');
             $table->string('name');
             $table->string('code');
             $table->string('features');
@@ -70,6 +74,7 @@ return new class extends Migration {
             $table->string('name');
             $table->string('hyperlink', 512);
             $table->string('description', 512);
+            $table->timestamps();
         });
 
 
@@ -91,6 +96,7 @@ return new class extends Migration {
             $table->date('start_time');
             $table->date('end_time');
             $table->string('status');
+            $table->integer('guests');
             $table->boolean('handles_food');
             $table->boolean('use_institutional_funds');
             $table->boolean('external_guest');
@@ -116,7 +122,6 @@ return new class extends Migration {
 
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->constrained('events');
             $table->string('name');
             $table->timestamps();
             $table->softDeletes();
@@ -157,6 +162,13 @@ return new class extends Migration {
             if (Schema::hasColumn('users', 'deleted_at')) {
                 $table->dropSoftDeletes();
             }
+            if (Schema::hasColumn('users', 'first_name')) {
+                $table->dropColumn('first_name');
+            }
+            if (Schema::hasColumn('users', 'last_name')) {
+                $table->dropColumn('last_name');
+            }
+            $table->string('name');
         });
 
         Schema::dropIfExists('departments');

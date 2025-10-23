@@ -41,5 +41,5 @@ class EventRequest extends Model
     public function requester()  { return $this->belongsTo(User::class, 'u_id', 'u_id'); }
     public function venue()      { return $this->belongsTo(Venue::class, 'v_id', 'v_id'); }
     public function documents()  { return $this->hasMany(Document::class, 'e_id', 'e_id'); }
-    public function history()    { return $this->hasMany(EventRequestHistory::class, 'e_id', 'e_id'); }
+    public function history()    { return $this->hasMany(EventHistory::class, 'e_id', 'e_id'); }
 }

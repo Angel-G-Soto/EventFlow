@@ -7,9 +7,9 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\EventRequestHistory>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\EventHistory>
  */
-class EventRequestHistoryFactory extends Factory
+class EventHistoryFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -19,10 +19,10 @@ class EventRequestHistoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'eh_action' => $this->faker->randomElement(['submitted', 'approved', 'rejected', 'commented']),
-            'eh_comment' => $this->faker->sentence(),
+            'action' => fake()->randomElement(['pending', 'approved', 'rejected']),
+            'comment' => fake()->sentence(),
             'event_id' => Event::factory(),
-            'user_id' => User::factory(),
+            'approver_id' => User::factory(),
         ];
     }
 }

@@ -31,29 +31,15 @@ class Category extends Model
      * @var string[]
      */
     protected $fillable = [
-        'c_name',
+        'name',
     ];
 
     /**
-     * Many-to-Many relationship between category and event
+     * Relationship between category and events
      * @return BelongsToMany
      */
     public function events(): BelongsToMany
     {
         return $this->belongsToMany(Event::class);
-    }
-
-    /**
-     * Relationship between category and venues
-     * @return BelongsToMany
-     */
-    public function venues(): BelongsToMany
-    {
-        return $this->belongsToMany(Venue::class);
-    }
-
-    public function requirements(): HasMany
-    {
-        return $this->hasMany(UseRequirement::class, 'category_id');
     }
 }

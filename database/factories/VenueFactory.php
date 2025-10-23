@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Department;
-use App\Models\UseRequirements;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  */
 class VenueFactory extends Factory
 {
-    use HasFactory;
     /**
      * Define the model's default state.
      *
@@ -21,14 +20,15 @@ class VenueFactory extends Factory
     public function definition(): array
     {
         return [
-            'v_name' => fake()->company(),
-            'v_code' => fake()->bothify('V??##'),
-            //'v_department' => fake()->word(),
-            'v_features' => fake()->numberBetween(0000, 9999),
-            'v_capacity' => fake()->numberBetween(50, 500),
-            'v_test_capacity' => fake()->numberBetween(20, 100),
-            //'use_requirement_id' => UseRequirements::factory(),
+            'name' => fake()->company(),
+            'code' => fake()->unique()->buildingNumber,
+            'features' => fake()->randomElement(['1000','0100', '0010', '0001', '1100', '1010', '1001']),
+            'capacity' => fake()->numberBetween(50, 500),
+            'test_capacity' => fake()->numberBetween(20, 100),
+            'opening_time' => fake()->dateTime(),
+            'closing_time' => fake()->dateTime(),
             'department_id' => Department::factory(),
+            'manager_id' => User::factory(),
         ];
     }
 }

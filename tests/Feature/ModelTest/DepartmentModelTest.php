@@ -21,18 +21,10 @@ it('has many managers', function () {
         ->each->toBeInstanceOf(User::class);
 });
 
-it('has many requirements', function () {
-    $department = Department::factory()->create();
-    UseRequirement::factory()->count(2)->create(['department_id' => $department->id]);
-
-    expect($department->requirements)->toHaveCount(2)
-        ->each->toBeInstanceOf(UseRequirement::class);
-});
-
 it('allows mass assignment of fillable fields', function () {
     $data = [
-        'd_name' => 'Computer Science',
-        'd_code' => 'CS',
+        'name' => 'Computer Science',
+        'code' => '123',
     ];
 
     $department = Department::create($data);

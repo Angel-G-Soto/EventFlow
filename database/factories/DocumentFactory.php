@@ -17,9 +17,10 @@ class DocumentFactory extends Factory
      */
     public function definition(): array
     {
+        $name = fake()->word();
         return [
-            'd_name' => fake()->word() . '.pdf',
-            'd_file_path' => 'documents/' . fake()->uuid . '.pdf',
+            'name' => $name . '.pdf',
+            'file_path' => 'documents/' . $name . '.pdf',
             'event_id' => Event::factory(),
         ];
     }

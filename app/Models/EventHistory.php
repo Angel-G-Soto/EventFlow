@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class EventRequestHistory extends Model
+class EventHistory extends Model
 {
     use HasFactory;
     /**
@@ -29,13 +29,13 @@ class EventRequestHistory extends Model
      */
     protected $fillable = [
         'event_id',
-        'user_id',
-        'eh_action',
-        'eh_comment',
+        'approver_id',
+        'action',
+        'comment',
     ];
 
     /**
-     * Relationship between the Event Request History and Event
+     * Relationship between the Event History and Event
      * @return BelongsTo
      */
     public function event(): BelongsTo
@@ -44,11 +44,11 @@ class EventRequestHistory extends Model
     }
 
     /**
-     * Relationship between the Event Request History and User
+     * Relationship between the Event History and User
      * @return BelongsTo
      */
     public function approver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'approver_id');
     }
 }

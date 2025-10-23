@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Models\Category;
 use App\Models\Document;
-use App\Models\EventRequestHistory;
+use App\Models\EventHistory;
 
 it('belongs to a requester', function () {
     $user = User::factory()->create();
@@ -33,10 +33,10 @@ it('has many documents', function () {
 
 it('has many history records', function () {
     $event = Event::factory()->create();
-    EventRequestHistory::factory()->count(2)->create(['event_id' => $event->id]);
+    EventHistory::factory()->count(2)->create(['event_id' => $event->id]);
 
     expect($event->history)->toHaveCount(2)
-        ->each->toBeInstanceOf(EventRequestHistory::class);
+        ->each->toBeInstanceOf(EventHistory::class);
 });
 
 it('belongs to many categories', function () {
@@ -50,28 +50,27 @@ it('belongs to many categories', function () {
 });
 
 it('allows mass assignment of fillable fields', function () {
-    $user1 = User::factory()->create();
-    $user2 = User::factory()->create();
+    $user = User::factory()->create();
     $venue = Venue::factory()->create();
     $data = [
-        'creator_id' => $user1->id,
-        'current_approver_id' => $user2->id,
+        'creator_id' => $user->id,
         'venue_id' => $venue->id,
-        'e_organization_nexo_id' => 999,
-        'e_advisor_name' => 'Prof. Dumbledore',
-        'e_advisor_email' => 'albus.dumbledore@hogwarts.com',
-        'e_advisor_phone' => '787-832-4040',
-        'e_organization_name' => 'Magic CLub',
-        'e_title' => 'Phoenix Feathers',
-        'e_description' => 'Discussion on phoenix feathers.',
-        'e_status' => 'pending',
-        'e_status_code' => 'P',
-        'e_upload_status' => 'uploaded',
-        'e_start_time' => now(),
-        'e_end_time' => now()->addHours(2),
-        'e_student_id' => '123456',
-        'e_student_phone' => '787-832-4040',
-        'e_guests' => 50,
+        'organization_nexo_id' => 999,
+        'organization_nexo_name' => 'Order of the Phoenix',
+        'organization_advisor_name' => 'Prof. Dumbledore',
+        'organization_advisor_email' => 'albus.dumbledore@hogwarts.com',
+        'organization_advisor_phone' => '787-832-4040',
+        'title' => 'Phoenix Feathers',
+        'description' => 'Discussion on phoenix feathers.',
+        'status' => 'pending',
+        'start_time' => now(),
+        'end_time' => now()->addHours(2),
+        'student_number' => '123456',
+        'student_phone' => '787-832-4040',
+        'guests' => 50,
+        'handles_food' => false,
+        'use_institutional_funds' => true,
+        'external_guest' => false,
     ];
 
     $event = Event::create($data);

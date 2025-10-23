@@ -39,26 +39,18 @@ it('has many requirements', function () {
         ->each->toBeInstanceOf(UseRequirement::class);
 });
 
-it('belongs to many categories', function () {
-    $venue = Venue::factory()->create();
-    $categories = Category::factory()->count(2)->create();
-
-    $venue->categories()->attach($categories->pluck('id'));
-
-    expect($venue->categories)->toHaveCount(2)
-        ->each->toBeInstanceOf(Category::class);
-});
-
 it('allows mass assignment of fillable fields', function () {
     $department = Department::factory()->create();
     $manager = User::factory()->create();
 
     $data = [
-        'v_name' => 'SALON DE CLASES',
-        'v_code' => 'AE-102',
-        'v_features' => '1001',
-        'v_capacity' => 50,
-        'v_test_capacity' => 40,
+        'name' => 'SALON DE CLASES',
+        'code' => 'AE-102',
+        'features' => '1001',
+        'capacity' => 50,
+        'test_capacity' => 40,
+        'opening_time' => '09:00',
+        'closing_time' => '10:00',
         'department_id' => $department->id,
         'manager_id' => $manager->id,
     ];

@@ -3,7 +3,7 @@
 use App\Models\User;
 use App\Models\Venue;
 use App\Models\Department;
-use App\Models\EventRequestHistory;
+use App\Models\EventHistory;
 use App\Models\Event;
 
 it('belongs to a department', function () {
@@ -24,10 +24,10 @@ it('has many managed venues', function () {
 
 it('has many request action logs', function () {
     $user = User::factory()->create();
-    EventRequestHistory::factory()->count(2)->create(['user_id' => $user->id]);
+    EventHistory::factory()->count(2)->create(['approver_id' => $user->id]);
 
     expect($user->requestActionLog)->toHaveCount(2)
-        ->each->toBeInstanceOf(EventRequestHistory::class);
+        ->each->toBeInstanceOf(EventHistory::class);
 });
 
 it('has many event requests', function () {

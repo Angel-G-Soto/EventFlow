@@ -15,8 +15,8 @@ it('allows mass assignment of fillable fields', function () {
     $event = Event::factory()->create();
     $data = [
         'event_id' => $event->id,
-        'd_name' => 'Required_Document.pdf',
-        'd_file_path' => 'documents/required-document.pdf',
+        'name' => 'Required_Document.pdf',
+        'file_path' => 'documents/required-document.pdf',
     ];
 
     $document = Document::create($data);

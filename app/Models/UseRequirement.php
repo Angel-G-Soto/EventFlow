@@ -31,12 +31,10 @@ class UseRequirement extends Model
      * @var string[]
      */
     protected $fillable = [
-        'department_id',
         'venue_id',
-        'ur_document_link',
-        'ur_name',
-        'ur_description',
-        'ur_label',
+        'name',
+        'hyperlink',
+        'description',
     ];
 
     /**
@@ -46,23 +44,5 @@ class UseRequirement extends Model
     public function venue(): BelongsTo
     {
         return $this->belongsTo(Venue::class);
-    }
-
-    /**
-     * Relationship between the Use Requirement and Venue
-     * @return BelongsTo
-     */
-    public function department(): BelongsTo
-    {
-        return $this->belongsTo(Department::class);
-    }
-
-    /**
-     * Relationship between the Use Requirement and Category
-     * @return BelongsTo
-     */
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(UseRequirement::class);
     }
 }

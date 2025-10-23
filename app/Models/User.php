@@ -91,7 +91,7 @@ class User extends Authenticatable
      */
     public function requestActionLog(): HasMany
     {
-        return $this->hasMany(EventRequestHistory::class);
+        return $this->hasMany(EventHistory::class, 'approver_id');
     }
 
     /**

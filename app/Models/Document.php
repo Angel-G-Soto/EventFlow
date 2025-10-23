@@ -29,8 +29,8 @@ class Document extends Model
      */
     protected $fillable = [
         'event_id',
-        'd_name',
-        'd_file_path',
+        'name',
+        'file_path',
     ];
 
     /**

@@ -27,23 +27,23 @@ class Event extends Model
      */
     protected $fillable = [
         'creator_id',
-        'current_approver_id',
         'venue_id',
-        'e_organization_nexo_id',
-        'e_advisor_name',
-        'e_advisor_email',
-        'e_advisor_phone',
-        'e_organization_name',
-        'e_title',
-        'e_description',
-        'e_status',
-        'e_status_code',
-        'e_upload_status',
-        'e_start_time',
-        'e_end_time',
-        'e_student_id',
-        'e_student_phone',
-        'e_guests',
+        'organization_nexo_id',
+        'organization_nexo_name',
+        'organization_advisor_email',
+        'organization_advisor_name',
+        'organization_advisor_phone',
+        'student_number',
+        'student_phone',
+        'title',
+        'description',
+        'start_time',
+        'end_time',
+        'status',
+        'guests',
+        'handles_food',
+        'use_institutional_funds',
+        'external_guest',
     ];
 
     /**
@@ -86,7 +86,7 @@ class Event extends Model
      */
     public function history(): HasMany
     {
-        return $this->hasMany(EventRequestHistory::class);
+        return $this->hasMany(EventHistory::class);
     }
 
     /**
