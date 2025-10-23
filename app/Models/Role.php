@@ -36,12 +36,12 @@ class Role extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'r_name',             
+        'r_name',
         'r_code'
     ];
 
     /**
-     * The users that belong to the role.
+     * The requests that belong to the role.
      */
     public function users(): BelongsToMany
     {
@@ -80,9 +80,9 @@ class Role extends Model
     }
 
     /**
-     * An accessor to get a count of all users who have this role.
+     * An accessor to get a count of all requests who have this role.
      * This is useful for displaying stats on an admin dashboard.
-     * Note: For performance on large lists, use withCount('users') in your query instead.
+     * Note: For performance on large lists, use withCount('requests') in your query instead.
      *
      * Usage: $adminRole->user_count
      */

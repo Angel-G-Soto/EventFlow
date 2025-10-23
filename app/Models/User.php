@@ -83,7 +83,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Event::class, 'e_current_approver_id','user_id');
     }
-    
+
     /**
      * A business logic method to check if this user is the assigned manager of a specific venue.
      * Centralizes this logic for use in policies.
@@ -92,7 +92,7 @@ class User extends Authenticatable
     {
         return $this->user_id === $venue->manager_id;
     }
-    
+
     /**
      * Assign a role to this user.
      * A convenient and readable helper method.
@@ -108,13 +108,13 @@ class User extends Authenticatable
     }
 
     public static function findByIdentifier(string $identifier)
-    {        
+    {
         return static::where('r_code', $identifier)
                     ->orWhere('r_name', $identifier);
     }
 
     /**
-     * Scope a query to only include users with the 'system-admin' role.
+     * Scope a query to only include requests with the 'system-admin' role.
      *
      * Usage: User::admins()->get();
      */

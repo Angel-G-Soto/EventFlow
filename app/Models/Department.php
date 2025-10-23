@@ -13,7 +13,7 @@ class Department extends Model
     use HasFactory;
     protected $table = 'department';                // @var string The table associated with the model.
     protected $primaryKey = 'department_id';        // @var string The primary key associated with the table.
-    
+
     protected static function booted()
     {
         static::creating(function ($department) {
@@ -35,12 +35,12 @@ class Department extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'd_name',             
+        'd_name',
         'd_code'
     ];
 
     /**
-     * Get the users form the department.
+     * Get the requests form the department.
      */
     public function users(): HasMany
     {
@@ -82,7 +82,7 @@ class Department extends Model
     }
 
      /**
-     * An accessor to get a count of all users in the department.
+     * An accessor to get a count of all requests in the department.
      * This is useful for displaying stats on an admin dashboard.
      *
      * Usage: $department->user_count

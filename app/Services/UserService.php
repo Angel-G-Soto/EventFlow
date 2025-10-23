@@ -28,11 +28,11 @@ class UserService
      * @param string $name The full name of the user from the SSO provider.
      * @return User The found or newly created Eloquent User object.
      */
-    public function findOrCreateUser(string $email, string $name): User 
+    public function findOrCreateUser(string $email, string $name): User
     {
         $user = User::firstOrCreate(
             ['u_email' => $email],
-            ['u_name' => $name], 
+            ['u_name' => $name],
         );
 
         return $user;
@@ -148,7 +148,7 @@ class UserService
     }
 
      /**
-     * Retrieves a collection of all users who have a specific role.
+     * Retrieves a collection of all requests who have a specific role.
      *
      * @param string $roleIdentifier The idenfier for the role (e.g., 'dsca-staff' || DSCA Staff).
      * @return Collection An Eloquent Collection of User objects.

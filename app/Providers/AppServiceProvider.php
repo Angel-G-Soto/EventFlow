@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,5 +32,6 @@ class AppServiceProvider extends ServiceProvider
             $event->extendSocialite('saml2', \SocialiteProviders\Saml2\Provider::class);
 
         });
+        Paginator::useBootstrapFive();
     }
 }

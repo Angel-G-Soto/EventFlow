@@ -123,20 +123,20 @@ class UserServiceTest extends TestCase
     #[Test]
     public function get_users_with_role_returns_correct_users(): void
     {
-        // Arrange: Create a role and several users.
+        // Arrange: Create a role and several requests.
         $dscaRole = Role::factory()->create(['r_code' => 'dsca-staff']);
         $userWithRole1 = User::factory()->create();
         $userWithRole2 = User::factory()->create();
         $userWithoutRole = User::factory()->create();
 
-        // Assign the role to two of the users.
+        // Assign the role to two of the requests.
         $userWithRole1->roles()->attach($dscaRole);
         $userWithRole2->roles()->attach($dscaRole);
 
-        // Act: Call the method to get users with the 'dsca-staff' role.
+        // Act: Call the method to get requests with the 'dsca-staff' role.
         $dscaUsers = $this->userService->getUsersWithRole('dsca-staff');
 
-        // Assert: Ensure the collection contains only the correct users.
+        // Assert: Ensure the collection contains only the correct requests.
         $this->assertCount(2, $dscaUsers);
         $this->assertTrue($dscaUsers->contains($userWithRole1));
         $this->assertTrue($dscaUsers->contains($userWithRole2));
