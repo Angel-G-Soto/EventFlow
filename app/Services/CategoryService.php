@@ -1,9 +1,6 @@
 <?php
 namespace App\Services;
 use App\Models\Category;
-use App\Models\Department;
-use App\Models\User;
-use App\Models\Venue;
 use Exception;
 use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -22,12 +19,13 @@ class CategoryService {
     public static function getCategoryByID(int $id): Category
     {
         try {
-            if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
+            if ($id < 0) {throw new InvalidArgumentException('Category ID must be a positive integer.');}
 
-            return Category::find($id);
+            return Category::findOrFail($id);
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('We were not able to find a category with that ID.');}
+        catch (ModelNotFoundException $exception) {throw $exception;}
+        catch (Throwable $exception) {throw new Exception('Unable to find a category with that ID.');}
     }
 
     /**
@@ -41,7 +39,7 @@ class CategoryService {
         try {
             return Category::all();
         }
-        catch (Throwable $exception) {throw new Exception('We were not able to retrieve the available categories.');}
+        catch (Throwable $exception) {throw new Exception('Unable to retrieve the available categories.');}
     }
 
     /**
@@ -55,17 +53,13 @@ class CategoryService {
     public static function updateCategory(int $id, string $name): Category
     {
         try {
-            if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
+            if ($id < 0) {throw new InvalidArgumentException('Category ID must be a positive integer.');}
 
             // Find value based on the name. Update its fields
-            $category = Category::updateOrCreate(
-                [
-                    'id' => $id,
-                ],
-                [
-                    'c_name' => $name,
-                ]
-            );
+            $category = Category::findOrFail($id);
+
+            $category->c_name = $name;
+            $category->save();
 
             // Add audit trail
 
@@ -73,6 +67,7 @@ class CategoryService {
             return $category;
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
+        catch (ModelNotFoundException $exception) {throw $exception;}
         catch (Throwable $exception) {throw new Exception('Unable to synchronize category data.');}
     }
 
@@ -86,12 +81,13 @@ class CategoryService {
     public static function deleteCategory(int $id): bool
     {
         try {
-            if ($id < 0 || $id == null) throw new InvalidArgumentException();
+            if ($id < 0) throw new InvalidArgumentException('Category ID must be a positive integer.');
 
-            return Category::find($id)->delete();
+            return Category::findOrFail($id)->delete();
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('We were not able to delete the specified category.');}
+        catch (ModelNotFoundException $exception) {throw $exception;}
+        catch (Throwable $exception) {throw new Exception('Unable to delete the specified category.');}
     }
 
     /**
@@ -105,12 +101,13 @@ class CategoryService {
     {
         {
             try {
-                if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
-                $category = Category::find($id);
-                if ($category == null) {throw new ModelNotFoundException();}
+                if ($id < 0) {throw new InvalidArgumentException('Category ID must be a positive integer.');}
+                $category = Category::findOrFail($id);
+
                 return $category->requirements;
             }
-            catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
+            catch (InvalidArgumentException $exception) {throw $exception;}
+            catch (ModelNotFoundException $exception) {throw $exception;}
             catch (Throwable $exception) {throw new Exception('We were not able to find the requirements for the category.');}
         }
     }
