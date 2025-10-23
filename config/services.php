@@ -35,6 +35,10 @@ return [
         ],
     ],
 
+    'nexo' => [
+        'api_key' => env('NEXO_API_KEY'),
+    ],
+
     'saml2' => [
         'metadata' => 'https://idp.uprm.edu/saml2/idp/metadata.php',
         'sp_default_binding_method' => \LightSaml\SamlConstants::BINDING_SAML2_HTTP_POST,
