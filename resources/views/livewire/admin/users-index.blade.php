@@ -20,12 +20,8 @@
           <label class="form-label">Search</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input
-              type="text"
-              class="form-control"
-              placeholder="Search by name or email…"
-              wire:model.live.debounce.300ms="search"
-            >
+            <input type="text" class="form-control" placeholder="Search by name or email…"
+              wire:model.live.debounce.300ms="search">
           </div>
         </div>
 
@@ -33,21 +29,14 @@
           <label class="form-label">Role</label>
           <select class="form-select" wire:model.live="role">
             <option value="">All roles</option>
-            <option>Student Org Rep</option>
-            <option>Student Org Advisor</option>
-            <option>Venue Manager</option>
-            <option>DSCA Staff</option>
-            <option>Dean of Administration</option>
-            <option>Admin</option>
+            @foreach(\App\Livewire\Admin\UsersIndex::ROLES as $rname)
+            <option value="{{ $rname }}">{{ $rname }}</option>
+            @endforeach
           </select>
         </div>
 
         <div class="col-12 col-md-2 d-flex align-items-end">
-          <button
-            class="btn btn-outline-secondary w-100"
-            wire:click="clearFilters"
-            type="button"
-          >
+          <button class="btn btn-outline-secondary w-100" wire:click="clearFilters" type="button">
             <i class="bi bi-x-circle me-1"></i> Clear
           </button>
         </div>
@@ -58,7 +47,8 @@
   {{-- Bulk + page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-2">
     <div class="btn-group">
-      <button class="btn btn-outline-danger btn-sm" wire:click="bulkDelete" @disabled(empty($selected ?? [])) type="button">
+      <button class="btn btn-outline-danger btn-sm" wire:click="bulkDelete" @disabled(empty($selected ?? []))
+        type="button">
         <i class="bi bi-trash3 me-1"></i> Delete
       </button>
     </div>
@@ -80,16 +70,13 @@
         <thead class="table-light">
           <tr>
             <th style="width:36px;">
-              <input
-              id="master"
-                type="checkbox"
-                class="form-check-input"
+              <input id="master" type="checkbox" class="form-check-input"
                 wire:change="selectAllOnPage($event.target.checked, @json($visibleIds ?? []))"
-                wire:key="select-all-{{ $page }}"
-              >
+                wire:key="select-all-{{ $page }}">
             </th>
             <th>Name</th>
             <th>Email</th>
+            <th>Department</th>
             <th>Role</th>
             <th class="text-end" style="width:140px;">Actions</th>
           </tr>
@@ -97,38 +84,38 @@
 
         <tbody>
           @forelse($rows as $u)
-            <tr>
-              <td>
-                <input
-                  type="checkbox"
-                  class="form-check-input"
-                  wire:change="toggleSelect({{ $u['id'] }}, $event.target.checked)"
-                  @checked(data_get($selected ?? [], $u['id'], false))
-                  wire:key="select-{{ $u['id'] }}-{{ $page }}"
-                >
-              </td>
-              <td class="fw-medium">{{ $u['name'] }}</td>
-              <td><a href="mailto:{{ $u['email'] }}">{{ $u['email'] }}</a></td>
-              <td>
-                <span class="badge {{ $this->roleClass($u['role'] ?? '') }}">
-                  {{ $u['role'] ?? '—' }}
-                </span>
-              </td>
-              <td class="text-end">
-                <div class="btn-group btn-group-sm">
-                  <button class="btn btn-outline-secondary" wire:click="openEdit({{ $u['id'] }})" type="button">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-outline-danger" wire:click="delete({{ $u['id'] }})" type="button">
-                    <i class="bi bi-trash3"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
+          <tr>
+            <td>
+              <input type="checkbox" class="form-check-input"
+                wire:change="toggleSelect({{ $u['id'] }}, $event.target.checked)" @checked(data_get($selected ?? [],
+                $u['id'], false)) wire:key="select-{{ $u['id'] }}-{{ $page }}">
+            </td>
+            <td class="fw-medium">{{ $u['name'] }}</td>
+            <td><a href="mailto:{{ $u['email'] }}">{{ $u['email'] }}</a></td>
+            <td>{{ $u['department'] ?? '—' }}</td>
+            <td>
+              @php $roles = $u['roles'] ?? []; @endphp
+              @forelse($roles as $r)
+              <span class="badge {{ $this->roleClass($r) }}">{{ $r }}</span>
+              @empty
+              —
+              @endforelse
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $u['id'] }})" type="button">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline-danger" wire:click="delete({{ $u['id'] }})" type="button">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
           @empty
-            <tr>
-              <td colspan="6" class="text-center text-secondary py-4">No users found.</td>
-            </tr>
+          <tr>
+            <td colspan="6" class="text-center text-secondary py-4">No users found.</td>
+          </tr>
           @endforelse
         </tbody>
       </table>
@@ -137,20 +124,24 @@
     {{-- Footer / Pager --}}
     <div class="card-footer d-flex align-items-center justify-content-between">
       @if(method_exists($rows, 'total'))
-        <small class="text-secondary">{{ $rows->total() }} result{{ $rows->total()===1?'':'s' }}</small>
-        <div>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary" wire:click="$set('page', 1)" @disabled($rows->currentPage()===1)>&laquo;</button>
-            <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() - 1 }})" @disabled($rows->currentPage()===1)>&lsaquo;</button>
-            <span class="btn btn-outline-secondary disabled">
-              Page {{ $rows->currentPage() }} / {{ $rows->lastPage() }}
-            </span>
-            <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() + 1 }})" @disabled($rows->currentPage()===$rows->lastPage())>&rsaquo;</button>
-            <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->lastPage() }})" @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
-          </div>
+      <small class="text-secondary">{{ $rows->total() }} result{{ $rows->total()===1?'':'s' }}</small>
+      <div>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-secondary" wire:click="$set('page', 1)"
+            @disabled($rows->currentPage()===1)>&laquo;</button>
+          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() - 1 }})"
+            @disabled($rows->currentPage()===1)>&lsaquo;</button>
+          <span class="btn btn-outline-secondary disabled">
+            Page {{ $rows->currentPage() }} / {{ $rows->lastPage() }}
+          </span>
+          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() + 1 }})"
+            @disabled($rows->currentPage()===$rows->lastPage())>&rsaquo;</button>
+          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->lastPage() }})"
+            @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
         </div>
+      </div>
       @else
-        <small class="text-secondary">{{ count($rows) }} result{{ count($rows)===1?'':'s' }}</small>
+      <small class="text-secondary">{{ count($rows) }} result{{ count($rows)===1?'':'s' }}</small>
       @endif
     </div>
   </div>
@@ -162,41 +153,62 @@
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>{{ $editId ? 'Edit User' : 'Add User' }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-                  wire:click="$set('editId', null)"></button>
+            wire:click="$set('editId', null)"></button>
         </div>
 
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-12 col-md-6">
               <label class="form-label">Name</label>
-              <input type="text" class="form-control @error('editName') is-invalid @enderror" 
-                     required wire:model.live="editName" 
-                     pattern="[a-zA-Z\s]+" 
-                     placeholder="Full Name">
+              <input type="text" class="form-control @error('editName') is-invalid @enderror" required
+                wire:model.live="editName" placeholder="Full Name">
               @error('editName')
-                <div class="invalid-feedback">{{ $message }}</div>
+              <div class="invalid-feedback">{{ $message }}</div>
               @enderror
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Email</label>
-              <input type="email" class="form-control @error('editEmail') is-invalid @enderror" 
-                     required wire:model.live="editEmail" 
-                     pattern=".*@upr\.edu$" 
-                     placeholder="username@upr.edu">
+              <input type="email" class="form-control @error('editEmail') is-invalid @enderror" required
+                wire:model.live="editEmail" placeholder="username@upr.edu">
               @error('editEmail')
-                <div class="invalid-feedback">{{ $message }}</div>
+              <div class="invalid-feedback">{{ $message }}</div>
               @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label">Role</label>
-              <select class="form-select" required wire:model.live="editRole">
-            <option>Student Org Rep</option>
-            <option>Student Org Advisor</option>
-            <option>Venue Manager</option>
-            <option>DSCA Staff</option>
-            <option>Dean of Administration</option>
-            <option>Admin</option>
+              <label class="form-label">Roles</label>
+              <div class="border rounded p-2" style="max-height:120px;overflow-y:auto;">
+                @foreach(\App\Livewire\Admin\UsersIndex::ROLES as $rname)
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                    id="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}" value="{{ $rname }}"
+                    wire:model.live="editRoles">
+                  <label class="form-check-label" for="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}">
+                    {{ $rname }}
+                  </label>
+                </div>
+                @endforeach
+              </div>
+              @error('editRoles') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Department</label>
+              @php
+              $hasStudentRole = !empty(array_intersect($editRoles ?? [], \App\Livewire\Admin\UsersIndex::ROLES_WITHOUT_DEPARTMENT));
+              @endphp
+              @if($hasStudentRole)
+              <input type="text" class="form-control" value="—" disabled>
+              <small class="text-muted">Only Venue Managers have departments</small>
+              @else
+              <select class="form-select @error('editDepartment') is-invalid @enderror" wire:model.live="editDepartment">
+                <option value="">Select Department</option>
+                @foreach(\App\Livewire\Admin\UsersIndex::DEPARTMENTS as $dept)
+                <option value="{{ $dept }}">{{ $dept }}</option>
+                @endforeach
               </select>
+              @error('editDepartment')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+              @endif
             </div>
           </div>
         </div>
@@ -210,7 +222,9 @@
   </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="userJustify" submit="{{ $isBulkDeleting ? 'confirmBulkDelete' : ($isDeleting ? 'confirmDelete' : 'confirmSave') }}" model="justification" :showDeleteType="$isDeleting || $isBulkDeleting" />
+  <x-justification id="userJustify"
+    submit="{{ $isBulkDeleting ? 'confirmBulkDelete' : ($isDeleting ? 'confirmDelete' : 'confirmSave') }}"
+    model="justification" :showDeleteType="$isDeleting || $isBulkDeleting" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>

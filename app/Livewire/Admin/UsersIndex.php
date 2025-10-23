@@ -20,6 +20,22 @@ class UsersIndex extends Component
         'Admin',
     ];
 
+    public const DEPARTMENTS = [
+        'Engineering',
+        'Business',
+        'Arts & Sciences',
+        'Education',
+        'Agriculture',
+    ];
+
+    public const ROLES_WITHOUT_DEPARTMENT = [
+        'Student Org Rep',
+        'Student Org Advisor',
+        'DSCA Staff',
+        'Dean of Administration',
+        'Admin',
+    ];
+
     // Filters & paging
     public string $search = '';
     public string $role   = '';
@@ -34,7 +50,8 @@ class UsersIndex extends Component
     public ?int $editId = null;
     public string $editName = '';
     public string $editEmail = '';
-    public string $editRole = 'Student Org Rep';
+    public array $editRoles = [];
+    public string $editDepartment = '';
 
     public string $justification = '';
     public bool $isDeleting = false;
@@ -46,30 +63,30 @@ class UsersIndex extends Component
         ['id' => 1, 'name' => 'Jane Doe', 'email' => 'jane@upr.edu', 'role' => 'DSCA Staff'],
         ['id' => 2, 'name' => 'Juan De la Cruz', 'email' => 'juan@upr.edu', 'role' => 'Student Org Rep'],
         ['id' => 3, 'name' => 'Alma Ruiz', 'email' => 'mruiz@upr.edu', 'role' => 'Admin'],
-        ['id' => 4, 'name' => 'Leo Ortiz', 'email' => 'leo@upr.edu', 'role' => 'Venue Manager'],
+        ['id' => 4, 'name' => 'Leo Ortiz', 'email' => 'leo@upr.edu', 'role' => 'Venue Manager', 'department' => 'Arts & Sciences'],
         ['id' => 5, 'name' => 'Ana Diaz', 'email' => 'adiaz@upr.edu', 'role' => 'Student Org Advisor'],
         ['id' => 6, 'name' => 'Carlos Rivera', 'email' => 'crivera@upr.edu', 'role' => 'Student Org Rep'],
-        ['id' => 7, 'name' => 'Sofia Martinez', 'email' => 'smartinez@upr.edu', 'role' => 'Venue Manager'],
+        ['id' => 7, 'name' => 'Sofia Martinez', 'email' => 'smartinez@upr.edu', 'role' => 'Venue Manager', 'department' => 'Education'],
         ['id' => 8, 'name' => 'Miguel Torres', 'email' => 'mtorres@upr.edu', 'role' => 'DSCA Staff'],
         ['id' => 9, 'name' => 'Isabella Garcia', 'email' => 'igarcia@upr.edu', 'role' => 'Student Org Advisor'],
         ['id' => 10, 'name' => 'Diego Morales', 'email' => 'dmorales@upr.edu', 'role' => 'Admin'],
         ['id' => 11, 'name' => 'Valentina Cruz', 'email' => 'vcruz@upr.edu', 'role' => 'Student Org Rep'],
-        ['id' => 12, 'name' => 'Alejandro Vega', 'email' => 'avega@upr.edu', 'role' => 'Venue Manager'],
+        ['id' => 12, 'name' => 'Alejandro Vega', 'email' => 'avega@upr.edu', 'role' => 'Venue Manager', 'department' => 'Business'],
         ['id' => 13, 'name' => 'Camila Herrera', 'email' => 'cherrera@upr.edu', 'role' => 'DSCA Staff'],
         ['id' => 14, 'name' => 'Sebastian Luna', 'email' => 'sluna@upr.edu', 'role' => 'Student Org Advisor'],
         ['id' => 15, 'name' => 'Lucia Mendez', 'email' => 'lmendez@upr.edu', 'role' => 'Dean of Administration'],
         ['id' => 16, 'name' => 'Mateo Jimenez', 'email' => 'mjimenez@upr.edu', 'role' => 'Student Org Rep'],
-        ['id' => 17, 'name' => 'Gabriela Santos', 'email' => 'gsantos@upr.edu', 'role' => 'Venue Manager'],
+        ['id' => 17, 'name' => 'Gabriela Santos', 'email' => 'gsantos@upr.edu', 'role' => 'Venue Manager', 'department' => 'Agriculture'],
         ['id' => 18, 'name' => 'Nicolas Flores', 'email' => 'nflores@upr.edu', 'role' => 'DSCA Staff'],
         ['id' => 19, 'name' => 'Antonella Ramos', 'email' => 'aramos@upr.edu', 'role' => 'Student Org Advisor'],
         ['id' => 20, 'name' => 'Emilio Castro', 'email' => 'ecastro@upr.edu', 'role' => 'Admin'],
         ['id' => 21, 'name' => 'Renata Vargas', 'email' => 'rvargas@upr.edu', 'role' => 'Student Org Rep'],
-        ['id' => 22, 'name' => 'Joaquin Delgado', 'email' => 'jdelgado@upr.edu', 'role' => 'Venue Manager'],
+        ['id' => 22, 'name' => 'Joaquin Delgado', 'email' => 'jdelgado@upr.edu', 'role' => 'Venue Manager', 'department' => 'Arts & Sciences'],
         ['id' => 23, 'name' => 'Valeria Ortega', 'email' => 'vortega@upr.edu', 'role' => 'DSCA Staff'],
         ['id' => 24, 'name' => 'Andres Molina', 'email' => 'amolina@upr.edu', 'role' => 'Student Org Advisor'],
         ['id' => 25, 'name' => 'Martina Aguilar', 'email' => 'maguilar@upr.edu', 'role' => 'Student Org Rep'],
         ['id' => 26, 'name' => 'Fernando Reyes', 'email' => 'freyes@upr.edu', 'role' => 'Student Org Rep'],
-        ['id' => 27, 'name' => 'Catalina Romero', 'email' => 'cromero@upr.edu', 'role' => 'Venue Manager'],
+        ['id' => 27, 'name' => 'Catalina Romero', 'email' => 'cromero@upr.edu', 'role' => 'Venue Manager', 'department' => 'Agriculture'],
     ];
 
     /**
@@ -80,22 +97,34 @@ class UsersIndex extends Component
      */
     protected function allUsers(): Collection
     {
+        $combined = array_merge(self::$users, session('new_users', []));
         $deletedIndex = array_flip(array_unique(array_merge(
             array_map('intval', session('soft_deleted_user_ids', [])),
             array_map('intval', session('hard_deleted_user_ids', []))
         )));
 
-        $combined = array_filter(
-            array_merge(self::$users, session('new_users', [])),
-            function (array $u) use ($deletedIndex) {
-                return !isset($deletedIndex[(int) $u['id']]);
-            }
-        );
+        $combined = array_values(array_filter($combined, function ($u) use ($deletedIndex) {
+            return !isset($deletedIndex[(int) $u['id']]);
+        }));
 
-        $editedUsers = session('edited_users', []);
+        // Normalize: ensure each user has roles[]
         foreach ($combined as &$u) {
-            if (isset($editedUsers[$u['id']])) {
-                $u = array_merge($u, $editedUsers[$u['id']]);
+            if (!array_key_exists('roles', $u)) {
+                // Map old single 'role' to roles[]
+                $u['roles'] = isset($u['role']) && $u['role'] !== '' ? [$u['role']] : [];
+            }
+            // Optionally include department_id in the future; for now ignored/displayed as dash
+        }
+        unset($u);
+
+        // Apply edited overrides from session (and normalize again if needed)
+        $edited = session('edited_users', []);
+        foreach ($combined as &$u) {
+            if (isset($edited[$u['id']])) {
+                $u = array_merge($u, $edited[$u['id']]);
+                if (!array_key_exists('roles', $u)) {
+                    $u['roles'] = isset($u['role']) && $u['role'] !== '' ? [$u['role']] : [];
+                }
             }
         }
         unset($u);
@@ -211,8 +240,8 @@ class UsersIndex extends Component
      */
     public function openCreate(): void
     {
-        $this->reset(['editId', 'editName', 'editEmail', 'editRole']);
-        $this->editRole = 'Student Org Rep';
+        $this->reset(['editId', 'editName', 'editEmail', 'editDepartment']);
+        $this->editRoles = [];
         $this->resetErrorBag();
         $this->resetValidation();
         $this->dispatch('bs:open', id: 'editUserModal');
@@ -234,7 +263,8 @@ class UsersIndex extends Component
         $this->editId     = $u['id'];
         $this->editName   = $u['name'];
         $this->editEmail  = $u['email'];
-        $this->editRole   = $u['role'];
+        $this->editRoles = $u['roles'] ?? [];
+        $this->editDepartment = $u['department'] ?? '';
 
         $this->resetErrorBag();
         $this->resetValidation();
@@ -254,10 +284,14 @@ class UsersIndex extends Component
      */
     protected function rules()
     {
+        $hasRoleWithoutDept = !empty(array_intersect($this->editRoles, self::ROLES_WITHOUT_DEPARTMENT));
+
         return [
             'editName' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'editEmail' => 'required|email|regex:/@upr(\.\w+)?\.edu$/i', //other option:ends_with:@upr.edu'
-            'editRole' => 'required|string',
+            'editEmail' => 'required|email|regex:/@upr[a-z]*\.edu$/i',
+            'editRoles' => 'array|min:1',
+            'editRoles.*' => 'string',
+            'editDepartment' => $hasRoleWithoutDept ? 'nullable' : 'required|string',
             'justification' => 'nullable|string|max:200'
         ];
     }
@@ -339,7 +373,8 @@ class UsersIndex extends Component
             $editedUsers[$this->editId] = [
                 'name'  => $this->editName,
                 'email' => $this->editEmail,
-                'role'  => $this->editRole,
+                'roles' => array_values(array_unique($this->editRoles)),
+                'department' => $this->editDepartment,
             ];
             session(['edited_users' => $editedUsers]);
             $message = 'User updated';
@@ -350,7 +385,8 @@ class UsersIndex extends Component
                 'id'    => $this->generateUserId(),
                 'name'  => $this->editName,
                 'email' => $this->editEmail,
-                'role'  => $this->editRole,
+                'roles' => array_values(array_unique($this->editRoles)),
+                'department' => $this->editDepartment,
             ];
             session(['new_users' => $newUsers]);
             $message = 'User created';
@@ -489,15 +525,16 @@ class UsersIndex extends Component
     protected function filtered(): Collection
     {
         $s = mb_strtolower(trim($this->search));
+        $selectedRole = $this->role;
 
         return $this->allUsers()
-            ->filter(function ($u) use ($s) {
+            ->filter(function ($u) use ($s, $selectedRole) {
                 $hit = $s === '' ||
                     str_contains(mb_strtolower($u['name']), $s) ||
                     str_contains(mb_strtolower($u['email']), $s);
 
-                $roleOk = $this->role === '' || $u['role'] === $this->role;
-
+                $roles = $u['roles'] ?? [];
+                $roleOk = $selectedRole === '' || in_array($selectedRole, $roles, true);
                 return $hit && $roleOk;
             })
             ->values();
