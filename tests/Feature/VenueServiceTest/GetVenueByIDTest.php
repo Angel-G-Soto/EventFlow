@@ -2,11 +2,16 @@
 
 use App\Models\Venue;
 use App\Services\VenueService;
+use App\Services\DepartmentService;
+
+beforeEach(function () {
+    $this->service = new VenueService(new DepartmentService());
+});
 
 it('returns a venue by valid ID', function () {
     $venue = Venue::factory()->create();
 
-    $result = VenueService::getVenueById($venue->id);
+    $result = $this->service->getVenueById($venue->id);
 
     expect($result)->not()->toBeNull()
         ->and($result->id)->toBe($venue->id)
@@ -16,15 +21,11 @@ it('returns a venue by valid ID', function () {
 it('returns null if venue does not exist', function () {
     $nonExistingId = 999;
 
-    $result = VenueService::getVenueById($nonExistingId);
+    $result = $this->service->getVenueById($nonExistingId);
 
     expect($result)->toBeNull();
 });
 
 it('throws InvalidArgumentException if ID is negative', function () {
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('Venue id must be greater than 0.');
-
-    VenueService::getVenueById(-1);
-});
-
+    $this->service->getVenueById(-1);
+})->throws(InvalidArgumentException::class, 'Venue id must be greater than 0.');

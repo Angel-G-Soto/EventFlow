@@ -41,4 +41,15 @@ class Document extends Model
     {
         return $this->belongsTo(Event::class);
     }
+
+
+    public function getNameOfFile(): string
+    {
+        return $this->name;
+    }
+
+    public function getFilePath(): string
+    {
+        return $this->file_path;
+    }
 }

@@ -3,60 +3,113 @@
 use App\Models\Event;
 use App\Models\Venue;
 use App\Services\VenueService;
+use App\Services\DepartmentService;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
-it('returns only venues not in approved events within time range', function () {
+beforeEach(function () {
+    $departmentService = new DepartmentService();
+    $this->service = new VenueService($departmentService);
+});
 
-    $venue1 = Venue::factory()->create();
-    $venue2 = Venue::factory()->create();
-    $venue3 = Venue::factory()->create();
+
+it('throws an exception when start time is after or equal to end time', function () {
+    $start = Carbon::create(2025, 10, 23, 12, 0, 0);
+    $end   = Carbon::create(2025, 10, 23, 10, 0, 0);
+
+    $this->service->getAvailableVenues($start, $end);
+})->throws(InvalidArgumentException::class, 'Start time must be before end time.');
+
+it('returns all venues when no approved events exist within the timeframe', function () {
+    $venues = Venue::factory()->count(3)->create();
+
+    $start = Carbon::create(2025, 10, 23, 8, 0, 0);
+    $end   = Carbon::create(2025, 10, 23, 20, 0, 0);
+
+    $available = $this->service->getAvailableVenues($start, $end);
+
+    expect($available)->toHaveCount(3);
+    expect($available->pluck('id')->sort()->values())->toEqual($venues->pluck('id')->sort()->values());
+});
+
+it('excludes venues that have approved events overlapping the timeframe', function () {
+    $venueA = Venue::factory()->create();
+    $venueB = Venue::factory()->create();
+    $venueC = Venue::factory()->create();
+
+    $start = Carbon::create(2025, 10, 23, 8, 0, 0);
+    $end   = Carbon::create(2025, 10, 23, 20, 0, 0);
+
+    // Event fully inside the timeframe (blocks venueA)
+    Event::factory()->create([
+        'venue_id'   => $venueA->id,
+        'start_time' => Carbon::create(2025, 10, 23, 10, 0, 0),
+        'end_time'   => Carbon::create(2025, 10, 23, 12, 0, 0),
+        'status'     => 'approved',
+    ]);
+
+    // Event partially overlapping start of window (blocks venueB)
+    Event::factory()->create([
+        'venue_id'   => $venueB->id,
+        'start_time' => Carbon::create(2025, 10, 23, 7, 0, 0),
+        'end_time'   => Carbon::create(2025, 10, 23, 9, 0, 0),
+        'status'     => 'approved',
+    ]);
+
+    // Event outside timeframe (venueC should be available)
+    Event::factory()->create([
+        'venue_id'   => $venueC->id,
+        'start_time' => Carbon::create(2025, 10, 23, 22, 0, 0),
+        'end_time'   => Carbon::create(2025, 10, 23, 23, 0, 0),
+        'status'     => 'draft',
+    ]);
+
+    $available = $this->service->getAvailableVenues($start, $end);
+
+    expect($available->pluck('id'))
+        ->not->toContain($venueA->id)
+        ->not->toContain($venueB->id)
+        ->toContain($venueC->id);
+});
+
+it('includes venues that have unapproved or completed events within timeframe', function () {
+    $venuePending = Venue::factory()->create();
+    $venueCompleted = Venue::factory()->create();
+
+    $start = Carbon::create(2025, 10, 23, 8, 0, 0);
+    $end   = Carbon::create(2025, 10, 23, 20, 0, 0);
 
     Event::factory()->create([
-        'venue_id' => $venue1->id,
-        'e_start_time' => now()->addHour(),
-        'e_end_time' => now()->addHours(2),
-        'e_status' => 'Pending - Advisor',
+        'venue_id'   => $venuePending->id,
+        'start_time' => Carbon::create(2025, 10, 23, 9, 0, 0),
+        'end_time'   => Carbon::create(2025, 10, 23, 11, 0, 0),
+        'status'     => 'pending',
     ]);
 
     Event::factory()->create([
-        'venue_id' => $venue2->id,
-        'e_start_time' => now()->addHour(),
-        'e_end_time' => now()->addHours(2),
-        'e_status' => 'Approved',
+        'venue_id'   => $venueCompleted->id,
+        'start_time' => Carbon::create(2025, 10, 23, 13, 0, 0),
+        'end_time'   => Carbon::create(2025, 10, 23, 15, 0, 0),
+        'status'     => 'completed',
     ]);
 
-    $start = now();
-    $end = now()->addHours(3);
+    $available = $this->service->getAvailableVenues($start, $end);
 
-    $availableVenues = VenueService::getAvailableVenues($start, $end);
-
-    expect($availableVenues->pluck('id'))
-        ->toContain($venue2->id)
-        ->toContain($venue3->id)
-        ->not->toContain($venue1->id);
+    expect($available->pluck('id'))
+        ->toContain($venuePending->id)
+        ->toContain($venueCompleted->id);
 });
 
-it('returns all venues if no events conflict in time range', function () {
-    $venue1 = Venue::factory()->create();
-    $venue2 = Venue::factory()->create();
+it('does not return soft-deleted venues', function () {
+    $activeVenue = Venue::factory()->create(['deleted_at' => null]);
+    $deletedVenue = Venue::factory()->create(['deleted_at' => Carbon::now()]);
 
-    $start = now();
-    $end = now()->addHours(2);
+    $start = Carbon::create(2025, 10, 23, 8, 0, 0);
+    $end   = Carbon::create(2025, 10, 23, 20, 0, 0);
 
-    // No events are created
+    $available = $this->service->getAvailableVenues($start, $end);
 
-    $availableVenues = VenueService::getAvailableVenues($start, $end);
-
-    expect($availableVenues->pluck('id'))
-        ->toContain($venue1->id)
-        ->toContain($venue2->id);
-});
-
-it('throws an exception if start time is after or equal to end time', function () {
-    $start = now()->addHour();
-    $end = now();
-
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('Start time must be before end time.');
-
-    VenueService::getAvailableVenues($start, $end);
+    expect($available->pluck('id'))
+        ->toContain($activeVenue->id)
+        ->not->toContain($deletedVenue->id);
 });

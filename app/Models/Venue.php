@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -79,4 +80,31 @@ class Venue extends Model
     {
         return $this->belongsTo(User::class, 'manager_id');
     }
+
+
+
+    public function getDepartmentID(): int
+    {
+        return $this->department_id;
+    }
+
+    public function getFeatures(): array
+    {
+        // The list of all possible features
+        $allFeatures = ['online', 'multimedia', 'teaching', 'computers'];
+
+        // Initialize the array to store the enabled features
+        $enabledFeatures = [];
+
+        // Iterate through the features and add the enabled ones
+        foreach ($this->features as $index => $isEnabled) {
+            if ($isEnabled === 1) { // If the feature at this index is enabled (1)
+                $enabledFeatures[] = $allFeatures[$index]; // Add the corresponding feature to the array
+            }
+        }
+
+        // Return the enabled features as an array
+        return $enabledFeatures;
+    }
+
 }

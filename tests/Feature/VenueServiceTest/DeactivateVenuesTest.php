@@ -2,24 +2,44 @@
 
 use App\Models\User;
 use App\Models\Venue;
+use App\Models\Role;
 use App\Services\VenueService;
+use App\Services\DepartmentService;
 
-it('soft deletes all venues provided in the array', function () {
-    $venues = Venue::factory()->count(3)->create();  // Create 3 venue instances
+beforeEach(function () {
+    $this->service = new VenueService(new DepartmentService());
+});
 
-    VenueService::deactivateVenues($venues->all());
+it('soft deletes valid venues when user is system-administrator', function () {
+    $admin = User::factory()->create();
+    $role = Role::factory()->create(['name' => 'system-administrator']);
+    $admin->roles()->attach($role);
+
+    $venues = Venue::factory()->count(3)->create();
+
+    $this->service->deactivateVenues($venues->all(), $admin);
 
     foreach ($venues as $venue) {
-        $venue->refresh();
-        expect($venue->deleted_at)->not()->toBeNull();
+        expect($venue->fresh()->deleted_at)->not->toBeNull();
     }
 });
 
-it('throws an exception when array contains non-venue elements', function () {
-    $users = User::factory()->count(2)->create();
+it('throws exception if user is not system-administrator', function () {
+    $user = User::factory()->create(); // no role
+    $venues = Venue::factory()->count(2)->create();
 
-    expect(function () use ($users) {
-        VenueService::deactivateVenues($users->all());
-    })->toThrow(\InvalidArgumentException::class, 'List contains elements that are not venues.');
-});
+    $this->service->deactivateVenues($venues->all(), $user);
+})->throws(\InvalidArgumentException::class, 'The manager and the director must be system-administrator.');
+
+it('throws exception if array contains non-venue elements', function () {
+    $admin = User::factory()->create();
+    $role = Role::factory()->create(['name' => 'system-administrator']);
+    $admin->roles()->attach($role);
+
+    $venues = [Venue::factory()->create(), 'not-a-venue'];
+
+    $this->service->deactivateVenues($venues, $admin);
+})->throws(\InvalidArgumentException::class, 'List contains elements that are not venues.');
+
+
 

@@ -17,7 +17,7 @@ it('has many managers', function () {
     $department = Department::factory()->create();
     User::factory()->count(2)->create(['department_id' => $department->id]);
 
-    expect($department->managers)->toHaveCount(2)
+    expect($department->employees)->toHaveCount(2)
         ->each->toBeInstanceOf(User::class);
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -42,4 +43,19 @@ class Category extends Model
     {
         return $this->belongsToMany(Event::class);
     }
+
+    public function getEventsByState(?string $state): Collection
+    {
+        if (!in_array(
+            strtolower($state),
+            ['draft', 'pending approval - advisor', 'pending approval - manager', 'pending approval - event approver', 'pending approval - deanship of administration', 'approved', 'rejected', 'cancelled', 'withdrawn', 'completed']
+            )
+        ){
+            throw new \InvalidArgumentException('');
+        }
+        elseif ($state === null) return $this->events()->get();
+        return $this->events()->where('state', strtolower($state))->get();
+    }
+
+
 }

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Http\Request;
+use \Illuminate\Database\Eloquent\Collection;
 
 class Event extends Model
 {
@@ -52,6 +53,8 @@ class Event extends Model
      * @var string
      */
     protected $connection = 'mariadb';
+
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
 
     /**
      * Relationship between the Event and User
@@ -96,5 +99,32 @@ class Event extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class);
+    }
+
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+    public function getHistory(): Collection
+    {
+        return $this->history()->get();
+    }
+
+    public function getCurrentApprover(): User
+    {
+        return $this->history()->orderBy('created_at', 'desc')->first()->approver;
+    }
+
+    public function getCurrentState(): User
+    {
+        return $this->status;
+    }
+
+    public function getCategories(): Collection
+    {
+        return $this->categories()->get();
+    }
+
+    public function getVenue(): Venue
+    {
+        return $this->venue;
     }
 }

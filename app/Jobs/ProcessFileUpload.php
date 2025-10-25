@@ -36,7 +36,7 @@ class ProcessFileUpload implements ShouldQueue
             if (!$document instanceof Document) throw new InvalidArgumentException();
 
             // Get path to where the document is located.
-            $path = Storage::disk('uploads_temp')->path($document->d_name);
+            $path = Storage::disk('uploads_temp')->path($document->getNameOfFile());
 
             // Create scanning process
             $scan = new Process(['clamscan', $path]);
@@ -48,14 +48,14 @@ class ProcessFileUpload implements ShouldQueue
             if (Str::contains($scan->getOutput(), 'OK'))
             {
                 // Move file
-                $contents = Storage::disk('uploads_temp')->get($document->d_name);
-                Storage::disk('documents')->put($document->d_name, $contents);
-                Storage::disk('uploads_temp')->delete($document->d_name);
+                $contents = Storage::disk('uploads_temp')->get($document->getNameOfFile());
+                Storage::disk('documents')->put($document->getNameOfFile(), $contents);
+                Storage::disk('uploads_temp')->delete($document->getNameOfFile());
             }
             elseif(Str::contains($scan->getOutput(), 'FOUND'))
             {
                 // Delete file
-                Storage::disk('uploads_temp')->delete($document->d_name);
+                Storage::disk('uploads_temp')->delete($document->getNameOfFile());
             }
             else throw new ProcessFailedException($scan);
         }

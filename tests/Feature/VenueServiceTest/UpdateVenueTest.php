@@ -1,93 +1,92 @@
 <?php
 
+use App\Models\Department;
 use App\Models\User;
 use App\Models\Venue;
+use App\Models\Role;
 use App\Services\VenueService;
+use App\Services\DepartmentService;
 
-it('updates venue with valid fillable fields', function () {
-    $admin = User::factory()->create();
-    $venue = Venue::factory()->create([
-        'v_name' => 'SALON DE CLASES',
-        'v_code' => 'AE-102',
-    ]);
-
-    $data = [
-        'v_name' => 'OFIC. CENTRO DE COMPUTOS',
-        'v_code' => 'AE-110',
-    ];
-
-    $result = VenueService::updateVenue($venue, $data, $admin);
-    $venue->refresh();
-
-    expect($result)->toBeInstanceOf(Venue::class)
-        ->and($result->v_name)->toBe($data['v_name'])
-        ->and($result->v_code)->toBe($data['v_code'])
-        ->and($venue->v_name)->toBe($data['v_name'])
-        ->and($venue->v_code)->toBe($data['v_code']);
+beforeEach(function () {
+    $this->venueService = new VenueService(new DepartmentService());
 });
 
-it('ignores null values in update data', function () {
+it('updates a venue successfully with valid data', function () {
+    $venue = Venue::factory()->create();
+
+    // Create a role and attach to the user (many-to-many)
     $admin = User::factory()->create();
-    $venue = Venue::factory()->create([
-        'v_name' => 'SALON DE CLASES',
-        'v_code' => 'AE-102',
-    ]);
+    $department = Department::factory()->create();
+    $role = Role::factory()->create(['name' => 'system-administrator']);
+    $admin->roles()->attach($role->id);
 
     $data = [
-        'v_name' => null,
-        'v_code' => 'AE-106',
+        'manager_id' => 1,
+        'department_id' => $department->id,
+        'name' => 'SALON DE CLASES',
+        'code' => 'AE-102',
+        'features' => '1010',
+        'capacity' => 60,
+        'test_capacity' => 50,
+        'opening_time' => '08:00:00',
+        'closing_time' => '22:00:00',
     ];
 
-    $result = VenueService::updateVenue($venue, $data, $admin);
-    $venue->refresh();
+    $updatedVenue = $this->venueService->updateVenue($venue, $data, $admin);
 
-    expect($result)->toBeInstanceOf(Venue::class)
-        ->and($result->v_name)->toBe('SALON DE CLASES')
-        ->and($result->v_code)->toBe($data['v_code'])
-        ->and($venue->v_name)->toBe('SALON DE CLASES')
-        ->and($venue->v_code)->toBe($data['v_code']);
+    expect($updatedVenue)
+        ->toBeInstanceOf(Venue::class)
+        ->and($updatedVenue->name)->toBe('SALON DE CLASES')
+        ->and($updatedVenue->capacity)->toBe(60);
 });
 
-it('ignores non-fillable keys in data', function () {
+it('throws InvalidArgumentException when data contains invalid keys', function () {
+    $venue = Venue::factory()->create();
+
     $admin = User::factory()->create();
-    $venue = Venue::factory()->create([
-        'v_name' => 'Original',
-    ]);
+    $role = Role::factory()->create(['name' => 'system-administrator']);
+    $admin->roles()->attach($role->id);
 
     $data = [
-        'v_name' => 'Changed',
-        'not_a_column' => 'Ignored',
+        'name' => 'Main Hall',
+        'invalid_field' => 'Some Value',
     ];
 
-    $result = VenueService::updateVenue($venue, $data, $admin);
-    $venue->refresh();
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage('Invalid attribute keys detected');
 
-    expect($result)->toBeInstanceOf(Venue::class)
-        ->and($result->v_name)->toBe($data['v_name'])
-        ->and($result)->not()->toHaveProperty('not_a_column')
-        ->and($venue->v_name)->toBe($data['v_name'])
-        ->and($venue)->not()->toHaveProperty('not_a_column');
-    });
+    $this->venueService->updateVenue($venue, $data, $admin);
+});
 
-it('does not change anything when all values are null or non-fillable', function () {
+it('throws InvalidArgumentException when data contains null values', function () {
+    $venue = Venue::factory()->create();
+
     $admin = User::factory()->create();
-    $venue = Venue::factory()->create([
-        'v_name' => 'SALON DE CLASES',
-        'v_code' => 'AE-102',
-    ]);
+    $role = Role::factory()->create(['name' => 'system-administrator']);
+    $admin->roles()->attach($role->id);
 
     $data = [
-        'v_name' => null,
-        'non_fillable_field' => 'irrelevant'
+        'name' => null,
+        'code' => 'AE-106',
     ];
 
-    $result = VenueService::updateVenue($venue, $data, $admin);
-    $venue->refresh();
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage('Null values are not allowed for keys');
 
-    expect($result)->toBeInstanceOf(Venue::class)
-        ->and($result->v_name)->toBe('SALON DE CLASES')
-        ->and($result->v_code)->toBe('AE-102')
-        ->and($venue->v_name)->toBe('SALON DE CLASES')
-        ->and($venue->v_code)->toBe('AE-102');
-    });
+    $this->venueService->updateVenue($venue, $data, $admin);
+});
 
+it('throws InvalidArgumentException when admin has no system-administrator role', function () {
+    $venue = Venue::factory()->create();
+    $nonAdmin = User::factory()->create();
+
+    $data = [
+        'name' => 'SALON DE CLASES',
+        'code' => 'AE-102',
+    ];
+
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage('The manager and the director must be system-administrator.');
+
+    $this->venueService->updateVenue($venue, $data, $nonAdmin);
+});

@@ -2,126 +2,119 @@
 
 use App\Models\User;
 use App\Models\Venue;
-use App\Models\UseRequirement;
+use App\Models\Department;
+use App\Models\Role;
 use App\Services\VenueService;
+use App\Services\DepartmentService;
 
-it('creates requirements for a venue', function () {
-    $venue = Venue::factory()->create();
-    $manager = User::factory()->create();
-    $data = [
-        'documents' => [
-            [
-                'name' => 'Food Certificate',
-                'description' => 'Authorization to sell food.',
-                'template_url' => 'https://example.com/insurance.pdf'
-            ]
-        ],
-        'checkboxes' => [
-            [
-                'label' => 'You agree to not sell or consume alcohol beverages'
-            ]
-        ]];
-
-    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
-
-    expect(UseRequirement::count())->toBe(2);
-
-    $document = UseRequirement::whereNotNull('ur_document_link')->first();
-    expect($document)->not()->toBeNull()
-        ->and($document->venue_id)->toBe($venue->id)
-        ->and($document->ur_name)->toBe($data['documents'][0]['name'])
-        ->and($document->ur_description)->toBe($data['documents'][0]['description'])
-        ->and($document->ur_document_link)->toBe($data['documents'][0]['template_url']);
-
-    $checkbox = UseRequirement::whereNotNull('ur_label')->first();
-    expect($checkbox)->not()->toBeNull()
-        ->and($checkbox->ur_label)->toBe($data['checkboxes'][0]['label']);
+beforeEach(function () {
+    $this->service = new VenueService(new DepartmentService());
 });
 
-it('deletes old requirements before inserting new ones', function () {
+it('throws exception if user is not a department manager', function () {
+    $department = Department::factory()->create();
+    $venue = Venue::factory()->create(['department_id' => $department->id]);
+    $user = User::factory()->create(['department_id' => $department->id]);
+    $requirementsData = [
+        ['name' => 'Req1', 'hyperlink' => 'http://link.com', 'description' => 'Desc']
+    ];
+
+    $this->service->updateOrCreateVenueRequirements($venue, $requirementsData, $user);
+})->throws(InvalidArgumentException::class, 'Manager does not have the required role.');
+
+it('throws exception if manager does not belong to venue department', function () {
+    $department = Department::factory()->create();
+    $otherDepartment = Department::factory()->create();
+
+    $venue = Venue::factory()->create(['department_id' => $department->id]);
+    $manager = User::factory()->create(['department_id' => $otherDepartment->id]);
+    $role = Role::factory()->create(['name' => 'department-manager']);
+    $manager->roles()->attach($role);
+
+    $requirementsData = [
+        ['name' => 'Req1', 'hyperlink' => 'http://link.com', 'description' => 'Desc']
+    ];
+
+    $this->service->updateOrCreateVenueRequirements($venue, $requirementsData, $manager);
+})->throws(InvalidArgumentException::class, 'Manager does not belong to the venue department.');
+
+it('throws InvalidArgumentException if a requirement item is not an array', function () {
     $venue = Venue::factory()->create();
-    $manager = User::factory()->create();
+    $manager = User::factory()->create(['department_id' => $venue->department_id]);
+    $role = Role::factory()->create(['name' => 'department-manager']);
+    $manager->roles()->attach($role);
 
-    UseRequirement::factory()->create([
-        'venue_id' => $venue->id,
-        'ur_label' => 'old label'
-    ]);
+    $requirementsData = ['invalid requirement'];
 
-    expect(UseRequirement::where('venue_id', $venue->id)->count())->toBe(1);
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage('Requirement at index 0 must be an array.');
 
-    $data = [
-        'documents' => [
-            [
-                'name' => 'Food Certificate',
-                'description' => 'Authorization to sell food.',
-                'template_url' => 'https://example.com/insurance.pdf'
-            ]
-        ],
-        'checkboxes' => [
-            [
-                'label' => 'You agree to not sell or consume alcohol beverages'
-            ]
-        ]];
-
-    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
-
-    $requirements = UseRequirement::where('venue_id', $venue->id)->get();
-    expect($requirements)->toHaveCount(2)
-        ->and($requirements->pluck('ur_label'))->not()->toContain('old label');
+    $this->service->updateOrCreateVenueRequirements($venue, $requirementsData, $manager);
 });
 
-it('handles empty documents and only creates checkboxes', function () {
+it('throws InvalidArgumentException if requirement is missing keys', function () {
     $venue = Venue::factory()->create();
-    $manager = User::factory()->create();
+    $manager = User::factory()->create(['department_id' => $venue->department_id]);
+    $role = Role::factory()->create(['name' => 'department-manager']);
+    $manager->roles()->attach($role);
 
-    $data = [
-        'documents' => [],
-        'checkboxes' => [
-            ['label' => 'No alcohol allowed']
+    $requirementsData = [
+        [
+            'name' => 'Requirement 1',
+            // missing 'hyperlink'
+            'description' => 'Description 1'
         ]
     ];
 
-    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage('Missing keys in requirement at index 0: hyperlink');
 
-    expect(UseRequirement::count())->toBe(1)
-        ->and(UseRequirement::first()->ur_label)->toBe($data['checkboxes'][0]['label']);
+    $this->service->updateOrCreateVenueRequirements($venue, $requirementsData, $manager);
 });
 
-it('handles empty checkboxes and only creates documents', function () {
+it('throws InvalidArgumentException if a requirement has null values', function () {
     $venue = Venue::factory()->create();
-    $manager = User::factory()->create();
+    $manager = User::factory()->create(['department_id' => $venue->department_id]);
+    $role = Role::factory()->create(['name' => 'department-manager']);
+    $manager->roles()->attach($role);
 
-    $data = [
-        'documents' => [
-            [
-                'name' => 'Safety Form',
-                'description' => 'To be submitted before event.',
-                'template_url' => 'https://example.com/safety.pdf'
-            ]
-        ],
-        'checkboxes' => []
-    ];
-
-    VenueService::updateOrCreateVenueRequirements($venue, $data, $manager);
-
-    expect(UseRequirement::count())->toBe(1);
-    $doc = UseRequirement::first();
-    expect($doc->ur_name)->toBe($data['documents'][0]['name']);
-});
-
-it('throws exception if something goes wrong', function () {
-    $venue = Venue::factory()->create();
-    $manager = User::factory()->create();
-
-    // Missing required keys to simulate failure
-    $badData = [
-        'documents' => [
-            ['description' => 'No name or URL']
+    $requirementsData = [
+        [
+            'name' => null,
+            'hyperlink' => 'https://example.com/req1',
+            'description' => 'Description 1'
         ]
     ];
 
-    $this->expectException(Exception::class);
-    $this->expectExceptionMessage('Unable to update or create the venue requirements.');
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage("The field 'name' in requirement at index 0 cannot be null");
 
-    VenueService::updateOrCreateVenueRequirements($venue, $badData, $manager);
+    $this->service->updateOrCreateVenueRequirements($venue, $requirementsData, $manager);
+});
+
+it('successfully creates use requirements', function () {
+    $department = Department::factory()->create();
+    $venue = Venue::factory()->create(['department_id' => $department->id]);
+
+    $manager = User::factory()->create(['department_id' => $department->id]);
+    $role = Role::factory()->create(['name' => 'department-manager']);
+    $manager->roles()->attach($role);
+
+    $requirementsData = [
+        ['name' => 'Req1', 'hyperlink' => 'http://link.com', 'description' => 'Desc1'],
+        ['name' => 'Req2', 'hyperlink' => 'http://link2.com', 'description' => 'Desc2']
+    ];
+
+    $this->service->updateOrCreateVenueRequirements($venue, $requirementsData, $manager);
+
+    $this->assertDatabaseCount('use_requirements', 2);
+
+    foreach ($requirementsData as $doc) {
+        $this->assertDatabaseHas('use_requirements', [
+            'venue_id' => $venue->id,
+            'name' => $doc['name'],
+            'hyperlink' => $doc['hyperlink'],
+            'description' => $doc['description']
+        ]);
+    }
 });

@@ -56,14 +56,14 @@ return new class extends Migration {
         Schema::create('venues', function (Blueprint $table) {
             $table->id();
             $table->foreignId('department_id')->constrained('departments');
-            $table->foreignId('manager_id')->constrained('users');
+            $table->foreignId('manager_id')->nullable()->constrained('users');
             $table->string('name');
             $table->string('code');
             $table->string('features');
             $table->integer('capacity');
             $table->integer('test_capacity');
-            $table->time('opening_time');
-            $table->time('closing_time');
+            $table->time('opening_time')->default('00:00:00');
+            $table->time('closing_time')->default('23:59:59');
             $table->timestamps();
             $table->softDeletes();
         });
@@ -93,8 +93,8 @@ return new class extends Migration {
             $table->string('student_phone');
             $table->string('title');
             $table->text('description');
-            $table->date('start_time');
-            $table->date('end_time');
+            $table->dateTime('start_time');
+            $table->dateTime('end_time');
             $table->string('status');
             $table->integer('guests');
             $table->boolean('handles_food');

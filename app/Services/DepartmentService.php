@@ -16,7 +16,7 @@ class DepartmentService {
      * @param int $id
      * @return Department|null
      */
-    public static function getDepartmentByID(int $id): Department|null
+    public function getDepartmentByID(int $id): Department|null
     {
         if ($id < 0) {
             throw new \InvalidArgumentException('Department ID must be a positive integer.');
@@ -31,7 +31,7 @@ class DepartmentService {
      * @return Collection
      * @throws Exception
      */
-    public static function getAllDepartments(): Collection
+    public function getAllDepartments(): Collection
     {
         try {
             return Department::all();
@@ -45,8 +45,8 @@ class DepartmentService {
      *
      * [
      *      [
-     *          d_name => 'name_of_department'
-     *          d_code => 'code_of_department'
+     *          name => 'name_of_department'
+     *          code => 'code_of_department'
      *      ],
      *      ...
      * ]
@@ -55,17 +55,17 @@ class DepartmentService {
      * @return mixed
      * @throws Exception
      */
-    public static function updateOrCreateDepartment(array $departmentData): Collection
+    public function updateOrCreateDepartment(array $departmentData): Collection
     {
         try {
             // Validate the input data
             foreach ($departmentData as $index => $department) {
-                if (!isset($department['d_name'], $department['d_code'])) {
-                    throw new InvalidArgumentException("Missing required keys 'd_name' or 'd_code' in department at index $index.");
+                if (!isset($department['name'], $department['code'])) {
+                    throw new InvalidArgumentException("Missing required keys 'name' or 'code' in department at index $index.");
                 }
 
-                if (!is_string($department['d_name']) || !is_string($department['d_code'])) {
-                    throw new InvalidArgumentException("Invalid data types in department at index $index. Both 'd_name' and 'd_code' must be strings.");
+                if (!is_string($department['name']) || !is_string($department['code'])) {
+                    throw new InvalidArgumentException("Invalid data types in department at index $index. Both 'name' and 'code' must be strings.");
                 }
             }
 
@@ -76,12 +76,12 @@ class DepartmentService {
                 // Find value based on the name and code. Update its fields
                 $updatedDepartments->add(Department::updateOrCreate(
                     [
-                        'd_name' => $department['d_name'],
-                        'd_code' => $department['d_code'],
+                        'name' => $department['name'],
+                        'code' => $department['code'],
                     ],
                     [
-                        'd_name' => $department['d_name'],
-                        'd_code' => $department['d_code'],
+                        'name' => $department['name'],
+                        'code' => $department['code'],
                     ]
                 ));
             }
@@ -101,7 +101,7 @@ class DepartmentService {
      * @return bool
      * @throws Exception
      */
-    public static function deleteDepartment(int $id): bool
+    public function deleteDepartment(int $id): bool
     {
         try {
             if ($id < 0) throw new InvalidArgumentException('Department ID must be a positive integer.');
@@ -120,7 +120,7 @@ class DepartmentService {
      * @return Collection
      * @throws Exception
      */
-    public static function getUseRequirement(int $id): Collection
+    public function getUseRequirement(int $id): Collection
     {
         {
             try {
@@ -135,7 +135,7 @@ class DepartmentService {
     }
 
 
-//    public static function updateDepartmentAssignment(Department $department, Venue $venue): void
+//    public function updateDepartmentAssignment(Department $department, Venue $venue): void
 //    {
 //        $venue->department_id = $department->id;
 //        $venue->save();
@@ -150,7 +150,7 @@ class DepartmentService {
      * @return void
      * @throws Exception
      */
-    public static function updateUserDepartment(Department $department, User $manager): User
+    public function updateUserDepartment(Department $department, User $manager): User
     {
         try {
             // Validate that both models exist in the database
@@ -172,7 +172,7 @@ class DepartmentService {
         }
     }
 //
-//    public static function getDepartmentVenues(Department $department): Collection
+//    public function getDepartmentVenues(Department $department): Collection
 //    {
 //        return Department::with('venues')->where('id', $department->id)->get();
 //    }

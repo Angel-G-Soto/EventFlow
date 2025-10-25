@@ -34,6 +34,7 @@ class EventHistory extends Model
         'comment',
     ];
 
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
     /**
      * Relationship between the Event History and Event
      * @return BelongsTo
@@ -50,5 +51,16 @@ class EventHistory extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approver_id');
+    }
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+    public function getActionTextAttribute(): string
+    {
+        return $this->action;
+    }
+
+    public function getCommentTextAttribute(): string
+    {
+        return $this->comment;
     }
 }

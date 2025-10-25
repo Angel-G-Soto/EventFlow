@@ -19,8 +19,8 @@ it('scans and moves a clean file using ClamAV', function () {
 
     // Create a fake Document
     $document = Document::factory()->create([
-        'd_name' => $file_name,
-        'd_file_path' => $file_path,
+        'name' => $file_name,
+        'file_path' => $file_path,
     ]);
 
     // Dispatch job directly
@@ -42,8 +42,8 @@ it('scans and deletes a dangerous file using ClamAV', function () {
 
     // Create a fake Document
     $document = Document::factory()->create([
-        'd_name' => $file_name,
-        'd_file_path' => $file_path,
+        'name' => $file_name,
+        'file_path' => $file_path,
     ]);
 
     // Dispatch job directly
@@ -62,8 +62,8 @@ it('process fails', function () {
 
     // Create a fake Document
     $document = Document::factory()->create([
-        'd_name' => $file_name,
-        'd_file_path' => $file_path,
+        'name' => $file_name,
+        'file_path' => $file_path,
     ]);
 
     // Dispatch job directly

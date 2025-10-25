@@ -1,6 +1,5 @@
 <?php
 namespace App\Services;
-use App\Models\Category;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\Event;
@@ -15,6 +14,15 @@ use InvalidArgumentException;
 use Throwable;
 
 class VenueService {
+
+    protected DepartmentService $departmentService;
+    public function __construct(DepartmentService $departmentService)
+    {
+        $this->departmentService =  $departmentService;
+        //$this->auditService = $auditService;
+        //$this->EventService = $eventService
+    }
+
     /**
      * Returns a collection of all the available venues within the specified timeframe
      *
@@ -23,7 +31,7 @@ class VenueService {
      * @return Collection
      * @throws Exception
      */
-    public static function getAvailableVenues(DateTime $startTime, DateTime $endTime): Collection
+    public function getAvailableVenues(DateTime $startTime, DateTime $endTime): Collection
     {
         // Check for error
         if ($startTime >= $endTime) {
@@ -31,19 +39,23 @@ class VenueService {
         }
         try {
             // Get events that occur on between the date parameters
-            $events = Event::where('e_start_time', '>=', $startTime)
-                ->where('e_end_time', '<=', $endTime)
-                ->where('e_status', '<>', 'Approved')
-                ->where('e_status', '<>', 'Completed')
-                ->get();
-
-            // Get the unique venues being used
-            $venueIds = $events->pluck('venue_id')->unique();
+            $unavailableEventVenues = Event::where('status', 'approved')
+                ->where(function ($query) use ($startTime, $endTime) {
+                    $query
+                        ->whereBetween('start_time', [$startTime, $endTime])        // Event starts within window
+                        ->orWhereBetween('end_time', [$startTime, $endTime])        // Event ends within window
+                        ->orWhere(function ($query) use ($startTime, $endTime) {    // Event fully covers window
+                            $query->where('start_time', '<=', $startTime)
+                                ->where('end_time', '>=', $endTime);
+                        });
+                })
+                ->pluck('venue_id')
+                ->unique();
 
             // Add audit trail
 
             // Return venues that are not in the approved events.
-            return Venue::whereNotIn('id', $venueIds)->where('deleted_at', null)->get();
+            return Venue::whereNotIn('id', $unavailableEventVenues)->where('deleted_at', null)->get();
         } catch (\Throwable $exception) {throw new Exception('Unable to extract available venues.');}
     }
 
@@ -52,38 +64,80 @@ class VenueService {
      * values related to the Buildings database. It uses the code and name
      * of each room as key identifiers to perform the update. If no record,
      * contains these identifiers, a new record will be created.
+     * The `$venueData` array must contain one or more associative arrays,
+     * each representing a venue with the following keys:
+     *
+     * Example:
+     * [
+     *   [
+     *     'name'          => 'SALON DE CLASES',    // string - Venue name
+     *     'code'          => 'AE-102',             // string - Unique venue code
+     *     'department'    => 'ADEM',               // string - Department code
+     *     'features'      => '0101',               // string - Comma-separated features, [online, multimedia, teaching, computers]
+     *     'capacity'      => 50,                   // int - Maximum room capacity
+     *     'test_capacity' => 40,                   // int - Capacity during exams
+     *   ],
+     *   ...
+     * ]
      *
      * @param array $venueData
      * @return Collection
      * @throws Exception
      */
-    public static function updateOrCreateFromImportData(array $venueData): Collection
+    public function updateOrCreateFromImportData(array $venueData): Collection
     {
         try {
             // Iterate through the array
             $updatedVenues = new Collection();
+
+            foreach ($venueData as $venue)
+            {
+                // Verify that the requirementsData structure is met
+
+                // Check for invalid keys
+                $invalidKeys = array_diff(array_keys($venue), new Venue()->getFillable(), ['department']);
+                if (!empty($invalidKeys)) {
+                    throw new InvalidArgumentException(
+                        'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
+                    );
+                }
+
+                // Check for null values
+                $nullKeys = array_keys(array_filter($venue, function ($value) {
+                    return is_null($value);
+                }));
+                if (!empty($nullKeys)) {
+                    throw new InvalidArgumentException(
+                        'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
+                    );
+                }
+            }
+
             foreach ($venueData as $venue) {
 
-                $department = Department::where('d_name', $venue['v_department'])->first();
+                // Find the department with its name. EX. Mechanical Engineering
+                $department = Department::where('name', $venue['department'])->first();     // Extract as model method
 
                 // Model Not Found Error
-                If($department->id == null) {
-                    throw new ModelNotFoundException('Department ['.$venue['v_department'].'] does not exist.');
+                If($department == null) {
+                    throw new ModelNotFoundException('Department ['.$venue['department'].'] does not exist.');
                 }
 
                 // Find value based on the name and code. Update its fields
                 $updatedVenues->add(Venue::updateOrCreate(
                     [
-                        'v_name' => $venue['v_name'],
-                        'v_code' => $venue['v_code'],
+                        'name' => $venue['name'],
+                        'code' => $venue['code'],
                     ],
                     [
-                        'v_name' => $venue['v_name'],
-                        'v_code' => $venue['v_code'],
+                        'name' => $venue['name'],
+                        'code' => $venue['code'],
                         'department_id' => $department->id,
-                        'v_features' => $venue['v_features'],
-                        'v_capacity' => $venue['v_capacity'],
-                        'v_test_capacity' => $venue['v_test_capacity'],
+                        'features' => $venue['features'],
+                        'capacity' => $venue['capacity'],
+                        'test_capacity' => $venue['test_capacity'],
+                        //'opening_time' => $venue['opening_time'],
+                        //'closing_time' => $venue['closing_time'],
                     ]
                 ));
             }
@@ -92,9 +146,9 @@ class VenueService {
 
             // Return collection of updated values
             return $updatedVenues;
-        }
-        catch (ModelNotFoundException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable to synchronize venue data.');}
+       }
+       catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
+       catch (\Throwable $exception) {throw new Exception('Unable to synchronize venue data.');}
     }
 
     /**
@@ -104,42 +158,55 @@ class VenueService {
      *
      * @param Venue $venue
      * @param User $manager
-     * @param User $admin
+     * @param User $director
      * @return void
      * @throws Exception
      */
-    public static function assignManager(Venue $venue, User $manager, User $admin): void
+    public function assignManager(Venue $venue, User $manager, User $director): void
     {
         try {
-            // Validate admin and manager have the appropriate roles
+            // Validate director and manager have the appropriate roles
+            if (! $manager->getRoleNames()->contains('department-manager') || ! $director->getRoleNames()->contains('department-director')) {
+                throw new InvalidArgumentException('The manager and the director must be department-manager or department-director respectively.');
+            }
 
-
-            // Validate the venue has a department
-            if ($venue->department_id == null) {throw new InvalidArgumentException('Venue provided does not belong to a department.');}
+            // Validate both are in the correct department
+            if ($venue->getDepartmentID() != $manager->department_id || $venue->getDepartmentID() != $director->department_id) {
+                throw new InvalidArgumentException('The manager and the director must be part of the venue\'s department.');
+            }
 
             // Assign to the manager, the venue's department
-            DepartmentService::updateUserDepartment($venue->department, $manager);
+            $this->departmentService->updateUserDepartment($venue->department, $manager);
 
             // Add audit trail
 
 
-        }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable to assign the manager to its venue.');}
+       }
+       catch (InvalidArgumentException $exception) {throw $exception;}
+       catch (\Throwable $exception) {throw new Exception('Unable to assign the manager to its venue.');}
     }
 
     /**
      * Soft deletes all the venues provided on the array
      *
      * @param array $venues
+     * @param User $admin
      * @return void
      * @throws Exception
      */
-    public static function deactivateVenues(array $venues): void
+    public function deactivateVenues(array $venues, User $admin): void
     {
         try {
+            // Validate admin role
+            if (!$admin->getRoleNames()->contains('system-administrator')) {
+                throw new InvalidArgumentException('The manager and the director must be system-administrator.');
+            }
+
             foreach ($venues as $venue) {
                 if (!$venue instanceof Venue) {throw new \InvalidArgumentException('List contains elements that are not venues.');}
+            };
+
+            foreach ($venues as $venue) {
                 $venue->delete();
             };
 
@@ -157,21 +224,13 @@ class VenueService {
      * The requirements must be organized as in the following structure:
      *
      * [
-     * 'documents' => [
-     *          [
-     *              'name' => string,
-     *              'description' => string,
-     *              'template_url' => string
-     *          ],
-     *          ...
+     *      [
+     *          'name' => string,
+     *          'hyperlink' => string,
+     *          'description' => string
      *      ],
-     * 'checkboxes' => [
-     *          [
-     *              'label' => string
-     *          ],
-     *          ...
-     *      ]
-     * ]
+     *      ...
+     *  ]
      *
      *
      * @param Venue $venue
@@ -180,33 +239,55 @@ class VenueService {
      * @return Void
      * @throws Exception
      */
-    public static function updateOrCreateVenueRequirements(Venue $venue, array $requirementsData, User $manager): Void
+    public function updateOrCreateVenueRequirements(Venue $venue, array $requirementsData, User $manager): Void
     {
        try {
+           // Validate manager role to be 'department-manager' and to belong to the departments of the venues
+           if (!$manager->getRoleNames()->contains('department-manager')) {
+               throw new \InvalidArgumentException('Manager does not have the required role.');
+           }
+           elseif (!$manager->department()->where('id', $venue->department_id)->exists()) {
+               throw new \InvalidArgumentException('Manager does not belong to the venue department.');
+           }
 
+           // Verify that the requirementsData structure is met
+           $expectedKeys = ['name', 'hyperlink', 'description'];
+
+           foreach ($requirementsData as $i => $doc) {
+               if (!is_array($doc)) {
+                   throw new \InvalidArgumentException("Requirement at index {$i} must be an array.");
+               }
+
+               // Must contain all expected keys
+               $missingKeys = array_diff($expectedKeys, array_keys($doc));
+               if ($missingKeys) {
+                   throw new \InvalidArgumentException("Missing keys in requirement at index {$i}: " . implode(', ', $missingKeys));
+               }
+
+               // No null or empty values
+               foreach ($expectedKeys as $key) {
+                   if ($doc[$key] == null) {
+                       throw new \InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
+                   }
+               }
+           }
+
+           // Remove all requirements
            UseRequirement::where('venue_id', $venue->id)->delete();
 
-           if (!empty($requirementsData['documents'])) {
-               foreach ($requirementsData['documents'] as $document) {
-                   $requirement = new UseRequirement();
-                   $requirement->venue_id = $venue->id;
-                   $requirement->ur_document_link = $document['template_url'];
-                   $requirement->ur_name = $document['name'];
-                   $requirement->ur_description = $document['description'];
-                   $requirement->save();
-               }
+           // Place requirements
+           foreach ($requirementsData as $r) {
+               $requirement = new UseRequirement();
+               $requirement->venue_id = $venue->id;
+               $requirement->name = $r['name'];
+               $requirement->hyperlink = $r['hyperlink'];
+               $requirement->description = $r['description'];
+               $requirement->save();
            }
 
-           if (!empty($requirementsData['checkboxes'])) {
-               foreach ($requirementsData['checkboxes'] as $checkbox) {
-                   $requirement = new UseRequirement();
-                   $requirement->venue_id = $venue->id;
-                   $requirement->ur_label = $checkbox['label'];
-                   $requirement->save();
-               }
-           }
-
-       } catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
+       }
+       catch (InvalidArgumentException $exception) {throw $exception;}
+       catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
     }
 
     /**
@@ -214,32 +295,81 @@ class VenueService {
      * The filters parameter must follow the following structure:
      *
      * [
-     *     'v_name' => value1
-     *     'v_code' => value2
-     *     'v_features' => value3
-     *     'v_capacity' => value4
-     *     'v_test_capacity' => value5
+     *     'manager_id' => integer,
+     *     'department_id' => integer,
+     *     'name' => string,
+     *     'code' => string,
+     *     'features' => string,
+     *     'capacity' => integer,
+     *     'test_capacity' => integer,
+     *     'opening_time' => time,
+     *     'closing_time' => time,
      *  ]
      *
-     * @param array $filters
+     * @param array|null $filters
      * @return LengthAwarePaginator
      * @throws Exception
      */
-    public static function getAllVenues(?array $filters): LengthAwarePaginator
+    public function getAllVenues(?array $filters = null): LengthAwarePaginator
     {
         try {
-            $query = Venue::query()->where('deleted_at', null);
 
-            $fillable = new Venue()->getFillable();
+            $query = Venue::query()->whereNull('deleted_at');
 
-            foreach ($filters as $key => $value) {
-                if (in_array($key, $fillable) && $value != null) {
-                    $query->where($key, $value);
+            if (!empty($filters)) {
+                // Verify that the requirementsData structure is met
+
+                // Check for invalid keys
+                $invalidKeys = array_diff(array_keys($filters), new Venue()->getFillable());
+                if (!empty($invalidKeys)) {
+                    throw new InvalidArgumentException(
+                        'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
+                    );
+                }
+
+                // Check for null values
+                $nullKeys = array_keys(array_filter($filters, function ($value) {
+                    return is_null($value);
+                }));
+                if (!empty($nullKeys)) {
+                    throw new InvalidArgumentException(
+                        'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
+                    );
+                }
+
+                foreach ($filters as $key => $value) {
+                    if ($value === null) {
+                        continue;
+                    }
+                    switch ($key) {
+                        case 'manager_id':
+                        case 'department_id':
+                            $query->where($key, (int) $value);
+                            break;
+                        case 'name':
+                        case 'code':
+                            $query->where($key, 'like', '%' . $value . '%');
+                            break;
+                        case 'features':
+                            $query->where($key, $value);
+                            break;
+                        case 'capacity':
+                        case 'test_capacity':
+                            $query->where($key, '>=', (int) $value);
+                            break;
+                        case 'opening_time':
+                        case 'closing_time':
+                            $query->whereTime($key, '=', $value);
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
-
-            return $query->paginate(10);
-        }catch (\Throwable $exception) {throw new Exception('Unable to fetch the venues.');}
+            return $query->orderBy('name')->paginate(10);
+        }
+        catch (InvalidArgumentException $exception) {throw $exception;}
+        catch (\Throwable $exception) {throw new Exception('Unable to fetch the venues.');}
     }
 
     /**
@@ -249,7 +379,7 @@ class VenueService {
      * @return Venue|null
      * @throws Exception
      */
-    public static function getVenueById(int $venueId): ?Venue
+    public function getVenueById(int $venueId): ?Venue
     {
         try {
             if ($venueId < 0) {throw new InvalidArgumentException('Venue id must be greater than 0.');}
@@ -264,15 +394,16 @@ class VenueService {
      * Attributes must be given on the following array format:
      *
      * [
-     *    [
-     *      'v_name' => value1
-     *     'v_code' => value2
-     *     'v_features' => value3
-     *     'v_capacity' => value4
-     *     'v_test_capacity' => value5
-     *     ],
-     *      ...
-     * ]
+     *     'manager_id' => integer,
+     *     'department_id' => integer,
+     *     'name' => string,
+     *     'code' => string,
+     *     'features' => string,
+     *     'capacity' => integer,
+     *     'test_capacity' => integer,
+     *     'opening_time' => time,
+     *     'closing_time' => time,
+     *  ]
      *
      * @param Venue $venue
      * @param array $data
@@ -280,29 +411,42 @@ class VenueService {
      * @return Venue
      * @throws Exception
      */
-    public static function updateVenue(Venue $venue, array $data, User $admin): Venue
+    public function updateVenue(Venue $venue, array $data, User $admin): Venue
     {
         try {
 
             // Validate admin role
+            if (!$admin->getRoleNames()->contains('system-administrator')) {
+                throw new InvalidArgumentException('The manager and the director must be system-administrator.');
+            }
 
-            // Remove the keys that contain null values or are not fillable
-            $fillable= new Venue()->getFillable();
+            // Check for invalid keys
+            $invalidKeys = array_diff(array_keys($data), $venue->getFillable());
+            if (!empty($invalidKeys)) {
+                throw new InvalidArgumentException(
+                    'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
+                );
+            }
 
-            $filteredData = array_filter($data, function($value, $key) use ($fillable) {
-                return $value != null && in_array($key, $fillable);
-            }, ARRAY_FILTER_USE_BOTH);
+            // Check for null values
+            $nullKeys = array_keys(array_filter($data, function ($value) {
+                return is_null($value);
+            }));
+            if (!empty($nullKeys)) {
+                throw new InvalidArgumentException(
+                    'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
+                );
+            }
 
             // Update the venue with the filtered data
-            Venue::updateOrCreate(
+            return Venue::updateOrCreate(
                 [
                     'id' => $venue->id
                 ],
-                $filteredData
+                $data
             );
-
-            return $venue;
         }
+        catch (InvalidArgumentException $exception) {throw $exception;}
         catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
     }
 
@@ -313,7 +457,7 @@ class VenueService {
      * @return Collection
      * @throws Exception
      */
-    public static function getVenuesForDepartment(Department $department): Collection
+    public function getVenuesForDepartment(Department $department): Collection
     {
         try {
             return Venue::where('deleted_at', null)->where('department_id', $department->id)->get();
@@ -328,13 +472,13 @@ class VenueService {
      * @return Collection
      * @throws Exception
      */
-    public static function getUseRequirements(int $id): Collection
+    public function getUseRequirements(int $id): Collection
     {
         {
             try {
-                if ($id == 0 || $id == null) {throw new InvalidArgumentException();}
-                $venue = Venue::find($id);
-                if ($venue == null) {throw new ModelNotFoundException();}
+                if ($id < 0) {throw new InvalidArgumentException('The id must be greater than 0.');}
+                $venue = Venue::findOrFail($id);
+                //if ($venue == null) {throw new ModelNotFoundException();}
                 return $venue->requirements;
             }
             catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
