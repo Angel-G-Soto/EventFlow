@@ -6,6 +6,7 @@ use App\Exceptions\StorageException;
 use App\Models\Document;
 use App\Jobs\ProcessFileUpload;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,9 +26,8 @@ class DocumentService
     /**
      * Process a single file upload end-to-end:
      *  1) Save to a temp location
-     *  2) Virus scan the temp file
-     *  3) Move to the final storage disk
-     *  4) Create DB record
+     *  2) Create DB record
+     *  3) Queue virus scan & move to final storage
      *
      * @throws StorageException
      */
@@ -44,15 +44,15 @@ class DocumentService
             );
         }
 
-        // 2) Create DB record pointing to the TEMP path
+        // 2) Create DB record
         $doc = Document::create([
             'event_id' => $eventId,
-            'd_name' => $file->getClientOriginalName(),
-            'd_file_path' => $tmpRelativePath, // temp name; job will replace with final path
+            'd_name' => $tmpRelativePath,
+            'd_file_path' => '',
         ]);
 
         // 3) Queue virus scan & move to final storage
-        ProcessFileUpload::dispatch([$doc->getKey()]);
+        ProcessFileUpload::dispatch(Document::whereIn('id', [$doc->id])->get());
 
         return $doc;
     }
