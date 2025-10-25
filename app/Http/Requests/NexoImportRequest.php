@@ -24,13 +24,13 @@ class NexoImportRequest extends FormRequest
     {
         return [
             'source_id' => 'nullable|string|max:191',
-            'rows' => 'required|array|min:1',
-            'rows.*.name' => 'required|string|max:255',
-            'rows.*.email' => 'required|email|max:255',
-            'rows.*.assoc_id' => 'required|integer', // external association id from Nexo
-            'rows.*.association_name' => 'required|string|max:255',
-            'rows.*.counselor' => 'nullable|string|max:255',
-            'rows.*.email_counselor' => 'nullable|email|max:255',
+            'rows' => 'required|array',                 // rows must be an associative array (object)
+            'rows.name' => 'required|string|max:255',
+            'rows.email' => 'required|email|max:255',
+            'rows.assoc_id' => 'required|integer',
+            'rows.association_name' => 'required|string|max:255',
+            'rows.counselor' => 'nullable|string|max:255',
+            'rows.email_counselor' => 'nullable|email|max:255',
         ];
     }
 }
