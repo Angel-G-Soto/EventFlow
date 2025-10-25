@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('use_requirements', function (Blueprint $table) {
+        Schema::create('departments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('venue_id')->constrained('venue', 'venue_id');
-            $table->text('ur_instructions')->nullable();
-            $table->string('ur_doc_link')->nullable();
+            $table->foreignId('user_id')->constrained('users');
+            $table->string('d_name');
+            $table->string('d_code');
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('use_requirements');
+        Schema::dropIfExists('departments');
     }
 };

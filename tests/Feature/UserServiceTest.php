@@ -80,12 +80,13 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(
                 $admin->user_id,
+                $admin->u_name,
                 'USER_ROLES_UPDATED',
                 Mockery::any() // We don't need to assert the exact description string
             );
 
         // Act: Call the method to assign the roles.
-        $this->userService->updateUserRoles($user, ['space-manager', 'dsca-staff'], $admin->user_id);
+        $this->userService->updateUserRoles($user, ['space-manager', 'dsca-staff'], $admin);
 
         // Assert: Ensure the user now has exactly these two roles.
         $this->assertCount(2, $user->fresh()->roles);
@@ -107,12 +108,13 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(
                 $admin->user_id,
+                $admin->u_name,
                 'USER_DEPT_ASSIGNED',
                 "Assigned user '{$user->u_name}' to department '{$department->d_name}'."
             );
 
         // Act: Assign the user to the department.
-        $this->userService->assignUserToDepartment($user, $department->department_id, $admin->user_id);
+        $this->userService->assignUserToDepartment($user, $department->department_id, $admin);
 
         // Assert: Ensure the user's department_id has been updated.
         $this->assertEquals($department->department_id, $user->fresh()->department_id);
@@ -139,5 +141,78 @@ class UserServiceTest extends TestCase
         $this->assertTrue($dscaUsers->contains($userWithRole1));
         $this->assertTrue($dscaUsers->contains($userWithRole2));
         $this->assertFalse($dscaUsers->contains($userWithoutRole));
+    }
+
+     #[Test]
+    public function update_user_profile_changes_data_and_audits(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $user = User::factory()->create([
+            'u_name' => 'Old Name',
+            'u_email' => 'Old Email',
+        ]);
+        $newData = [
+            'u_name' => 'New Name',
+            'u_email' => 'New Email',
+        ];
+
+        $this->auditServiceMock
+            ->shouldReceive('logAdminAction')
+            ->once()
+            ->with(
+                $admin->user_id,
+                $admin->u_name,
+                'USER_PROFILE_UPDATED',
+                Mockery::any()
+            );
+
+        // Act
+        $this->userService->updateUserProfile($user, $newData, $admin);
+
+        // Assert
+        $this->assertDatabaseHas('User', [
+            'user_id' => $user->user_id,
+            'u_name' => 'New Name'
+        ]);
+        $this->assertDatabaseMissing('User', [
+            'user_id' => $user->user_id,
+            'u_name' => 'Old Name',
+        ]);
+
+        $this->assertDatabaseHas('User', [
+            'user_id' => $user->user_id,
+            'u_email' => 'New Email'
+        ]);
+        $this->assertDatabaseMissing('User', [
+            'user_id' => $user->user_id,
+            'u_email' => 'Old Email',
+        ]);
+    }
+
+    #[Test]
+    public function delete_user_removes_record_and_audits(): void
+    {
+        // Arrange
+        $admin = User::factory()->create();
+        $userToDelete = User::factory()->create();
+
+        $this->auditServiceMock
+            ->shouldReceive('logAdminAction')
+            ->once()
+            ->with(
+                $admin->user_id,
+                $admin->u_name,
+                'USER_DELETED',
+                "Permanently deleted user '{$userToDelete->u_name}' (Email: {$userToDelete->u_email}) (ID: {$userToDelete->user_id})."
+            );
+
+        // Act
+        $this->userService->deleteUser($userToDelete, $admin);
+
+        // Assert
+        $this->assertDatabaseMissing('User', [
+            'user_id' => $userToDelete->user_id,
+        ]);
     }
 }

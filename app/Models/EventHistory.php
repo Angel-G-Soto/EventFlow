@@ -7,8 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EventHistory extends Model
 {
-    protected $table = 'event_history';      // @var string The table associated with the model.
-    protected $primaryKey = 'eh_id';        // @var string The primary key associated with the table.
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The database connection that should be used by the model.
+     *
+     * @var string
+     */
+    protected $connection = 'mariadb';
 
     /**
      * The attributes that are mass assignable.

@@ -9,32 +9,44 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Department extends Model
 {
     use HasFactory;
-    protected $table = 'department';                // @var string The table associated with the model.
-    protected $primaryKey = 'department_id';        // @var string The primary key associated with the table.
-    
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The database connection that should be used by the model.
+     *
+     * @var string
+     */
+    protected $connection = 'mariadb';
+
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * @var string[]
      */
     protected $fillable = [
-        'd_name',             
-        'd_code'
+        'd_name',
+        'd_code',
     ];
 
     /**
-     * Get the users for the department.
-     */
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class);
-    }
-
-    /**
-     * Get the venues for the department.
+     * Relationship between the Department and Venues
+     * @return HasMany
      */
     public function venues(): HasMany
     {
         return $this->hasMany(Venue::class);
+    }
+
+    /**
+     * Relationship between the Department and User
+     * @return HasMany
+     */
+    public function managers(): HasMany
+    {
+        return $this->hasMany(User::class);
     }
 }
