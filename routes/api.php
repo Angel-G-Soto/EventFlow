@@ -9,5 +9,5 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 });
 
 // Nexo import endpoint
-Route::post('/nexo-import', [NexoImportController::class, 'handleNexoImport'])
+Route::post('/nexo-import', [NexoImportController::class, 'handlePrefillRedirect'])
     ->middleware('nexo.api'); // Protected
