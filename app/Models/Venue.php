@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use DateTime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -81,7 +82,7 @@ class Venue extends Model
         return $this->belongsTo(User::class, 'manager_id');
     }
 
-
+    //////////////////////////////////////////// METHODS //////////////////////////////////////////////////
 
     public function getDepartmentID(): int
     {
@@ -105,6 +106,63 @@ class Venue extends Model
 
         // Return the enabled features as an array
         return $enabledFeatures;
+    }
+
+
+    /**
+     * Verifies if the venue is open at the given date.
+     *
+     * @param DateTime $date
+     * @return bool
+     */
+    public function isOpenAt(DateTime $date): bool
+    {
+        $hour = $date->format('H:i:s');
+        $start = $this->opening_time;
+        $end = $this->closing_time;
+
+        if ($start <= $end) {
+            // Normal Hours
+            return $hour >= $start && $hour <= $end;
+        } else {
+            // Overnight Hours
+            return $hour >= $start || $hour <= $end;
+        }
+    }
+
+    /**
+     * Verifies if the venue has an approved event for the given hours.
+     *
+     * @param DateTime $startTime
+     * @param DateTime $endTime
+     * @return bool
+     */
+    public function hasConflict(DateTime $startTime, DateTime $endTime): bool
+    {
+        return Event::where('status', 'approved')
+            ->where('venue_id', $this->id)
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query
+                    ->whereBetween('start_time', [$startTime, $endTime])        // Event starts within window
+                    ->orWhereBetween('end_time', [$startTime, $endTime])        // Event ends within window
+                    ->orWhere(function ($query) use ($startTime, $endTime) {    // Event fully covers window
+                        $query->where('start_time', '<=', $startTime)
+                            ->where('end_time', '>=', $endTime);
+                    });
+            })
+            ->exists();
+    }
+
+    /**
+     * Verifies the availability of a venue for a given hour.
+     *
+     * @param DateTime $startTime
+     * @param DateTime $endTime
+     * @return bool
+     */
+    public function isAvailable(DateTime $startTime, DateTime $endTime): bool
+    {
+        return $this->isOpenAt($startTime) && !$this->hasConflict($startTime, $endTime);
     }
 
 }
