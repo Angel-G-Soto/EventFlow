@@ -108,32 +108,8 @@ class DepartmentService {
 
             return Department::findOrFail($id)->delete();
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (ModelNotFoundException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('Unable to delete the specified department.');}
+        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified department.');}
     }
-
-    /**
-     * Returns the use requirements of the specified department
-     *
-     * @param int $id
-     * @return Collection
-     * @throws Exception
-     */
-    public function getUseRequirement(int $id): Collection
-    {
-        {
-            try {
-                if ($id < 0) {throw new InvalidArgumentException('Department ID must be a positive integer.');}
-                $department = Department::findOrFail($id);
-                return $department->requirements;
-            }
-            catch (InvalidArgumentException $exception) {throw $exception;}
-            catch (ModelNotFoundException $exception) {throw $exception;}
-            catch (Throwable $exception) {throw new Exception('Unable to retrieve department requirements.');}
-        }
-    }
-
 
 //    public function updateDepartmentAssignment(Department $department, Venue $venue): void
 //    {

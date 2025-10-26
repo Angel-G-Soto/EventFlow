@@ -47,7 +47,7 @@ return new class extends Migration {
         Schema::table('users', function (Blueprint $table) {
             $table->string('auth_type');
             $table->softDeletes();
-            $table->foreignId('department_id')->constrained('departments');
+            $table->foreignId('department_id')->nullable()->constrained('departments');
             $table->dropColumn('name');
             $table->string('first_name');
             $table->string('last_name');
