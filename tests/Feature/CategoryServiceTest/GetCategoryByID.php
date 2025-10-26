@@ -4,18 +4,22 @@ use App\Models\Category;
 use App\Services\CategoryService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
+beforeEach(function () {
+    $this->service = new CategoryService();
+});
+
 it('returns the category if the ID exists', function () {
     $category = Category::factory()->create();
 
-    $result = CategoryService::getCategoryByID($category->id);
+    $result = $this->service->getCategoryByID($category->id);
 
     expect($result->id)->toBe($category->id);
 });
 
 it('throws InvalidArgumentException for negative ID', function () {
-    CategoryService::getCategoryByID(-5);
+    $this->service->getCategoryByID(-5);
 })->throws(InvalidArgumentException::class, 'Category ID must be a positive integer.');
 
 it('throws ModelNotFoundException for non-existent ID', function () {
-    CategoryService::getCategoryByID(999);
+    $this->service->getCategoryByID(999);
 })->throws(ModelNotFoundException::class);

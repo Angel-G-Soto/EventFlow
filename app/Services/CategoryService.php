@@ -16,7 +16,7 @@ class CategoryService {
      * @return Category
      * @throws Exception
      */
-    public static function getCategoryByID(int $id): Category
+    public function getCategoryByID(int $id): Category
     {
         try {
             if ($id < 0) {throw new InvalidArgumentException('Category ID must be a positive integer.');}
@@ -34,7 +34,7 @@ class CategoryService {
      * @return Collection
      * @throws Exception
      */
-    public static function getAllCategories(): Collection
+    public function getAllCategories(): Collection
     {
         try {
             return Category::all();
@@ -50,7 +50,7 @@ class CategoryService {
      * @return Category
      * @throws Exception
      */
-    public static function updateCategory(int $id, string $name): Category
+    public function updateCategory(int $id, string $name): Category
     {
         try {
             if ($id < 0) {throw new InvalidArgumentException('Category ID must be a positive integer.');}
@@ -58,7 +58,7 @@ class CategoryService {
             // Find value based on the name. Update its fields
             $category = Category::findOrFail($id);
 
-            $category->c_name = $name;
+            $category->name = $name;
             $category->save();
 
             // Add audit trail
@@ -66,9 +66,7 @@ class CategoryService {
             // Return collection of updated values
             return $category;
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (ModelNotFoundException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('Unable to synchronize category data.');}
+        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to synchronize category data.');}
     }
 
     /**
@@ -78,7 +76,7 @@ class CategoryService {
      * @return bool
      * @throws Exception
      */
-    public static function deleteCategory(int $id): bool
+    public function deleteCategory(int $id): bool
     {
         try {
             if ($id < 0) throw new InvalidArgumentException('Category ID must be a positive integer.');
@@ -97,7 +95,7 @@ class CategoryService {
      * @return Collection
      * @throws Exception
      */
-    public static function getUseRequirement(int $id): Collection
+    public function getUseRequirement(int $id): Collection
     {
         {
             try {
