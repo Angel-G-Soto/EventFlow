@@ -29,12 +29,9 @@
           <label class="form-label">Role</label>
           <select class="form-select" wire:model.live="role">
             <option value="">All roles</option>
-            <option>Student Org Rep</option>
-            <option>Student Org Advisor</option>
-            <option>Venue Manager</option>
-            <option>DSCA Staff</option>
-            <option>Dean of Administration</option>
-            <option>Admin</option>
+            @foreach(\App\Livewire\Admin\UsersIndex::ROLES as $role)
+            <option value="{{ $role }}">{{ $role }}</option>
+            @endforeach
           </select>
         </div>
 
@@ -73,9 +70,7 @@
         <thead class="table-light">
           <tr>
             <th style="width:36px;">
-              <input id="master" type="checkbox" class="form-check-input"
-                wire:change="selectAllOnPage($event.target.checked, @json($visibleIds ?? []))"
-                wire:key="select-all-{{ $page }}">
+              <x-table.select-all :visible-ids="$visibleIds" :page-key="$page" />
             </th>
             <th>Name</th>
             <th>Email</th>
@@ -86,27 +81,25 @@
         </thead>
 
         <tbody>
-          @forelse($rows as $u)
+          @forelse($rows as $user)
           <tr>
             <td>
-              <input type="checkbox" class="form-check-input"
-                wire:change="toggleSelect({{ $u['id'] }}, $event.target.checked)" @checked(data_get($selected ?? [],
-                $u['id'], false)) wire:key="select-{{ $u['id'] }}-{{ $page }}">
+              <x-table.select-row :row-id="$user['id']" :selected="$selected" :page-key="$page" />
             </td>
-            <td class="fw-medium">{{ $u['name'] }}</td>
-            <td><a href="mailto:{{ $u['email'] }}">{{ $u['email'] }}</a></td>
-            <td>{{ $u['department'] ?? '—' }}</td>
+            <td class="fw-medium">{{ $user['name'] }}</td>
+            <td><a href="mailto:{{ $user['email'] }}">{{ $user['email'] }}</a></td>
+            <td>{{ $user['department'] ?? '—' }}</td>
             <td>
-              <span class="badge {{ $this->roleClass($u['role'] ?? '') }}">
-                {{ $u['role'] ?? '—' }}
+              <span class="badge {{ $this->roleClass($user['role'] ?? '') }}">
+                {{ $user['role'] ?? '—' }}
               </span>
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $u['id'] }})" type="button">
+                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $user['id'] }})" type="button">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="delete({{ $u['id'] }})" type="button">
+                <button class="btn btn-outline-danger" wire:click="delete({{ $user['id'] }})" type="button">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
@@ -146,7 +139,7 @@
     </div>
   </div>
 
-  {{-- Edit Modal --}}
+  {{-- Create/Edit User Modal --}}
   <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
     <div class="modal-dialog modal-dialog-centered">
       <form class="modal-content" wire:submit.prevent="save">
@@ -175,14 +168,22 @@
               @enderror
             </div>
             <div class="col-12 col-md-6">
+              <label class="form-label">Role</label>
+              <select class="form-select @error('editRole') is-invalid @enderror" required wire:model.live="editRole">
+                <option value="">Select Role</option>
+                @foreach(\App\Livewire\Admin\UsersIndex::ROLES as $role)
+                <option value="{{ $role }}">{{ $role }}</option>
+                @endforeach
+              </select>
+              @error('editRole')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+            <div class="col-12 col-md-6">
               <label class="form-label">Department</label>
-              @php
-              $hasStudentRole = !empty(array_intersect($editRoles ?? [],
-              \App\Livewire\Admin\UsersIndex::ROLES_WITHOUT_DEPARTMENT));
-              @endphp
-              @if($hasStudentRole)
+              @if($this->hasRoleWithoutDepartment)
               <input type="text" class="form-control" value="—" disabled>
-              <small class="text-muted">Student roles don't have departments</small>
+              <small class="text-muted">Only Venue Managers have departments</small>
               @else
               <select class="form-select @error('editDepartment') is-invalid @enderror"
                 wire:model.live="editDepartment">
@@ -195,17 +196,6 @@
               <div class="invalid-feedback">{{ $message }}</div>
               @enderror
               @endif
-            </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label">Role</label>
-              <select class="form-select" required wire:model.live="editRole">
-                <option>Student Org Rep</option>
-                <option>Student Org Advisor</option>
-                <option>Venue Manager</option>
-                <option>DSCA Staff</option>
-                <option>Dean of Administration</option>
-                <option>Admin</option>
-              </select>
             </div>
           </div>
         </div>
@@ -252,25 +242,30 @@
       };
       modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
     }
+    /**
+     * Handle modal opening events from Livewire
+     * Opens Bootstrap modals and manages focus restoration
+     */
     Livewire.on('bs:open', ({ id }) => {
+      // Find the modal element by ID
       const el = document.getElementById(id);
       if (!el) return;
 
-      // remember the element that currently has focus
+      // Store current focus for restoration after modal closes
       const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       focusMap.set(id, opener);
 
-      // show modal
+      // Initialize and show the Bootstrap modal
       const modal = new bootstrap.Modal(el);
       modal.show();
 
-      // optional: move focus into the modal (first focusable control)
+      // Move focus to first focusable element in modal for accessibility
       queueMicrotask(() => {
         const first = el.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
         if (first && typeof first.focus === 'function') first.focus();
       });
 
-      // ensure we restore focus when it fully hides (X, backdrop, ESC, or programmatic)
+      // Set up focus restoration when modal closes
       attachHiddenOnce(el, id);
     });      
       Livewire.on('bs:close', ({ id }) => { const el = document.getElementById(id); 
@@ -282,7 +277,7 @@
         const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 2200 });
         toast.show();
       });
-          // NEW: keep the master checkbox correct (checked/indeterminate) after any render
+          // Keep the master checkbox correct (checked/indeterminate) after any render
       Livewire.on('selectionHydrate', ({ visible, selected }) => {
         const master = document.getElementById('master');
         if (!master) return;

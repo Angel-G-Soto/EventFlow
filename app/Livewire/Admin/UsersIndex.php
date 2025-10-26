@@ -6,10 +6,13 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Livewire\Concerns\TableSelection;
 
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
+    use TableSelection;
+
     //Roles in one place (replaced by DB later)
     public const ROLES = [
         'Student Org Rep',
@@ -90,8 +93,10 @@ class UsersIndex extends Component
     ];
 
     /**
-     * Returns a collection of all users, taking into account any soft-deleted or hard-deleted users,
-     * as well as any edits or new users created in the current session.
+     * Returns a collection of all users that are not deleted.
+     *
+     * This function takes into account both soft and hard deleted users,
+     * and also applies any edits that have been made to the users.
      *
      * @return Collection
      */
@@ -121,11 +126,13 @@ class UsersIndex extends Component
     }
 
     /**
-     * Returns a Bootstrap class corresponding to the given role.
-     * This can be used to color-code the roles in the user list.
+     * Returns a Bootstrap CSS class based on the given role.
      *
-     * @param string $role The role to get a class for.
-     * @return string The Bootstrap class name.
+     * This function returns a string that corresponds to a Bootstrap CSS class
+     * that can be used to style a badge based on the given role.
+     *
+     * @param string $role The role to get the class for.
+     * @return string The Bootstrap CSS class for the given role.
      */
     public function roleClass(string $role): string
     {
@@ -140,8 +147,9 @@ class UsersIndex extends Component
     }
 
     /**
-     * Resets the current page to 1 when the search input is updated.
-     * This ensures that the user is shown the first page of results when the search input is changed.
+     * Resets the current page to 1 when the search filter is updated.
+     *
+     * Also clears all current selections when the search filter is updated.
      */
     public function updatedSearch()
     {
@@ -151,6 +159,8 @@ class UsersIndex extends Component
 
     /**
      * Resets the current page to 1 when the role filter is updated.
+     *
+     * Additionally, clears all current selections when the role filter is updated.
      */
     public function updatedRole()
     {
@@ -158,13 +168,10 @@ class UsersIndex extends Component
         $this->selected = []; // Clear selections when role filter changes
     }
 
-    public function updatedPage() // NEW: clear selection when page changes
-    {
-        $this->selected = [];
-    }
-
     /**
-     * Resets the current page to 1 when the page size is updated.
+     * Resets the current page to 1 when the page size filter is updated.
+     *
+     * This function will reset the current page to 1 when the page size filter is updated.
      */
     public function updatedPageSize()
     {
@@ -172,7 +179,10 @@ class UsersIndex extends Component
     }
 
     /**
-     * Clear all filters and selections
+     * Clears all filters and resets the page to 1.
+     *
+     * This will clear the search filter, the role filter, and the selected users,
+     * and reset the page to 1.
      */
     public function clearFilters(): void
     {
@@ -183,48 +193,10 @@ class UsersIndex extends Component
     }
 
     /**
-     * Toggles the selection of a user.
+     * Resets the edit fields to their default values and opens the edit user modal.
      *
-     * @param int $userId The ID of the user to toggle.
-     * @param bool $checked Whether to select or deselect the user.
-     */
-    public function toggleSelect(int $userId, bool $checked): void
-    {
-        if ($checked) {
-            $this->selected[$userId] = true;
-        } else {
-            unset($this->selected[$userId]);
-        }
-        $this->dispatch(
-            'selectionHydrate',
-            visible: $this->paginated()->pluck('id')->all(),
-            selected: array_keys($this->selected)
-        ); // (optional)
-    }
-
-    /**
-     * Select or deselect all rows on the current page.
-     *
-     * @param bool $checked Whether to select or deselect the rows.
-     * @param array $ids The IDs of the rows to select or deselect.
-     */
-    public function selectAllOnPage(bool $checked, array $ids): void
-    {
-        foreach ($ids as $id) {
-            if ($checked) $this->selected[$id] = true;
-            else unset($this->selected[$id]);
-        }
-        $this->dispatch(
-            'selectionHydrate',
-            visible: $this->paginated()->pluck('id')->all(),
-            selected: array_keys($this->selected)
-        ); // (optional)
-    }
-
-    /**
-     * Resets the edit fields and opens the edit user modal for adding a new user.
-     *
-     * This will reset the edit fields to their default values and open the edit user modal.
+     * This function will reset the edit fields to their default values and open the edit user modal.
+     * The edit role field will be set to 'Student Org Rep'.
      */
     public function openCreate(): void
     {
@@ -236,12 +208,12 @@ class UsersIndex extends Component
     }
 
     /**
-     * Opens the edit user modal for the user with the given ID.
+     * Opens the edit user modal for the given user ID.
      *
-     * It will reset the edit fields to the values of the user with the given ID and open the edit user modal.
-     * If the user with the given ID does not exist, it will do nothing.
+     * This function will open the edit user modal and populate the fields with the user's information.
+     * If the user ID does not exist, the function will return without performing any action.
      *
-     * @param int $id The ID of the user to open the edit user modal for.
+     * @param int $id The ID of the user to edit
      */
     public function openEdit(int $id): void
     {
@@ -261,40 +233,47 @@ class UsersIndex extends Component
     }
 
     /**
-     * Validation rules for the user fields.
+     * Validation rules for the user editing form.
      *
      * The rules are as follows:
-     * - editName: required, string, max length 255, and must only contain letters and spaces.
-     * - editEmail: required, email, and must end with '@upr.edu'.
-     * - editRole: required, and must be a string.
-     *
-     * @return array The validation rules.
+     * - editName: required, string, max 255 characters, regex matching only alphabetical characters and whitespace
+     * - editEmail: required, email, regex matching only UPRA email addresses
+     * - editRole: required, string
+     * - editDepartment: required if the role is not one of the following, string: Student Org Rep, Student Org Advisor, Venue Manager, DSCA Staff, Dean of Administration
+     * - justification: nullable, string, max 200 characters
      */
-    protected function rules()
+    protected function rules(): array
     {
-        $hasRoleWithoutDept = !empty(array_intersect($this->editRoles, self::ROLES_WITHOUT_DEPARTMENT));
+        $roleWithoutDept = in_array($this->editRole, self::ROLES_WITHOUT_DEPARTMENT);
         return [
             'editName' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
             'editEmail' => 'required|email|regex:/@upr[a-z]*\.edu$/i',
             'editRole' => 'required|string',
-            'editDepartment' => $hasRoleWithoutDept ? 'nullable' : 'required|string',
+            'editDepartment' => $roleWithoutDept ? 'nullable' : 'required|string',
 
             'justification' => 'nullable|string|max:200'
         ];
     }
 
-    protected function validateJustification(): void // NEW: helper to validate only justification length
+    /**
+     * Validates only the justification length.
+     *
+     * This function is a helper to validate only the justification length by calling
+     * `validateOnly` with the justification field as the parameter.
+     */
+    protected function validateJustification(): void
     {
         $this->validateOnly('justification');
     }
 
     /**
-     * Generates a unique ID for a new user.
+     * Generates a new unique user ID.
      *
-     * It generates the ID by finding the maximum ID in the existing users, new users created this session,
-     * and IDs of users that were soft/hard deleted this session, and then adding 1 to it.
+     * This function generates a new unique user ID by combining IDs from the base users array, new users array,
+     * soft deleted user IDs array, and hard deleted user IDs array. It then returns the maximum ID in the combined array
+     * plus 1.
      *
-     * @return int The generated ID.
+     * @return int The new unique user ID.
      */
     protected function generateUserId(): int
     {
@@ -313,14 +292,13 @@ class UsersIndex extends Component
     }
 
     /**
-     * Saves the currently edited user.
+     * Saves the user data after validation.
      *
-     * First, it checks email uniqueness before validation.
-     * If the email is already taken by another user, it will add an error to the editEmail field and return.
-     * Then, it validates the user fields according to the rules defined in the rules() method.
-     * If any of the fields fail validation, it will add an error to the corresponding field and return.
-     * If the user is new (i.e. editId is null), it will skip justification and call confirmSave() to confirm the save action.
-     * If the user is existing (i.e. editId is not null), it will open the justification modal to confirm the save action.
+     * First, it checks if the email address is already taken by another user.
+     * If the email is taken, it adds an error to the editEmail field and returns.
+     * If the email is not taken, it validates the form data and then checks if the user is being created (i.e. the editId is null).
+     * If the user is being created, it confirms the save action and then jumps to the last page after creation.
+     * If the user is being edited, it opens the justification modal for the user to enter a justification for the edit.
      */
     public function save(): void
     {
@@ -345,11 +323,10 @@ class UsersIndex extends Component
     }
 
     /**
-     * Confirms the save action for the currently edited user.
-     *
-     * If the user is existing (i.e. editId is not null), it will update the user with the given fields.
-     * If the user is new (i.e. editId is null), it will create a new user with the given fields.
-     * After saving the user, it will close the justification modal and edit user modal, and show a toast message indicating whether the user was updated or created.
+     * Confirms the save action and updates the session with the new/edited user data.
+     * If the user is being edited, it validates the justification length and then updates the edited_users session.
+     * If the user is being created, it updates the new_users session.
+     * Finally, it dispatches events to close the justification modal, edit user modal, and show a toast message with a success message.
      */
     public function confirmSave(): void
     {
@@ -385,6 +362,12 @@ class UsersIndex extends Component
         $this->reset(['editId', 'justification', 'isDeleting', 'isBulkDeleting']);
     }
 
+    /**
+     * Jumps to the last page after creating a new user, to prevent the page from becoming out of bounds.
+     * This function is called after creating a new user.
+     * It calculates the total number of results after the creation, and then sets the current page to the last page.
+     * Additionally, it clears any selection since we navigated.
+     */
     protected function jumpToLastPageAfterCreate(): void
     {
         $total   = $this->filtered()->count();
@@ -394,11 +377,10 @@ class UsersIndex extends Component
     }
 
     /**
-     * Clamp the current page after a mutation to prevent the page from becoming out of bounds.
+     * Clamps the current page after a mutation (e.g. deletion, creation) to prevent the page from becoming out of bounds.
      *
-     * After a mutation, the total number of items in the filtered collection is calculated.
-     * The last page is then calculated by dividing the total number of items by the page size and rounding up to the nearest integer.
-     * If the current page is greater than the last page, the current page is clamped to the last page.
+     * This function is called after a mutation (e.g. deletion, creation) to clamp the current page to the last page if it exceeds the last page.
+     * It calculates the total number of results after the mutation, and then sets the current page to the last page if it exceeds the last page.
      */
     protected function clampPageAfterMutation(): void
     {
@@ -410,9 +392,10 @@ class UsersIndex extends Component
     }
 
     /**
-     * Opens the justification modal to confirm deletion of a user.
-     *
-     * @param int $id The ID of the user to be deleted.
+     * Opens the justification modal for the user with the given ID.
+     * This function should be called when the user wants to delete a user.
+     * It sets the currently edited user ID and the isDeleting flag to true, and then opens the justification modal.
+     * @param int $id The ID of the user to delete
      */
     public function delete(int $id): void
     {
@@ -422,11 +405,11 @@ class UsersIndex extends Component
     }
 
     /**
-     * Deletes the currently edited user.
+     * Confirms the deletion of a user.
      *
-     * If the currently edited user exists (i.e. editId is not null), it will delete the user and remove it from the selected users.
-     * It will then clamp the current page after the deletion to prevent the page from becoming out of bounds.
-     * Finally, it will show a toast message indicating whether the user was permanently deleted or just deleted.
+     * This function will validate the justification entered by the user, and then delete the user with the given ID.
+     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
+     * Finally, it shows a toast message indicating whether the user was permanently deleted or just deleted.
      */
     public function confirmDelete(): void
     {
@@ -445,10 +428,10 @@ class UsersIndex extends Component
     }
 
     /**
-     * Opens the justification modal to confirm deletion of multiple users at once.
+     * Opens the justification modal for bulk deletion of users.
      *
-     * If there are no selected users, it will return without doing anything.
-     * Otherwise, it will set the isBulkDeleting flag to true and open the justification modal.
+     * This function is called when the user wants to delete multiple users at once.
+     * It sets the isBulkDeleting flag to true, and then opens the justification modal.
      */
     public function bulkDelete(): void
     {
@@ -458,11 +441,11 @@ class UsersIndex extends Component
     }
 
     /**
-     * Confirm deletion of multiple users at once.
+     * Confirms the bulk deletion of users.
      *
-     * This function will delete all the selected users based on the delete type (hard or soft).
-     * It will then clamp the current page after the deletion to prevent the page from becoming out of bounds.
-     * Finally, it will show a toast message indicating whether the users were permanently deleted or just deleted.
+     * This function will validate the justification entered by the user, and then delete the users with the given IDs.
+     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
+     * Finally, it shows a toast message indicating whether the users were permanently deleted or just deleted.
      */
     public function confirmBulkDelete(): void
     {
@@ -485,14 +468,13 @@ class UsersIndex extends Component
         $this->reset(['justification', 'isBulkDeleting']);
     }
 
-
     /**
-     * Restore all soft deleted users.
+     * Restores all soft deleted users.
      *
-     * This function will reset the 'soft_deleted_user_ids' session variable,
-     * effectively restoring all soft deleted users to the list.
+     * This function will reset the soft_deleted_user_ids session key to an empty array,
+     * effectively restoring all soft deleted users.
      *
-     * After restoring, it will show a toast message indicating that all deleted users have been restored.
+     * @return void
      */
     public function restoreUsers(): void
     {
@@ -502,12 +484,12 @@ class UsersIndex extends Component
     }
 
     /**
-     * Filter the allUsers() collection based on the current search string and role.
+     * Returns a filtered collection of users based on the search string and role.
      *
-     * If search string is empty, it will return all users.
-     * If role is empty, it will return all users regardless of their role.
+     * This function will filter the users based on the search string, which is case-insensitive.
+     * It will also filter out users that do not match the given role, if any.
      *
-     * @return Collection
+     * @return Collection The filtered collection of users.
      */
     protected function filtered(): Collection
     {
@@ -560,9 +542,22 @@ class UsersIndex extends Component
     }
 
     /**
-     * Renders the Livewire component for the users index page.
+     * Check if the current user has any role that cannot have departments.
+     * Only Venue Managers can have departments.
      *
-     * It takes in the paginated data and visible IDs and passes them to the view.
+     * @return bool True if user has roles without departments
+     */
+    public function getHasRoleWithoutDepartmentProperty(): bool
+    {
+        return in_array($this->editRole, self::ROLES_WITHOUT_DEPARTMENT);
+    }
+
+    /**
+     * Renders the Livewire view for the users index page.
+     *
+     * The view is passed the following variables:
+     * - $rows: The paginated collection of User objects
+     * - $visibleIds: The array of visible user IDs
      *
      * @return \Illuminate\Contracts\View\View
      */
