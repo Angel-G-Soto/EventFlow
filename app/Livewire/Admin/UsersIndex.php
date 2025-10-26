@@ -57,9 +57,18 @@ class UsersIndex extends Component
     public string $editRole = 'Student Org Rep';
 
     public string $justification = '';
-    public bool $isDeleting = false;
-    public bool $isBulkDeleting = false;
+    public string $actionType = '';
     public string $deleteType = 'soft'; // 'soft' or 'hard'
+
+    public function getIsDeletingProperty(): bool
+    {
+        return $this->actionType === 'delete';
+    }
+
+    public function getIsBulkDeletingProperty(): bool
+    {
+        return $this->actionType === 'bulkDelete';
+    }
 
     // Persistent data storage
     private static array $users = [
@@ -310,7 +319,7 @@ class UsersIndex extends Component
         }
 
         $this->validate();
-        $this->isDeleting = false;
+        $this->actionType = 'save';
 
         // Skip justification for new users
         if (!$this->editId) {
@@ -359,7 +368,7 @@ class UsersIndex extends Component
         $this->dispatch('bs:close', id: 'userJustify');
         $this->dispatch('bs:close', id: 'editUserModal');
         $this->dispatch('toast', message: $message);
-        $this->reset(['editId', 'justification', 'isDeleting', 'isBulkDeleting']);
+        $this->reset(['editId', 'justification', 'actionType']);
     }
 
     /**
@@ -400,7 +409,7 @@ class UsersIndex extends Component
     public function delete(int $id): void
     {
         $this->editId = $id;
-        $this->isDeleting = true;
+        $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'userJustify');
     }
 
@@ -424,7 +433,7 @@ class UsersIndex extends Component
 
         $this->dispatch('bs:close', id: 'userJustify');
         $this->dispatch('toast', message: 'User ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
-        $this->reset(['editId', 'justification', 'isDeleting', 'isBulkDeleting']);
+        $this->reset(['editId', 'justification', 'actionType']);
     }
 
     /**
@@ -436,7 +445,7 @@ class UsersIndex extends Component
     public function bulkDelete(): void
     {
         if (empty($this->selected)) return;
-        $this->isBulkDeleting = true;
+        $this->actionType = 'bulkDelete';
         $this->dispatch('bs:open', id: 'userJustify');
     }
 
@@ -465,7 +474,7 @@ class UsersIndex extends Component
 
         $this->dispatch('bs:close', id: 'userJustify');
         $this->dispatch('toast', message: count($selectedIds) . " users " . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
-        $this->reset(['justification', 'isBulkDeleting']);
+        $this->reset(['justification', 'actionType']);
     }
 
     /**
