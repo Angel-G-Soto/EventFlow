@@ -28,10 +28,9 @@
         @endif
         <div class="mb-3">
           <label class="form-label">Reason</label>
-          <textarea class="form-control" rows="4" required
-                    wire:model.live="{{ $model ?? 'justification' }}"></textarea>
+          <textarea class="form-control" rows="4" required wire:model.live="{{ $model ?? 'justification' }}"></textarea>
           @error($model ?? 'justification')
-            <small class="text-danger">{{ $message }}</small>
+          <small class="text-danger">{{ $message }}</small>
           @enderror
         </div>
       </div>
