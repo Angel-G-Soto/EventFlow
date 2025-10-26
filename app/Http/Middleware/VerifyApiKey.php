@@ -7,17 +7,25 @@ use Illuminate\Http\Request;
 
 class VerifyApiKey
 {
+    /**
+     * Middleware that authorizes calls using a single shared API key.
+     * - Reads header: X-API-KEY
+     * - Compares against env('API_KEY')
+     * - Rejects with 401 if missing or mismatched
+     */
     public function handle(Request $request, Closure $next)
     {
-        // Get the API key from the request header (e.g., 'X-API-KEY')
-        $apiKey = $request->header('X-API-KEY');
+        // The key provided by the caller (HTTP client)
+        $apiKeyHeader = (string) $request->header('X-API-KEY', '');
 
-        // Compare it to the one stored in .env file
-        if ($apiKey && $apiKey === config('services.nexo.api_key')) {
-            return $next($request); // Key is valid, proceed with the request.
+        // The key configured on the server
+        $configuredKey = (string) env('API_KEY', '');
+
+        // Timing-safe equality check prevents certain side-channel attacks
+        if ($apiKeyHeader !== '' && $configuredKey !== '' && hash_equals($configuredKey, $apiKeyHeader)) {
+            return $next($request);
         }
 
-        // Key is missing or invalid, return an error.
         return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 }
