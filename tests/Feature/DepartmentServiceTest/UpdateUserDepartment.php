@@ -1,33 +1,57 @@
 <?php
 
-use App\Models\User;
 use App\Models\Department;
+use App\Models\User;
 use App\Services\DepartmentService;
+use App\Services\UserService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 beforeEach(function () {
-    $this->service = new DepartmentService();
+    $this->userService = Mockery::mock(UserService::class);
+    $this->departmentService = new DepartmentService($this->userService);
 });
 
-it('assigns a department to a user', function () {
+it('successfully updates a user department', function () {
     $department = Department::factory()->create();
     $user = User::factory()->create(['department_id' => null]);
 
-    $user = $this->service->updateUserDepartment($department, $user);
+    // Mock the userService to return the user
+    $this->userService
+        ->shouldReceive('findUserById')
+        ->once()
+        ->with($user->id)
+        ->andReturn($user);
 
-    expect($user->fresh()->department_id)->toBe($department->id);
+    $updatedUser = $this->departmentService->updateUserDepartment($department, $user);
+
+    expect($updatedUser)->toBeInstanceOf(User::class)
+        ->and($updatedUser->department_id)->toBe($department->id)
+        ->and(User::find($user->id)->department_id)->toBe($department->id);
 });
 
-it('throws an exception if department is not persisted', function () {
-    $department = new Department();
+it('throws ModelNotFoundException if the department does not exist', function () {
+    $department = Department::factory()->make(['id' => 999]);
     $user = User::factory()->create();
 
-    $this->service->updateUserDepartment($department, $user);
-})->throws(ModelNotFoundException::class, "Either the department or the user does not exist in the database.");
+    $this->expectException(ModelNotFoundException::class);
+    $this->expectExceptionMessage('Either the department or the user does not exist in the database.');
 
-it('throws an exception if user is not persisted', function () {
+    $this->departmentService->updateUserDepartment($department, $user);
+});
+
+it('throws ModelNotFoundException if the user does not exist', function () {
     $department = Department::factory()->create();
-    $user = new User();
+    $user = User::factory()->make(['id' => 999]);
 
-    $this->service->updateUserDepartment($department, $user);
-})->throws(ModelNotFoundException::class, "Either the department or the user does not exist in the database.");
+    // Mock the userService to return null for non-existent user
+    $this->userService
+        ->shouldReceive('findUserById')
+        ->once()
+        ->with($user->id)
+        ->andReturn(null);
+
+    $this->expectException(ModelNotFoundException::class);
+    $this->expectExceptionMessage('Either the department or the user does not exist in the database.');
+
+    $this->departmentService->updateUserDepartment($department, $user);
+});

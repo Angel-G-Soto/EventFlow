@@ -10,6 +10,12 @@ use Throwable;
 
 class DepartmentService {
 
+    protected UserService $userService;
+
+    public function __construct(UserService $userService)
+    {
+        $this->userService = $userService;
+    }
     ///////////////////////////////////////////// CRUD Operations ////////////////////////////////////////////////
 
     /**
@@ -93,6 +99,7 @@ class DepartmentService {
             // Return collection of updated values
             return $updatedDepartments;
         }
+        catch (InvalidArgumentException $exception) {throw $exception;}
         catch (Throwable $exception) {throw new Exception('Unable to synchronize department data.');}
     }
 
@@ -133,7 +140,7 @@ class DepartmentService {
     {
         try {
             // Validate that both models exist in the database
-            if (!Department::find($department->id) || !User::find($manager->id)) {
+            if (!Department::find($department->id) || !$this->userService->findUserById($manager->id)) { // IMPORT AND MOCK USER SERVICE
                 throw new ModelNotFoundException('Either the department or the user does not exist in the database.');
             }
 
@@ -151,11 +158,26 @@ class DepartmentService {
         }
     }
 
+    /**
+     * This function retrieves all the venues assigned to the provided
+     * department
+     *
+     * @param Department $department
+     * @return Collection
+     */
     public function getDepartmentVenues(Department $department): Collection
     {
-        return Department::with('venues')->where('id', $department->id)->get();
+        $department = Department::findOrFail($department->id);
+
+        return $department->venues;
     }
 
+    /**
+     * Retrieves the department that contains exactly the name provided
+     *
+     * @param string $name
+     * @return Department|null
+     */
     public function findByName(string $name): Department|null
     {
         return Department::where('name', $name)->first();

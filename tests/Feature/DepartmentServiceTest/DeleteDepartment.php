@@ -2,26 +2,33 @@
 
 use App\Models\Department;
 use App\Services\DepartmentService;
+use App\Services\UserService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-it('deletes a department successfully by ID', function () {
-    $department = Department::factory()->create();
 
-    $service = new DepartmentService();
-    $result = $service->deleteDepartment($department->id);
-
-    expect($result)->toBeTrue();
-    expect(Department::find($department->id))->toBeNull();
+beforeEach(function () {
+    $this->userService = Mockery::mock(UserService::class);
+    $this->departmentService = new DepartmentService($this->userService);
 });
 
-it('throws InvalidArgumentException for negative ID', function () {
-    $service = new DepartmentService();
+it('deletes a department successfully', function () {
+    $department = Department::factory()->create();
 
-    $service->deleteDepartment(-1);
-})->throws(InvalidArgumentException::class, 'Department ID must be a positive integer.');
+    $result = $this->departmentService->deleteDepartment($department->id);
 
-it('throws Exception if department does not exist', function () {
-    $service = new DepartmentService();
+    expect($result)->toBeTrue()
+        ->and(Department::find($department->id))->toBeNull();
+});
 
-    $service->deleteDepartment(9999);
-})->throws(ModelNotFoundException::class);
+it('throws InvalidArgumentException for negative ids', function () {
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage('Department ID must be a positive integer.');
+
+    $this->departmentService->deleteDepartment(-5);
+});
+
+it('throws ModelNotFoundException if department does not exist', function () {
+    $this->expectException(ModelNotFoundException::class);
+
+    $this->departmentService->deleteDepartment(99999);
+});

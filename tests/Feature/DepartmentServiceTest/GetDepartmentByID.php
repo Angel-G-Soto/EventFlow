@@ -2,20 +2,22 @@
 
 use App\Models\Department;
 use App\Services\DepartmentService;
+use App\Services\UserService;
 
 beforeEach(function () {
-    $this->service = new DepartmentService();
+    $this->userService = Mockery::mock(UserService::class);
+    $this->departmentService = new DepartmentService($this->userService);
 });
 
 it('returns a department for a valid ID', function () {
     $department = Department::factory()->create();
 
-    $result = $this->service->getDepartmentByID($department->id);
+    $result = $this->departmentService->getDepartmentByID($department->id);
 
     expect($result)->toBeInstanceOf(Department::class)
         ->and($result->id)->toBe($department->id);
 });
 
 it('throws InvalidArgumentException for negative ID', function () {
-    $this->service->getDepartmentByID(-1);
+    $this->departmentService->getDepartmentByID(-1);
 })->throws(InvalidArgumentException::class);

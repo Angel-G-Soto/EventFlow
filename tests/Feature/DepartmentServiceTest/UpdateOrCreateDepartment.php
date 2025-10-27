@@ -2,10 +2,12 @@
 
 use App\Models\Department;
 use App\Services\DepartmentService;
-use Illuminate\Support\Collection;
+use App\Services\UserService;
+use Illuminate\Database\Eloquent\Collection;
 
 beforeEach(function () {
-    $this->service = new DepartmentService();
+    $this->userService = Mockery::mock(UserService::class);
+    $this->departmentService = new DepartmentService($this->userService);
 });
 
 it('creates new departments from valid data', function () {
@@ -14,30 +16,53 @@ it('creates new departments from valid data', function () {
         ['name' => 'Finance', 'code' => '456'],
     ];
 
-    $result = $this->service->updateOrCreateDepartment($data);
+    $result = $this->departmentService->updateOrCreateDepartment($data);
 
-    expect($result)->toBeInstanceOf(Collection::class)
-        ->and($result)->toHaveCount(2)
-        ->and(Department::count())->toBe(2);
+    expect($result)
+        ->toBeInstanceOf(Collection::class)
+        ->and($result->count())->toBe(2)
+        ->and(Department::count())->toBe(2)
+        ->and(Department::where('name', 'Mechanical Engineering')->exists())->toBeTrue()
+        ->and(Department::where('name', 'Finance')->exists())->toBeTrue();
+
 });
 
 it('updates existing departments if they already exist', function () {
-    Department::create(['name' => 'Mechanical Engineering', 'code' => '123']);
+    // Arrange
+    $department = Department::factory()->create([
+        'name' => 'Finance',
+        'code' => '456',
+    ]);
 
     $data = [
-        ['name' => 'Mechanical Engineering', 'code' => '123'],
+        ['name' => 'Finance', 'code' => '456'], // same name/code → should update not duplicate
     ];
 
-    $result = $this->service->updateOrCreateDepartment($data);
+    $result = $this->departmentService->updateOrCreateDepartment($data);
 
-    expect($result)->toHaveCount(1)
-        ->and(Department::count())->toBe(1);
+    expect($result->count())->toBe(1)
+        ->and(Department::count())->toBe(1)
+        ->and($result->first()->name)->toBe('Finance');
 });
 
-it('throws an exception if data is missing keys', function () {
+it('throws InvalidArgumentException when name or code is missing', function () {
     $data = [
-        ['name' => 'Mechanical Engineering'],
+        ['name' => 'Mechanical Engineering'], // missing code
     ];
 
-    $this->service->updateOrCreateDepartment($data);
-})->throws(Exception::class, 'Unable to synchronize department data.');
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage("Missing required keys 'name' or 'code' in department at index 0.");
+
+    $this->departmentService->updateOrCreateDepartment($data);
+});
+
+it('throws InvalidArgumentException when name or code are not strings', function () {
+    $data = [
+        ['name' => 123, 'code' => true],
+    ];
+
+    $this->expectException(InvalidArgumentException::class);
+    $this->expectExceptionMessage("Invalid data types in department at index 0. Both 'name' and 'code' must be strings.");
+
+    $this->departmentService->updateOrCreateDepartment($data);
+});

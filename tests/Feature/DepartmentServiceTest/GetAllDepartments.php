@@ -2,24 +2,33 @@
 
 use App\Models\Department;
 use App\Services\DepartmentService;
-use Illuminate\Support\Collection;
+use App\Services\UserService;
+use Illuminate\Database\Eloquent\Collection;
 
 beforeEach(function () {
-    $this->service = new DepartmentService();
+    $this->userService = Mockery::mock(UserService::class);
+    $this->departmentService = new DepartmentService($this->userService);
 });
 
-it('returns a collection of all departments', function () {
+it('returns all departments as a collection', function () {
+    // Arrange: create some departments
     Department::factory()->count(3)->create();
 
-    $departments = $this->service->getAllDepartments();
+    // Act
+    $result = $this->departmentService->getAllDepartments();
 
-    expect($departments)->toBeInstanceOf(Collection::class)
-        ->and($departments)->toHaveCount(3);
+    // Assert
+    expect($result)
+        ->toBeInstanceOf(Collection::class)
+        ->and($result->count())->toBe(3);
 });
 
-it('returns an empty collection if no departments exist', function () {
-    $departments = $this->service->getAllDepartments();
+it('returns an empty collection when there are no departments', function () {
+    // Act
+    $result = $this->departmentService->getAllDepartments();
 
-    expect($departments)->toBeInstanceOf(Collection::class)
-        ->and($departments)->toHaveCount(0);
+    // Assert
+    expect($result)
+        ->toBeInstanceOf(Collection::class)
+        ->and($result)->toBeEmpty();
 });
