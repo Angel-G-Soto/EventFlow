@@ -10,6 +10,8 @@ use Throwable;
 
 class DepartmentService {
 
+    ///////////////////////////////////////////// CRUD Operations ////////////////////////////////////////////////
+
     /**
      * Returns the department that has the provided id
      *
@@ -111,19 +113,20 @@ class DepartmentService {
         catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified department.');}
     }
 
+    /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
+
 //    public function updateDepartmentAssignment(Department $department, Venue $venue): void
 //    {
 //        $venue->department_id = $department->id;
 //        $venue->save();
 //    }
-//
 
     /**
      * The method assigns the given department to the given user
      *
      * @param Department $department
      * @param User $manager
-     * @return void
+     * @return User
      * @throws Exception
      */
     public function updateUserDepartment(Department $department, User $manager): User
@@ -147,9 +150,14 @@ class DepartmentService {
             throw new \Exception('Failed to update the user(s) department.');
         }
     }
-//
-//    public function getDepartmentVenues(Department $department): Collection
-//    {
-//        return Department::with('venues')->where('id', $department->id)->get();
-//    }
+
+    public function getDepartmentVenues(Department $department): Collection
+    {
+        return Department::with('venues')->where('id', $department->id)->get();
+    }
+
+    public function findByName(string $name): Department|null
+    {
+        return Department::where('name', $name)->first();
+    }
 }

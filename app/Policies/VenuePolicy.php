@@ -23,7 +23,7 @@ class VenuePolicy
     public function view(User $user, Venue $venue): bool
     {
         return $user->getRoleNames()->contains('system-admin')
-            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('department-manager'))
+            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
                 && $user->department_id == $venue->department_id);
     }
 
@@ -41,7 +41,7 @@ class VenuePolicy
     public function update(User $user, Venue $venue): bool
     {
         return $user->getRoleNames()->contains('system-admin')
-            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('department-manager'))
+            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
                 && $user->department_id == $venue->department_id);
     }
 
@@ -69,7 +69,7 @@ class VenuePolicy
     public function updateRequirements(User $user, Venue $venue): bool
     {
         return $user->getRoleNames()->contains('system-admin')
-            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('department-manager'))
+            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
                 && $user->department_id == $venue->department_id);
     }
 }

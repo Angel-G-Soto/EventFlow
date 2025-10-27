@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 use App\Models\Category;
 use Exception;
@@ -8,6 +9,8 @@ use InvalidArgumentException;
 use Throwable;
 
 class CategoryService {
+
+    ///////////////////////////////////////////// CRUD Operations ////////////////////////////////////////////////
 
     /**
      * Return the category with the corresponding id
@@ -23,9 +26,7 @@ class CategoryService {
 
             return Category::findOrFail($id);
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (ModelNotFoundException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('Unable to find a category with that ID.');}
+        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to find a category with that ID.');}
     }
 
     /**
@@ -83,30 +84,9 @@ class CategoryService {
 
             return Category::findOrFail($id)->delete();
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (ModelNotFoundException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('Unable to delete the specified category.');}
+        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified category.');}
     }
 
-    /**
-     * Returns the use requirements of the specified category
-     *
-     * @param int $id
-     * @return Collection
-     * @throws Exception
-     */
-    public function getUseRequirement(int $id): Collection
-    {
-        {
-            try {
-                if ($id < 0) {throw new InvalidArgumentException('Category ID must be a positive integer.');}
-                $category = Category::findOrFail($id);
 
-                return $category->requirements;
-            }
-            catch (InvalidArgumentException $exception) {throw $exception;}
-            catch (ModelNotFoundException $exception) {throw $exception;}
-            catch (Throwable $exception) {throw new Exception('We were not able to find the requirements for the category.');}
-        }
-    }
+    /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
 }

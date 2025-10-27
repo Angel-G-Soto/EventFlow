@@ -19,7 +19,7 @@ beforeEach(function () {
     // Create roles
     $this->systemAdminRole = Role::factory()->create(['name' => 'system-admin']);
     $this->departmentDirectorRole = Role::factory()->create(['name' => 'department-director']);
-    $this->departmentManagerRole = Role::factory()->create(['name' => 'department-manager']);
+    $this->departmentManagerRole = Role::factory()->create(['name' => 'venue-manager']);
 
     // Create users
     $this->systemAdmin = User::factory()->create();

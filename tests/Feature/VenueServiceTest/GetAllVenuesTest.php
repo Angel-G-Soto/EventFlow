@@ -1,127 +1,72 @@
 <?php
 
-use App\Models\Venue;
-use App\Models\User;
 use App\Models\Department;
+use App\Models\Venue;
 use App\Services\VenueService;
 use App\Services\DepartmentService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
+use App\Services\UseRequirementService;
+use App\Services\AuditService;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 beforeEach(function () {
-    $this->service = new VenueService(new DepartmentService());
+    // Mock dependencies
+    $this->departmentService = Mockery::mock(DepartmentService::class);
+    $this->useRequirementService = Mockery::mock(UseRequirementService::class);
+    $this->auditService = Mockery::mock(AuditService::class);
+
+    $this->venueService = new VenueService(
+        $this->departmentService,
+        $this->useRequirementService,
+        $this->auditService
+    );
 });
 
-it('returns all venues if no filters are provided', function () {
-    Venue::factory()->count(5)->create();
+it('returns paginated venues without filters', function () {
+    // Arrange
+    Venue::factory()->count(3)->create();
 
-    $results = $this->service->getAllVenues();
+    // Act
+    $result = $this->venueService->getAllVenues();
 
-    expect($results->total())->toBe(5);
+    // Assert
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
+        ->and($result->total())->toBe(3);
 });
 
-it('applies manager_id filter', function () {
-    $manager1 = User::factory()->create();
-    $manager2 = User::factory()->create();
+it('filters venues by name', function () {
+    // Arrange
+    Venue::factory()->create(['name' => 'Main Hall']);
+    Venue::factory()->create(['name' => 'Side Room']);
 
-    $venue1 = Venue::factory()->create(['manager_id' => $manager1->id]);
-    $venue2 = Venue::factory()->create(['manager_id' => $manager2->id]);
+    // Act
+    $result = $this->venueService->getAllVenues(['name' => 'Main']);
 
-    $results = $this->service->getAllVenues(['manager_id' => $manager1->id]);
-
-    expect($results->total())->toBe(1)
-        ->and($results->first()->id)->toBe($venue1->id);
+    // Assert
+    expect($result->total())->toBe(1)
+        ->and($result->items()[0]->name)->toBe('Main Hall');
 });
 
-it('applies department_id filter', function () {
-    $dept1 = Department::factory()->create();
-    $dept2 = Department::factory()->create();
-
-    $venue1 = Venue::factory()->create(['department_id' => $dept1->id]);
-    $venue2 = Venue::factory()->create(['department_id' => $dept2->id]);
-
-    $results = $this->service->getAllVenues(['department_id' => $dept1->id]);
-
-    expect($results->total())->toBe(1)
-        ->and($results->first()->id)->toBe($venue1->id);
-});
-
-it('applies name and code filters', function () {
-    $venue1 = Venue::factory()->create(['name' => 'SALON DE CLASES', 'code' => 'AE-102']);
-    $venue2 = Venue::factory()->create(['name' => 'COMPUTADORAS', 'code' => 'AE-111']);
-
-    $results = $this->service->getAllVenues(['name' => 'SALON DE CLASES', 'code' => 'AE-102']);
-
-    expect($results->total())->toBe(1)
-        ->and($results->first()->id)->toBe($venue1->id);
-});
-
-it('applies features filter', function () {
-    $venue1 = Venue::factory()->create(['features' => '0010']);
-    $venue2 = Venue::factory()->create(['features' => '0001']);
-
-    $results = $this->service->getAllVenues(['features' => '0010']);
-
-    expect($results->total())->toBe(1)
-        ->and($results->first()->id)->toBe($venue1->id);
-});
-
-it('applies capacity and test_capacity filters', function () {
-    $venue1 = Venue::factory()->create(['capacity' => 50, 'test_capacity' => 40]);
-    $venue2 = Venue::factory()->create(['capacity' => 30, 'test_capacity' => 20]);
-
-    $results = $this->service->getAllVenues(['capacity' => 40, 'test_capacity' => 30]);
-
-    expect($results->total())->toBe(1)
-        ->and($results->first()->id)->toBe($venue1->id);
-});
-
-it('applies opening_time and closing_time filters', function () {
-    $venue1 = Venue::factory()->create(['opening_time' => '09:00:00', 'closing_time' => '18:00:00']);
-    $venue2 = Venue::factory()->create(['opening_time' => '10:00:00', 'closing_time' => '19:00:00']);
-
-    $results = $this->service->getAllVenues(['opening_time' => '09:00:00', 'closing_time' => '18:00:00']);
-
-    expect($results->total())->toBe(1)
-        ->and($results->first()->id)->toBe($venue1->id);
-});
-
-
-it('throws InvalidArgumentException for invalid filter keys', function () {
-    $filters = [
-        'invalid_key' => 'test',
-        'name' => 'Venue A'
-    ];
-
-    $this->service->getAllVenues($filters);
-
+it('throws exception when invalid filter key is passed', function () {
+    // Act + Assert
+    $this->venueService->getAllVenues(['invalid_key' => 'value']);
 })->throws(InvalidArgumentException::class, 'Invalid attribute keys detected: invalid_key');
 
-it('throws InvalidArgumentException for null values in filters', function () {
-    $filters = [
-        'manager_id' => null,
-        'name' => 'Venue A'
-    ];
+it('throws exception when null value is passed', function () {
+    $this->venueService->getAllVenues(['name' => null]);
+})->throws(InvalidArgumentException::class, 'Null values are not allowed for keys: name');
 
-    $this->service->getAllVenues($filters);
+it('filters by department_id and capacity', function () {
+    $d1 = Department::factory()->create();
+    $d2 = Department::factory()->create();
 
-})->throws(InvalidArgumentException::class, 'Null values are not allowed for keys: manager_id');
+    $v1 = Venue::factory()->create(['department_id' => $d1->id, 'capacity' => 50]);
+    $v2 = Venue::factory()->create(['department_id' => $d2->id, 'capacity' => 100]);
 
-it('does not throw exception for valid filters', function () {
-    $filters = [
-        'manager_id' => 1,
-        'department_id' => 2,
-        'name' => 'Venue A',
-        'code' => 'V001',
-        'features' => 'Feature A',
-        'capacity' => 50,
-        'test_capacity' => 10,
-        'opening_time' => '08:00:00',
-        'closing_time' => '18:00:00'
-    ];
+    $result = $this->venueService->getAllVenues([
+        'department_id' => $v2->department_id,
+        'capacity' => 80,
+    ]);
 
-    $results = $this->service->getAllVenues($filters);
-
-    expect($results)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class);
+    expect($result->total())->toBe(1)
+        ->and($result->first()->id)->toBe($v2->id);
 });

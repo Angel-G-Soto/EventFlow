@@ -1,113 +1,121 @@
 <?php
 
-use App\Models\Event;
+use App\Models\User;
 use App\Models\Venue;
 use App\Models\Department;
 use App\Services\VenueService;
+use App\Services\AuditService;
 use App\Services\DepartmentService;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Services\UseRequirementService;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 beforeEach(function () {
-    $departmentService = new DepartmentService();
-    $this->service = new VenueService($departmentService);
+    $this->auditService = Mockery::mock(AuditService::class);
+    $this->departmentService = Mockery::mock(DepartmentService::class);
+    $this->useRequirementService = Mockery::mock(UseRequirementService::class);
+
+    $this->venueService = new VenueService(
+        departmentService: $this->departmentService,
+        useRequirementService: $this->useRequirementService,
+        auditService: $this->auditService
+    );
+
+    $this->admin = Mockery::mock(User::class)->makePartial();
+    $this->admin->id = 1;
+    $this->admin->name = 'Admin User';
 });
 
 
-it('creates or updates venues from import data', function () {
-
-    $department = Department::factory()->create([
-        'name' => 'Engineering',
-        'code' => '123',
-    ]);
-
+it('creates or updates venues successfully from valid import data', function () {
+    $department = Department::factory()->create(['name' => 'ADEM']);
     $venueData = [
         [
             'name' => 'SALON DE CLASES',
             'code' => 'AE-102',
-            'department' => 'Engineering',
-            'features' => 1001,
-            'capacity' => 120,
-            'test_capacity' => 80,
+            'department' => 'ADEM',
+            'features' => '0101',
+            'capacity' => 50,
+            'test_capacity' => 40,
         ],
         [
-            'name' => 'SALON DE CONFERENCIA',
-            'code' => 'AE-115',
-            'department' => 'Engineering',
-            'features' => 1100,
-            'capacity' => 100,
-            'test_capacity' => 70,
+            'name' => 'LABORATORIO',
+            'code' => 'AE-103',
+            'department' => 'ADEM',
+            'features' => '0110',
+            'capacity' => 30,
+            'test_capacity' => 20,
         ],
     ];
 
-    $result = $this->service->updateOrCreateFromImportData($venueData);
+    $this->departmentService
+        ->shouldReceive('findByName')
+        ->twice()
+        ->with('ADEM')
+        ->andReturn($department);
 
-    expect($result)->toBeInstanceOf(Collection::class)
-        ->and($result)->toHaveCount(2)
-        ->and(
-            Venue::where('name', 'SALON DE CLASES')
-                ->where('code', 'AE-102')
-                ->where('department_id', $department->id)
-                ->exists()
-        )->toBeTrue()
-        ->and(
-            Venue::where('name', 'SALON DE CONFERENCIA')
-                ->where('code', 'AE-115')
-                ->where('department_id', $department->id)
-                ->exists()
-        )->toBeTrue();
+    $this->auditService
+        ->shouldReceive('logAdminAction')
+        ->once()
+        ->with($this->admin->id, '', 'Updated venues from import data.')
+        ->andReturn(Mockery::mock(\App\Models\AuditTrail::class));
 
+    $result = $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
+
+    expect($result)
+        ->toBeInstanceOf(Collection::class)
+        ->and($result->count())->toBe(2)
+        ->and(Venue::count())->toBe(2);
 });
 
-it('throws exception if department does not exist', function () {
+
+it('throws exception when venue data contains invalid keys', function () {
     $venueData = [
         [
-            'name' => 'SALON DE CLASES',
-            'code' => 'AE-106',
-            'department' => 'NonExistentDept',
-            'features' => '1001',
-            'capacity' => 50,
-            'test_capacity' => 40,
-        ],
-    ];
-
-    $this->service->updateOrCreateFromImportData($venueData);
-})->throws(ModelNotFoundException::class);
-
-
-it('throws InvalidArgumentException if venue array contains invalid keys', function () {
-    $venueData = [
-        [
-            'name' => 'SALON DE CLASES',
-            'code' => 'AE-102',
-            'department' => 'Empresas',
-            'features' => '1000',
-            'capacity' => 50,
-            'test_capacity' => 40,
-            'invalid_key' => 'invalid', // Invalid key
+            'name' => 'Invalid Venue',
+            'code' => 'AE-001',
+            'department' => 'ADEM',
+            'wrong_key' => 'unexpected',
         ]
     ];
 
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('Invalid attribute keys detected: invalid_key');
+    $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
+})->throws(InvalidArgumentException::class, 'Invalid attribute keys detected');
 
-    $this->service->updateOrCreateFromImportData($venueData);
-});
 
-it('throws InvalidArgumentException if venue array contains null values', function () {
+it('throws exception when any venue data contains null values', function () {
     $venueData = [
         [
-            'name' => null, // Null value
-            'code' => 'R101',
-            'department' => 'CSE',
-            'features' => 'multimedia',
+            'name' => null,
+            'code' => 'AE-002',
+            'department' => 'ADEM',
+            'features' => '0101',
             'capacity' => 50,
             'test_capacity' => 40,
         ]
     ];
 
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage("Null values are not allowed for keys: name");
+    $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
+})->throws(InvalidArgumentException::class, 'Null values are not allowed for keys: name');
 
-    $this->service->updateOrCreateFromImportData($venueData);
-});
+
+it('throws exception when department does not exist', function () {
+    $venueData = [
+        [
+            'name' => 'CLASSROOM 101',
+            'code' => 'AE-104',
+            'department' => 'NON_EXISTENT',
+            'features' => '1111',
+            'capacity' => 60,
+            'test_capacity' => 50,
+        ]
+    ];
+
+    $this->departmentService
+        ->shouldReceive('findByName')
+        ->once()
+        ->with('NON_EXISTENT')
+        ->andReturn(null);
+
+    $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
+})->throws(ModelNotFoundException::class, 'Department [NON_EXISTENT] does not exist.');
