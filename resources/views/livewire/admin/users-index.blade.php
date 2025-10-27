@@ -210,8 +210,8 @@
 
   {{-- Justification for save/delete --}}
   <x-justification id="userJustify"
-    submit="{{ $isBulkDeleting ? 'confirmBulkDelete' : ($isDeleting ? 'confirmDelete' : 'confirmSave') }}"
-    model="justification" :showDeleteType="$isDeleting || $isBulkDeleting" />
+    submit="{{ $this->isBulkDeleting ? 'confirmBulkDelete' : ($this->isDeleting ? 'confirmDelete' : 'confirmSave') }}"
+    model="justification" :showDeleteType="$this->isDeleting || $this->isBulkDeleting" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
@@ -225,59 +225,7 @@
 
   <script>
     document.addEventListener('livewire:init', () => {
-          // --- Focus-restore support (REUSABLE) ---
-    // Remembers which element had focus when a modal was opened,
-    // and returns focus to it after the modal fully closes.
-    const focusMap = new Map(); // modalId -> HTMLElement | null
-
-    function attachHiddenOnce(modalEl, modalId) {
-      const onHidden = () => {
-        const opener = focusMap.get(modalId);
-        if (opener && typeof opener.focus === 'function') {
-          // tiny delay to let backdrops/scroll lock settle
-          setTimeout(() => opener.focus(), 30);
-        }
-        focusMap.delete(modalId);
-        modalEl.removeEventListener('hidden.bs.modal', onHidden);
-      };
-      modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
-    }
-    /**
-     * Handle modal opening events from Livewire
-     * Opens Bootstrap modals and manages focus restoration
-     */
-    Livewire.on('bs:open', ({ id }) => {
-      // Find the modal element by ID
-      const el = document.getElementById(id);
-      if (!el) return;
-
-      // Store current focus for restoration after modal closes
-      const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      focusMap.set(id, opener);
-
-      // Initialize and show the Bootstrap modal
-      const modal = new bootstrap.Modal(el);
-      modal.show();
-
-      // Move focus to first focusable element in modal for accessibility
-      queueMicrotask(() => {
-        const first = el.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
-        if (first && typeof first.focus === 'function') first.focus();
-      });
-
-      // Set up focus restoration when modal closes
-      attachHiddenOnce(el, id);
-    });      
-      Livewire.on('bs:close', ({ id }) => { const el = document.getElementById(id); 
-        if(!el) return; const m = bootstrap.Modal.getInstance(el); 
-        if(m) m.hide(); });
-      Livewire.on('toast', ({ message }) => {
-        document.getElementById('userToastMsg').textContent = message || 'Done';
-        const toastEl = document.getElementById('userToast');
-        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 2200 });
-        toast.show();
-      });
-          // Keep the master checkbox correct (checked/indeterminate) after any render
+      // Keep the master checkbox correct (checked/indeterminate) after any render
       Livewire.on('selectionHydrate', ({ visible, selected }) => {
         const master = document.getElementById('master');
         if (!master) return;

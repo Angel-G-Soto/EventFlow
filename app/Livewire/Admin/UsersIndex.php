@@ -7,13 +7,14 @@ use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Concerns\TableSelection;
+use App\Livewire\Concerns\WithPaginationClamping;
 
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
-    use TableSelection;
+    use TableSelection, WithPaginationClamping;
 
-    //Roles in one place (replaced by DB later)
+
     public const ROLES = [
         'Student Org Rep',
         'Student Org Advisor',
@@ -178,16 +179,6 @@ class UsersIndex extends Component
     }
 
     /**
-     * Resets the current page to 1 when the page size filter is updated.
-     *
-     * This function will reset the current page to 1 when the page size filter is updated.
-     */
-    public function updatedPageSize()
-    {
-        $this->page = 1;
-    }
-
-    /**
      * Clears all filters and resets the page to 1.
      *
      * This will clear the search filter, the role filter, and the selected users,
@@ -312,7 +303,8 @@ class UsersIndex extends Component
     public function save(): void
     {
         // Check email uniqueness before validation
-        $existingUser = $this->allUsers()->firstWhere('email', $this->editEmail);
+        $users = $this->allUsers();
+        $existingUser = $users->firstWhere('email', $this->editEmail);
         if ($existingUser && (!$this->editId || $existingUser['id'] !== $this->editId)) {
             $this->addError('editEmail', 'This email is already taken.');
             return;
@@ -369,35 +361,6 @@ class UsersIndex extends Component
         $this->dispatch('bs:close', id: 'editUserModal');
         $this->dispatch('toast', message: $message);
         $this->reset(['editId', 'justification', 'actionType']);
-    }
-
-    /**
-     * Jumps to the last page after creating a new user, to prevent the page from becoming out of bounds.
-     * This function is called after creating a new user.
-     * It calculates the total number of results after the creation, and then sets the current page to the last page.
-     * Additionally, it clears any selection since we navigated.
-     */
-    protected function jumpToLastPageAfterCreate(): void
-    {
-        $total   = $this->filtered()->count();
-        $last    = max(1, (int) ceil($total / max(1, $this->pageSize)));
-        $this->page = $last;
-        $this->selected = []; // also clear any selection since we navigated
-    }
-
-    /**
-     * Clamps the current page after a mutation (e.g. deletion, creation) to prevent the page from becoming out of bounds.
-     *
-     * This function is called after a mutation (e.g. deletion, creation) to clamp the current page to the last page if it exceeds the last page.
-     * It calculates the total number of results after the mutation, and then sets the current page to the last page if it exceeds the last page.
-     */
-    protected function clampPageAfterMutation(): void
-    {
-        $total   = $this->filtered()->count();
-        $last    = max(1, (int) ceil($total / max(1, $this->pageSize)));
-        if ($this->page > $last) {
-            $this->page = $last;
-        }
     }
 
     /**
@@ -502,19 +465,28 @@ class UsersIndex extends Component
      */
     protected function filtered(): Collection
     {
-        $s = mb_strtolower(trim($this->search));
+        $search = mb_strtolower(trim($this->search));
+        $users = $this->allUsers();
 
-        return $this->allUsers()
-            ->filter(function ($u) use ($s) {
-                $hit = $s === '' ||
-                    str_contains(mb_strtolower($u['name']), $s) ||
-                    str_contains(mb_strtolower($u['email']), $s);
+        return $users->filter(function ($user) use ($search) {
+            // Ensure user has required keys
+            if (!isset($user['role'], $user['name'], $user['email'])) {
+                return false;
+            }
 
-                $roleOk = $this->role === '' || $u['role'] === $this->role;
+            // Role filter first (cheaper operation)
+            if ($this->role && $user['role'] !== $this->role) {
+                return false;
+            }
 
-                return $hit && $roleOk;
-            })
-            ->values();
+            // Search filter (only if search term exists)
+            if ($search) {
+                return str_contains(mb_strtolower($user['name']), $search) ||
+                    str_contains(mb_strtolower($user['email']), $search);
+            }
+
+            return true;
+        });
     }
 
     /**
@@ -529,24 +501,18 @@ class UsersIndex extends Component
      */
     protected function paginated(): LengthAwarePaginator
     {
-        $data  = $this->filtered();
+        $data = $this->filtered();
         $total = $data->count();
+        $pageSize = max(1, $this->pageSize); // Prevent division by zero
 
-        // Keep page within bounds
-        $lastPage = max(1, (int) ceil($total / max(1, $this->pageSize)));
-        if ($this->page > $lastPage) $this->page = $lastPage;
-        if ($this->page < 1) $this->page = 1;
-
-        $items = $data
-            ->slice(($this->page - 1) * $this->pageSize, $this->pageSize)
-            ->values();
+        $items = $data->slice(($this->page - 1) * $pageSize, $pageSize);
 
         return new LengthAwarePaginator(
-            items: $items,
-            total: $total,
-            perPage: $this->pageSize,
-            currentPage: $this->page,
-            options: ['path' => request()->url(), 'query' => request()->query()]
+            $items,
+            $total,
+            $pageSize,
+            $this->page,
+            ['path' => request()->url(), 'query' => request()->query()]
         );
     }
 
@@ -572,8 +538,9 @@ class UsersIndex extends Component
      */
     public function render()
     {
-        $paginator  = $this->paginated();
+        $paginator = $this->paginated();
         $visibleIds = $paginator->pluck('id')->all();
+
         $this->dispatch(
             'selectionHydrate',
             visible: $visibleIds,
@@ -581,7 +548,7 @@ class UsersIndex extends Component
         );
 
         return view('livewire.admin.users-index', [
-            'rows'       => $paginator,
+            'rows' => $paginator,
             'visibleIds' => $visibleIds,
         ]);
     }

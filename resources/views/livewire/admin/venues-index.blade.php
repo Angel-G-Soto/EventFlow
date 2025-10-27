@@ -199,7 +199,8 @@
             <div class="col-12">
               <label class="form-label">Features/Resources</label>
               <div class="row g-2">
-                @php $features = ['Allow Teaching Online','Allow Teaching With Multimedia','Allow Teaching wiht computer','Allow Teaching']; @endphp
+                @php $features = ['Allow Teaching Online','Allow Teaching With Multimedia','Allow Teaching wiht
+                computer','Allow Teaching']; @endphp
                 @foreach($features as $f)
                 <div class="col-6 col-md-4 col-lg-3">
                   <div class="form-check">
