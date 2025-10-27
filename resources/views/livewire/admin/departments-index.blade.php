@@ -81,8 +81,6 @@
               <div>{{ $d['email'] }}</div>
             </td>
             <td>
-              {{--<a class="text-decoration-none"
-                href="{{ route('admin.venues') }}?department={{ urlencode($d['name']) }}"></a>--}}
               {{ $d['venues'] }}
             </td>
             <td>{{ $d['members'] }}</td>
