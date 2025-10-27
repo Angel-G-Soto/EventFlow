@@ -73,16 +73,18 @@ class UseRequirementService {
     /**
      * Deletes the use requirement that contains the specified id
      *
-     * @param int $id
+     * @param int $venue_id
      * @return bool
      * @throws Exception
      */
-    public function deleteUseRequirement(int $id): bool
+    public function deleteUseRequirement(int $venue_id): bool
     {
         try {
-            if ($id < 0) throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');
+            if ($venue_id < 0) throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');
 
-            return UseRequirement::findOrFail($id)->delete();
+            if (UseRequirement::where('venue_id', $venue_id)->get()->isEmpty()) { return false;}//throw new ModelNotFoundException("No use requirements found for venue ID {$id}.");}
+
+            return UseRequirement::where('venue_id', $venue_id)->delete();
         }
         catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified use requirement.');}
     }
