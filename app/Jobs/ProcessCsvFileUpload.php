@@ -53,7 +53,8 @@ class ProcessCsvFileUpload implements ShouldQueue
             // Call service that reads csv output and stores venues
             app(VenueService::class)->updateOrCreateFromImportData($csv, app(UserService::class)->findUserById($this->admin_id));
 
-
+            // Delete file
+            Storage::disk('uploads_temp')->delete($this->file_name);
         }
         elseif(Str::contains($scan->getOutput(), 'FOUND'))
         {
