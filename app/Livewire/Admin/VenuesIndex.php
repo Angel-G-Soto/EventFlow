@@ -7,96 +7,22 @@ use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Concerns\TableSelection;
-use App\Livewire\Concerns\WithPaginationClamping;
+use App\Repositories\VenueRepository;
+use App\Livewire\Traits\VenueFilters;
+use App\Livewire\Traits\VenueEditState;
 
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
-    use TableSelection, WithPaginationClamping;
+    use TableSelection, VenueFilters, VenueEditState;
 
-    // Filters
-    public string $search = '';
-    public string $department = '';
-    public ?int $capMin = null;
-    public ?int $capMax = null;
-
-    // Paging
-    public int $page = 1;
-    public int $pageSize = 10;
-
-    // Selection + edit modal
-    public ?int $editId = null;
-    public string $vName = '';
-    public string $vDepartment = '';
-    public string $vRoom = '';
-    public ?int $vCapacity = 0;
-    public string $vManager = '';
-    public string $vStatus = 'Active';
-    public array  $vFeatures = [];   // ['Allow Teaching Online','Allow Teaching With Multimedia','Allow Teaching wiht computer','Allow Teaching']
-    public ?string $vNotes = null;
-
-    // Inline availability/blackouts (inside edit modal)
-    /** @var array<int,array{from:string,to:string,reason:string}> */
-    public array $blackouts = [];
-
-    public string $justification = '';
-    public string $actionType = '';
-    public string $deleteType = 'soft'; // 'soft' or 'hard'
-
-    public function getIsDeletingProperty(): bool
+    public array $venues = [];
+    public $csvFile;
+    public function mount()
     {
-        return $this->actionType === 'delete';
+        $this->venues = VenueRepository::all();
     }
 
-    public function getIsBulkDeletingProperty(): bool
-    {
-        return $this->actionType === 'bulkDelete';
-    }
-
-    private static array $venues = [
-        [
-            'id' => 1,
-            'name' => 'Auditorium A',
-            'department' => 'Arts',
-            'room' => '101',
-            'capacity' => 300,
-            'manager' => 'jdoe',
-            'status' => 'Active',
-            'features' => ['Allow Teaching', 'Allow Teaching With Multimedia'],
-            'availability' => 'Most weekdays 8–18'
-        ],
-        [
-            'id' => 2,
-            'name' => 'Lab West',
-            'department' => 'Biology',
-            'room' => 'B12',
-            'capacity' => 32,
-            'manager' => 'mruiz',
-            'status' => 'Inactive',
-            'features' => ['Allow Teaching wiht computer', 'Allow Teaching'],
-            'availability' => 'Contact dept.'
-        ],
-        [
-            'id' => 3,
-            'name' => 'Courtyard',
-            'department' => 'Facilities',
-            'room' => 'OUT',
-            'capacity' => 120,
-            'manager' => 'lortiz',
-            'status' => 'Active',
-            'features' => ['Allow Teaching'],
-            'availability' => 'Evenings only'
-        ],
-    ];
-
-    /**
-     * Returns a collection of all venues that are not deleted.
-     *
-     * This function takes into account both soft and hard deleted venues,
-     * and also applies any edits that have been made to the venues.
-     *
-     * @return Collection
-     */
     protected function allVenues(): Collection
     {
         $deletedIndex = array_flip(array_unique(array_merge(
@@ -105,7 +31,7 @@ class VenuesIndex extends Component
         )));
 
         $combined = array_filter(
-            self::$venues,
+            $this->venues,
             function (array $v) use ($deletedIndex) {
                 return !isset($deletedIndex[(int) $v['id']]);
             }
@@ -113,19 +39,6 @@ class VenuesIndex extends Component
 
         return collect($combined);
     }
-
-    /**
-     * Resets the current page to 1 when the search filter is updated.
-     *
-     * Also clears all current selections when the search filter is updated.
-     */
-    public function updatedSearch()
-    {
-        $this->page = 1;
-        $this->selected = [];
-    }
-
-
 
     /**
      * Resets all filters to their default values, and resets the current page to 1.
@@ -143,6 +56,41 @@ class VenuesIndex extends Component
     }
 
     /**
+     * Navigates to a given page number.
+     *
+     * @param int $target The target page number.
+     *
+     * This function will compute bounds from the current filters, and then
+     * set the page number to the maximum of 1 and the minimum of the
+     * target and the last page number. If the class has a 'selected'
+     * property, it will be cleared when the page changes.
+     */
+    public function goToPage(int $target): void
+    {
+        // compute bounds from current filters
+        $total = $this->filtered()->count();
+        $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
+
+        $this->page = max(1, min($target, $last));
+
+        // clear selections when page changes
+        if (property_exists($this, 'selected')) {
+            $this->selected = [];
+        }
+    }
+
+    /**
+     * Resets the current page to 1 when the search filter is updated.
+     *
+     * This function will be called whenever the search filter is updated,
+     * and will reset the current page to 1.
+     */
+    public function applySearch()
+    {
+        $this->page = 1;
+    }
+
+    /**
      * Resets the edit fields to their default values and opens the edit venue modal.
      *
      * This function is called when the user clicks the "Add Venue" button.
@@ -153,13 +101,43 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueModal');
     }
 
-    /**
-     * Opens the edit venue modal with the venue's data populated from the database.
-     *
-     * This function is called when the user clicks the "Edit" button on a venue's row.
-     *
-     * @param int $id The ID of the venue to edit.
-     */
+    public function openCsvModal(): void
+    {
+        $this->reset('csvFile');
+        $this->dispatch('bs:open', id: 'csvModal');
+    }
+
+    public function uploadCsv()
+    {
+        $this->validate([
+            'csvFile' => 'required|file|mimes:csv,txt',
+        ]);
+
+        $path = $this->csvFile->getRealPath();
+        $rows = array_map('str_getcsv', file($path));
+        $header = array_map('trim', array_shift($rows));
+
+        foreach ($rows as $row) {
+            $data = array_combine($header, $row);
+            if (!$data) continue;
+            $venue = [
+                'id'         => (int) now()->format('Uu') + rand(1, 9999),
+                'name'       => $data['name'] ?? '',
+                'room'       => $data['room'] ?? '',
+                'capacity'   => (int)($data['capacity'] ?? 0),
+                'department' => $data['department'] ?? '',
+                'manager'    => $data['manager'] ?? '',
+                'status'     => $data['status'] ?? 'Active',
+                'features'   => isset($data['features']) ? explode('|', $data['features']) : [],
+                'timeRanges' => isset($data['timeRanges']) ? json_decode($data['timeRanges'], true) : [],
+            ];
+            $this->venues[] = $venue;
+        }
+
+        $this->dispatch('bs:close', id: 'csvModal');
+        $this->dispatch('toast', message: 'Venues imported from CSV');
+    }
+
     public function openEdit(int $id): void
     {
         $v = $this->filtered()->firstWhere('id', $id);
@@ -172,48 +150,25 @@ class VenuesIndex extends Component
         $this->vManager  = $v['manager'];
         $this->vStatus   = $v['status'];
         $this->vFeatures = $v['features'];
-        $this->blackouts = []; // load blackouts from DB in real impl
-        $this->vNotes    = null;
+        $this->timeRanges = $v['timeRanges'] ?? [];
 
         $this->dispatch('bs:open', id: 'venueModal');
     }
 
-    /**
-     * Validation rules for the venue modal.
-     *
-     * The rules are as follows:
-     *
-     * - vName: required, string, max 150 characters
-     * - vRoom: required, string, max 50 characters
-     * - vDepartment: required, string, max 120 characters
-     * - vCapacity: required, integer, min 0
-     * - vManager: nullable, string, max 120 characters
-     * - vStatus: required, in:Active,Inactive
-     * - vFeatures: array
-     * - vNotes: nullable, string, max 2000 characters
-     * - justification: required, string, min 3 characters
-     * - blackouts.*.from: required, date
-     * - blackouts.*.to: required, date, after_or_equal:blackouts.*.from
-     * - blackouts.*.reason: nullable, string, max 300 characters
-     *
-     * @return array
-     */
     protected function rules(): array
     {
         return [
-            'vName'      => ['required', 'string', 'max:150'],
-            'vRoom'      => ['required', 'string', 'max:50'],
-            'vDepartment' => ['required', 'string', 'max:120'],
-            'vCapacity'  => ['required', 'integer', 'min:0'], // >= 0
-            'vManager'   => ['nullable', 'string', 'max:120'],
-            'vStatus'    => ['required', 'in:Active,Inactive'],
-            'vFeatures'  => ['array'],
-            'vNotes'     => ['nullable', 'string', 'max:2000'],
-            'justification' => ['required', 'string', 'min:3'],
-            // blackout rows (light validation)
-            'blackouts.*.from'   => ['required', 'date'],
-            'blackouts.*.to'     => ['required', 'date', 'after_or_equal:blackouts.*.from'],
-            'blackouts.*.reason' => ['nullable', 'string', 'max:300'],
+            'vName'      => 'required|string|max:150',
+            'vRoom'      => 'required|string|max:50',
+            'vDepartment' => 'required|string|max:120',
+            'vCapacity'  => 'required|integer|min:0', // >= 0
+            'vManager'   => 'nullable|string|max:120',
+            'vStatus'    => 'required|in:Active,Inactive',
+            'vFeatures'  => 'array',
+            'justification' => 'nullable|string|max:200',
+            'timeRanges'            => 'array',
+            'timeRanges.*.from'     => 'required|date_format:H:i',
+            'timeRanges.*.to'       => 'required|date_format:H:i',
         ];
     }
 
@@ -236,24 +191,67 @@ class VenuesIndex extends Component
     public function save(): void
     {
         $this->validate();
+
+        // ensure each 'to' is after its 'from'
+        foreach ($this->timeRanges as $idx => $tr) {
+            $from = $tr['from'] ?? null;
+            $to   = $tr['to']   ?? null;
+
+            if ($from && $to && $to <= $from) {
+                $this->addError("timeRanges.$idx.to", 'The end time must be after the start time.');
+            }
+        }
+
+        if ($this->getErrorBag()->isNotEmpty()) {
+            return; // don’t proceed if there are errors
+        }
+
         $this->actionType = 'save';
         $this->dispatch('bs:open', id: 'venueJustify');
     }
 
     /**
      * Confirms the save action and updates the session with the new/edited venue data.
-     * If the venue is being edited, it validates the justification length and then updates the edited_venues session.
-     * If the venue is being created, it updates the new_venues session.
+     * If the venue is being created, it adds the new venue to the list.
+     * If the venue is being edited, it updates the existing venue in the list.
      * Finally, it dispatches events to close the justification modal, edit venue modal, and show a toast message with a success message.
      */
     public function confirmSave(): void
     {
         $this->validateJustification();
+
+        $venue = [
+            'id'         => $this->editId ?? (int) now()->format('Uu'),
+            'name'       => $this->vName,
+            'room'       => $this->vRoom,
+            'capacity'   => $this->vCapacity,
+            'department' => $this->vDepartment,
+            'manager'    => $this->vManager,
+            'status'     => $this->vStatus,
+            'features'   => $this->vFeatures,
+            'timeRanges' => $this->timeRanges,
+        ];
+
         $isCreating = !$this->editId;
+
+        if ($isCreating) {
+            $this->venues[] = $venue;
+        } else {
+            foreach ($this->venues as &$v) {
+                if ($v['id'] === $this->editId) {
+                    $v = $venue;
+                    break;
+                }
+            }
+            unset($v);
+        }
+
         $this->dispatch('bs:close', id: 'venueJustify');
         $this->dispatch('bs:close', id: 'venueModal');
         $this->dispatch('toast', message: 'Venue saved');
-        $this->reset(['justification', 'actionType']);
+
+        $this->reset(['justification', 'actionType', 'editId']);
+
         if ($isCreating) {
             $this->jumpToLastPageAfterCreate();
         }
@@ -272,13 +270,6 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueJustify');
     }
 
-    /**
-     * Confirms the deletion of a venue.
-     *
-     * This function will validate the justification entered by the user, and then delete the venue with the given ID.
-     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating whether the venue was permanently deleted or just deleted.
-     */
     public function confirmDelete(): void
     {
         if ($this->editId) {
@@ -286,7 +277,6 @@ class VenuesIndex extends Component
             session()->push($this->deleteType === 'hard' ? 'hard_deleted_venue_ids' : 'soft_deleted_venue_ids', $this->editId);
             unset($this->selected[$this->editId]);
         }
-        $this->clampPageAfterMutation();
         $this->dispatch('bs:close', id: 'venueJustify');
         $this->dispatch('toast', message: 'Venue ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
         $this->reset(['editId', 'justification', 'actionType']);
@@ -305,13 +295,6 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueJustify');
     }
 
-    /**
-     * Confirms the bulk deletion of venues.
-     *
-     * This function will validate the justification entered by the user, and then delete the venues with the given IDs.
-     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating whether the venues were permanently deleted or just deleted.
-     */
     public function confirmBulkDelete(): void
     {
         $selectedIds = array_keys($this->selected);
@@ -322,7 +305,6 @@ class VenuesIndex extends Component
         $newIds = array_merge($existingIds, $selectedIds);
         session([$sessionKey => array_values(array_unique($newIds))]);
         $this->selected = [];
-        $this->clampPageAfterMutation();
         $this->dispatch('bs:close', id: 'venueJustify');
         $this->dispatch('toast', message: count($selectedIds) . ' venues ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
         $this->reset(['justification', 'actionType']);
@@ -342,31 +324,17 @@ class VenuesIndex extends Component
         $this->dispatch('toast', message: 'All deleted venues restored');
     }
 
-    /**
-     * Adds a new blackout to the list.
-     *
-     * This function will add an empty blackout to the list, which can then be filled in
-     * by the user. The new blackout will be added to the end of the list.
-     *
-     * @return void
-     */
-    public function addBlackout(): void
+
+    public function addTimeRange(): void
     {
-        $this->blackouts[] = ['from' => '', 'to' => '', 'reason' => ''];
+        $this->timeRanges[] = ['from' => '', 'to' => '', 'reason' => ''];
     }
 
-    /**
-     * Removes a blackout from the list.
-     *
-     * This function will remove the blackout at the given index from the list.
-     * After removal, it will re-index the list to maintain contiguous keys.
-     *
-     * @param int $i The index of the blackout to remove
-     */
-    public function removeBlackout(int $i): void
+
+    public function removeTimeRange(int $i): void
     {
-        unset($this->blackouts[$i]);
-        $this->blackouts = array_values($this->blackouts);
+        unset($this->timeRanges[$i]);
+        $this->timeRanges = array_values($this->timeRanges);
     }
 
     /**
@@ -436,13 +404,12 @@ class VenuesIndex extends Component
             'vManager',
             'vStatus',
             'vFeatures',
-            'vNotes',
-            'blackouts'
+            'timeRanges'
         ]);
         $this->vCapacity = 0;
         $this->vStatus   = 'Active';
         $this->vFeatures = [];
-        $this->blackouts = [];
+        $this->timeRanges = [];
     }
 
     /**
@@ -456,7 +423,6 @@ class VenuesIndex extends Component
     public function render()
     {
         $paginator = $this->paginated();
-        $paginator = $this->ensurePageInBounds($paginator);
         if ($this->page !== $paginator->currentPage()) {
             $paginator = $this->paginated();
         }
