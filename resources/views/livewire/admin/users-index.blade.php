@@ -18,19 +18,19 @@
       <div class="row g-2">
         <div class="col-12 col-md-4">
           <label class="form-label">Search</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Search by name or email…"
-              wire:model.live.debounce.300ms="search">
-          </div>
+          <form wire:submit.prevent="applySearch">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Search by name or email…" wire:model.defer="search">
+            </div>
+          </form>
         </div>
 
         <div class="col-6 col-md-3">
           <label class="form-label">Role</label>
           <select class="form-select" wire:model.live="role">
             <option value="">All roles</option>
-            @foreach(\App\Livewire\Admin\UsersIndex::ROLES as $role)
-            <option value="{{ $role }}">{{ $role }}</option>
+            @foreach(\App\Support\UserConstants::ROLES as $rname)
+            <option value="{{ $rname }}">{{ $rname }}</option>
             @endforeach
           </select>
         </div>
@@ -75,7 +75,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Department</th>
-            <th>Role</th>
+            <th>Roles</th>
             <th class="text-end" style="width:140px;">Actions</th>
           </tr>
         </thead>
@@ -87,12 +87,15 @@
               <x-table.select-row :row-id="$user['id']" :selected="$selected" :page-key="$page" />
             </td>
             <td class="fw-medium">{{ $user['name'] }}</td>
-            <td><a href="mailto:{{ $user['email'] }}">{{ $user['email'] }}</a></td>
+            <td>{{ $user['email'] }}</td>
             <td>{{ $user['department'] ?? '—' }}</td>
             <td>
-              <span class="badge {{ $this->roleClass($user['role'] ?? '') }}">
-                {{ $user['role'] ?? '—' }}
-              </span>
+              @php $roles = $user['roles'] ?? []; @endphp
+              @forelse($roles as $r)
+              <span class="badge {{ $this->roleClass($r) }}">{{ $r }}</span>
+              @empty
+              —
+              @endforelse
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
@@ -116,26 +119,10 @@
 
     {{-- Footer / Pager --}}
     <div class="card-footer d-flex align-items-center justify-content-between">
-      @if(method_exists($rows, 'total'))
-      <small class="text-secondary">{{ $rows->total() }} result{{ $rows->total()===1?'':'s' }}</small>
-      <div>
-        <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary" wire:click="$set('page', 1)"
-            @disabled($rows->currentPage()===1)>&laquo;</button>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() - 1 }})"
-            @disabled($rows->currentPage()===1)>&lsaquo;</button>
-          <span class="btn btn-outline-secondary disabled">
-            Page {{ $rows->currentPage() }} / {{ $rows->lastPage() }}
-          </span>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() + 1 }})"
-            @disabled($rows->currentPage()===$rows->lastPage())>&rsaquo;</button>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->lastPage() }})"
-            @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
-        </div>
-      </div>
-      @else
-      <small class="text-secondary">{{ count($rows) }} result{{ count($rows)===1?'':'s' }}</small>
-      @endif
+      <small class="text-secondary">
+        {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
+      </small>
+      {{ $rows->onEachSide(1)->links('partials.pagination') }}
     </div>
   </div>
 
@@ -168,27 +155,35 @@
               @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label">Role</label>
-              <select class="form-select @error('editRole') is-invalid @enderror" required wire:model.live="editRole">
-                <option value="">Select Role</option>
-                @foreach(\App\Livewire\Admin\UsersIndex::ROLES as $role)
-                <option value="{{ $role }}">{{ $role }}</option>
+              <label class="form-label">Roles</label>
+              <div class="border rounded p-2" style="max-height:120px;overflow-y:auto;">
+                @foreach(\App\Support\UserConstants::ROLES as $rname)
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                    id="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}" value="{{ $rname }}"
+                    wire:model.live="editRoles">
+                  <label class="form-check-label" for="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}">
+                    {{ $rname }}
+                  </label>
+                </div>
                 @endforeach
-              </select>
-              @error('editRole')
-              <div class="invalid-feedback">{{ $message }}</div>
-              @enderror
+              </div>
+              @error('editRoles') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Department</label>
-              @if($this->hasRoleWithoutDepartment)
+              @php
+              $hasRoleWithoutDepartment = !empty(array_intersect($editRoles ?? [],
+              \App\Support\UserConstants::ROLES_WITHOUT_DEPARTMENT));
+              @endphp
+              @if($hasRoleWithoutDepartment)
               <input type="text" class="form-control" value="—" disabled>
               <small class="text-muted">Only Venue Managers have departments</small>
               @else
               <select class="form-select @error('editDepartment') is-invalid @enderror"
                 wire:model.live="editDepartment">
                 <option value="">Select Department</option>
-                @foreach(\App\Livewire\Admin\UsersIndex::DEPARTMENTS as $dept)
+                @foreach(\App\Support\UserConstants::DEPARTMENTS as $dept)
                 <option value="{{ $dept }}">{{ $dept }}</option>
                 @endforeach
               </select>
@@ -202,7 +197,7 @@
 
         <div class="modal-footer">
           <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit"><i class="bi bi-save me-1"></i>Save</button>
+          <button class="btn btn-primary" type="submit"><i class="bi me-1"></i>Save</button>
         </div>
       </form>
     </div>
