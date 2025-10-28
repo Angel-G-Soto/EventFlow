@@ -123,44 +123,68 @@ class VenueService {
     /**
      * Retrieves the venue that contains the provided ID
      *
-     * @param int $venueId
+     * @param int $venue_id
      * @return Venue|null
      * @throws Exception
      */
-    public function getVenueById(int $venueId): ?Venue
+    public function getVenueById(int $venue_id): ?Venue
     {
         try {
-            if ($venueId < 0) {throw new InvalidArgumentException('Venue id must be greater than 0.');}
-            return Venue::find($venueId);
+            if ($venue_id < 0) {throw new InvalidArgumentException('Venue id must be greater than 0.');}
+            return Venue::find($venue_id);
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
         catch (\Throwable $exception) {throw new Exception('Unable get the venue.');}
     }
 
+
+    /**
+     * Get the venues that are provided in the id array
+     *
+     * @param array $ids
+     * @return mixed
+     */
+    public static function getVenuesByIds(array $ids)
+    {
+        foreach ($ids as $id) {
+            if ($id <= 0) {
+                throw new InvalidArgumentException("Venue IDs must be positive integers.");
+            }
+        }
+
+        $venues = Venue::whereIn('id', $ids)->get();
+
+        if ($venues->count() !== count($ids)) {
+            throw new ModelNotFoundException("One or more venues not found.");
+        }
+
+        return $venues;
+    }
+
     /**
      * Returns a collection of all the available venues within the specified timeframe
      *
-     * @param DateTime $startTime
-     * @param DateTime $endTime
+     * @param DateTime $start_time
+     * @param DateTime $end_time
      * @return Collection
      * @throws Exception
      */
-    public function getAvailableVenues(DateTime $startTime, DateTime $endTime): Collection
+    public function getAvailableVenues(DateTime $start_time, DateTime $end_time): Collection
     {
         // Check for error
-        if ($startTime >= $endTime) {
+        if ($start_time >= $end_time) {
             throw new \InvalidArgumentException('Start time must be before end time.');
         }
         try {
             // Get events that occur on between the date parameters (// MOCK FROM EVENT SERVICE)
             $unavailableEventVenues = Event::where('status', 'approved')
-                ->where(function ($query) use ($startTime, $endTime) {
+                ->where(function ($query) use ($start_time, $end_time) {
                     $query
-                        ->whereBetween('start_time', [$startTime, $endTime])        // Event starts within window
-                        ->orWhereBetween('end_time', [$startTime, $endTime])        // Event ends within window
-                        ->orWhere(function ($query) use ($startTime, $endTime) {    // Event fully covers window
-                            $query->where('start_time', '<=', $startTime)
-                                ->where('end_time', '>=', $endTime);
+                        ->whereBetween('start_time', [$start_time, $end_time])        // Event starts within window
+                        ->orWhereBetween('end_time', [$start_time, $end_time])        // Event ends within window
+                        ->orWhere(function ($query) use ($start_time, $end_time) {    // Event fully covers window
+                            $query->where('start_time', '<=', $start_time)
+                                ->where('end_time', '>=', $end_time);
                         });
                 })
                 ->pluck('venue_id')
@@ -169,6 +193,12 @@ class VenueService {
             // Return venues that are not in the approved events.
             return Venue::whereNotIn('id', $unavailableEventVenues)->get();
         } catch (\Throwable $exception) {throw new Exception('Unable to extract available venues.');}
+    }
+
+    public function findByID(int $venue_id): ?Venue
+    {
+        if ($venue_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
+        return Venue::find($venue_id);
     }
 
 /*
@@ -357,6 +387,52 @@ class VenueService {
 
 
  */
+
+    /**
+     * Create a new Venue.
+     *
+     * @param array $data
+     * @param User $admin
+     * @return Venue
+     * @throws InvalidArgumentException
+     */
+    public function createVenue(array $data, User $admin): Venue
+    {
+        if ($admin->getRoleNames()->contains('system-admin')) {
+            throw new InvalidArgumentException('Only admins can create venues.');
+        }
+
+        // Validate mandatory fields exist
+        $requiredKeys = [
+            'manager_id', 'department_id', 'name', 'code',
+            'features', 'capacity', 'test_capacity'
+        ];
+
+        foreach ($requiredKeys as $key) {
+            if (!isset($data[$key])) {
+                throw new InvalidArgumentException("Missing required field: {$key}");
+            }
+        }
+
+
+        $venue = new Venue();
+
+        $venue->manager_id    = $data['manager_id'];
+        $venue->department_id = $data['department_id'];
+        $venue->name          = $data['name'];
+        $venue->code          = $data['code'];
+        $venue->features      = $data['features'];
+        $venue->capacity      = $data['capacity'];
+        $venue->test_capacity = $data['test_capacity'];
+        $venue->opening_time  = $data['opening_time'];
+        $venue->closing_time  = $data['closing_time'];
+
+        $venue->save();
+
+        return $venue;
+
+
+    }
 
     /**
      * Updates the attributes of the given menu.

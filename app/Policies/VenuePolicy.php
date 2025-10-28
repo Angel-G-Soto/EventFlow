@@ -22,8 +22,7 @@ class VenuePolicy
      */
     public function view(User $user, Venue $venue): bool
     {
-        return $user->getRoleNames()->contains('system-admin')
-            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
+        return (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
                 && $user->department_id == $venue->department_id);
     }
 
@@ -40,9 +39,7 @@ class VenuePolicy
      */
     public function update(User $user, Venue $venue): bool
     {
-        return $user->getRoleNames()->contains('system-admin')
-            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
-                && $user->department_id == $venue->department_id);
+        return $user->getRoleNames()->contains('system-admin');
     }
 
     /**
@@ -58,18 +55,22 @@ class VenuePolicy
      */
     public function assignManager(User $user, Venue $venue): bool
     {
-        return $user->getRoleNames()->contains('system-admin')
-            || ($user->getRoleNames()->contains('department-director')
-                && $user->department_id == $venue->department_id);
+        return $user->getRoleNames()->contains('department-director') && $user->department_id == $venue->department_id;
     }
 
     /**
-     * Determine whether the user can update the model's relation.
+     * Determine whether the user can update the model's requirements.
      */
     public function updateRequirements(User $user, Venue $venue): bool
     {
-        return $user->getRoleNames()->contains('system-admin')
-            || (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
-                && $user->department_id == $venue->department_id);
+        return $user->getRoleNames()->contains('venue-manager') && $user->department_id == $venue->department_id;
+    }
+
+    /**
+     * Determine whether the user can update the model's availability.
+     */
+    public function updateAvailability(User $user, Venue $venue): bool
+    {
+        return $user->getRoleNames()->contains('venue-manager') && $user->department_id == $venue->department_id;
     }
 }
