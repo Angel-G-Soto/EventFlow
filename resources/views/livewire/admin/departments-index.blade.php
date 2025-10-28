@@ -18,10 +18,19 @@
         <div class="col-12 col-md-4">
           <label class="form-label">Search</label>
           <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Search by name, code, or director..."
-              wire:model.live.debounce.300ms="search">
+            <span class="input-group">
+              <input type="text" class="form-control" placeholder="Search by name, code, or director..."
+                wire:model.defer="search">
           </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Code</label>
+          <select class="form-select" wire:model.live="code">
+            <option value="">All</option>
+            @foreach($codes as $c)
+            <option value="{{ $c }}">{{ $c }}</option>
+            @endforeach
+          </select>
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-outline-secondary w-100" wire:click="clearFilters" type="button">
@@ -32,15 +41,8 @@
     </div>
   </div>
 
-  {{-- Bulk + page size --}}
-  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-2">
-    <div class="btn-group">
-      <button class="btn btn-outline-danger btn-sm" wire:click="bulkDelete" @disabled(empty($selected ?? []))
-        type="button">
-        <i class="bi bi-trash3 me-1"></i> Delete
-      </button>
-    </div>
-
+  {{-- Page size --}}
+  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
       <label class="text-secondary small mb-0">Rows</label>
       <select class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
@@ -56,34 +58,19 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th style="width:36px;">
-              <x-table.select-all :visible-ids="$visibleIds" :page-key="$page" />
-            </th>
             <th>Name</th>
-            <th>Code</th>
+            <th>Department Code</th>
             <th>Director</th>
-            <th>Contact</th>
-            <th>Venues</th>
-            <th>Members</th>
+
             <th class="text-end" style="width:120px;">Actions</th>
           </tr>
         </thead>
         <tbody>
           @forelse($rows as $d)
           <tr>
-            <td>
-              <x-table.select-row :row-id="$d['id']" :selected="$selected" :page-key="$page" />
-            </td>
             <td class="fw-medium">{{ $d['name'] }}</td>
             <td>{{ $d['code'] }}</td>
-            <td>{{ $d['director'] }}</td>
-            <td>
-              <div>{{ $d['email'] }}</div>
-            </td>
-            <td>
-              {{ $d['venues'] }}
-            </td>
-            <td>{{ $d['members'] }}</td>
+            <td>{{ trim($d['director'] ?? '') }}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})">
@@ -97,7 +84,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="8" class="text-center text-secondary py-4">No departments found.</td>
+            <td colspan="4" class="text-center text-secondary py-4">No departments found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -105,22 +92,10 @@
     </div>
 
     <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-secondary">{{ $rows->total() }} result{{ $rows->total()===1?'':'s' }}</small>
-      <div>
-        <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary" wire:click="$set('page', 1)"
-            @disabled($rows->currentPage()===1)>&laquo;</button>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() - 1 }})"
-            @disabled($rows->currentPage()===1)>&lsaquo;</button>
-          <span class="btn btn-outline-secondary disabled">
-            Page {{ $rows->currentPage() }} / {{ $rows->lastPage() }}
-          </span>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() + 1 }})"
-            @disabled($rows->currentPage()===$rows->lastPage())>&rsaquo;</button>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->lastPage() }})"
-            @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
-        </div>
-      </div>
+      <small class="text-secondary">
+        {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
+      </small>
+      {{ $rows->onEachSide(1)->links('partials.pagination') }}
     </div>
   </div>
 
@@ -139,14 +114,9 @@
                 wire:model.live="dName" required></div>
             <div class="col-md-3"><label class="form-label">Code</label><input class="form-control"
                 wire:model.live="dCode" required></div>
-            <div class="col-md-3"><label class="form-label">Director (user)</label><input class="form-control"
+            <div class="col-md-3"><label class="form-label">Director</label><input class="form-control"
                 wire:model.live="dDirector"></div>
-            <div class="col-md-6"><label class="form-label">Email</label><input type="email" class="form-control"
-                wire:model.live="dEmail"></div>
-            <div class="col-md-6"><label class="form-label">Phone</label><input class="form-control"
-                wire:model.live="dPhone"></div>
-            <div class="col-12"><label class="form-label">Default Policies</label><textarea class="form-control"
-                rows="4" wire:model.live="dPolicies"></textarea></div>
+
           </div>
         </div>
         <div class="modal-footer">
@@ -157,9 +127,8 @@
     </div>
   </div>
 
-  <x-justification id="deptJustify"
-    submit="{{ $this->isBulkDeleting ? 'confirmBulkDelete' : ($this->isDeleting ? 'confirmDelete' : 'confirmSave') }}"
-    model="justification" :showDeleteType="$this->isDeleting || $this->isBulkDeleting" />
+  <x-justification id="deptJustify" submit="{{ $this->isDeleting ? 'confirmDelete' : 'confirmSave' }}"
+    model="justification" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
@@ -170,59 +139,4 @@
       </div>
     </div>
   </div>
-
-  <script>
-    document.addEventListener('livewire:init', () => {
-      const focusMap = new Map();
-
-      function attachHiddenOnce(modalEl, modalId) {
-        const onHidden = () => {
-          const opener = focusMap.get(modalId);
-          if (opener && typeof opener.focus === 'function') {
-            setTimeout(() => opener.focus(), 30);
-          }
-          focusMap.delete(modalId);
-          modalEl.removeEventListener('hidden.bs.modal', onHidden);
-        };
-        modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
-      }
-
-      Livewire.on('bs:open', ({ id }) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        focusMap.set(id, opener);
-        const modal = new bootstrap.Modal(el);
-        modal.show();
-        queueMicrotask(() => {
-          const first = el.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
-          if (first && typeof first.focus === 'function') first.focus();
-        });
-        attachHiddenOnce(el, id);
-      });
-
-      Livewire.on('bs:close', ({ id }) => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        const m = bootstrap.Modal.getInstance(el);
-        if(m) m.hide();
-      });
-
-      Livewire.on('toast', ({ message }) => {
-        document.getElementById('deptToastMsg').textContent = message || 'Done';
-        const toastEl = document.getElementById('deptToast');
-        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 2200 });
-        toast.show();
-      });
-
-      Livewire.on('selectionHydrate', ({ visible, selected }) => {
-        const master = document.getElementById('master');
-        if (!master) return;
-        const set = new Set(selected);
-        const onPageSelected = visible.filter(id => set.has(id));
-        master.indeterminate = onPageSelected.length > 0 && onPageSelected.length < visible.length;
-        master.checked = visible.length > 0 && onPageSelected.length === visible.length;
-      });
-    });
-  </script>
 </div>

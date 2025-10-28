@@ -23,7 +23,7 @@
           <label class="form-label">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
-              <input type="text" class="form-control" placeholder="Search by name or manager..."
+              <input type="text" class="form-control" placeholder="Search by name, code, or manager..."
                 wire:model.defer="search">
             </div>
           </form>
@@ -88,7 +88,7 @@
         <tbody>
           @forelse($rows as $v)
           <tr>
-            <td class="fw-medium">{{ $v['name'] }}</td>
+            <td>{{ $v['name'] }}</td>
             <td>{{ $v['department'] }}</td>
             <td>{{ $v['room'] }}</td>
             <td>{{ $v['capacity'] }}</td>

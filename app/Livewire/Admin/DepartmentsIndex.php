@@ -6,37 +6,24 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use App\Livewire\Concerns\TableSelection;
-use App\Livewire\Concerns\WithPaginationClamping;
+use App\Livewire\Traits\DepartmentFilters;
+use App\Livewire\Traits\DepartmentEditState;
+use App\Repositories\DepartmentRepository;
 
 #[Layout('layouts.app')]
 class DepartmentsIndex extends Component
 {
-  use TableSelection, WithPaginationClamping;
+  use DepartmentFilters, DepartmentEditState;
 
-  public string $search = '';
-  public int $page = 1;
-  public int $pageSize = 10;
-
-  public ?int $editId = null;
-  public string $dName = '';
-  public string $dCode = '';
-  public string $dDirector = '';
-  public string $dEmail = '';
-  public string $dPhone = '';
-  public string $dPolicies = '';
-  public string $justification = '';
-  public string $actionType = '';
-  public string $deleteType = 'soft'; // 'soft' or 'hard'
+  /** @var array<int,array{name:string,code:string,director:string,id:int}> */
+  public array $departments = [];
 
   /**
-   * Check if the current action type is 'delete'.
-   * 
-   * @return bool True if action type is 'delete'
+   * Load departments from CSV on mount.
    */
-  public function getIsDeletingProperty(): bool
+  public function mount(): void
   {
-    return $this->actionType === 'delete';
+    $this->departments = DepartmentRepository::all();
   }
 
   /**
@@ -44,54 +31,65 @@ class DepartmentsIndex extends Component
    * 
    * @return bool True if action type is 'bulkDelete'
    */
-  public function getIsBulkDeletingProperty(): bool
-  {
-    return $this->actionType === 'bulkDelete';
-  }
+  // Removed: getIsBulkDeletingProperty no longer needed after bulk actions removal
 
-  private static array $departments = [
-    ['id' => 1, 'name' => 'Biology', 'code' => 'BIO', 'director' => 'mruiz', 'email' => 'bio@upr.edu', 'phone' => '555-1001', 'policies' => 'No animals after 6pm.', 'venues' => 3, 'members' => 24],
-    ['id' => 2, 'name' => 'Arts', 'code' => 'ART', 'director' => 'jdoe', 'email' => 'arts@upr.edu', 'phone' => '555-2010', 'policies' => 'Ticketing required.', 'venues' => 2, 'members' => 12],
-    ['id' => 3, 'name' => 'Facilities', 'code' => 'FAC', 'director' => 'lortiz', 'email' => 'fac@upr.edu', 'phone' => '555-3000', 'policies' => 'Outdoor curfew 11pm.', 'venues' => 5, 'members' => 8],
-  ];
+  // Static fixtures removed; data now sourced from CSV via DepartmentRepository
 
   /**
    * Returns a collection of all departments that are not deleted.
    *
-   * This function takes into account both soft and hard deleted departments,
+   * This function takes into account soft-deleted departments (no hard delete),
    * and also applies any edits that have been made to the departments.
    *
    * @return Collection
    */
   protected function allDepartments(): Collection
   {
-    $deletedIndex = array_flip(array_unique(array_merge(
-      array_map('intval', session('soft_deleted_department_ids', [])),
-      array_map('intval', session('hard_deleted_department_ids', []))
-    )));
+    $deletedIndex = array_flip(array_unique(
+      array_map('intval', session('soft_deleted_department_ids', []))
+    ));
 
-    $combined = array_filter(
-      self::$departments,
+    $combined = array_values(array_filter(
+      $this->departments,
       function (array $d) use ($deletedIndex) {
         return !isset($deletedIndex[(int) $d['id']]);
       }
-    );
+    ));
 
     return collect($combined);
   }
 
   /**
-   * Resets the current page to 1 when the search filter is updated.
+   * Navigates to a given page number.
    *
-   * Also clears all current selections when the search filter is updated.
+   * @param int $target The target page number.
+   *
+   * This function will compute bounds from the current filters, and then
+   * set the page number to the maximum of 1 and the minimum of the
+   * target and the last page number. If the class has a 'selected'
+   * property, it will be cleared when the page changes.
    */
-  public function updatedSearch()
+  public function goToPage(int $target): void
   {
-    $this->page = 1;
-    $this->selected = [];
+    // compute bounds from current filters
+    $total = $this->filtered()->count();
+    $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
+
+    $this->page = max(1, min($target, $last));
+
+    // selection removed
   }
 
-
+  /**
+   * Resets the current page to 1 when the search filter is updated.
+   *
+   * This function will be called whenever the search filter is updated,
+   * and will reset the current page to 1.
+   */
+  public function applySearch()
+  {
+    $this->page = 1;
+  }
 
   /**
    * Resets the search filter and the current page to 1.
@@ -101,6 +99,7 @@ class DepartmentsIndex extends Component
   public function clearFilters(): void
   {
     $this->search = '';
+    $this->code = '';
     $this->page = 1;
   }
 
@@ -111,7 +110,7 @@ class DepartmentsIndex extends Component
    */
   public function openCreate(): void
   {
-    $this->reset(['editId', 'dName', 'dCode', 'dDirector', 'dEmail', 'dPhone', 'dPolicies']);
+    $this->reset(['editId', 'dName', 'dCode', 'dDirector']);
     $this->dispatch('bs:open', id: 'deptModal');
   }
 
@@ -131,9 +130,6 @@ class DepartmentsIndex extends Component
     $this->dName = $d['name'];
     $this->dCode = $d['code'];
     $this->dDirector = $d['director'];
-    $this->dEmail = $d['email'];
-    $this->dPhone = $d['phone'];
-    $this->dPolicies = $d['policies'];
     $this->dispatch('bs:open', id: 'deptModal');
   }
 
@@ -191,9 +187,6 @@ class DepartmentsIndex extends Component
     $this->dispatch('bs:close', id: 'deptModal');
     $this->dispatch('toast', message: 'Department saved');
     $this->reset(['justification', 'actionType']);
-    if ($isCreating) {
-      $this->jumpToLastPageAfterCreate();
-    }
   }
 
   /**
@@ -220,12 +213,10 @@ class DepartmentsIndex extends Component
   {
     if ($this->editId) {
       $this->validateJustification();
-      session()->push($this->deleteType === 'hard' ? 'hard_deleted_department_ids' : 'soft_deleted_department_ids', $this->editId);
-      unset($this->selected[$this->editId]);
+      session()->push('soft_deleted_department_ids', $this->editId);
     }
-    $this->clampPageAfterMutation();
     $this->dispatch('bs:close', id: 'deptJustify');
-    $this->dispatch('toast', message: 'Department ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
+    $this->dispatch('toast', message: 'Department deleted');
     $this->reset(['editId', 'justification', 'actionType']);
   }
 
@@ -235,12 +226,7 @@ class DepartmentsIndex extends Component
    * This function is called when the user wants to delete multiple departments at once.
    * It sets the isBulkDeleting flag to true, and then opens the justification modal.
    */
-  public function bulkDelete(): void
-  {
-    if (empty($this->selected)) return;
-    $this->actionType = 'bulkDelete';
-    $this->dispatch('bs:open', id: 'deptJustify');
-  }
+  // Bulk delete removed
 
   /**
    * Confirms the bulk deletion of departments.
@@ -249,21 +235,7 @@ class DepartmentsIndex extends Component
    * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
    * Finally, it shows a toast message indicating whether the departments were permanently deleted or just deleted.
    */
-  public function confirmBulkDelete(): void
-  {
-    $selectedIds = array_keys($this->selected);
-    if (empty($selectedIds)) return;
-    $this->validateJustification();
-    $sessionKey = $this->deleteType === 'hard' ? 'hard_deleted_department_ids' : 'soft_deleted_department_ids';
-    $existingIds = session($sessionKey, []);
-    $newIds = array_merge($existingIds, $selectedIds);
-    session([$sessionKey => array_values(array_unique($newIds))]);
-    $this->selected = [];
-    $this->clampPageAfterMutation();
-    $this->dispatch('bs:close', id: 'deptJustify');
-    $this->dispatch('toast', message: count($selectedIds) . ' departments ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
-    $this->reset(['justification', 'actionType']);
-  }
+  // Bulk delete confirm removed
 
   /**
    * Restore all soft deleted departments.
@@ -292,8 +264,32 @@ class DepartmentsIndex extends Component
         str_contains(mb_strtolower($d['name']), $s) ||
         str_contains(mb_strtolower($d['code']), $s) ||
         str_contains(mb_strtolower($d['director']), $s);
-      return $hit;
+      $codeOk = $this->code === '' || ($d['code'] ?? '') === $this->code;
+      return $hit && $codeOk;
     })->values();
+  }
+
+  /**
+   * Dynamic list of department codes for filter dropdown (unique, natural sort).
+   *
+   * @return array<int,string>
+   */
+  public function getCodesProperty(): array
+  {
+    $codes = $this->allDepartments()
+      ->pluck('code')
+      ->filter(fn($v) => is_string($v) && trim($v) !== '')
+      ->map(fn($v) => strtoupper(trim($v)))
+      ->all();
+
+    $map = [];
+    foreach ($codes as $c) {
+      $k = mb_strtolower($c);
+      if (!isset($map[$k])) $map[$k] = $c;
+    }
+    $values = array_values($map);
+    usort($values, fn($a, $b) => strnatcasecmp($a, $b));
+    return $values;
   }
 
   /**
@@ -323,14 +319,11 @@ class DepartmentsIndex extends Component
   public function render()
   {
     $paginator = $this->paginated();
-    $paginator = $this->ensurePageInBounds($paginator);
-    if ($this->page !== $paginator->currentPage()) {
-      $paginator = $this->paginated();
-    }
     $visibleIds = $paginator->pluck('id')->all();
     return view('livewire.admin.departments-index', [
       'rows' => $paginator,
       'visibleIds' => $visibleIds,
+      'codes' => $this->codes,
     ]);
   }
 }
