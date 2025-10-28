@@ -12,6 +12,8 @@ class CategoryService {
 
     ///////////////////////////////////////////// CRUD Operations ////////////////////////////////////////////////
 
+    public function __construct(){}
+
     /**
      * Return the category with the corresponding id
      *

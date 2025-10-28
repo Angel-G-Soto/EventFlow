@@ -10,6 +10,7 @@ use Throwable;
 
 class UseRequirementService {
 
+    public function __construct(){}
     ///////////////////////////////////////////// CRUD Operations ////////////////////////////////////////////////
 
     /**

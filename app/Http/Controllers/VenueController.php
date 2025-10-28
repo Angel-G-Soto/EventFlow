@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessCsvFileUpload;
 use App\Models\Venue;
 use http\Env\Request;
 use App\Services\UserService;
@@ -256,7 +257,7 @@ class VenueController extends Controller
 //        redirect('');
 //    }
 
-    public function addVenue(Request $request)
+    public function storeVenue(Request $request)
     {
         // Run policy that verifies that the user is the admin
         $this->authorize('create', Auth::user());
@@ -301,7 +302,7 @@ class VenueController extends Controller
         ]);
 
         // Call service that creates the venue
-        $venue = VenueService::updateVenue($venue_id, $validated, Auth::user());
+        $venue = VenueService::updateVenue(VenueService::getVenuesByIds($venue_id), $validated, Auth::user());
 
         // Reload page
         redirect('');
@@ -314,8 +315,19 @@ class VenueController extends Controller
         // Run policy that verifies that the user is the admin
         $this->authorize('create', Auth::user());
 
+        // Validate request
+        $validated = $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        $file = $request->file('csv_file');
+        $filename = 'venues_import_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('', $filename, 'uploads_temp');
+
         // SERVICE
+        ProcessCsvFileUpload::dispatch($filename, Auth::id());
 
         // Redirect to page
+        redirect();
     }
 }
