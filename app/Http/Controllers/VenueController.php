@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessCsvFileUpload;
-use App\Models\Venue;
-use http\Env\Request;
+//use http\Env\Request;
+use Illuminate\Http\Request;
 use App\Services\UserService;
 use App\Services\VenueService;
 use App\Policies\VenuePolicy;
+use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class VenueController extends Controller
 {
-
+    use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
     ////////// GET
 
     public function managerVenueIndex()
@@ -59,10 +62,11 @@ class VenueController extends Controller
     {
         // Abort if the venue id is not valid
         if ($venue_id < 0) {abort(400, 'Venue id must be greater than zero.');}
-        if (!VenueService::findById($venue_id)) {abort(404, 'Venue not found.');}
+        $venueService = app(VenueService::class);
+        if (!$venueService->findById($venue_id)) {abort(404, 'Venue not found.');}
 
         // Run policy that verifies the user is manager and part of the department
-        $this->authorize('updateRequirements', [Auth::user(), !VenueService::findById($venue_id)]);
+        $this->authorize('updateRequirements', [Auth::user(), $venueService->findById($venue_id)]);
 
         // Validate request
         $validated = $request->validate([
@@ -73,7 +77,6 @@ class VenueController extends Controller
         ]);
 
         // Call service that updates requests
-        $venueService = app(VenueService::class);
         $venueService->updateOrCreateVenueRequirements($venueService->findById($venue_id),$validated['requirements'],Auth::user());
 
         // Reload page
@@ -88,7 +91,7 @@ class VenueController extends Controller
         if (!$venueService->findById($venue_id)) {abort(404, 'Venue not found.');}
 
         // Run policy that verifies the user is manager and part of the department
-        $this->authorize('updateAvailability', [Auth::user(), !$venueService->findById($venue_id)]);
+        $this->authorize('updateAvailability', [Auth::user(), $venueService->findById($venue_id)]);
 
         // Validate request
         $validated = $request->validate([
@@ -111,7 +114,7 @@ class VenueController extends Controller
         if (!$venueService->findById($venue_id)) {abort(404, 'Venue not found.');}
 
         // Run policy that verifies the user is director and part of the department
-        $this->authorize('assignManager', [Auth::user(), !$venueService->findById($venue_id)]);
+        $this->authorize('assignManager', [Auth::user(), $venueService->findById($venue_id)]);
 
         // Validate request
         $validated = $request->validate([
@@ -190,7 +193,7 @@ class VenueController extends Controller
 
         // Call service that creates the venue
         $venueService = app(VenueService::class);
-        $venue = $venueService->updateVenue($venueService->getVenuesByIds($venue_id), $validated, Auth::user());
+        $venue = $venueService->updateVenue($venueService->getVenuesById($venue_id), $validated, Auth::user());
 
         // Reload page
         redirect('');
