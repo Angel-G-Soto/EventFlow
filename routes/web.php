@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\VenueController;
+use App\Http\Controllers\AuditLogController;
 
 Route::get('/', fn () => ['Laravel' => app()->version()]);
 
@@ -21,7 +22,7 @@ Route::middleware(['auth', 'role:system-admin'])
         Route::post('/overrides', [AdminController::class, 'performOverride'])->name('overrides.store');
 
         // AuditLog
-        //Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
+        Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
 
         // Venues (CRUD/views under admin namespace)
         Route::get('/venues/{venue_id}', [VenueController::class, 'show'])->name('venues.show');
