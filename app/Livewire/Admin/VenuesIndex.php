@@ -6,7 +6,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use App\Livewire\Concerns\TableSelection;
 use App\Repositories\VenueRepository;
 use App\Livewire\Traits\VenueFilters;
 use App\Livewire\Traits\VenueEditState;
@@ -14,7 +13,7 @@ use App\Livewire\Traits\VenueEditState;
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
-    use TableSelection, VenueFilters, VenueEditState;
+    use VenueFilters, VenueEditState;
 
     public array $venues = [];
     public $csvFile;
@@ -76,7 +75,6 @@ class VenuesIndex extends Component
         $this->department = '';
         $this->capMin = null;
         $this->capMax = null;
-        $this->selected = [];
         $this->page = 1;
     }
 
@@ -97,11 +95,6 @@ class VenuesIndex extends Component
         $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
 
         $this->page = max(1, min($target, $last));
-
-        // clear selections when page changes
-        if (property_exists($this, 'selected')) {
-            $this->selected = [];
-        }
     }
 
     /**
@@ -350,47 +343,13 @@ class VenuesIndex extends Component
         if ($this->editId) {
             $this->validateJustification();
             session()->push($this->deleteType === 'hard' ? 'hard_deleted_venue_ids' : 'soft_deleted_venue_ids', $this->editId);
-            unset($this->selected[$this->editId]);
         }
         $this->dispatch('bs:close', id: 'venueJustify');
         $this->dispatch('toast', message: 'Venue ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
         $this->reset(['editId', 'justification', 'actionType']);
     }
 
-    /**
-     * Opens the justification modal for bulk deletion of venues.
-     *
-     * This function should be called when the user wants to delete multiple venues at once.
-     * It sets the isBulkDeleting flag to true, and then opens the justification modal.
-     */
-    public function bulkDelete(): void
-    {
-        if (empty($this->selected)) return;
-        $this->actionType = 'bulkDelete';
-        $this->dispatch('bs:open', id: 'venueJustify');
-    }
-
-    /**
-     * Confirms the bulk deletion of venues.
-     *
-     * This function will validate the justification entered by the user, and then delete the venues with the given IDs.
-     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating whether the venues were permanently deleted or just deleted.
-     */
-    public function confirmBulkDelete(): void
-    {
-        $selectedIds = array_keys($this->selected);
-        if (empty($selectedIds)) return;
-        $this->validateJustification();
-        $sessionKey = $this->deleteType === 'hard' ? 'hard_deleted_venue_ids' : 'soft_deleted_venue_ids';
-        $existingIds = session($sessionKey, []);
-        $newIds = array_merge($existingIds, $selectedIds);
-        session([$sessionKey => array_values(array_unique($newIds))]);
-        $this->selected = [];
-        $this->dispatch('bs:close', id: 'venueJustify');
-        $this->dispatch('toast', message: count($selectedIds) . ' venues ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
-        $this->reset(['justification', 'actionType']);
-    }
+    // Bulk deletion removed
 
     /**
      * Restore all soft deleted venues.

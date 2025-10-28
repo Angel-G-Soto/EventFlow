@@ -44,15 +44,8 @@
     </div>
   </div>
 
-  {{-- Bulk + page size --}}
-  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-2">
-    <div class="btn-group">
-      <button class="btn btn-outline-danger btn-sm" wire:click="bulkDelete" @disabled(empty($selected ?? []))
-        type="button">
-        <i class="bi bi-trash3 me-1"></i> Delete
-      </button>
-    </div>
-
+  {{-- Page size --}}
+  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
       <label class="text-secondary small mb-0">Rows</label>
       <select class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
@@ -69,9 +62,6 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th style="width:36px;">
-              <x-table.select-all :visible-ids="$visibleIds" :page-key="$page" />
-            </th>
             <th>Name</th>
             <th>Email</th>
             <th>Department</th>
@@ -83,9 +73,6 @@
         <tbody>
           @forelse($rows as $user)
           <tr>
-            <td>
-              <x-table.select-row :row-id="$user['id']" :selected="$selected" :page-key="$page" />
-            </td>
             <td class="fw-medium">{{ $user['name'] }}</td>
             <td>{{ $user['email'] }}</td>
             <td>{{ $user['department'] ?? '—' }}</td>
@@ -110,7 +97,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="6" class="text-center text-secondary py-4">No users found.</td>
+            <td colspan="5" class="text-center text-secondary py-4">No users found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -204,9 +191,8 @@
   </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="userJustify"
-    submit="{{ $this->isBulkDeleting ? 'confirmBulkDelete' : ($this->isDeleting ? 'confirmDelete' : 'confirmSave') }}"
-    model="justification" :showDeleteType="$this->isDeleting || $this->isBulkDeleting" />
+  <x-justification id="userJustify" submit="{{ $this->isDeleting ? 'confirmDelete' : 'confirmSave' }}"
+    model="justification" :showDeleteType="$this->isDeleting" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
@@ -220,15 +206,7 @@
 
   <script>
     document.addEventListener('livewire:init', () => {
-      // Keep the master checkbox correct (checked/indeterminate) after any render
-      Livewire.on('selectionHydrate', ({ visible, selected }) => {
-        const master = document.getElementById('master');
-        if (!master) return;
-        const set = new Set(selected);
-        const onPageSelected = visible.filter(id => set.has(id));
-        master.indeterminate = onPageSelected.length > 0 && onPageSelected.length < visible.length;
-        master.checked = visible.length > 0 && onPageSelected.length === visible.length;
-      });
+      // No selection logic needed anymore
     });
   </script>
 </div>

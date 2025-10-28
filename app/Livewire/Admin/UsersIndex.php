@@ -9,13 +9,12 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
 use App\Livewire\Traits\UserEditState;
-use App\Livewire\Concerns\TableSelection;
 use App\Repositories\UserRepository;
 
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
-    use TableSelection, UserFilters, UserEditState;
+    use UserFilters, UserEditState;
 
     public array $users = [];
     public function mount()
@@ -107,11 +106,6 @@ class UsersIndex extends Component
         $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
 
         $this->page = max(1, min($target, $last));
-
-        // clear selections when page changes
-        if (property_exists($this, 'selected')) {
-            $this->selected = [];
-        }
     }
 
     /**
@@ -133,7 +127,6 @@ class UsersIndex extends Component
     public function updatedRole()
     {
         $this->page = 1;
-        $this->selected = []; // Clear selections when role filter changes
     }
 
     /**
@@ -146,7 +139,6 @@ class UsersIndex extends Component
     {
         $this->search = '';
         $this->role = '';
-        $this->selected = [];
         $this->page = 1;
     }
 
@@ -348,7 +340,6 @@ class UsersIndex extends Component
         if ($this->editId) {
             $this->validateJustification();
             session()->push($this->deleteType === 'hard' ? 'hard_deleted_user_ids' : 'soft_deleted_user_ids', $this->editId);
-            unset($this->selected[$this->editId]);
         }
 
         $this->dispatch('bs:close', id: 'userJustify');
@@ -356,43 +347,7 @@ class UsersIndex extends Component
         $this->reset(['editId', 'justification', 'actionType']);
     }
 
-    /**
-     * Opens the justification modal for bulk deletion of users.
-     *
-     * This function is called when the user wants to delete multiple users at once.
-     * It sets the isBulkDeleting flag to true, and then opens the justification modal.
-     */
-    public function bulkDelete(): void
-    {
-        if (empty($this->selected)) return;
-        $this->actionType = 'bulkDelete';
-        $this->dispatch('bs:open', id: 'userJustify');
-    }
-
-    /**
-     * Confirms the bulk deletion of users.
-     *
-     * This function will validate the justification entered by the user, and then delete the users with the given IDs.
-     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating whether the users were permanently deleted or just deleted.
-     */
-    public function confirmBulkDelete(): void
-    {
-        $selectedIds = array_keys($this->selected);
-        if (empty($selectedIds)) return;
-
-        $this->validateJustification();
-        $sessionKey = $this->deleteType === 'hard' ? 'hard_deleted_user_ids' : 'soft_deleted_user_ids';
-        $existingIds = session($sessionKey, []);
-        $newIds = array_merge($existingIds, $selectedIds);
-        session([$sessionKey => array_values(array_unique($newIds))]);
-
-        $this->selected = [];
-
-        $this->dispatch('bs:close', id: 'userJustify');
-        $this->dispatch('toast', message: count($selectedIds) . " users " . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
-        $this->reset(['justification', 'actionType']);
-    }
+    // Bulk deletion removed
 
     /**
      * Restores all soft deleted users.
@@ -487,12 +442,6 @@ class UsersIndex extends Component
     {
         $paginator = $this->paginated();
         $visibleIds = $paginator->pluck('id')->all();
-
-        $this->dispatch(
-            'selectionHydrate',
-            visible: $visibleIds,
-            selected: array_keys($this->selected)
-        );
 
         return view('livewire.admin.users-index', [
             'rows' => $paginator,

@@ -25,9 +25,5 @@ trait VenueEditState
     {
         return $this->actionType === 'delete';
     }
-
-    public function getIsBulkDeletingProperty(): bool
-    {
-        return $this->actionType === 'bulkDelete';
-    }
+    // Removed: getIsBulkDeletingProperty no longer needed after bulk actions removal
 }
