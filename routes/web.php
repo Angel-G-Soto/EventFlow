@@ -26,29 +26,50 @@ Route::get('/org', function () {
     return view('requests.org_history', compact('events'));
 });
 
-
-Route::get('/approver/requests',function(){
+Route::get('approver/requests/pending',function(){
     $events = Event::query()
         ->oldest('created_at')
         ->paginate(8);
-    return view('requests.pending', compact('events'));
+//    dd($events);
+    return view('requests.pending.approver.index', compact('events'));
+})->name('approver.index');
+
+Route::get('org/requests/pending',function(){
+
+    $events = Event::query()
+        ->oldest('created_at')
+        ->paginate(8);
+//    dd($events);
+    return view('requests.pending.org.index');
 });
 
-Route::get('/approver/requests/{id}',App\Livewire\Request\Details::class)->name('approver.requests.details');
+//Route::get('/request/pending/approver/{id}',App\Livewire\Request\Details::class)->name('approver.requests.details');
 
-Route::get('/approver/requests/{id}',function (){
+Route::get('/approver/requests/pending/{id}',function (){
     $event = Event::query()->findOrFail(request()->id);
 
-    return view('requests.approve', compact('event'));
+    return view('requests.pending.approver.details', compact('event'));
 
-})->name('approver.requests.details');
+})->name('approver.requests');
+
+Route::get('/org/requests/pending/{id}',function (){
+    $event = Event::query()->findOrFail(request()->id);
+
+    return view('requests.pending.org.details', compact('event'));
+
+})->name('org.requests');
 
 
-Route::get('/dropdown',function() {
-    return view('dropdown');
-});
+
 
 Route::get('/venues/manage',\App\Livewire\ManageVenues::class);
+
+Route::get('/venues/{venue}/requirements', \App\Livewire\Venue\Managers\Configure::class)
+    ->name('venues.requirements.edit');
+
+Route::get('/department/venues', function (){
+   return view('venues.director.venues');
+});
 
 Route::get('/test', function () {
     return view('calendar');
@@ -60,6 +81,8 @@ Route::get('/test', function () {
 //        'Event Location'=> 'S-121',
 //    ]);
 });
+
+
 
 Route::get('/forms', function () {
     return view('form');

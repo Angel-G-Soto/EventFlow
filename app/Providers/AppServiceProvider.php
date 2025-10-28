@@ -32,6 +32,6 @@ class AppServiceProvider extends ServiceProvider
             $event->extendSocialite('saml2', \SocialiteProviders\Saml2\Provider::class);
 
         });
-        Paginator::useBootstrapFive();
+//        Paginator::useBootstrapFive();
     }
 }

@@ -26,20 +26,24 @@
                 <th>Room</th>
                 <th >Capacity</th>
 
-                <th>Actions</th>
+                <th class="text-end">Actions</th>
             </tr>
 
             </thead>
             <tbody>
             @forelse($venues as $v)
             <tr>
-                <td class="fw-medium">{{ $v['v_name'] }}</td>
-                <td class="fw-medium">{{ $v['v_code'] }}</td>
-                <td class="fw-medium">{{ $v['v_capacity'] }}</td>
-                <td class="fw-medium">
+                <td class="fw-medium">{{ $v['name'] }}</td>
+                <td class="fw-medium">{{ $v['code'] }}</td>
+                <td class="fw-medium">{{ $v['capacity'] }}</td>
+                <td class="fw-medium text-end">
                     <button class="btn btn-outline-secondary text-end" style="text-align: right" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure">
-                        <i class="bi bi-pencil"></i>
+                        <i class="bi bi-pencil"></i> Configure
                     </button>
+                    <button class="btn btn-outline-secondary text-end" style="text-align: right" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure">
+                        <i class="bi bi-eye me-1"></i> View details
+                    </button>
+
                 </td>
             </tr>
             @empty
@@ -51,6 +55,6 @@
     </div>
 </div>
     <div class="mt-3">
-        {{ $venues->withQueryString()->onEachSide(1)->links() }}
+        {{ $venues->links() }}
     </div>
 </div>

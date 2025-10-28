@@ -2,202 +2,167 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use DateTime;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Venue extends Model
 {
     use softDeletes, HasFactory;
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
 
-    protected $table = 'venue';                 // @var string The table associated with the model.
-    protected $primaryKey = 'venue_id';         // @var string The primary key associated with the table.
+    /**
+     * The database connection that should be used by the model.
+     *
+     * @var string
+     */
+    protected $connection = 'mariadb';
 
     /**
      * The attributes that are mass assignable.
      * @var string[]
      */
     protected $fillable = [
-        'department_id',    // FK to Department
-        'manager_id',       // FK to User
-        'v_name',
-        'v_code',
-        'v_features',
-        'v_capacity',
-        'v_test_capacity',
-        'v_is_active'
-    ];
-
-     /**
-     * The attributes that should be cast.
-     * @var array
-     */
-    protected $casts = [
-        'v_is_active' => 'boolean',
+        'manager_id',
+        'department_id',
+        'name',
+        'code',
+        'features',
+        'capacity',
+        'test_capacity',
+        'opening_time',
+        'closing_time',
     ];
 
     /**
-     * Relationship between the Venue and Deparment
-     * @return BelongsTo
-     */
-   public function deparment(): BelongsTo
-   {
-       return $this->belongsTo(Department::class, 'department_id','department_id');
-   }
-
-    /**
-     * Relationship between manager (User) and the Venue.
-     * @return BelongsTo
-     */
-    public function manager(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'manager_id', 'user_id');
-    }
-
-    /**
-     * Relationship between the Venue and Use Requirement
+     * Relationship between the Venue and Requirement
      * @return HasMany
      */
     public function requirements(): HasMany
     {
-        return $this->HasMany(VenueRequirement::class,'venue_id','venue_id');
+        return $this->hasMany(UseRequirement::class, 'venue_id');
     }
 
     /**
      * Relationship between the Venue and Event
      * @return HasMany
      */
-    public function events(): HasMany
+    public function requests(): HasMany
     {
-        return $this->hasMany(Event::class,'venue_id','venue_id');
+        return $this->hasMany(Event::class);
     }
 
     /**
-     * Relationship of opening hours for the venue.
+     * Relationship between the Venue and Department
+     * @return BelongsTo
      */
-    public function openingHours(): HasMany
+    public function department(): BelongsTo
     {
-        return $this->hasMany(OpeningHour::class, 'venue_id', 'venue_id');
+        return $this->belongsTo(Department::class);
     }
 
-    /**
-     * The event types that are EXCLUDED from this venue.
-     * This defines the many-to-many relationship via the pivot table.
-     * @return BelongsToMany
-     */
-    public function excludedEventTypes(): BelongsToMany
+    public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(EventType::class, 'venue_event_type_exclusions', 'venue_id', 'event_type_id');
+        return $this->belongsToMany(Category::class);
     }
 
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    //////////////////////////////////////////// METHODS //////////////////////////////////////////////////
+
+    public function getDepartmentID(): int
+    {
+        return $this->department_id;
+    }
+
+    public function getFeatures(): array
+    {
+        // The list of all possible features
+        $allFeatures = ['online', 'multimedia', 'teaching', 'computers'];
+
+        // Initialize the array to store the enabled features
+        $enabledFeatures = [];
+
+        // Iterate through the features and add the enabled ones
+        foreach ($this->features as $index => $isEnabled) {
+            if ($isEnabled === 1) { // If the feature at this index is enabled (1)
+                $enabledFeatures[] = $allFeatures[$index]; // Add the corresponding feature to the array
+            }
+        }
+
+        // Return the enabled features as an array
+        return $enabledFeatures;
+    }
+
+
     /**
-     * Checks if the venue is open during a specified time window.
+     * Verifies if the venue is open at the given date.
      *
-     * @param DateTime $startTime The desired start time for an event.
-     * @param DateTime $endTime The desired end time for an event.
+     * @param DateTime $date
      * @return bool
      */
-    public function isAvailableDuring(DateTime $startTime, DateTime $endTime): bool
+    public function isOpenAt(DateTime $date): bool
     {
-        // Carbon is a date/time library included with Laravel.
-        $start = Carbon::instance($startTime);
-        $end = Carbon::instance($endTime);
+        $hour = $date->format('H:i:s');
+        $start = $this->opening_time;
+        $end = $this->closing_time;
 
-        // Get the day of the week (Monday = 1, Sunday = 7)
-        $dayOfWeek = $start->dayOfWeekIso;
-
-        // Find the opening hours for that specific day.
-        $hoursForDay = $this->openingHours()->where('day_of_week', $dayOfWeek)->first();
-
-        // If no record exists, the venue is closed on that day.
-        if (!$hoursForDay) {
-            return false;
+        if ($start <= $end) {
+            // Normal Hours
+            return $hour >= $start && $hour <= $end;
+        } else {
+            // Overnight Hours
+            return $hour >= $start || $hour <= $end;
         }
-
-        // Check if the event's start time is on or after the venue's open time,
-        // and the event's end time is on or before the venue's close time.
-        // We compare only the time part of the dates.
-        return $start->format('H:i:s') >= $hoursForDay->open_time &&
-               $end->format('H:i:s') <= $hoursForDay->close_time;
     }
 
     /**
-     * Checks if the venue is currently open right now.
-     * @return bool
-     */
-    public function isOpenNow(): bool
-    {
-        $now = Carbon::now();
-        $dayOfWeek = $now->dayOfWeekIso;
-        $currentTime = $now->format('H:i:s');
-
-        $hoursForToday = $this->openingHours()->where('day_of_week', $dayOfWeek)->first();
-
-        if (!$hoursForToday) {
-            return false;
-        }
-
-        return $currentTime >= $hoursForToday->open_time && $currentTime <= $hoursForToday->close_time;
-    }
-
-    public function getManagerNameAttribute(): string
-    {
-        // The '??' operator provides a default value if the manager relationship is null
-        return $this->manager?->u_name ?? 'Not Assigned';
-    }
-
-    /**
-     * A business logic method to check if the venue has a booking conflict.
-     * This centralizes the logic for checking for approved, overlapping events.
+     * Verifies if the venue has an approved event for the given hours.
+     *
+     * @param DateTime $startTime
+     * @param DateTime $endTime
      * @return bool
      */
     public function hasConflict(DateTime $startTime, DateTime $endTime): bool
     {
-        return $this->eventRequests()
-            ->where('e_status', 'Approved')
-            ->where(function (Builder $query) use ($startTime, $endTime) {
-                $query->where('start_time', '<', $endTime)
-                      ->where('end_time', '>', $startTime);
+        return Event::where('status', 'approved')
+            ->where('venue_id', $this->id)
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query
+                    ->whereBetween('start_time', [$startTime, $endTime])        // Event starts within window
+                    ->orWhereBetween('end_time', [$startTime, $endTime])        // Event ends within window
+                    ->orWhere(function ($query) use ($startTime, $endTime) {    // Event fully covers window
+                        $query->where('start_time', '<=', $startTime)
+                            ->where('end_time', '>=', $endTime);
+                    });
             })
             ->exists();
     }
-    
-    /**
-     * Scope a query to only include active venues.
-     * This makes controller and service code cleaner and more readable.
-     *
-     * Usage: Venue::active()->get();
-     */
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('v_is_active', true);
-    }
 
     /**
-     * Scope a query to only include venues managed by a specific user.
+     * Verifies the availability of a venue for a given hour.
      *
-     * Usage: Venue::managedBy($user)->get();
+     * @param DateTime $startTime
+     * @param DateTime $endTime
+     * @return bool
      */
-    public function scopeManagedBy(Builder $query, User $manager): Builder
+    public function isAvailable(DateTime $startTime, DateTime $endTime): bool
     {
-        return $query->where('manager_id', $manager->user_id);
+        return $this->isOpenAt($startTime) && !$this->hasConflict($startTime, $endTime);
     }
 
-    /**
-     * A business logic method to check if a specific event type is disallowed.
-     * This makes the service layer code much cleaner.
-     *
-     * Usage: if ($venue->isEventTypeExcluded($eventType)) { ... }
-     */
-    public function isEventTypeExcluded(EventType $eventType): bool
-    {
-        // This checks if a record exists in the pivot table for this venue and event type.
-        return $this->excludedEventTypes()->wherePivot('event_type_id', $eventType->event_type_id)->exists();
-    }
 }

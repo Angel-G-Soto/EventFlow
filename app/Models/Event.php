@@ -2,164 +2,129 @@
 
 namespace App\Models;
 
-use DateTime;
-use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Builder;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Http\Request;
+use \Illuminate\Database\Eloquent\Collection;
 
 class Event extends Model
 {
     use HasFactory;
-
-    protected $table = 'event';              // @var string The table associated with the model.
-    protected $primaryKey = 'event_id';      // @var string The primary key associated with the table.
-
-    protected static function booted()
-    {
-        static::creating(function ($event) {
-            if (empty($event->e_status_code) && !empty($event->e_status)) {
-                $event->e_status_code = Str::slug($event->e_status);
-            }
-        });
-
-        static::updating(function ($event) {
-            if ($event->isDirty('e_status')) {
-                $event->e_status_code = Str::slug($event->e_status);
-            }
-        });
-    }
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
 
     /**
      * The attributes that are mass assignable.
      * @var string[]
      */
     protected $fillable = [
-        'creator_id',             // FK (Static) to User
-        'current_approver_id',    // FK (Dynamic) to User
-        'venue_id',               // FK to Venue
-        'event_type_id',          // FK to EventType
-        
-        // Event Details
-        'e_student_id',
-        'e_student_phone',
-        'e_title',
-        'e_description',
-        'e_status',
-        'e_start_date',
-        'e_end_date',
-        'sells_food',
-        'uses_institutional_funds',
-        'has_external_guest',
-        
-        // Nexo Data
-        'e_organization_nexo_id',
-        'e_organization_nexo_name',
-        'e_advisor_name',
-        'e_advisor_email',
-        'e_advisor_phone'
+        'creator_id',
+        'venue_id',
+        'organization_nexo_id',
+        'organization_nexo_name',
+        'organization_advisor_email',
+        'organization_advisor_name',
+        'organization_advisor_phone',
+        'student_number',
+        'student_phone',
+        'title',
+        'description',
+        'start_time',
+        'end_time',
+        'status',
+        'guests',
+        'handles_food',
+        'use_institutional_funds',
+        'external_guest',
     ];
 
     /**
-     * The attributes that should be cast to native types.
+     * The database connection that should be used by the model.
+     *
+     * @var string
      */
-    protected $casts = [
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
-        'sells_food' => 'boolean',
-        'uses_institutional_funds' => 'boolean',
-        'has_external_guest' => 'boolean',
-    ];
+    protected $connection = 'mariadb';
+
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
 
     /**
-     * Get the venue for the event request.
+     * Relationship between the Event and User
+     * @return BelongsTo
+     */
+    public function requester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creator_id');
+    }
+
+    /**
+     * Relationship between the Event and Venue
+     * @return BelongsTo
      */
     public function venue(): BelongsTo
     {
-        return $this->belongsTo(Venue::class, 'venue_id','venue_id');
+        return $this->belongsTo(Venue::class);
     }
 
     /**
-     * Get the user who created the event request.
-     */
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'creator_id', 'user_id');
-    }
-
-    /**
-     * Get the user who is currently assigned to approve the request.
-     */
-    public function currentApprover(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'current_approver_id', 'user_id');
-    }
-
-     /**
-     * Get the event type for this request.
-     * This defines the "one" side of the one-to-many relationship.
-     */
-    public function eventType(): BelongsTo
-    {
-        return $this->belongsTo(EventType::class, 'event_type_id','event_type_id');
-    }
-
-
-    /**
-     * The documents that belong to the event request.
+     * Relationship between the Event and Document
+     * @return HasMany
      */
     public function documents(): HasMany
     {
-        return $this->HasMany(Document::class, 'event_id','event_id');
+        return $this->hasMany(Document::class);
     }
 
     /**
-     * Get the history for the event request.
+     * Relationship between the Event and Event History
+     * @return HasMany
      */
     public function history(): HasMany
     {
-        return $this->hasMany(EventHistory::class,'event_id','event_id');
-    }
-
-     /**
-     * An accessor to check if the event is in a pending (non-terminal) state.
-     * Usage: if ($eventRequest->is_pending) { ... }
-     */
-    public function getIsPendingAttribute(): bool
-    {
-        $terminalStates = ['Approved', 'Denied', 'Canceled', 'Withdrawn', 'Completed'];
-        return !in_array($this->e_status, $terminalStates);
+        return $this->hasMany(EventHistory::class);
     }
 
     /**
-     * Scope a query to only include events awaiting approval from a specific user.
-     * Usage: EventRequest::awaitingApprovalFrom($user)->get();
+     *
+     * @return BelongsToMany
      */
-    public function scopeAwaitingApprovalFrom(Builder $query, User $user): Builder
+    public function categories(): BelongsToMany
     {
-        return $query->where('current_approver_id', $user->user_id);
+        return $this->belongsToMany(Category::class);
     }
 
-      /**
-     * Scope a query to only include upcoming, approved events.
-     * Usage: EventRequest::upcoming()->get();
-     */
-    public function scopeUpcoming(Builder $query): Builder
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+    public function getHistory(): Collection
     {
-        return $query->where('e_status', 'Approved')->where('e_start_time', '>=', now());
+        return $this->history()->get();
     }
 
-    /**
-     * A business logic method to check if this event conflicts with a given time range.
-     */
-    public function isOverlappingWith(DateTime $startTime, DateTime $endTime): bool
+    public function getCurrentApprover(): User
     {
-        $eventStart = $this->start_time;
-        $eventEnd = $this->end_time;
+        return $this->history()->orderBy('created_at', 'desc')->first()->approver;
+    }
 
-        // The logic to check for any overlap between the two time ranges.
-        return $startTime < $eventEnd && $endTime > $eventStart;
+    public function getCurrentState(): User
+    {
+        return $this->status;
+    }
+
+    public function getCategories(): Collection
+    {
+        return $this->categories()->get();
+    }
+
+    public function getVenue(): Venue
+    {
+        return $this->venue;
     }
 }

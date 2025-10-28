@@ -5,9 +5,13 @@ namespace App\Livewire;
 use App\Models\Venue;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithPagination;
+
 #[layout('layouts.public')]
 class ManageVenues extends Component
 {
+    use WithPagination;
+    public string $paginationTheme = 'bootstrap';
 
 //    public $venues;
     public string $search = '';

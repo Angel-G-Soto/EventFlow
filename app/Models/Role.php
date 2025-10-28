@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,23 +11,7 @@ class Role extends Model
 {
     use HasFactory;
 
-    protected $table = 'role';                  // @var string The table associated with the model.
-    protected $primaryKey = 'role_id';          // @var string The primary key associated with the table.
-
-    protected static function booted()
-    {
-        static::creating(function ($role) {
-            if (empty($role->r_code) && !empty($role->r_name)) {
-                $role->r_code = Str::slug($role->r_code);
-            }
-        });
-
-        static::updating(function ($role) {
-            if ($role->isDirty('r_name')) {
-                $role->r_code = Str::slug($role->r_code);
-            }
-        });
-    }
+    protected $table = 'roles';                  // @var string The table associated with the model.
 
     /**
      * The attributes that are mass assignable.
@@ -36,18 +19,18 @@ class Role extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'r_name',
-        'r_code'
+        'name',
+        'code'
     ];
 
     /**
-     * The requests that belong to the role.
+     * The users that belong to the role.
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'role_assignment', 'role_id', 'user_id');
+        return $this->belongsToMany(User::class, 'user_role');
     }
-     /**
+    /**
      * Scope a query to find a role by its unique machine-readable code.
      * This makes controller and service code much cleaner.
      *
@@ -55,7 +38,7 @@ class Role extends Model
      */
     public function scopeFindByCode(Builder $query, string $code): Builder
     {
-        return $query->where('r_code', $code);
+        return $query->where('code', $code);
     }
 
     /**
@@ -80,9 +63,9 @@ class Role extends Model
     }
 
     /**
-     * An accessor to get a count of all requests who have this role.
+     * An accessor to get a count of all users who have this role.
      * This is useful for displaying stats on an admin dashboard.
-     * Note: For performance on large lists, use withCount('requests') in your query instead.
+     * Note: For performance on large lists, use withCount('users') in your query instead.
      *
      * Usage: $adminRole->user_count
      */

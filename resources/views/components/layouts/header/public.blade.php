@@ -43,9 +43,9 @@
 {{--            </ul>--}}
 
             <div class="d-flex ms-auto">
-                <button class="btn btn-success-subtle text-white rounded-circle p-2" type="button" title="Notifications">
-                    <i class="bi bi-bell"></i>
-                </button>
+{{--                <button class="btn btn-success-subtle text-white rounded-circle p-2" type="button" title="Notifications">--}}
+{{--                    <i class="bi bi-bell"></i>--}}
+{{--                </button>--}}
                 <button class="btn btn-success-subtle text-white rounded-circle p-2" type="button" title="Help">
                     <i class="bi bi-question-lg"></i>
                 </button>
