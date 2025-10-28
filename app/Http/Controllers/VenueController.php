@@ -193,7 +193,7 @@ class VenueController extends Controller
 
         // Call service that creates the venue
         $venueService = app(VenueService::class);
-        $venue = $venueService->updateVenue($venueService->getVenuesById($venue_id), $validated, Auth::user());
+        $venue = $venueService->updateVenue($venueService->getVenueById($venue_id), $validated, Auth::user());
 
         // Reload page
         redirect('');
