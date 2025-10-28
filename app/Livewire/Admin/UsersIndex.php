@@ -8,7 +8,6 @@ use App\Support\UserConstants;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
-use App\Livewire\Traits\UserSelection;
 use App\Livewire\Traits\UserEditState;
 use App\Livewire\Concerns\TableSelection;
 use App\Repositories\UserRepository;
@@ -16,7 +15,7 @@ use App\Repositories\UserRepository;
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
-    use TableSelection, UserFilters, UserSelection, UserEditState;
+    use TableSelection, UserFilters, UserEditState;
 
     public array $users = [];
     public function mount()
@@ -202,7 +201,7 @@ class UsersIndex extends Component
      */
     protected function rules(): array
     {
-        $roleWithoutDept = in_array($this->editRole, UserConstants::ROLES_WITHOUT_DEPARTMENT);
+        $roleWithoutDept = in_array($this->editRoles, UserConstants::ROLES_WITHOUT_DEPARTMENT);
         return [
             'editName' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
             'editEmail' => 'required|email|regex:/@upr[a-z]*\.edu$/i',

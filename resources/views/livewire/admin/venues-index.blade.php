@@ -9,6 +9,9 @@
       <button class="btn btn-primary btn-sm" wire:click="openCreate">
         <i class="bi bi-house-add me-1"></i> Add Venue
       </button>
+      <button class="btn btn-secondary btn-sm" wire:click="openCsvModal" type="button">
+        <i class="bi bi-upload me-1"></i> Add Venues by CSV
+      </button>
     </div>
   </div>
 
@@ -18,20 +21,21 @@
       <div class="row g-2">
         <div class="col-12 col-md-4">
           <label class="form-label">Search</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Search by name or manager..."
-              wire:model.live.debounce.300ms="search">
-          </div>
+          <form wire:submit.prevent="applySearch">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Search by name or manager..."
+                wire:model.defer="search">
+            </div>
+          </form>
         </div>
 
         <div class="col-6 col-md-2">
           <label class="form-label">Department</label>
           <select class="form-select" wire:model.live="department">
             <option value="">All</option>
-            <option value="Arts">Arts</option>
-            <option value="Biology">Biology</option>
-            <option value="Facilities">Facilities</option>
+            @foreach(\App\Support\VenueConstants::DEPARTMENTS as $dept)
+            <option value="{{ $dept }}">{{ $dept }}</option>
+            @endforeach
           </select>
         </div>
 
@@ -107,7 +111,20 @@
                 {{ $v['status'] }}
               </span>
             </td>
-            <td class="text-truncate" style="max-width:220px;">{{ $v['availability'] }}</td>
+            <td class="text-truncate" style="max-width:220px;">
+              @if (isset($v['timeRanges']) && is_array($v['timeRanges']) && count($v['timeRanges']) > 0)
+              @foreach ($v['timeRanges'] as $tr)
+              <div class="small">
+                {{ $tr['from'] ?? '' }} – {{ $tr['to'] ?? '' }}
+                @if (!empty($tr['reason']))
+                ({{ $tr['reason'] }})
+                @endif
+              </div>
+              @endforeach
+              @else
+              <span class="text-muted small">No availability</span>
+              @endif
+            </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})">
@@ -130,30 +147,38 @@
 
     {{-- Footer / Pager --}}
     <div class="card-footer d-flex align-items-center justify-content-between">
-      @if(method_exists($rows, 'total'))
-      <small class="text-secondary">{{ $rows->total() }} result{{ $rows->total()===1?'':'s' }}</small>
-      <div>
-        <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary" wire:click="$set('page', 1)"
-            @disabled($rows->currentPage()===1)>&laquo;</button>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() - 1 }})"
-            @disabled($rows->currentPage()===1)>&lsaquo;</button>
-          <span class="btn btn-outline-secondary disabled">
-            Page {{ $rows->currentPage() }} / {{ $rows->lastPage() }}
-          </span>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->currentPage() + 1 }})"
-            @disabled($rows->currentPage()===$rows->lastPage())>&rsaquo;</button>
-          <button class="btn btn-outline-secondary" wire:click="$set('page', {{ $rows->lastPage() }})"
-            @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
-        </div>
-      </div>
-      @else
-      <small class="text-secondary">{{ count($rows) }} result{{ count($rows)===1?'':'s' }}</small>
-      @endif
+      <small class="text-secondary">
+        {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
+      </small>
+      {{ $rows->onEachSide(1)->links('partials.pagination') }}
     </div>
   </div>
 
   {{-- Create/Edit Venue Modal with inline Availability editor --}}
+  {{-- CSV Upload Modal --}}
+  <div class="modal fade" id="csvModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" wire:submit.prevent="uploadCsv">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Add Venues by CSV</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">CSV File</label>
+            <input type="file" class="form-control" wire:model="csvFile" accept=".csv">
+            <small class="text-muted">CSV must include columns: name, room, capacity, department,
+              features</small>
+          </div>
+          @error('csvFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-upload me-1"></i>Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <div class="modal fade" id="venueModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <form class="modal-content" wire:submit.prevent="save">
@@ -171,9 +196,9 @@
               <label class="form-label">Department</label>
               <select class="form-select" wire:model.live="vDepartment" required>
                 <option value="">Select department</option>
-                <option value="Arts">Arts</option>
-                <option value="Biology">Biology</option>
-                <option value="Facilities">Facilities</option>
+                @foreach(\App\Support\VenueConstants::DEPARTMENTS as $dept)
+                <option value="{{ $dept }}">{{ $dept }}</option>
+                @endforeach
               </select>
             </div>
             <div class="col-md-2">
@@ -199,7 +224,7 @@
             <div class="col-12">
               <label class="form-label">Features/Resources</label>
               <div class="row g-2">
-                @php $features = ['Allow Teaching Online','Allow Teaching With Multimedia','Allow Teaching wiht
+                @php $features = ['Allow Teaching Online','Allow Teaching With Multimedia','Allow Teaching with
                 computer','Allow Teaching']; @endphp
                 @foreach($features as $f)
                 <div class="col-6 col-md-4 col-lg-3">
@@ -214,14 +239,9 @@
             </div>
 
             <div class="col-12">
-              <label class="form-label">Notes</label>
-              <textarea class="form-control" rows="3" wire:model.live="vNotes"></textarea>
-            </div>
-
-            <div class="col-12">
               <div class="d-flex align-items-center justify-content-between">
-                <h6 class="mb-2">Availability / Blackout dates</h6>
-                <button class="btn btn-outline-secondary btn-sm" type="button" wire:click="addBlackout">
+                <h6 class="mb-2">Availability dates</h6>
+                <button class="btn btn-outline-secondary btn-sm" type="button" wire:click="addTimeRange">
                   <i class="bi bi-plus-lg me-1"></i>Add
                 </button>
               </div>
@@ -231,30 +251,26 @@
                     <tr>
                       <th style="width:180px;">From</th>
                       <th style="width:180px;">To</th>
-                      <th>Reason</th>
-                      <th style="width:50px;"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    @forelse($blackouts as $i=>$b)
+                    @forelse($timeRanges as $i=>$b)
                     <tr>
-                      <td><input type="date" class="form-control form-control-sm"
-                          wire:model.live="blackouts.{{ $i }}.from"></td>
-                      <td><input type="date" class="form-control form-control-sm"
-                          wire:model.live="blackouts.{{ $i }}.to">
+                      <td><input type="time" class="form-control form-control-sm"
+                          wire:model.live="timeRanges.{{ $i }}.from"></td>
+                      <td><input type="time" class="form-control form-control-sm"
+                          wire:model.live="timeRanges.{{ $i }}.to">
                       </td>
-                      <td><input type="text" class="form-control form-control-sm"
-                          wire:model.live="blackouts.{{ $i }}.reason" placeholder="optional"></td>
-                      <td class="text-end">
+                      <td>
                         <button type="button" class="btn btn-outline-danger btn-sm"
-                          wire:click="removeBlackout({{ $i }})">
+                          wire:click="removeTimeRange({{ $i }})">
                           <i class="bi bi-x-lg"></i>
                         </button>
                       </td>
                     </tr>
                     @empty
                     <tr>
-                      <td colspan="4" class="text-secondary">No blackout rows.</td>
+                      <td colspan="4" class="text-secondary">No Availability dates.</td>
                     </tr>
                     @endforelse
                   </tbody>
@@ -266,7 +282,7 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit">Save</button>
+          <button class="btn btn-primary" type="submit"><i class="bi me-1"></i>Save</button>
         </div>
       </form>
     </div>
@@ -289,48 +305,7 @@
 
   <script>
     document.addEventListener('livewire:init', () => {
-      const focusMap = new Map();
-
-      function attachHiddenOnce(modalEl, modalId) {
-        const onHidden = () => {
-          const opener = focusMap.get(modalId);
-          if (opener && typeof opener.focus === 'function') {
-            setTimeout(() => opener.focus(), 30);
-          }
-          focusMap.delete(modalId);
-          modalEl.removeEventListener('hidden.bs.modal', onHidden);
-        };
-        modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
-      }
-
-      Livewire.on('bs:open', ({ id }) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        focusMap.set(id, opener);
-        const modal = new bootstrap.Modal(el);
-        modal.show();
-        queueMicrotask(() => {
-          const first = el.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
-          if (first && typeof first.focus === 'function') first.focus();
-        });
-        attachHiddenOnce(el, id);
-      });
-
-      Livewire.on('bs:close', ({ id }) => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        const m = bootstrap.Modal.getInstance(el);
-        if(m) m.hide();
-      });
-
-      Livewire.on('toast', ({ message }) => {
-        document.getElementById('venueToastMsg').textContent = message || 'Done';
-        const toastEl = document.getElementById('venueToast');
-        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 2200 });
-        toast.show();
-      });
-
+      // Keep the master checkbox correct (checked/indeterminate) after any render
       Livewire.on('selectionHydrate', ({ visible, selected }) => {
         const master = document.getElementById('master');
         if (!master) return;

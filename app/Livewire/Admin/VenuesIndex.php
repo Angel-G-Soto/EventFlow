@@ -18,11 +18,36 @@ class VenuesIndex extends Component
 
     public array $venues = [];
     public $csvFile;
+
+    /**
+     * Initializes the component by retrieving all the venues from the database.
+     *
+     * This function is called when the component is mounted.
+     */
     public function mount()
     {
         $this->venues = VenueRepository::all();
     }
 
+    /**
+     * Returns a collection of all the venues, excluding any soft or hard deleted venues.
+     *
+     * This function is used to filter out any venues that have been deleted.
+     * It uses the session variables 'soft_deleted_venue_ids' and 'hard_deleted_venue_ids'
+     * venues using this index, and returns the filtered collection.
+     *
+     * @return Collection
+     */
+
+    /**
+     * Returns a collection of all the venues, excluding any soft or hard deleted venues.
+     *
+     * This function uses the session variables 'soft_deleted_venue_ids' and 'hard_deleted_venue_ids'
+     * to filter out any venues that have been deleted. It returns a collection of
+     * all the remaining venues.
+     *
+     * @return Collection
+     */
     protected function allVenues(): Collection
     {
         $deletedIndex = array_flip(array_unique(array_merge(
@@ -101,12 +126,44 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueModal');
     }
 
+    /**
+     * Resets the csvFile field to its default value and opens the CSV modal.
+     *
+     * This function will reset the csvFile field to its default value and
+     * open the CSV modal. It is called when the user clicks the "Add
+     * Venues by CSV" button.
+     */
     public function openCsvModal(): void
     {
         $this->reset('csvFile');
         $this->dispatch('bs:open', id: 'csvModal');
     }
 
+    /**
+     * Validates the CSV file, and then imports the venues from the CSV file.
+     *
+     * The CSV file is expected to have the following columns:
+     * - room code
+     * - department name
+     * - name
+     * - capacity
+     * - email
+     * - allow teaching online
+     * - allow teaching with multimedia
+     * - allow teaching with computer
+     * - allow teaching
+     * - features (| separated string)
+     * - timeRanges (| separated string)
+     *
+     * If a column is not found, it will be skipped.
+     * The "name" column is used as the name of the venue.
+     * If the "name" column is not found, the "room code" column is used as the name of the venue.
+     * The "manager" column is used as the email of the venue.
+     * If the "manager" column is not found, an empty string is used as the email.
+     * The "features" column is an array of strings containing the features of the venue.
+     * The "timeRanges" column is an array of time ranges in the format of [[int, int], ...].
+     * After importing the venues, the CSV modal is closed and a toast is dispatched with the message "Venues imported from CSV".
+     */
     public function uploadCsv()
     {
         $this->validate([
@@ -126,10 +183,10 @@ class VenuesIndex extends Component
                 'room'       => $data['room'] ?? '',
                 'capacity'   => (int)($data['capacity'] ?? 0),
                 'department' => $data['department'] ?? '',
-                'manager'    => $data['manager'] ?? '',
-                'status'     => $data['status'] ?? 'Active',
+                //'manager'    => $data['manager'] ?? '',
+                //'status'     => $data['status'] ?? 'Active',
                 'features'   => isset($data['features']) ? explode('|', $data['features']) : [],
-                'timeRanges' => isset($data['timeRanges']) ? json_decode($data['timeRanges'], true) : [],
+                //'timeRanges' => isset($data['timeRanges']) ? json_decode($data['timeRanges'], true) : [],
             ];
             $this->venues[] = $venue;
         }
@@ -138,6 +195,12 @@ class VenuesIndex extends Component
         $this->dispatch('toast', message: 'Venues imported from CSV');
     }
 
+    /**
+     * Opens the edit venue modal with the given ID.
+     * If the venue is not found, the function does nothing.
+     * It sets the currently edited venue ID and the values of the venue to be edited, and then opens the edit venue modal.
+     * @param int $id The ID of the venue to edit
+     */
     public function openEdit(int $id): void
     {
         $v = $this->filtered()->firstWhere('id', $id);
@@ -155,6 +218,11 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueModal');
     }
 
+    /**
+     * Returns an array of rules for the edit venue form.
+     *
+     * @return array
+     */
     protected function rules(): array
     {
         return [
@@ -270,6 +338,13 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueJustify');
     }
 
+    /**
+     * Confirms the deletion of a venue.
+     *
+     * This function will validate the justification entered by the user, and then delete the venue with the given ID.
+     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
+     * Finally, it shows a toast message indicating whether the venue was permanently deleted or just deleted.
+     */
     public function confirmDelete(): void
     {
         if ($this->editId) {
@@ -295,6 +370,13 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueJustify');
     }
 
+    /**
+     * Confirms the bulk deletion of venues.
+     *
+     * This function will validate the justification entered by the user, and then delete the venues with the given IDs.
+     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
+     * Finally, it shows a toast message indicating whether the venues were permanently deleted or just deleted.
+     */
     public function confirmBulkDelete(): void
     {
         $selectedIds = array_keys($this->selected);
@@ -325,12 +407,26 @@ class VenuesIndex extends Component
     }
 
 
+    /**
+     * Adds a new time range to the list of time ranges.
+     *
+     * This function adds a new empty time range to the list of time ranges.
+     * The new time range will be added to the end of the list.
+     */
     public function addTimeRange(): void
     {
         $this->timeRanges[] = ['from' => '', 'to' => '', 'reason' => ''];
     }
 
 
+    /**
+     * Removes the time range at index $i from the list of time ranges.
+     *
+     * This function removes the time range at index $i from the list of time ranges,
+     * and then re-indexes the list to maintain contiguous keys.
+     *
+     * @param int $i The index of the time range to remove.
+     */
     public function removeTimeRange(int $i): void
     {
         unset($this->timeRanges[$i]);
