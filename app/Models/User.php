@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
@@ -113,7 +114,7 @@ class User extends Authenticatable
 
     //////////////////////////////////// METHODS //////////////////////////////////////////////////////
 
-    public function getRoleNames(): \Illuminate\Support\Collection
+    public function getRoleNames(): Collection
     {
         return $this->roles()->pluck('name')->unique();
     }

@@ -182,4 +182,16 @@ class DepartmentService {
     {
         return Department::where('name', $name)->first();
     }
+
+    /**
+     * Retrieves the employees that belong to the same department as the user
+     *
+     * @param int $user_id
+     * @return Collection
+     */
+    public function getEmployees(int $user_id): Collection
+    {
+        if ($user_id < 0) {throw new InvalidArgumentException('Employee id must be greater than zero.');}
+        return Department::find($user_id)->employees;
+    }
 }

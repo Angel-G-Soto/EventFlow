@@ -31,28 +31,16 @@ class UseRequirementService {
     }
 
     /**
-     * Retrieves all the available categories
-     *
-     * @return Collection
-     * @throws Exception
-     */
-    public function getAllCategories(): Collection
-    {
-        try {
-            return UseRequirement::all();
-        }
-        catch (Throwable $exception) {throw new Exception('Unable to retrieve the available categories.');}
-    }
-
-    /**
      * Updates the name of the use requirement with the specified id
      *
      * @param int $id
      * @param string $name
+     * @param string $hyperlink
+     * @param string $description
      * @return UseRequirement
      * @throws Exception
      */
-    public function updateUseRequirement(int $id, string $name): UseRequirement
+    public function updateUseRequirement(int $id, string $name, string $hyperlink, string $description): UseRequirement
     {
         try {
             if ($id < 0) {throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');}
@@ -61,6 +49,8 @@ class UseRequirementService {
             $requirement = UseRequirement::findOrFail($id);
 
             $requirement->name = $name;
+            $requirement->hyperlink = $hyperlink;
+            $requirement->description = $description;
             $requirement->save();
 
             // Add audit trail
@@ -71,14 +61,17 @@ class UseRequirementService {
         catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to synchronize use requirement data.');}
     }
 
+
+    /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
+
     /**
-     * Deletes the use requirement that contains the specified id
+     * Deletes the use requirements that belong to the specified venue.
      *
      * @param int $venue_id
      * @return bool
      * @throws Exception
      */
-    public function deleteUseRequirement(int $venue_id): bool
+    public function deleteVenueUseRequirements(int $venue_id): bool
     {
         try {
             if ($venue_id < 0) throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');
@@ -90,5 +83,20 @@ class UseRequirementService {
         catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified use requirement.');}
     }
 
-    /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
+    /**
+     * Retrieves the use requirements that belong to the specified venue.
+     *
+     * @param int $venue_id
+     * @return Collection
+     * @throws Exception
+     */
+    public function getVenueUseRequirements(int $venue_id): Collection
+    {
+        try {
+            if ($venue_id < 0) throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');
+
+            return UseRequirement::where('venue_id', $venue_id)->get();
+        }
+        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified use requirement.');}
+    }
 }

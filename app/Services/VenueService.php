@@ -20,12 +20,14 @@ class VenueService {
     protected DepartmentService $departmentService;
     protected UseRequirementService $useRequirementService;
     protected AuditService $auditService;
+    protected UserService $userService;
 
-    public function __construct(DepartmentService $departmentService, UseRequirementService $useRequirementService, AuditService $auditService)
+    public function __construct(DepartmentService $departmentService, UseRequirementService $useRequirementService, AuditService $auditService, UserService $userService)
     {
         $this->departmentService =  $departmentService;
         $this->useRequirementService = $useRequirementService;
         $this->auditService = $auditService;
+        $this->userService = $userService;
         //$this->auditService = $auditService;
         //$this->EventService = $eventService
     }
@@ -195,10 +197,24 @@ class VenueService {
         } catch (\Throwable $exception) {throw new Exception('Unable to extract available venues.');}
     }
 
+    /**
+     * @param int $venue_id
+     * @return Venue|null
+     */
     public function findByID(int $venue_id): ?Venue
     {
         if ($venue_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
         return Venue::find($venue_id);
+    }
+
+    /**
+     * @param int $user_id
+     * @return Collection
+     */
+    public function getVenues(int $user_id): Collection
+    {
+        if ($user_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
+        return Venue::where('department_id', $this->userService->findUserById($user_id)->department->id)->get();
     }
 
 /*
@@ -357,7 +373,7 @@ class VenueService {
             }
 
             // Remove all requirements
-            $this->useRequirementService->deleteUseRequirement($venue->id); // MOCK FROM SERVICE
+            $this->useRequirementService->deleteVenueUseRequirements($venue->id); // MOCK FROM SERVICE
 
             // Place requirements
             foreach ($requirementsData as $r) {
@@ -376,6 +392,17 @@ class VenueService {
         catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
     }
 
+    /**
+     * Retrieves the requirements of the venue with the id provided
+     *
+     * @param int $venue_id
+     * @return Collection
+     */
+    public function getVenueRequirements(int $venue_id): Collection
+    {
+        if ($venue_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
+        return Venue::findOrFail($venue_id)->requirements;
+    }
 
 /*
 
@@ -617,26 +644,4 @@ class VenueService {
         catch (\Throwable) {throw new Exception('Unable to remove the venues.');}
 
     }
-
-    ///////////////////////////////////////////////// MISCELLANEOUS ////////////////////////////////////////////////////
-
-    /**
-     * Scope a query to only include venues managed by a specific user.
-     *
-     * @param Builder $query
-     * @param User $manager
-     * @return Builder
-     */
-    public function scopeManagedBy(Builder $query, User $manager): Builder
-    {
-        return $query->where('manager_id', $manager->id);
-    }
-
-    /**
-     * Scope a query to only include venues ... [LOST IN MERGE]
-     *
-     * @param Builder $query
-     * @param User $manager
-     * @return Builder
-     */
 }
