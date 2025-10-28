@@ -29,37 +29,30 @@ class VenuesIndex extends Component
     }
 
     /**
-     * Returns a collection of all the venues, excluding any soft or hard deleted venues.
+     * Returns a collection of all the venues, excluding any soft-deleted venues.
      *
-     * This function is used to filter out any venues that have been deleted.
-     * It uses the session variables 'soft_deleted_venue_ids' and 'hard_deleted_venue_ids'
-     * venues using this index, and returns the filtered collection.
-     *
-     * @return Collection
-     */
-
-    /**
-     * Returns a collection of all the venues, excluding any soft or hard deleted venues.
-     *
-     * This function uses the session variables 'soft_deleted_venue_ids' and 'hard_deleted_venue_ids'
-     * to filter out any venues that have been deleted. It returns a collection of
-     * all the remaining venues.
+     * This function uses the session variable 'soft_deleted_venue_ids' to filter
+     * out any venues that have been deleted. It returns a collection of all the
+     * remaining venues.
      *
      * @return Collection
      */
     protected function allVenues(): Collection
     {
-        $deletedIndex = array_flip(array_unique(array_merge(
-            array_map('intval', session('soft_deleted_venue_ids', [])),
-            array_map('intval', session('hard_deleted_venue_ids', []))
-        )));
+        // Exclude soft-deleted IDs for this session
+        $deletedIds   = array_map('intval', session('soft_deleted_venue_ids', []));
+        $deletedIndex = array_flip(array_unique($deletedIds));
 
-        $combined = array_filter(
-            $this->venues,
-            function (array $v) use ($deletedIndex) {
-                return !isset($deletedIndex[(int) $v['id']]);
-            }
-        );
+        $combined = array_values(array_filter($this->venues, fn(array $v) => !isset($deletedIndex[(int) ($v['id'] ?? 0)])));
+
+        // Normalize minimal shape to avoid undefined index notices in views/filters
+        $combined = array_map(function (array $v) {
+            $v['manager']   = $v['manager']   ?? '';
+            $v['status']    = $v['status']    ?? 'Active';
+            $v['features']  = isset($v['features']) && is_array($v['features']) ? array_values(array_unique($v['features'])) : [];
+            $v['timeRanges'] = isset($v['timeRanges']) && is_array($v['timeRanges']) ? array_values($v['timeRanges']) : [];
+            return $v;
+        }, $combined);
 
         return collect($combined);
     }
@@ -226,6 +219,7 @@ class VenuesIndex extends Component
             'vManager'   => 'nullable|string|max:120',
             'vStatus'    => 'required|in:Active,Inactive',
             'vFeatures'  => 'array',
+            // Justification is validated at confirm time, not at form validate/save time
             'justification' => 'nullable|string|max:200',
             'timeRanges'            => 'array',
             'timeRanges.*.from'     => 'required|date_format:H:i',
@@ -241,7 +235,10 @@ class VenuesIndex extends Component
      */
     protected function validateJustification(): void
     {
-        $this->validateOnly('justification');
+        // Require a non-trivial justification only when confirming
+        $this->validate([
+            'justification' => ['required', 'string', 'min:3', 'max:200'],
+        ]);
     }
 
     /**
@@ -342,14 +339,12 @@ class VenuesIndex extends Component
     {
         if ($this->editId) {
             $this->validateJustification();
-            session()->push($this->deleteType === 'hard' ? 'hard_deleted_venue_ids' : 'soft_deleted_venue_ids', $this->editId);
+            session()->push('soft_deleted_venue_ids', $this->editId);
         }
         $this->dispatch('bs:close', id: 'venueJustify');
-        $this->dispatch('toast', message: 'Venue ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
+        $this->dispatch('toast', message: 'Venue deleted');
         $this->reset(['editId', 'justification', 'actionType']);
     }
-
-    // Bulk deletion removed
 
     /**
      * Restore all soft deleted venues.
@@ -408,6 +403,7 @@ class VenuesIndex extends Component
         return $this->allVenues()->filter(function ($v) use ($needle) {
             $hit = $needle === '' ||
                 str_contains(mb_strtolower($v['name']), $needle) ||
+                str_contains(mb_strtolower($v['room']), $needle) ||
                 str_contains(mb_strtolower($v['manager']), $needle);
 
             $deptOk = $this->department === '' || $v['department'] === $this->department;
@@ -438,6 +434,36 @@ class VenuesIndex extends Component
             'path' => request()->url(),
             'query' => request()->query()
         ]);
+    }
+
+    /**
+     * Dynamic list of departments based on the current venues (excluding soft-deleted).
+     * Sorted naturally, case-insensitive.
+     *
+     * @return array<int,string>
+     */
+    public function getDepartmentsProperty(): array
+    {
+        // Gather departments from current venues (excluding soft-deleted)
+        $deps = $this->allVenues()
+            ->pluck('department')
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim($v))
+            ->all();
+
+        // Case-insensitive de-duplication while preserving first casing seen
+        $map = [];
+        foreach ($deps as $d) {
+            $k = mb_strtolower($d);
+            if (!isset($map[$k])) {
+                $map[$k] = $d;
+            }
+        }
+
+        // Natural, case-insensitive sort
+        $values = array_values($map);
+        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
+        return $values;
     }
 
     /**
@@ -485,6 +511,7 @@ class VenuesIndex extends Component
         return view('livewire.admin.venues-index', [
             'rows' => $paginator,
             'visibleIds' => $visibleIds,
+            'departments' => $this->departments,
         ]);
     }
 }

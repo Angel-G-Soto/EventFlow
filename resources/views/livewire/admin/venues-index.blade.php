@@ -33,7 +33,7 @@
           <label class="form-label">Department</label>
           <select class="form-select" wire:model.live="department">
             <option value="">All</option>
-            @foreach(\App\Support\VenueConstants::DEPARTMENTS as $dept)
+            @foreach($departments as $dept)
             <option value="{{ $dept }}">{{ $dept }}</option>
             @endforeach
           </select>
@@ -56,15 +56,8 @@
     </div>
   </div>
 
-  {{-- Bulk + page size --}}
-  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-2">
-    <div class="btn-group">
-      <button class="btn btn-outline-danger btn-sm" wire:click="bulkDelete" @disabled(empty($selected ?? []))
-        type="button">
-        <i class="bi bi-trash3 me-1"></i> Delete
-      </button>
-    </div>
-
+  {{-- Page size --}}
+  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
       <label class="text-secondary small mb-0">Rows</label>
       <select class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
@@ -81,12 +74,9 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th style="width:36px;">
-              <x-table.select-all :visible-ids="$visibleIds" :page-key="$page" />
-            </th>
             <th>Name</th>
             <th>Department</th>
-            <th>Room Code</th>
+            <th>Venue Code</th>
             <th>Capacity</th>
             <th>Manager</th>
             <th>Status</th>
@@ -98,9 +88,6 @@
         <tbody>
           @forelse($rows as $v)
           <tr>
-            <td>
-              <x-table.select-row :row-id="$v['id']" :selected="$selected" :page-key="$page" />
-            </td>
             <td class="fw-medium">{{ $v['name'] }}</td>
             <td>{{ $v['department'] }}</td>
             <td>{{ $v['room'] }}</td>
@@ -138,7 +125,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="10" class="text-center text-secondary py-4">No venues found.</td>
+            <td colspan="8" class="text-center text-secondary py-4">No venues found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -196,13 +183,13 @@
               <label class="form-label">Department</label>
               <select class="form-select" wire:model.live="vDepartment" required>
                 <option value="">Select department</option>
-                @foreach(\App\Support\VenueConstants::DEPARTMENTS as $dept)
+                @foreach($departments as $dept)
                 <option value="{{ $dept }}">{{ $dept }}</option>
                 @endforeach
               </select>
             </div>
             <div class="col-md-2">
-              <label class="form-label">Room Code</label>
+              <label class="form-label">Venue Code</label>
               <input class="form-control" required wire:model.live="vRoom">
             </div>
             <div class="col-md-2">
@@ -261,6 +248,14 @@
                       <td><input type="time" class="form-control form-control-sm"
                           wire:model.live="timeRanges.{{ $i }}.to">
                       </td>
+                      <td class="align-top">
+                        @error('timeRanges.'.$i.'.from')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+                        @error('timeRanges.'.$i.'.to')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+                      </td>
                       <td>
                         <button type="button" class="btn btn-outline-danger btn-sm"
                           wire:click="removeTimeRange({{ $i }})">
@@ -275,6 +270,9 @@
                     @endforelse
                   </tbody>
                 </table>
+                <div class="form-text">
+                  Enter availability times as 24-hour HH:MM. End time must be after start time.
+                </div>
               </div>
             </div>
 
@@ -289,9 +287,8 @@
   </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="venueJustify"
-    submit="{{ $this->isBulkDeleting ? 'confirmBulkDelete' : ($this->isDeleting ? 'confirmDelete' : 'confirmSave') }}"
-    model="justification" :showDeleteType="$this->isDeleting || $this->isBulkDeleting" />
+  <x-justification id="venueJustify" submit="{{ $this->isDeleting ? 'confirmDelete' : 'confirmSave' }}"
+    model="justification" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
@@ -302,18 +299,4 @@
       </div>
     </div>
   </div>
-
-  <script>
-    document.addEventListener('livewire:init', () => {
-      // Keep the master checkbox correct (checked/indeterminate) after any render
-      Livewire.on('selectionHydrate', ({ visible, selected }) => {
-        const master = document.getElementById('master');
-        if (!master) return;
-        const set = new Set(selected);
-        const onPageSelected = visible.filter(id => set.has(id));
-        master.indeterminate = onPageSelected.length > 0 && onPageSelected.length < visible.length;
-        master.checked = visible.length > 0 && onPageSelected.length === visible.length;
-      });
-    });
-  </script>
 </div>

@@ -203,10 +203,4 @@
       </div>
     </div>
   </div>
-
-  <script>
-    document.addEventListener('livewire:init', () => {
-      // No selection logic needed anymore
-    });
-  </script>
 </div>
