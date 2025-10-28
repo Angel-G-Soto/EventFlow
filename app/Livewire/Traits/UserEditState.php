@@ -12,11 +12,16 @@ trait UserEditState
 
   public string $justification = '';
   public string $actionType = '';
-  public string $deleteType = 'soft'; // 'soft' or 'hard'
 
+  /**
+   * Returns true if the current action type is 'delete'.
+   *
+   * This property is used to conditionally render delete confirmation modals.
+   *
+   * @return bool True if the action type is 'delete', false otherwise.
+   */
   public function getIsDeletingProperty(): bool
   {
     return $this->actionType === 'delete';
   }
-  // Removed: getIsBulkDeletingProperty no longer needed after bulk actions removal
 }

@@ -24,46 +24,34 @@ class UsersIndex extends Component
 
     /**
      * Returns a collection of all users, both seeded and created by users.
-     * This function takes into account soft and hard deleted users, and will not include them in the collection.
+     * This function takes into account soft-deleted users (no hard delete), and will not include them in the collection.
      * It also normalizes the data by ensuring each user has a 'roles' key, and optionally includes 'department_id'.
      *
      * @return Collection An Eloquent Collection of User objects.
      */
     protected function allUsers(): Collection
     {
-        $combined = array_merge(
-            $this->users,
-            session('new_users', [])
-        );
-        $deletedIndex = array_flip(array_unique(array_merge(
-            array_map('intval', session('soft_deleted_user_ids', [])),
-            array_map('intval', session('hard_deleted_user_ids', []))
-        )));
+        // Base + newly created (session) users
+        $combined = array_merge($this->users, session('new_users', []));
 
-        $combined = array_values(array_filter($combined, function ($u) use ($deletedIndex) {
-            return !isset($deletedIndex[(int) $u['id']]);
-        }));
+        // Exclude soft-deleted IDs
+        $deletedIds   = array_map('intval', session('soft_deleted_user_ids', []));
+        $deletedIndex = array_flip(array_unique($deletedIds));
+        $combined = array_values(array_filter($combined, fn($u) => !isset($deletedIndex[(int) ($u['id'] ?? 0)])));
 
-        // Normalize: ensure each user has roles[]
-        foreach ($combined as &$u) {
-            if (!array_key_exists('roles', $u)) {
-                // Map old single 'role' to roles[]
-                $u['roles'] = isset($u['role']) && $u['role'] !== '' ? [$u['role']] : [];
-            }
-            // Optionally include department_id in the future; for now ignored/displayed as dash
-        }
-        unset($u);
-
+        // Apply edits and normalize in a single pass
         $edited = session('edited_users', []);
-        foreach ($combined as &$u) {
-            if (isset($edited[$u['id']])) {
+        $combined = array_map(function (array $u) use ($edited) {
+            if (isset($u['id']) && isset($edited[$u['id']])) {
                 $u = array_merge($u, $edited[$u['id']]);
-                if (!array_key_exists('roles', $u)) {
-                    $u['roles'] = isset($u['role']) && $u['role'] !== '' ? [$u['role']] : [];
-                }
             }
-        }
-        unset($u);
+
+            // Ensure roles[] is present and unique (support legacy single 'role')
+            $roles = $u['roles'] ?? ((isset($u['role']) && $u['role'] !== '') ? [$u['role']] : []);
+            $u['roles'] = array_values(array_unique($roles));
+
+            return $u;
+        }, $combined);
 
         return collect($combined);
     }
@@ -96,8 +84,7 @@ class UsersIndex extends Component
      *
      * This function will compute bounds from the current filters, and then
      * set the page number to the maximum of 1 and the minimum of the
-     * target and the last page number. If the class has a 'selected'
-     * property, it will be cleared when the page changes.
+     * target and the last page number.
      */
     public function goToPage(int $target): void
     {
@@ -122,7 +109,8 @@ class UsersIndex extends Component
     /**
      * Resets the current page to 1 when the role filter is updated.
      *
-     * Additionally, clears all current selections when the role filter is updated.
+     * This function will be called whenever the role filter is updated,
+     * and will reset the current page to 1.
      */
     public function updatedRole()
     {
@@ -130,10 +118,9 @@ class UsersIndex extends Component
     }
 
     /**
-     * Clears all filters and resets the page to 1.
+     * Resets the search filter and the current page to 1.
      *
-     * This will clear the search filter, the role filter, and the selected users,
-     * and reset the page to 1.
+     * This function is called when the user clicks the "Clear" button on the filter form.
      */
     public function clearFilters(): void
     {
@@ -193,15 +180,14 @@ class UsersIndex extends Component
      */
     protected function rules(): array
     {
-        $roleWithoutDept = in_array($this->editRoles, UserConstants::ROLES_WITHOUT_DEPARTMENT);
+        $roleWithoutDept = $this->roleExemptsDepartment($this->editRoles);
         return [
-            'editName' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'editEmail' => 'required|email|regex:/@upr[a-z]*\.edu$/i',
-            'editRoles' => 'array|min:1',
-            'editRoles.*' => 'string',
+            'editName'       => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
+            'editEmail'      => 'required|email|regex:/@upr[a-z]*\.edu$/i',
+            'editRoles'      => 'array|min:1',
+            'editRoles.*'    => 'string',
             'editDepartment' => $roleWithoutDept ? 'nullable' : 'required|string',
-
-            'justification' => 'nullable|string|max:200'
+            'justification'  => 'nullable|string|max:200',
         ];
     }
 
@@ -217,13 +203,13 @@ class UsersIndex extends Component
     }
 
     /**
-     * Generates a new unique user ID.
+     * Generates a unique user ID by taking the maximum ID of all users (both existing and new),
+     * and incrementing it by 1.
      *
-     * This function generates a new unique user ID by combining IDs from the base users array, new users array,
-     * soft deleted user IDs array, and hard deleted user IDs array. It then returns the maximum ID in the combined array
-     * plus 1.
+     * This function also takes into account IDs that were soft/hard deleted this session, to avoid
+     * reusing them.
      *
-     * @return int The new unique user ID.
+     * @return int A unique user ID.
      */
     protected function generateUserId(): int
     {
@@ -234,11 +220,9 @@ class UsersIndex extends Component
         $new     = session('new_users', []);
         $newIds  = array_column($new, 'id');
 
-        // Also avoid reusing IDs that were soft/hard deleted this session.
+        // Also avoid reusing IDs that were soft-deleted this session.
         $soft = array_map('intval', session('soft_deleted_user_ids', []));
-        $hard = array_map('intval', session('hard_deleted_user_ids', []));
-
-        $allIds = array_merge($baseIds, $newIds, $soft, $hard);
+        $allIds = array_merge($baseIds, $newIds, $soft);
         $maxId  = $allIds ? max($allIds) : 0;
 
         return $maxId + 1;
@@ -283,35 +267,33 @@ class UsersIndex extends Component
      */
     public function confirmSave(): void
     {
-        if ($this->editId) {
-            // Update existing user
+        $isEditing = (bool) $this->editId;
+
+        if ($isEditing) {
             $this->validateJustification();
             $editedUsers = session('edited_users', []);
             $editedUsers[$this->editId] = [
-                'name'  => $this->editName,
-                'email' => $this->editEmail,
-                'roles' => array_values(array_unique($this->editRoles)),
+                'name'       => $this->editName,
+                'email'      => $this->editEmail,
+                'roles'      => array_values(array_unique($this->editRoles)),
                 'department' => $this->editDepartment,
             ];
             session(['edited_users' => $editedUsers]);
-            $message = 'User updated';
         } else {
-            // Create new user (no justification needed)
-            $newUsers = session('new_users', []);
+            $newUsers   = session('new_users', []);
             $newUsers[] = [
-                'id'    => $this->generateUserId(),
-                'name'  => $this->editName,
-                'email' => $this->editEmail,
-                'roles' => array_values(array_unique($this->editRoles)),
+                'id'         => $this->generateUserId(),
+                'name'       => $this->editName,
+                'email'      => $this->editEmail,
+                'roles'      => array_values(array_unique($this->editRoles)),
                 'department' => $this->editDepartment,
             ];
             session(['new_users' => $newUsers]);
-            $message = 'User created';
         }
 
         $this->dispatch('bs:close', id: 'userJustify');
         $this->dispatch('bs:close', id: 'editUserModal');
-        $this->dispatch('toast', message: $message);
+        $this->dispatch('toast', message: $isEditing ? 'User updated' : 'User created');
         $this->reset(['editId', 'justification', 'actionType']);
     }
 
@@ -339,15 +321,14 @@ class UsersIndex extends Component
     {
         if ($this->editId) {
             $this->validateJustification();
-            session()->push($this->deleteType === 'hard' ? 'hard_deleted_user_ids' : 'soft_deleted_user_ids', $this->editId);
+            session()->push('soft_deleted_user_ids', $this->editId);
         }
 
         $this->dispatch('bs:close', id: 'userJustify');
-        $this->dispatch('toast', message: 'User ' . ($this->deleteType === 'hard' ? 'permanently deleted' : 'deleted'));
+        $this->dispatch('toast', message: 'User deleted');
         $this->reset(['editId', 'justification', 'actionType']);
     }
 
-    // Bulk deletion removed
 
     /**
      * Restores all soft deleted users.
@@ -360,7 +341,6 @@ class UsersIndex extends Component
     public function restoreUsers(): void
     {
         session(['soft_deleted_user_ids' => []]);
-        //session(['hard_deleted_user_ids' => []]);
         $this->dispatch('toast', message: 'All deleted users restored');
     }
 
@@ -426,7 +406,15 @@ class UsersIndex extends Component
      */
     public function getHasRoleWithoutDepartmentProperty(): bool
     {
-        return in_array($this->editRoles, UserConstants::ROLES_WITHOUT_DEPARTMENT);
+        return $this->roleExemptsDepartment($this->editRoles);
+    }
+
+    /**
+     * Returns true if any of the given roles do not require a department.
+     */
+    protected function roleExemptsDepartment(array $roles): bool
+    {
+        return count(array_intersect($roles, UserConstants::ROLES_WITHOUT_DEPARTMENT)) > 0;
     }
 
     /**

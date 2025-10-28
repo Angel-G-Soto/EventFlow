@@ -192,7 +192,7 @@
 
   {{-- Justification for save/delete --}}
   <x-justification id="userJustify" submit="{{ $this->isDeleting ? 'confirmDelete' : 'confirmSave' }}"
-    model="justification" :showDeleteType="$this->isDeleting" />
+    model="justification" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
