@@ -25,7 +25,7 @@ class VenueController extends Controller
 
         // Run service that brings the respective venues
         $venueService = app(VenueService::class);
-        $venues = $venueService->getAllVenues(['department_id' => Auth::user()->department()->id]);
+        $venues = $venueService->getAllVenues(['department_id' => Auth::user()->department->id]);
 
         // Load view
         return view('venue.managerVenueIndex', ['venues' => $venues]);
@@ -38,7 +38,7 @@ class VenueController extends Controller
 
         // Run service that brings the respective venues
         $venueService = app(VenueService::class);
-        $venues = $venueService->getAllVenues(['department_id' => Auth::user()->department()->id]);
+        $venues = $venueService->getAllVenues(['department_id' => Auth::user()->department->id]);
 
         // Load view
         return view('venue.directorVenueIndex', ['venues' => $venues]);
@@ -80,7 +80,7 @@ class VenueController extends Controller
         $venueService->updateOrCreateVenueRequirements($venueService->findById($venue_id),$validated['requirements'],Auth::user());
 
         // Reload page
-        redirect('');
+        return redirect('/');
     }
 
     public function updateAvailability(Request $request, int $venue_id)
@@ -103,7 +103,7 @@ class VenueController extends Controller
         $venueService->updateVenueOperatingHours($venueService->findById($venue_id),$validated['opening_hours'],$validated['closing_hours'],Auth::user());
 
         // Reload page
-        redirect('');
+        return redirect('');
     }
 
     public function storeVenueManager(Request $request, int $venue_id)
@@ -126,7 +126,7 @@ class VenueController extends Controller
         $venueService->assignManager($venueService->findById($venue_id),$userService->findUserById($validated['user_id']),Auth::user());
 
         // Reload page
-        redirect('');
+        return redirect('');
     }
 
     public function deleteVenue(int $venue_id)
@@ -143,7 +143,7 @@ class VenueController extends Controller
         $venueService->deactivateVenues([$venueService->findById($venue_id)],Auth::user());
 
         // Reload page
-        redirect('');
+        return redirect('');
     }
 
     public function storeVenue(Request $request)
@@ -170,7 +170,7 @@ class VenueController extends Controller
         $venueService->createVenue($validated,Auth::user());
 
         // Reload page
-        redirect('');
+        return redirect('');
     }
 
     public function updateVenue(Request $request, int $venue_id)
@@ -196,7 +196,7 @@ class VenueController extends Controller
         $venue = $venueService->updateVenue($venueService->getVenueById($venue_id), $validated, Auth::user());
 
         // Reload page
-        redirect('');
+        return redirect('');
     }
 
 
@@ -219,6 +219,6 @@ class VenueController extends Controller
         ProcessCsvFileUpload::dispatch($filename, Auth::id());
 
         // Redirect to page
-        redirect();
+        return redirect();
     }
 }
