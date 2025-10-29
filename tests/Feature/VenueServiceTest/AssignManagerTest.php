@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Models\Department;
 use App\Models\AuditTrail;
+use App\Services\UserService;
 use App\Services\VenueService;
 use App\Services\DepartmentService;
 use App\Services\UseRequirementService;
@@ -13,11 +14,13 @@ beforeEach(function () {
     $this->departmentService = Mockery::mock(DepartmentService::class);
     $this->useRequirementService = Mockery::mock(UseRequirementService::class);
     $this->auditService = Mockery::mock(AuditService::class);
+    $this->userService = Mockery::mock(UserService::class);
 
     $this->venueService = new VenueService(
         $this->departmentService,
         $this->useRequirementService,
-        $this->auditService
+        $this->auditService,
+        $this->userService,
     );
 
     $this->department = Department::factory()->create();

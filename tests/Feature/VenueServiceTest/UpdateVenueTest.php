@@ -3,6 +3,7 @@
 use App\Models\AuditTrail;
 use App\Models\User;
 use App\Models\Venue;
+use App\Services\UserService;
 use App\Services\VenueService;
 use App\Services\AuditService;
 use App\Services\UseRequirementService;
@@ -11,13 +12,15 @@ use Illuminate\Support\Carbon;
 
 beforeEach(function () {
     $this->auditService = Mockery::mock(AuditService::class);
-    $this->useRequirementService = Mockery::mock(UseRequirementService::class);
     $this->departmentService = Mockery::mock(DepartmentService::class);
+    $this->useRequirementService = Mockery::mock(UseRequirementService::class);
+    $this->userService = Mockery::mock(UserService::class);
 
     $this->venueService = new VenueService(
-        departmentService: $this->departmentService,
-        useRequirementService: $this->useRequirementService,
-        auditService: $this->auditService
+        $this->departmentService,
+        $this->useRequirementService,
+        $this->auditService,
+        $this->userService,
     );
 
     $this->venue = Venue::factory()->create();

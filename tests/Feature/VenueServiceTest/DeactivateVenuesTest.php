@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\Venue;
+use App\Services\UserService;
 use App\Services\VenueService;
 use App\Services\AuditService;
 use App\Services\DepartmentService;
@@ -11,11 +12,13 @@ beforeEach(function () {
     $this->auditService = Mockery::mock(AuditService::class);
     $this->departmentService = Mockery::mock(DepartmentService::class);
     $this->useRequirementService = Mockery::mock(UseRequirementService::class);
+    $this->userService = Mockery::mock(UserService::class);
 
     $this->venueService = new VenueService(
-        departmentService: $this->departmentService,
-        useRequirementService: $this->useRequirementService,
-        auditService: $this->auditService
+        $this->departmentService,
+        $this->useRequirementService,
+        $this->auditService,
+        $this->userService,
     );
 
     $this->admin = Mockery::mock(User::class)->makePartial();
