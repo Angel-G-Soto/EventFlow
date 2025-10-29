@@ -119,8 +119,12 @@ class VenueService {
     }
 
     /**
-     * Retrieves the venue that contains the provided ID
+     * Retrieve a Venue by its ID.
      *
+     * This method attempts to find a venue with the given ID.
+     * If the provided ID is less than 0, an InvalidArgumentException is thrown.
+     * If any other error occurs during the retrieval, a generic Exception is thrown.
+ *
      * @param int $venue_id
      * @return Venue|null
      * @throws Exception
@@ -133,30 +137,6 @@ class VenueService {
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
         catch (\Throwable $exception) {throw new Exception('Unable get the venue.');}
-    }
-
-
-    /**
-     * Get the venues that are provided in the id array
-     *
-     * @param array $ids
-     * @return mixed
-     */
-    public static function getVenuesByIds(array $ids)
-    {
-        foreach ($ids as $id) {
-            if ($id <= 0) {
-                throw new InvalidArgumentException("Venue IDs must be positive integers.");
-            }
-        }
-
-        $venues = Venue::whereIn('id', $ids)->get();
-
-        if ($venues->count() !== count($ids)) {
-            throw new ModelNotFoundException("One or more venues not found.");
-        }
-
-        return $venues;
     }
 
     /**
