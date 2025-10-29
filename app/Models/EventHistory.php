@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+<<<<<<< HEAD
+=======
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+>>>>>>> origin/restructuring_and_optimizations
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EventHistory extends Model
 {
+<<<<<<< HEAD
+=======
+    use HasFactory;
+>>>>>>> origin/restructuring_and_optimizations
     /**
      * The primary key associated with the table.
      *
@@ -26,6 +34,7 @@ class EventHistory extends Model
      * @var string[]
      */
     protected $fillable = [
+<<<<<<< HEAD
         'event_id',         // FK to Event
         'user_id',          // FK to User
         'eh_action',
@@ -34,6 +43,17 @@ class EventHistory extends Model
 
     /**
      * Relationship between the Event Request History and Event
+=======
+        'event_id',
+        'approver_id',
+        'action',
+        'comment',
+    ];
+
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
+    /**
+     * Relationship between the Event History and Event
+>>>>>>> origin/restructuring_and_optimizations
      * @return BelongsTo
      */
     public function event(): BelongsTo
@@ -42,11 +62,31 @@ class EventHistory extends Model
     }
 
     /**
+<<<<<<< HEAD
      * Relationship between the Event Request History and User
      * @return BelongsTo
      */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class);
+=======
+     * Relationship between the Event History and User
+     * @return BelongsTo
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approver_id');
+    }
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+    public function getActionTextAttribute(): string
+    {
+        return $this->action;
+    }
+
+    public function getCommentTextAttribute(): string
+    {
+        return $this->comment;
+>>>>>>> origin/restructuring_and_optimizations
     }
 }

@@ -32,6 +32,10 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'department_id' => Department::factory(),
+<<<<<<< HEAD
+=======
+            'auth_type' => 'saml'
+>>>>>>> origin/restructuring_and_optimizations
         ];
     }
 }

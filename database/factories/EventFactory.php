@@ -21,6 +21,7 @@ class EventFactory extends Factory
     {
         return [
             'creator_id' => User::factory(),
+<<<<<<< HEAD
             'current_approver_id' => User::factory(),
             'venue_id' => Venue::factory(),
             'e_organization_nexo_id' => fake()->numberBetween(1, 1000),
@@ -41,6 +42,25 @@ class EventFactory extends Factory
             'e_guests' => fake()->numberBetween(0, 200),
             'e_alcohol_policy_agreement' => fake()->boolean(),
             'e_cleanup_policy_agreement' => fake()->boolean(),
+=======
+            'venue_id' => Venue::factory(),
+            'organization_nexo_id' => fake()->numberBetween(1, 500),
+            'organization_nexo_name' => fake()->unique()->company(),
+            'organization_advisor_email' => fake()->unique()->email(),
+            'organization_advisor_name' => fake()->unique()->name(),
+            'organization_advisor_phone' => fake()->unique()->phoneNumber(),
+            'student_number' => '802'.fake()->numberBetween(1, 25).fake()->unique()->numberBetween(0001, 9999),
+            'student_phone' => fake()->unique()->phoneNumber(),
+            'title' => fake()->title(),
+            'description' => fake()->text(),
+            'start_time' => fake()->dateTime(),
+            'end_time' => fake()->dateTime(),
+            'status' => fake()->randomElement(['draft', 'pending approval - advisor', 'pending approval - manager', 'pending approval - event approver', 'pending approval - deanship of administration', 'approved', 'rejected', 'cancelled', 'withdrawn', 'completed']),
+            'guests' => fake()->numberBetween(10, 100),
+            'handles_food' => fake()->boolean(),
+            'use_institutional_funds' => fake()->boolean(),
+            'external_guest' => fake()->boolean(),
+>>>>>>> origin/restructuring_and_optimizations
         ];
     }
 }

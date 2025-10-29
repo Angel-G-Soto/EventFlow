@@ -6,11 +6,16 @@ use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Http\Request;
+<<<<<<< HEAD
 use App\Models\EventRequestHistory;
 
+=======
+use \Illuminate\Database\Eloquent\Collection;
+>>>>>>> origin/restructuring_and_optimizations
 
 class Event extends Model
 {
@@ -21,6 +26,7 @@ class Event extends Model
      * @var string
      */
     protected $primaryKey = 'id';
+<<<<<<< HEAD
 
     /**
      * The attributes that are mass assignable.
@@ -49,6 +55,42 @@ class Event extends Model
         'e_alcohol_policy_agreement',
         'e_cleanup_policy_agreement',
     ];
+=======
+
+    /**
+     * The attributes that are mass assignable.
+     * @var string[]
+     */
+    protected $fillable = [
+        'creator_id',
+        'venue_id',
+        'organization_nexo_id',
+        'organization_nexo_name',
+        'organization_advisor_email',
+        'organization_advisor_name',
+        'organization_advisor_phone',
+        'student_number',
+        'student_phone',
+        'title',
+        'description',
+        'start_time',
+        'end_time',
+        'status',
+        'guests',
+        'handles_food',
+        'use_institutional_funds',
+        'external_guest',
+    ];
+
+    /**
+     * The database connection that should be used by the model.
+     *
+     * @var string
+     */
+    protected $connection = 'mariadb';
+
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
+>>>>>>> origin/restructuring_and_optimizations
 
 
 
@@ -58,7 +100,7 @@ class Event extends Model
      */
     public function requester(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'creator_id');
     }
 
     /**
@@ -101,4 +143,56 @@ class Event extends Model
     {
         return $this->hasMany(EventHistory::class);
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     *
+     * @return BelongsToMany
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class);
+    }
+
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+    public function getHistory(): Collection
+    {
+        return $this->history()->get();
+    }
+
+    public function getCurrentApprover(): User
+    {
+        return $this->history()->orderBy('created_at', 'desc')->first()->approver;
+    }
+
+    public function getCurrentState(): User
+    {
+        return $this->status;
+    }
+
+    public function getCategories(): Collection
+    {
+        return $this->categories()->get();
+    }
+
+    public function getVenue(): Venue
+    {
+        return $this->venue;
+    }
+
+    public function getEventsByState(?string $state): Collection
+    {
+        if (!in_array(
+            strtolower($state),
+            ['draft', 'pending approval - advisor', 'pending approval - manager', 'pending approval - event approver', 'pending approval - deanship of administration', 'approved', 'rejected', 'cancelled', 'withdrawn', 'completed']
+        )
+        ){
+            throw new \InvalidArgumentException('');
+        }
+        elseif ($state === null) return $this->events()->get();
+        return $this->events()->where('state', strtolower($state))->get();
+    }
+>>>>>>> origin/restructuring_and_optimizations
 }
