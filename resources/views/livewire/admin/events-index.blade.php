@@ -3,9 +3,9 @@
     <h1 class="h4 mb-0">Event Oversight</h1>
 
     <div class="d-none d-md-flex gap-2">
-      {{-- <a href="{{ route('admin.oversight.export') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-download me-1"></i> Export CSV
-      </a> --}}
+      <button class="btn btn-outline-success btn-sm" wire:click="restoreUsers" type="button">
+        <i class="bi bi-arrow-clockwise me-1"></i> Restore Deleted
+      </button>
     </div>
   </div>
 
@@ -20,15 +20,45 @@
           <label class="form-label">Status</label>
           <select class="form-select" wire:model.live="status">
             <option value="">All</option>
-            <option>Pending</option><option>Approved</option><option>Denied</option><option>Rerouted</option><option>Returned</option>
+            @foreach($statuses as $st)
+            <option value="{{ $st }}">{{ $st }}</option>
+            @endforeach
           </select>
         </div>
-        <div class="col-md-2"><label class="form-label">Department</label><input class="form-control" wire:model.live="department"></div>
-        <div class="col-md-2"><label class="form-label">Venue</label><input class="form-control" wire:model.live="venue"></div>
-        <div class="col-md-2"><label class="form-label">Category</label><input class="form-control" wire:model.live="category"></div>
-        <div class="col-md-2"><label class="form-label">From</label><input type="datetime-local" class="form-control" wire:model.live="from"></div>
-        <div class="col-md-2"><label class="form-label">To</label><input type="datetime-local" class="form-control" wire:model.live="to"></div>
+        <div class="col-md-2"><label class="form-label">Venue</label><input class="form-control"
+            wire:model.live="venue"></div>
+        {{-- Category filter removed intentionally --}}
+        <div class="col-md-2">
+          <label class="form-label">Organization</label>
+          <select class="form-select" wire:model.live="organization">
+            <option value="">All</option>
+            @foreach($organizations as $org)
+            <option value="{{ $org }}">{{ $org }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">From</label><input type="datetime-local" class="form-control"
+            wire:model.live="from"></div>
+        <div class="col-md-2"><label class="form-label">To</label><input type="datetime-local" class="form-control"
+            wire:model.live="to"></div>
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button class="btn btn-outline-secondary w-100" wire:click="clearFilters" type="button">
+            <i class="bi bi-x-circle me-1"></i> Clear
+          </button>
+        </div>
       </div>
+    </div>
+  </div>
+
+  {{-- Page size --}}
+  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
+    <div class="d-flex align-items-center gap-2">
+      <label class="text-secondary small mb-0">Rows</label>
+      <select class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
+        <option>10</option>
+        <option>25</option>
+        <option>50</option>
+      </select>
     </div>
   </div>
 
@@ -40,7 +70,7 @@
             <th>ID</th>
             <th>Title</th>
             <th>Requestor</th>
-            <th>Department</th>
+            <th>Organization</th>
             <th>Venue</th>
             <th>Date/Time</th>
             <th>Status</th>
@@ -48,45 +78,118 @@
           </tr>
         </thead>
         <tbody>
-        @forelse($rows as $r)
+          @forelse($rows as $r)
           <tr>
             <td class="text-secondary">#{{ $r['id'] }}</td>
             <td class="fw-medium">{{ $r['title'] }}</td>
             <td>{{ $r['requestor'] }}</td>
-            <td>{{ $r['department'] }}</td>
+            <td>{{ $r['organization'] ?? ($r['organization_nexo_name'] ?? '') }}</td>
             <td>{{ $r['venue'] }}</td>
             <td>
-              <div>{{ \Illuminate\Support\Str::before($r['from'],' ') }} {{ \Illuminate\Support\Str::after($r['from'],' ') }}</div>
-              <div class="text-secondary small">→ {{ \Illuminate\Support\Str::before($r['to'],' ') }} {{ \Illuminate\Support\Str::after($r['to'],' ') }}</div>
+              <div>{{ \Illuminate\Support\Str::before($r['from'],' ') }} {{ \Illuminate\Support\Str::after($r['from'],'
+                ') }}</div>
+              <div class="text-secondary small">→ {{ \Illuminate\Support\Str::before($r['to'],' ') }} {{
+                \Illuminate\Support\Str::after($r['to'],' ') }}</div>
             </td>
             <td>
-              <span class="badge {{ $r['status']==='Pending' ? 'text-bg-primary' : 
-              ($r['status']==='Approved' ? 'text-bg-success' : 
-              ($r['status']==='Denied' ? 'text-bg-danger' : 'text-bg-warning')) }}">
-                {{ $r['status'] }}
-              </span>
+              <span class="badge {{ $this->statusBadgeClass($r['status']) }}">{{ $r['status'] }}</span>
             </td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm" wire:click="openEdit({{ $r['id'] }})">
-                <i class="bi bi-eye"></i>
-              </button>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-info" wire:click="openView({{ $r['id'] }})">
+                  <i class="bi bi-info-lg"></i>
+                </button>
+                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
             </td>
           </tr>
-        @empty
-          <tr><td colspan="8" class="text-center text-secondary py-4">No requests found.</td></tr>
-        @endforelse
+          @empty
+          <tr>
+            <td colspan="8" class="text-center text-secondary py-4">No requests found.</td>
+          </tr>
+          @endforelse
         </tbody>
       </table>
     </div>
 
     <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-secondary">{{ $rows->total() }} total</small>
-      <div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-secondary" wire:click="$set('page',1)" @disabled($rows->currentPage()===1)>&laquo;</button>
-        <span class="btn btn-outline-secondary disabled">Page {{ $rows->currentPage() }} / {{ $rows->lastPage() }}</span>
-        <button class="btn btn-outline-secondary"
-                wire:click="$set('page', min($rows->lastPage(), $page+1))"
-                @disabled($rows->currentPage()===$rows->lastPage())>&raquo;</button>
+      <small class="text-secondary">
+        {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
+      </small>
+      {{ $rows->onEachSide(1)->links('partials.pagination') }}
+    </div>
+  </div>
+
+  {{-- View modal --}}
+  <div class="modal fade" id="oversightView" tabindex="-1" aria-hidden="true" wire:ignore.self>
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-eye me-2"></i>View Request #{{ $editId }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Title</label><input class="form-control" readonly
+                value="{{ $eTitle }}"></div>
+            <div class="col-md-3"><label class="form-label">Organization</label><input class="form-control" readonly
+                value="{{ $eOrganization }}"></div>
+            <div class="col-md-3"><label class="form-label">Venue</label><input class="form-control" readonly
+                value="{{ $eVenue }}"></div>
+            <div class="col-md-3"><label class="form-label">Advisor Name</label><input class="form-control" readonly
+                value="{{ $eAdvisorName }}"></div>
+            <div class="col-md-3"><label class="form-label">Advisor Email</label><input class="form-control" readonly
+                value="{{ $eAdvisorEmail }}"></div>
+            <div class="col-md-3"><label class="form-label">Advisor Phone</label><input class="form-control" readonly
+                value="{{ $eAdvisorPhone }}"></div>
+            <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
+                value="{{ $eStudentNumber }}"></div>
+            <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control" readonly
+                value="{{ $eStudentPhone }}"></div>
+            <div class="col-md-3"><label class="form-label">From</label><input type="datetime-local"
+                class="form-control" readonly value="{{ $eFrom }}"></div>
+            <div class="col-md-3"><label class="form-label">To</label><input type="datetime-local" class="form-control"
+                readonly value="{{ $eTo }}"></div>
+            <div class="col-md-3"><label class="form-label">Attendees</label><input type="number" class="form-control"
+                readonly value="{{ $eAttendees }}"></div>
+            <div class="col-md-3"><label class="form-label">Category</label><input class="form-control" readonly
+                value="{{ $eCategory }}"></div>
+            <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" rows="3"
+                readonly>{{ $ePurpose }}</textarea></div>
+            <div class="col-12">
+              <label class="form-label">Policies</label>
+              <div class="row g-2">
+                <div class="col-12 col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" disabled {{ $eHandlesFood ? 'checked' : '' }}>
+                    <label class="form-check-label">Handles food</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" disabled {{ $eUseInstitutionalFunds ? 'checked' : ''
+                      }}>
+                    <label class="form-check-label">Uses institutional funds</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" disabled {{ $eExternalGuest ? 'checked' : '' }}>
+                    <label class="form-check-label">External guests</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -94,71 +197,206 @@
   {{-- Edit/Action drawer (modal) --}}
   <div class="modal fade" id="oversightEdit" tabindex="-1" aria-hidden="true" wire:ignore.self>
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <form class="modal-content" wire:submit.prevent="saveEdits">
+      <form class="modal-content" wire:submit.prevent="save">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-journal-text me-2"></i>Request #{{ $editId }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="row g-3">
-            <div class="col-md-6"><label class="form-label">Title</label><input class="form-control" wire:model.live="eTitle"></div>
-            <div class="col-md-3"><label class="form-label">Department</label><input class="form-control" wire:model.live="eDepartment"></div>
-            <div class="col-md-3"><label class="form-label">Venue</label><input class="form-control" wire:model.live="eVenue"></div>
-            <div class="col-md-3"><label class="form-label">From</label><input type="datetime-local" class="form-control" wire:model.live="eFrom"></div>
-            <div class="col-md-3"><label class="form-label">To</label><input type="datetime-local" class="form-control" wire:model.live="eTo"></div>
-            <div class="col-md-3"><label class="form-label">Attendees</label><input type="number" class="form-control" min="0" wire:model.live="eAttendees"></div>
-            <div class="col-md-3"><label class="form-label">Category</label><input class="form-control" wire:model.live="eCategory"></div>
-            <div class="col-12"><label class="form-label">Purpose</label><textarea class="form-control" rows="3" wire:model.live="ePurpose"></textarea></div>
-            <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" rows="3" wire:model.live="eNotes"></textarea></div>
+            <div class="col-md-6"><label class="form-label">Title</label><input class="form-control"
+                wire:model.live="eTitle"></div>
+            <div class="col-md-3"><label class="form-label">Organization</label><input class="form-control"
+                wire:model.live="eOrganization"></div>
+            <div class="col-md-3"><label class="form-label">Venue</label><input class="form-control"
+                wire:model.live="eVenue"></div>
+            <div class="col-md-3"><label class="form-label">Advisor Name</label><input class="form-control"
+                wire:model.live="eAdvisorName"></div>
+            <div class="col-md-3"><label class="form-label">Advisor Email</label><input class="form-control"
+                wire:model.live="eAdvisorEmail"></div>
+            <div class="col-md-3"><label class="form-label">Advisor Phone</label><input class="form-control"
+                wire:model.live="eAdvisorPhone"></div>
+            <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control"
+                wire:model.live="eStudentNumber"></div>
+            <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control"
+                wire:model.live="eStudentPhone"></div>
+            <div class="col-md-3"><label class="form-label">From</label><input type="datetime-local"
+                class="form-control" wire:model.live="eFrom"></div>
+            <div class="col-md-3"><label class="form-label">To</label><input type="datetime-local" class="form-control"
+                wire:model.live="eTo"></div>
+            <div class="col-md-3"><label class="form-label">Attendees</label><input type="number" class="form-control"
+                min="0" wire:model.live="eAttendees"></div>
+            <div class="col-md-3">
+              <label class="form-label">Category</label>
+              <select class="form-select" wire:model.live="eCategory">
+                @foreach($categories as $cat)
+                <option value="{{ $cat }}">{{ $cat }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" rows="3"
+                wire:model.live="ePurpose"></textarea></div>
 
             <div class="col-12">
-              <label class="form-label">Policy flags</label>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="alcohol" wire:model.live="ePolicyAlcohol">
-                <label class="form-check-label" for="alcohol">Alcohol policy acknowledged</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="curfew" wire:model.live="ePolicyCurfew">
-                <label class="form-check-label" for="curfew">Curfew policy acknowledged</label>
+              <label class="form-label">Policies</label>
+              <div class="row g-2">
+                <div class="col-12 col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="handles_food" wire:model.live="eHandlesFood">
+                    <label class="form-check-label" for="handles_food">Handles food</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="use_funds"
+                      wire:model.live="eUseInstitutionalFunds">
+                    <label class="form-check-label" for="use_funds">Uses institutional funds</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="external_guest"
+                      wire:model.live="eExternalGuest">
+                    <label class="form-check-label" for="external_guest">External guests</label>
+                  </div>
+                </div>
               </div>
             </div>
 
             {{-- Attached docs, approval history, route/step — placeholders for now --}}
             <div class="col-12">
               <div class="alert alert-secondary small mb-0">
-                <strong>Attachments:</strong> (links) • <strong>History:</strong> approvals/denials • <strong>Current Step:</strong> Department/Role
+                <strong>Attachments:</strong> (links) • <strong>History:</strong> approvals/denials • <strong>Current
+                  Step:</strong> Department/Role
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer d-flex justify-content-between">
           <div class="btn-group">
-            <button type="button" class="btn btn-outline-success" wire:click.prevent="approve"><i class="bi bi-check2-circle me-1"></i>Approve</button>
-            <button type="button" class="btn btn-outline-danger" wire:click.prevent="deny"><i class="bi bi-x-octagon me-1"></i>Deny</button>
-            <button type="button" class="btn btn-outline-secondary" wire:click.prevent="advance"><i class="bi bi-arrow-right-circle me-1"></i>Advance</button>
-            <button type="button" class="btn btn-outline-warning" wire:click.prevent="reroute"><i class="bi bi-shuffle me-1"></i>Re-route</button>
-            <button type="button" class="btn btn-outline-primary" wire:click.prevent="override"><i class="bi bi-sliders me-1"></i>Override</button>
+            <button type="button" class="btn btn-outline-success" wire:click.prevent="approve"><i
+                class="bi bi-check2-circle me-1"></i>Approve</button>
+            <button type="button" class="btn btn-outline-danger" wire:click.prevent="deny"><i
+                class="bi bi-x-octagon me-1"></i>Deny</button>
+            <button type="button" class="btn btn-outline-secondary" wire:click.prevent="advance"><i
+                class="bi bi-arrow-right-circle me-1"></i>Advance</button>
+            <button type="button" class="btn btn-outline-warning" wire:click.prevent="reroute"><i
+                class="bi bi-shuffle me-1"></i>Re-route</button>
           </div>
-          <button class="btn btn-primary" type="submit"><i class="bi bi-save me-1"></i>Save changes</button>
+          <button class="btn btn-primary" type="submit"><i class="bi me-1"></i>Save</button>
         </div>
       </form>
     </div>
   </div>
 
-  <x-justification id="oversightJustify" submit="confirmAction" model="justification" />
+  {{-- Justification for save/delete/approve/deny --}}
+  <x-justification id="oversightJustify"
+    submit="{{ $this->isDeleting ? 'confirmDelete' : (in_array($actionType, ['approve','deny']) ? 'confirmAction' : 'confirmSave') }}"
+    model="justification" />
 
+  {{-- Reroute modal --}}
+  <div class="modal fade" id="oversightReroute" tabindex="-1" aria-hidden="true" wire:ignore.self>
+    <div class="modal-dialog">
+      <form class="modal-content" wire:submit.prevent="confirmReroute">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-shuffle me-2"></i>Re-route Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Route to</label>
+            <input type="text" class="form-control" placeholder="e.g., Advisor, Manager, Jane Doe"
+              wire:model.live="rerouteTo">
+            @error('rerouteTo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-warning" type="submit"><i class="bi bi-shuffle me-1"></i>Re-route</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {{-- Advance modal --}}
+  <div class="modal fade" id="oversightAdvance" tabindex="-1" aria-hidden="true" wire:ignore.self>
+    <div class="modal-dialog">
+      <form class="modal-content" wire:submit.prevent="confirmAdvance">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-arrow-right-circle me-2"></i>Advance Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Advance to</label>
+            <input type="text" class="form-control" placeholder="e.g., Next approver, Advisor, Jane Doe"
+              wire:model.live="advanceTo">
+            @error('advanceTo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-secondary" type="submit"><i class="bi bi-arrow-right-circle me-1"></i>Advance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
-    <div id="ovToast" class="toast text-bg-success"><div class="toast-body" id="ovToastMsg">Done</div></div>
+    <div id="ovToast" class="toast text-bg-success" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="ovToastMsg">Done</div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
   </div>
 
   <script>
     document.addEventListener('livewire:init', () => {
-      Livewire.on('bs:open', ({ id }) => { const el=document.getElementById(id); if(el) new bootstrap.Modal(el).show(); });
-      Livewire.on('bs:close', ({ id }) => { const el=document.getElementById(id); if(!el) return; const m=bootstrap.Modal.getInstance(el); if(m) m.hide(); });
+      const focusMap = new Map();
+
+      function attachHiddenOnce(modalEl, modalId) {
+        const onHidden = () => {
+          const opener = focusMap.get(modalId);
+          if (opener && typeof opener.focus === 'function') {
+            setTimeout(() => opener.focus(), 30);
+          }
+          focusMap.delete(modalId);
+          modalEl.removeEventListener('hidden.bs.modal', onHidden);
+        };
+        modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
+      }
+
+      Livewire.on('bs:open', ({ id }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        focusMap.set(id, opener);
+        const modal = new bootstrap.Modal(el);
+        modal.show();
+        queueMicrotask(() => {
+          const first = el.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
+          if (first && typeof first.focus === 'function') first.focus();
+        });
+        attachHiddenOnce(el, id);
+      });
+
+      Livewire.on('bs:close', ({ id }) => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const m = bootstrap.Modal.getInstance(el);
+        if(m) m.hide();
+      });
+
       Livewire.on('toast', ({ message }) => {
         document.getElementById('ovToastMsg').textContent = message || 'Done';
-        new bootstrap.Toast(document.getElementById('ovToast'), { delay: 2200 }).show();
+        const toastEl = document.getElementById('ovToast');
+        const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 2200 });
+        toast.show();
       });
+
+      // No selection logic needed anymore
     });
   </script>
 </div>
