@@ -184,14 +184,23 @@ class DepartmentService {
     }
 
     /**
-     * Retrieves the employees that belong to the same department as the user
+     * Retrieves the employees that belong to the same department as the director
      *
-     * @param int $user_id
+     * @param int $director_id
      * @return Collection
      */
-    public function getEmployees(int $user_id): Collection
+    public function getEmployees(int $director_id): Collection
     {
-        if ($user_id < 0) {throw new InvalidArgumentException('Employee id must be greater than zero.');}
-        return Department::find($user_id)->employees;
+        if ($director_id < 0) {
+            throw new InvalidArgumentException('Id must be greater than zero.');
+        }
+
+        $director = $this->userService->findUserById($director_id);
+
+        if (!$director || !$director->department_id) {
+            throw new InvalidArgumentException('Director is not part of any department.');
+        }
+
+        return Department::findOrFail($director->department_id)->employees()->where('id', '<>', $director_id)->get();
     }
 }
