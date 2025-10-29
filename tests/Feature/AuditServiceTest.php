@@ -14,8 +14,9 @@ describe('AuditService', function () {
     $service = new AuditService();
     $user = User::factory()->create();
     $sqlDesc = "SELECT * FROM users WHERE id = 1; DROP TABLE audit_trail; --";
-    $audit = $service->logAction($user->user_id, $user->u_name, 'SQL_TEST', $sqlDesc);
-    expect($audit->at_description)->toBe($sqlDesc);
+    $displayName = $user->first_name.' '.$user->last_name;
+    $audit = $service->logAction($user->id, $displayName, 'SQL_TEST', $sqlDesc);
+    expect($audit->target_id)->toBe($sqlDesc);
     // Optionally, check that the audit_trail table still exists (if you want to be extra safe)
     expect(Schema::hasTable('audit_trail'))->toBeTrue();
   });
@@ -29,26 +30,28 @@ describe('AuditService', function () {
 
   it('logs an action with special characters in all fields', function () {
     $service = new AuditService();
-    $user = User::factory()->create(['u_name' => '!@#$_User']);
+    $user = User::factory()->create(['first_name' => '!@#$_User', 'last_name' => '']);
     $action = '!@#$%^&*()_ACTION';
     $desc = 'Description with emoji 🚀 and symbols ©®™';
-    $audit = $service->logAction($user->user_id, $user->u_name, $action, $desc);
-    expect($audit->at_user)->toBe('!@#$_User')
-      ->and($audit->at_action)->toBe($action)
-      ->and($audit->at_description)->toBe($desc);
+    $displayName = $user->first_name;
+    $audit = $service->logAction($user->id, $displayName, $action, $desc);
+    expect($audit->target_type)->toBe('!@#$_User')
+      ->and($audit->action)->toBe($action)
+      ->and($audit->target_id)->toBe($desc);
   });
   it('logAction returns an AuditTrail model instance', function () {
     $service = new AuditService();
     $user = User::factory()->create();
-    $audit = $service->logAction($user->user_id, $user->u_name, 'MODEL_INSTANCE', 'Should return model instance');
+    $displayName = $user->first_name.' '.$user->last_name;
+    $audit = $service->logAction($user->id, $displayName, 'MODEL_INSTANCE', 'Should return model instance');
     expect($audit)->toBeInstanceOf(AuditTrail::class);
   });
 
   it('logs a standard action', function () {
     $service   = new AuditService();
     $user      = User::factory()->create();
-    $userId    = $user->user_id;   // matches your FK
-    $userName  = $user->u_name;
+    $userId    = $user->id;
+    $userName  = $user->first_name.' '.$user->last_name;
     $action    = 'EVENT_CREATED';
     $desc      = 'User created an event.';
 
@@ -56,16 +59,16 @@ describe('AuditService', function () {
 
     expect($audit)->toBeInstanceOf(AuditTrail::class)
       ->and($audit->user_id)->toBe($userId)
-      ->and($audit->at_action)->toBe($action)
-      ->and($audit->at_description)->toBe($desc)
-      ->and($audit->at_user)->toBe($userName);
+      ->and($audit->action)->toBe($action)
+      ->and($audit->target_id)->toBe($desc)
+      ->and($audit->target_type)->toBe($userName);
   });
 
   it('logs an admin action', function () {
     $service   = new AuditService();
     $admin     = User::factory()->create();
-    $adminId   = $admin->user_id;
-    $userName  = $admin->u_name;
+    $adminId   = $admin->id;
+    $userName  = $admin->first_name.' '.$admin->last_name;
     $action    = 'ADMIN_OVERRIDE';
     $desc      = 'Admin performed override.';
 
@@ -73,18 +76,19 @@ describe('AuditService', function () {
 
     expect($audit)->toBeInstanceOf(AuditTrail::class)
       ->and($audit->user_id)->toBe($adminId)
-      ->and($audit->at_action)->toBe($action)
-      ->and($audit->at_description)->toBe($desc)
-      ->and($audit->at_user)->toBe($userName);
+      ->and($audit->action)->toBe($action)
+      ->and($audit->target_id)->toBe($desc)
+      ->and($audit->target_type)->toBe($userName);
   });
 
   it('logs an action with empty description', function () {
     $service  = new AuditService();
     $user     = User::factory()->create();
 
-    $audit = $service->logAction($user->user_id, $user->u_name, 'EMPTY_DESC', '');
+    $displayName = $user->first_name.' '.$user->last_name;
+    $audit = $service->logAction($user->id, $displayName, 'EMPTY_DESC', '');
 
-    expect($audit->at_description)->toBe('');
+    expect($audit->target_id)->toBe('');
   });
 
   /*it('truncates long action codes to 255 chars', function () {
@@ -101,28 +105,28 @@ describe('AuditService', function () {
 
   it('logs an action with edge-case user names', function () {
     $service = new AuditService();
-    $u1 = User::factory()->create(['u_name' => '']);
-    $u2 = User::factory()->create(['u_name' => str_repeat('A', 100)]);
-    $u3 = User::factory()->create(['u_name' => 'Üser!@#$']);
+    $u1 = User::factory()->create(['first_name' => '', 'last_name' => '']);
+    $u2 = User::factory()->create(['first_name' => str_repeat('A', 100), 'last_name' => '']);
+    $u3 = User::factory()->create(['first_name' => 'Üser!@#$', 'last_name' => '']);
 
-    $a1 = $service->logAction($u1->user_id, $u1->u_name, 'EDGE_USER', 'Empty user name');
-    $a2 = $service->logAction($u2->user_id, $u2->u_name, 'EDGE_USER', 'Long user name');
-    $a3 = $service->logAction($u3->user_id, $u3->u_name, 'EDGE_USER', 'Special chars user name');
+    $a1 = $service->logAction($u1->id, $u1->first_name, 'EDGE_USER', 'Empty user name');
+    $a2 = $service->logAction($u2->id, $u2->first_name, 'EDGE_USER', 'Long user name');
+    $a3 = $service->logAction($u3->id, $u3->first_name, 'EDGE_USER', 'Special chars user name');
 
-    expect($a1->at_user)->toBe('');
-    expect($a2->at_user)->toBe(str_repeat('A', 100));
-    expect($a3->at_user)->toBe('Üser!@#$');
+    expect($a1->target_type)->toBe('');
+    expect($a2->target_type)->toBe(str_repeat('A', 100));
+    expect($a3->target_type)->toBe('Üser!@#$');
   });
 
   it('logs duplicate actions and both are stored', function () {
     $service = new AuditService();
     $user    = User::factory()->create();
 
-    $a1 = $service->logAction($user->user_id, $user->u_name, 'DUPLICATE', 'Duplicate test');
-    $a2 = $service->logAction($user->user_id, $user->u_name, 'DUPLICATE', 'Duplicate test');
+    $displayName = $user->first_name.' '.$user->last_name;
+    $a1 = $service->logAction($user->id, $displayName, 'DUPLICATE', 'Duplicate test');
+    $a2 = $service->logAction($user->id, $displayName, 'DUPLICATE', 'Duplicate test');
 
-    // PK is at_id, not id
-    expect($a1->at_id)->not->toBe($a2->at_id);
+    expect($a1->id)->not->toBe($a2->id);
   });
 
   // This test was incompatible with your FK constraint and should be removed or rewritten.
