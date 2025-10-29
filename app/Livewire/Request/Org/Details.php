@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Request\Pending\Approver;
+namespace App\Livewire\Request\Org;
 
 use App\Models\Event;
 use Livewire\Component;
@@ -18,18 +18,18 @@ class Details extends Component
     {
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
-        $this->redirectRoute('approver.index');
+        $this->redirectRoute('org.index');
     }
 
     public function approve()
     {
         // ... do your action
-        $this->redirectRoute('approver.index');
+        $this->redirectRoute('org.index');
     }
 
     public function back()
     {
-        $this->redirectRoute('approver.index');
+        $this->redirectRoute('org.index');
     }
 
 
@@ -39,6 +39,6 @@ class Details extends Component
             ['title' => 'Syllabus', 'url' => asset('23382.pdf'), 'description' => 'Fall 2025'],
             ['title' => 'Reglamento interno', 'url' => asset('REGLAMENTO-INTERNO.pdf'), 'description' => 'Fall 2025']
         ];
-        return view('livewire.request.pending.approver.details', compact('docs'));
+        return view('livewire.request.org.details', compact('docs'));
     }
 }

@@ -1,11 +1,12 @@
 <div>
     <h1>Event Details</h1>
-    {{-- If you look to others for fulfillment, you will never truly be fulfilled. --}}
+
     <div class="card container">
         <div class="card-body" style="text-align: justify">
             <h3>Event Name: {{$event->title}}</h3>
             <h5>Student Organization: {{$event->organization_nexo_name}}</h5>
             Description: {{$event->description}}
+            <br>
             <br>
             Day Submitted: {{$event->created_at}}
             <br>
@@ -36,15 +37,32 @@
 
 
         </div>
-        <div class="ms-auto d-flex gap-2 mb-3 container-fluid">
-        <button type="button" class="btn btn-success d-flex" data-bs-toggle="modal" data-bs-target="#approveModal">
-            Approve
-        </button>
+        <br>
 
-        <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
-            Reject
-        </button>
+        {{--Documents--}}
+        <div class="container-fluid">
+            <h5>Documents</h5>
+            <livewire:documents.list-with-preview :docs="$docs" />
+            <br>
         </div>
+
+        {{--Buttons--}}
+        <div class="d-flex gap-2 mb-3 container-fluid">
+            <button type="button" wire:click="approve" class="btn btn-outline-success d-flex" wire:target="approve">
+                Approve
+            </button>
+
+            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+                Reject
+            </button>
+
+            <button type="button" wire:click="approve" class="btn btn-outline-secondary ms-auto"
+                    wire:target="back">
+                Back
+            </button>
+
+        </div>
+
 
         <div class="modal fade"
              id="denyModal"
@@ -68,16 +86,17 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button class="btn btn-primary"
+                        <button class="btn btn-outline-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
-                            Reject Approval
+                            Reject Request
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-    </div>
+
+       </div>
 </div>

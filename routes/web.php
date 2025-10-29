@@ -11,20 +11,14 @@ Route::get('/', function () {
     //return ['Laravel' => app()->version()];
 })->name('home');
 
-//Route::get('/approver', function () {
+
+//Route::get('/org', function () {
 //    $events = Event::query()
 //        ->oldest('created_at')
 //        ->paginate(8);
-//    return view('requests.pending', compact('events'));
-//})->name('approver');
-
-Route::get('/org', function () {
-    $events = Event::query()
-        ->oldest('created_at')
-        ->paginate(8);
-
-    return view('requests.org_history', compact('events'));
-});
+//
+//    return view('requests.org_history', compact('events'));
+//});
 
 Route::get('approver/requests/pending',function(){
     $events = Event::query()
@@ -34,14 +28,14 @@ Route::get('approver/requests/pending',function(){
     return view('requests.pending.approver.index', compact('events'));
 })->name('approver.index');
 
-Route::get('org/requests/pending',function(){
+Route::get('org/requests/',function(){
 
     $events = Event::query()
         ->oldest('created_at')
         ->paginate(8);
-//    dd($events);
-    return view('requests.pending.org.index');
-});
+
+    return view('requests.org.index');
+})->name('org.index');
 
 //Route::get('/request/pending/approver/{id}',App\Livewire\Request\Details::class)->name('approver.requests.details');
 
@@ -55,7 +49,7 @@ Route::get('/approver/requests/pending/{id}',function (){
 Route::get('/org/requests/pending/{id}',function (){
     $event = Event::query()->findOrFail(request()->id);
 
-    return view('requests.pending.org.details', compact('event'));
+    return view('requests.org.details', compact('event'));
 
 })->name('org.requests');
 
@@ -71,15 +65,8 @@ Route::get('/department/venues', function (){
    return view('venues.director.venues');
 });
 
-Route::get('/test', function () {
+Route::get('/calendar', function () {
     return view('calendar');
-//    return view('components.layouts.auth',[
-//        'slot' => 'example',
-//    ]);
-//    return new \App\Mail\AdvisorEmail([
-//        'Event Name'=> 'Resume Workshop',
-//        'Event Location'=> 'S-121',
-//    ]);
 });
 
 
@@ -88,7 +75,7 @@ Route::get('/forms', function () {
     return view('form');
 });
 
-Route::get('/idk',EventRequestForm::class);
+
 
 require __DIR__.'/saml2.php';
 //require __DIR__.'/auth.php';

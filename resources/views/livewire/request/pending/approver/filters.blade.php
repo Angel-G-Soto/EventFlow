@@ -66,7 +66,7 @@
         </div>
     </div>
 
-    <div class="accordion my-2 w-25" id="eventFilters">
+    <div class="accordion my-2 w-25" id="orgFilters">
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingOrg">
                 <button class="accordion-button collapsed" type="button"

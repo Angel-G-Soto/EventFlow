@@ -6,7 +6,7 @@
 
 
         <div class="card shadow-sm mb-3">
-            <livewire:filters/>
+            <livewire:request.pending.approver.filters/>
 
             <div class="card-body">
 
@@ -51,15 +51,14 @@
                                 <td class="fw-medium">{{ $event->created_at}}</td>
                                 <td class="fw-medium text-end">
                                     <button class="btn btn-outline-secondary text-end" style="text-align: right"
-                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Configure"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
                                             onclick="window.location='{{ route('approver.requests',['id'=>$event->id]) }}'">
                                         <i class="bi bi-eye me-1"></i> View details
                                     </button>
                                 </td>
-
                             </tr>
                         @empty
-                            <tr><td colspan="10" class="text-center text-secondary py-4">No venues found.</td></tr>
+                            <tr><td colspan="10" class="text-center text-secondary py-4">No requests found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

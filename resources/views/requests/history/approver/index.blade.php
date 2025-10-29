@@ -44,7 +44,6 @@
                 </li>
             @endforeach
         </ul>
-
         <div class="mt-3">
             {{ $events->withQueryString()->onEachSide(1)->links() }}
         </div>

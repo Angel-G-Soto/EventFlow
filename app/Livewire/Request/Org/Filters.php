@@ -1,20 +1,31 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Request\Org;
 
-use App\Models\Event;
-use Illuminate\Support\Facades\DB;
-use Livewire\Component;
-use Livewire\Attributes\Url;
 use App\Models\Category;
+use App\Models\Event;
 use App\Models\Venue;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Url;
+use Livewire\Component;
 
 class Filters extends Component
 {
     // Option lists
     public array $categories = [];
     public array $venues = [];
-    public array $orgs = []; // keep if you need it
+    public array $orgs = [];
+    public array $statusOptions = [
+        'pending approval - advisor',
+        'pending approval - manager',
+        'pending approval - event approver',
+        'pending approval - deanship of administration',
+        'approved',
+        'rejected',
+        'cancelled',
+        'withdrawn',
+        'completed',
+    ];
 
     // Selections (URL syncing optional)
     #[Url(as: 'categories', history: true)]
@@ -25,6 +36,8 @@ class Filters extends Component
 
     #[Url(as: 'orgs', history: true)]
     public array $selectedOrgs = [];
+    #[Url(as: 'orgs', history: true)]
+    public array $selectedStatuses = [];
 
     public function mount(): void
     {
@@ -45,7 +58,9 @@ class Filters extends Component
     {
         if ($which === 'categories') $this->selectedCategories = array_column($this->categories, 'id');
         if ($which === 'venues')     $this->selectedVenues     = array_column($this->venues, 'id');
-        if ($which === 'orgs')       $this->selectedOrgs       = array_column($this->orgs, 'id');
+        if ($which === 'orgs')       $this->selectedOrgs       = array_column($this->orgs, 'organization_nexo_id');
+        if ($which === 'statuses')   $this->selectedStatuses   = $this->statusOptions;
+        $this->apply();
     }
 
     public function clear(string $which): void
@@ -53,6 +68,7 @@ class Filters extends Component
         if ($which === 'categories') $this->selectedCategories = [];
         if ($which === 'venues')     $this->selectedVenues     = [];
         if ($which === 'orgs')       $this->selectedOrgs       = [];
+        $this->apply();
     }
 
     public function apply(): void
@@ -71,6 +87,6 @@ class Filters extends Component
 
     public function render()
     {
-        return view('livewire.filters');
+        return view('livewire.request.org.filters');
     }
 }
