@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EventRequestHistory;
+use App\Models\EventHistory;
 use Illuminate\Http\Request;
 
 class EventRequestHistoryController extends Controller
@@ -34,7 +34,7 @@ class EventRequestHistoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(EventRequestHistory $eventRequestHistory)
+    public function show(EventHistory $eventRequestHistory)
     {
         //
     }
@@ -42,7 +42,7 @@ class EventRequestHistoryController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(EventRequestHistory $eventRequestHistory)
+    public function edit(EventHistory $eventRequestHistory)
     {
         //
     }
@@ -50,7 +50,7 @@ class EventRequestHistoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, EventRequestHistory $eventRequestHistory)
+    public function update(Request $request, EventHistory $eventRequestHistory)
     {
         //
     }
@@ -58,7 +58,7 @@ class EventRequestHistoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(EventRequestHistory $eventRequestHistory)
+    public function destroy(EventHistory $eventRequestHistory)
     {
         //
     }

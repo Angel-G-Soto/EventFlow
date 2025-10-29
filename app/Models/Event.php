@@ -3,19 +3,58 @@
 namespace App\Models;
 
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Http\Request;
+use \Illuminate\Database\Eloquent\Collection;
 
 class Event extends Model
 {
+<<<<<<< HEAD
     protected $table = 'Event';              // @var string The table associated with the model.
     protected $primaryKey = 'event_id';      // @var string The primary key associated with the table.
+=======
+    use HasFactory;
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * The attributes that are mass assignable.
+     * @var string[]
+     */
+    protected $fillable = [
+        'creator_id',
+        'venue_id',
+        'organization_nexo_id',
+        'organization_nexo_name',
+        'organization_advisor_email',
+        'organization_advisor_name',
+        'organization_advisor_phone',
+        'student_number',
+        'student_phone',
+        'title',
+        'description',
+        'start_time',
+        'end_time',
+        'status',
+        'guests',
+        'handles_food',
+        'use_institutional_funds',
+        'external_guest',
+    ];
+>>>>>>> origin/restructuring_and_optimizations
 
   
 
+<<<<<<< HEAD
     /**
      * The attributes that are mass assignable.
      * @var string[]
@@ -44,6 +83,22 @@ class Event extends Model
 
     /**
      * Get the venue for the event request.
+=======
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
+
+    /**
+     * Relationship between the Event and User
+     * @return BelongsTo
+     */
+    public function requester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creator_id');
+    }
+
+    /**
+     * Relationship between the Event and Venue
+     * @return BelongsTo
+>>>>>>> origin/restructuring_and_optimizations
      */
     public function venue(): BelongsTo
     {
@@ -80,45 +135,57 @@ class Event extends Model
     public function history(): HasMany
     {
         return $this->hasMany(EventHistory::class);
+<<<<<<< HEAD
+=======
     }
 
-//    /**
-//     * This method is used to update or create an event based on the request input.
-//     * NOTE: This function does not update the documents. Use the documents equivalent
-//     * method to update or create files.
-//     *
-//     * @param Request $request
-//     * @return Event
-//     */
-//    public function updateOrCreateEvent(Request $request): Event
-//    {
-//
-//        if (request()->has('event_id'))
-//        {
-//            $event = self::find($request->event_id);
-//        }
-//        else
-//        {
-//            $event = new self();
-//        }
-//
-//        if ($request->has('e_student_id')) $event->e_student_id = $request->e_student_id;
-//        if ($request->has('e_student_phone')) $event->e_student_phone = $request->e_student_phone;
-//        if ($request->has('e_organization')) $event->e_organization = $request->e_organization;
-//        if ($request->has('e_advisor_name')) $event->e_advisor_name = $request->e_advisor_name;
-//        if ($request->has('e_advisor_email')) $event->e_advisor_email = $request->e_advisor_email;
-//        if ($request->has('e_advisor_phone')) $event->e_advisor_phone = $request->e_advisor_phone;
-//        if ($request->has('e_title')) $event->e_title = $request->e_title;
-//        if ($request->has('e_category')) $event->e_category = $request->e_category;
-//        if ($request->has('e_description')) $event->e_description = $request->e_description;
-//        if ($request->has('e_status')) $event->e_status = $request->e_status;
-//        if ($request->has('e_start_date')) $event->e_start_date = $request->e_start_date;
-//        if ($request->has('e_end_date')) $event->e_end_date = $request->e_end_date;
-//        if ($request->has('e_guests')) $event->e_guests = $request->e_guests;
-//        if ($request->has('venue_id')) $event->venue_id = $request->venue_id;
-//
-//        $event->save();
-//
-//        return $event;
-//    }
+    /**
+     *
+     * @return BelongsToMany
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class);
+    }
+
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+    public function getHistory(): Collection
+    {
+        return $this->history()->get();
+    }
+
+    public function getCurrentApprover(): User
+    {
+        return $this->history()->orderBy('created_at', 'desc')->first()->approver;
+    }
+
+    public function getCurrentState(): User
+    {
+        return $this->status;
+    }
+
+    public function getCategories(): Collection
+    {
+        return $this->categories()->get();
+    }
+
+    public function getVenue(): Venue
+    {
+        return $this->venue;
+>>>>>>> origin/restructuring_and_optimizations
+    }
+
+    public function getEventsByState(?string $state): Collection
+    {
+        if (!in_array(
+            strtolower($state),
+            ['draft', 'pending approval - advisor', 'pending approval - manager', 'pending approval - event approver', 'pending approval - deanship of administration', 'approved', 'rejected', 'cancelled', 'withdrawn', 'completed']
+        )
+        ){
+            throw new \InvalidArgumentException('');
+        }
+        elseif ($state === null) return $this->events()->get();
+        return $this->events()->where('state', strtolower($state))->get();
+    }
 }

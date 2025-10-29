@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Auth\Access\Response;
+use function Pest\Laravel\isAuthenticated;
 
 class VenuePolicy
 {
@@ -13,7 +14,7 @@ class VenuePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->getRoleNames()->contains('system-admin');
     }
 
     /**
@@ -21,7 +22,8 @@ class VenuePolicy
      */
     public function view(User $user, Venue $venue): bool
     {
-        return false;
+        return (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
+                && $user->department_id == $venue->department_id);
     }
 
     /**
@@ -29,7 +31,7 @@ class VenuePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->getRoleNames()->contains('system-admin');
     }
 
     /**
@@ -37,30 +39,38 @@ class VenuePolicy
      */
     public function update(User $user, Venue $venue): bool
     {
-        return false;
+        return $user->getRoleNames()->contains('system-admin');
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Venue $venue): bool
+    public function delete(User $user): bool
     {
-        return false;
+        return $user->getRoleNames()->contains('system-admin');
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Determine whether the user can assign the manager to the venue
      */
-    public function restore(User $user, Venue $venue): bool
+    public function assignManager(User $user, Venue $venue): bool
     {
-        return false;
+        return $user->getRoleNames()->contains('department-director') && $user->department_id == $venue->department_id;
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Determine whether the user can update the model's requirements.
      */
-    public function forceDelete(User $user, Venue $venue): bool
+    public function updateRequirements(User $user, Venue $venue): bool
     {
-        return false;
+        return $user->getRoleNames()->contains('venue-manager') && $user->department_id == $venue->department_id;
+    }
+
+    /**
+     * Determine whether the user can update the model's availability.
+     */
+    public function updateAvailability(User $user, Venue $venue): bool
+    {
+        return $user->getRoleNames()->contains('venue-manager') && $user->department_id == $venue->department_id;
     }
 }

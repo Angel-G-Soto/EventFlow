@@ -3,11 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+<<<<<<< HEAD
+=======
+use Illuminate\Database\Eloquent\Model;
+>>>>>>> origin/restructuring_and_optimizations
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+<<<<<<< HEAD
+=======
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Laravel\Fortify\TwoFactorAuthenticatable;
+>>>>>>> origin/restructuring_and_optimizations
 
 class User extends Authenticatable
 {
@@ -22,9 +32,19 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+<<<<<<< HEAD
         'department_id',            // FK (Nullable) to Deparments
         'u_name',
         'u_email'
+=======
+        /*'name',*/
+        'department_id',
+        'email',
+        'password',
+        'first_name',
+        'last_name',
+        'auth_type',
+>>>>>>> origin/restructuring_and_optimizations
     ];
 
     /**
@@ -43,6 +63,7 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class, 'Role Assignment', 'user_id', 'role_id');
     }
 
+<<<<<<< HEAD
     /**
      * Get the event requests created by the user.
      */
@@ -59,3 +80,55 @@ class User extends Authenticatable
         return $this->hasMany(EventRequest::class, 'e_current_approver_id');
     }
 }
+=======
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
+
+    /**
+     * Relationship between the User and Department
+     * @return BelongsTo
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Relationship between the User and Venue
+     * @return HasMany
+     */
+    public function manages(): HasMany
+    {
+        return $this->hasMany(Venue::class, 'manager_id');
+    }
+
+    /**
+     * Relation between User and Event Request History
+     * @return HasMany
+     */
+    public function requestActionLog(): HasMany
+    {
+        return $this->hasMany(EventHistory::class, 'approver_id');
+    }
+
+    /**
+     * Relation between User and Events
+     * @return HasMany
+     */
+    public function requests(): HasMany
+    {
+        return $this->hasMany(Event::class, 'creator_id');
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'user_role');
+    }
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+
+    public function getRoleNames(): Collection
+    {
+        return $this->roles()->pluck('name')->unique();
+    }
+}
+>>>>>>> origin/restructuring_and_optimizations
