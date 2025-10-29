@@ -55,13 +55,13 @@
         </ul>
 
         <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-success-subtle text-white rounded-circle p-2" type="button" title="Notifications">
+          <button class="btn btn-success-subtle text-white p-2" type="button" title="Notifications">
             <i class="bi bi-bell"></i>
           </button>
-          <button class="btn btn-success-subtle text-white rounded-circle p-2" type="button" title="Help">
+          <button class="btn btn-success-subtle text-white p-2" type="button" title="Help">
             <i class="bi bi-question-lg"></i>
           </button>
-          <button class="btn btn-outline-light rounded-circle p-2" type="button" title="Profile">
+          <button class="btn btn-success-subtle text-white p-2" type="button" title="Profile">
             <i class="bi bi-person"></i>
           </button>
         </div>
