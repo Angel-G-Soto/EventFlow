@@ -126,6 +126,14 @@ class VenuesIndex extends Component
     }
 
     /**
+     * No-op handler when CSV upload is disabled; emits an informational toast.
+     */
+    public function csvUploadDisabled(): void
+    {
+        $this->dispatch('toast', message: 'CSV upload is disabled');
+    }
+
+    /**
      * Validates the CSV file, and then imports the venues from the CSV file.
      *
      * The CSV file is expected to have the following columns:
@@ -309,10 +317,6 @@ class VenuesIndex extends Component
         $this->dispatch('toast', message: 'Venue saved');
 
         $this->reset(['justification', 'actionType', 'editId']);
-
-        if ($isCreating) {
-            $this->jumpToLastPageAfterCreate();
-        }
     }
 
     /**

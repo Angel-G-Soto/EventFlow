@@ -28,7 +28,11 @@ class AuditTrailIndex extends Component
   public ?int $detailsId = null;        // for modal
   public array $details = [];
 
-  // Keep page in sync when filters change
+  /**
+   * Keep pagination in sync when filter fields change.
+   *
+   * @param string $field The Livewire-updated field name.
+   */
   public function updated($field)
   {
     if (in_array($field, ['userId', 'action', 'from', 'to', 'adminOnly', 'perPage'])) {
@@ -36,6 +40,9 @@ class AuditTrailIndex extends Component
     }
   }
 
+  /**
+   * Reset all filters to their defaults and reset pagination.
+   */
   public function clearFilters(): void
   {
     $this->reset(['userId', 'action', 'from', 'to', 'adminOnly']);
@@ -43,6 +50,13 @@ class AuditTrailIndex extends Component
     $this->resetPage();
   }
 
+  /**
+   * Populate and show the details modal for the given audit record.
+   *
+   * Works with both demo (no DB) and real DB rows.
+   *
+   * @param int $auditId The audit record identifier to display.
+   */
   public function showDetails(int $auditId): void
   {
     // If we're in demo mode (no rows in DB), pull details from dummy rows
@@ -100,6 +114,11 @@ class AuditTrailIndex extends Component
     $this->dispatch('bs:open', id: 'auditDetails'); // Bootstrap modal opener
   }
 
+  /**
+   * Resolve the primary key column name for the audit_trail table.
+   *
+   * @return string|null The column name if found, otherwise null.
+   */
   private function resolveIdColumn(): ?string
   {
     foreach (['audit_id', 'id', 'at_id'] as $col) {
@@ -110,6 +129,11 @@ class AuditTrailIndex extends Component
     return null;
   }
 
+  /**
+   * Build the base query with aliased columns to normalize schema variations.
+   *
+   * @return \Illuminate\Database\Eloquent\Builder
+   */
   protected function baseQuery()
   {
     // Alias common column variants to what the view expects.
@@ -162,6 +186,11 @@ class AuditTrailIndex extends Component
     return collect($rows);
   }
 
+  /**
+   * Render the audit trail index view using either dummy data or DB records.
+   *
+   * @return \Illuminate\Contracts\View\View
+   */
   public function render()
   {
     // If table is missing or empty, serve in-memory dummy data for development.

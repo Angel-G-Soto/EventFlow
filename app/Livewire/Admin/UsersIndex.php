@@ -17,6 +17,9 @@ class UsersIndex extends Component
     use UserFilters, UserEditState;
 
     public array $users = [];
+    /**
+     * Initialize the component by loading the base list of users from the repository.
+     */
     public function mount()
     {
         $this->users = UserRepository::all();
@@ -410,7 +413,10 @@ class UsersIndex extends Component
     }
 
     /**
-     * Returns true if any of the given roles do not require a department.
+     * Determine if any of the given roles do not require a department.
+     *
+     * @param array<int,string> $roles The set of role names to evaluate.
+     * @return bool True when at least one role is exempt from having a department.
      */
     protected function roleExemptsDepartment(array $roles): bool
     {

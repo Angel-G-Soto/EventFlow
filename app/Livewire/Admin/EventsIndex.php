@@ -32,6 +32,9 @@ class EventsIndex extends Component
      */
     public array $categoryPool = [];
 
+    /**
+     * Initialize the component with in-memory event requests and a category pool generated from factories.
+     */
     public function mount(): void
     {
         // Generate a consistent set of fake events without touching the DB
@@ -180,6 +183,11 @@ class EventsIndex extends Component
         $this->dispatch('bs:open', id: 'oversightEdit');
     }
 
+    /**
+     * Open a read-only view modal for a specific request, pre-filling the view state.
+     *
+     * @param int $id The ID of the request to display.
+     */
     public function openView(int $id): void
     {
         $r = $this->filtered()->firstWhere('id', $id);
@@ -265,9 +273,6 @@ class EventsIndex extends Component
         $this->dispatch('bs:close', id: 'oversightEdit');
         $this->dispatch('toast', message: 'Event saved');
         $this->reset(['actionType', 'justification']);
-        if (!$isEditing) {
-            $this->jumpToLastPageAfterCreate();
-        }
     }
 
     /**
