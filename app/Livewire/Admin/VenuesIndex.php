@@ -333,7 +333,7 @@ class VenuesIndex extends Component
      *
      * This function will validate the justification entered by the user, and then delete the venue with the given ID.
      * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating whether the venue was permanently deleted or just deleted.
+     * Finally, it shows a toast message indicating the venue was deleted.
      */
     public function confirmDelete(): void
     {

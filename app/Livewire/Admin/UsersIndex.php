@@ -206,7 +206,7 @@ class UsersIndex extends Component
      * Generates a unique user ID by taking the maximum ID of all users (both existing and new),
      * and incrementing it by 1.
      *
-     * This function also takes into account IDs that were soft/hard deleted this session, to avoid
+     * This function also takes into account IDs that were soft-deleted this session, to avoid
      * reusing them.
      *
      * @return int A unique user ID.
@@ -315,7 +315,7 @@ class UsersIndex extends Component
      *
      * This function will validate the justification entered by the user, and then delete the user with the given ID.
      * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating whether the user was permanently deleted or just deleted.
+     * Finally, it shows a toast message indicating the user was deleted.
      */
     public function confirmDelete(): void
     {

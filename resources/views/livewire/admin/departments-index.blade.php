@@ -121,7 +121,7 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit"><i class="bi bi-save me-1"></i>Save</button>
+          <button class="btn btn-primary" type="submit"><i class="bi bi me-1"></i>Save</button>
         </div>
       </form>
     </div>

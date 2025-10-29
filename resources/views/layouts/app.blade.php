@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en" data-bs-theme="light">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,40 +9,47 @@
   @vite(['resources/js/app.js'])
   @livewireStyles
 </head>
+
 <body class="bg-body-tertiary">
 
   <nav class="navbar navbar-expand-lg bg-success navbar-dark">
     <div class="container">
       <a class="navbar-brand fw-semibold" href="{{ url('/') }}">EventFlow</a>
-      <button class="navbar-toggler" type="button" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <button class="navbar-toggler" type="button" aria-controls="navMain" aria-expanded="false"
+        aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <div id="navMain" class="collapse navbar-collapse">
         <ul class="navbar-nav mx-auto">
           <li class="nav-item">
-            <a class="fw-bold nav-link {{ Route::is('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">
+            <a class="fw-bold nav-link {{ Route::is('admin.users') ? 'active' : '' }}"
+              href="{{ route('admin.users') }}">
               Users
             </a>
           </li>
           <li class="nav-item">
-            <a class="fw-bold nav-link {{ Route::is('admin.departments') ? 'active' : '' }}" href="{{ route('admin.departments') }}">
+            <a class="fw-bold nav-link {{ Route::is('admin.departments') ? 'active' : '' }}"
+              href="{{ route('admin.departments') }}">
               Departments
             </a>
           </li>
           <li class="nav-item">
-            <a class="fw-bold nav-link {{ Route::is('admin.venues') ? 'active' : '' }}" href="{{ route('admin.venues') }}">
+            <a class="fw-bold nav-link {{ Route::is('admin.venues') ? 'active' : '' }}"
+              href="{{ route('admin.venues') }}">
               Venues
             </a>
           </li>
           <li class="nav-item">
-            <a class="fw-bold nav-link {{ Route::is('admin.events') ? 'active' : '' }}" href="{{ route('admin.events') }}">
+            <a class="fw-bold nav-link {{ Route::is('admin.events') ? 'active' : '' }}"
+              href="{{ route('admin.events') }}">
               Events
             </a>
           </li>
           <li class="nav-item">
-            <a class="fw-bold nav-link {{ Route::is('admin.overrides') ? 'active' : '' }}" href="{{ route('admin.overrides') }}">
-              Overrides
+            <a class="fw-bold nav-link {{ Route::is('admin.audit') ? 'active' : '' }}"
+              href="{{ route('admin.audit') }}">
+              Audit Log
             </a>
           </li>
         </ul>
@@ -66,9 +74,9 @@
   </main>
 
   @livewireScripts
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
     const navCollapse = document.getElementById('navMain');
     const navToggler = document.querySelector('.navbar-toggler');
     
@@ -102,7 +110,8 @@
       }
     });
   });
-</script>
-<x-bs-bridge />
+  </script>
+  <x-bs-bridge />
 </body>
+
 </html>

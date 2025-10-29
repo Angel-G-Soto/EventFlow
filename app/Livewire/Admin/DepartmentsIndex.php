@@ -207,7 +207,7 @@ class DepartmentsIndex extends Component
    *
    * This function will validate the justification entered by the user, and then delete the department with the given ID.
    * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-   * Finally, it shows a toast message indicating whether the department was permanently deleted or just deleted.
+   * Finally, it shows a toast message indicating the department was deleted.
    */
   public function confirmDelete(): void
   {
@@ -233,7 +233,7 @@ class DepartmentsIndex extends Component
    *
    * This function will validate the justification entered by the user, and then delete the departments with the given IDs.
    * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-   * Finally, it shows a toast message indicating whether the departments were permanently deleted or just deleted.
+   * Finally, it shows a toast message indicating the departments were deleted.
    */
   // Bulk delete confirm removed
 
