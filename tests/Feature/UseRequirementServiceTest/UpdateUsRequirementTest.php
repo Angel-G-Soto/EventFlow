@@ -5,28 +5,43 @@ use App\Services\UseRequirementService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 beforeEach(function () {
-    $this->useRequirementService = new UseRequirementService();
+    $this->service = new UseRequirementService();
 });
 
-it('updates an existing use requirement name', function () {
-    $requirement = UseRequirement::factory()->create(['name' => 'Old Name']);
+it('updates a use requirement successfully', function () {
+    // Arrange
+    $requirement = UseRequirement::factory()->create([
+        'name' => 'name',
+        'hyperlink' => 'example.test',
+        'description' => 'description',
+    ]);
 
-    $updated = $this->useRequirementService->updateUseRequirement($requirement->id, 'New Name');
+    // Act
+    $updated = $this->service->updateUseRequirement(
+        $requirement->id,
+        'new name',
+        'new-example.test',
+        'new description'
+    );
 
     expect($updated)->toBeInstanceOf(UseRequirement::class)
-        ->and($updated->name)->toBe('New Name')
-        ->and(UseRequirement::find($requirement->id)->name)->toBe('New Name');
+        ->and($updated->id)->toEqual($requirement->id)
+        ->and($updated->name)->toEqual('new name')
+        ->and($updated->hyperlink)->toEqual('new-example.test')
+        ->and($updated->description)->toEqual('new description');
+
+    $this->assertDatabaseHas('use_requirements', [
+        'id' => $requirement->id,
+        'name' => 'new name',
+        'hyperlink' => 'new-example.test',
+        'description' => 'new description',
+    ]);
 });
 
-it('throws InvalidArgumentException for negative ID in updateUseRequirement', function () {
-    $this->expectException(InvalidArgumentException::class);
-    $this->expectExceptionMessage('UseRequirement ID must be a positive integer.');
+it('throws an exception if id is negative', function () {
+    $this->service->updateUseRequirement(-1, 'Name', 'link', 'desc');
+})->throws(InvalidArgumentException::class, 'UseRequirement ID must be a positive integer.');
 
-    $this->useRequirementService->updateUseRequirement(-2, 'Updated Name');
-});
-
-it('throws ModelNotFoundException if record does not exist in updateUseRequirement', function () {
-    $this->expectException(ModelNotFoundException::class);
-
-    $this->useRequirementService->updateUseRequirement(99999, 'Updated Name');
-});
+it('throws ModelNotFoundException if requirement does not exist', function () {
+    $this->service->updateUseRequirement(9999, 'Name', 'link', 'desc');
+})->throws(ModelNotFoundException::class);
