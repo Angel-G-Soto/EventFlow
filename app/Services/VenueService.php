@@ -140,7 +140,11 @@ class VenueService {
     }
 
     /**
-     * Returns a collection of all the available venues within the specified timeframe
+     * Retrieve all available venues within a specified timeframe.
+     *
+     * This method returns a collection of venues that are not booked for any approved events
+     * overlapping with the provided start and end times. The timeframe is inclusive: any event
+     * starting, ending, or fully covering the window will mark the venue as unavailable.
      *
      * @param DateTime $start_time
      * @param DateTime $end_time
@@ -174,8 +178,10 @@ class VenueService {
     }
 
     /**
-     * Finds the venue model that contains the provided id
+     * Find a Venue by its ID.
      *
+     * This method attempts to retrieve a Venue model that matches the given ID.
+     * The ID must be a positive integer. If no venue is found, the method returns null.
      * @param int $venue_id
      * @return Venue|null
      */
@@ -186,7 +192,10 @@ class VenueService {
     }
 
     /**
+     * Retrieve all venues associated with the department of a specific user.
      *
+     * This method fetches all Venue records where the department matches the department
+     * of the user with the provided ID. The user ID must be a positive integer.
      *
      * @param int $user_id
      * @return Collection
@@ -208,9 +217,12 @@ class VenueService {
  */
 
     /**
-     * This function assigns the manager to the venue.
-     * Assigning the manager to a venue of another department, removes privileges
-     * from the other.
+     * Assign a manager to a venue.
+     *
+     * This method assigns a given manager to the specified venue. If the venue
+     * already has a manager from another department, their privileges are removed.
+     * Both the manager and director must have the appropriate roles and belong
+     * to the same department as the venue.
      *
      * @param Venue $venue
      * @param User $manager
@@ -257,13 +269,11 @@ class VenueService {
  */
 
     /**
-     * Updates the attributes of the given menu.
-     * Attributes must be given on the following array format:
+     * Update the operating hours of a venue.
      *
-     * [
-     *     'opening_time' => time,
-     *     'closing_time' => time,
-     *  ]
+     * This method updates the opening and closing times of the given venue.
+     * The operation is performed by a manager with the 'venue-manager' role.
+     * If the venue does not exist, it will be created with the provided ID and hours.
      *
      * @param Venue $venue
      * @param Carbon $opening_hours
@@ -299,18 +309,22 @@ class VenueService {
     }
 
     /**
-     * Updates or creates the usage requirements for a specific venue.
+     * Update or create usage requirements for a specific venue.
      *
-     * The requirements must be organized as in the following structure:
+     * This method replaces all existing usage requirements of the given venue
+     * with the provided set. Each requirement must follow the structure below:
      *
      * [
      *      [
-     *          'name' => string,
-     *          'hyperlink' => string,
-     *          'description' => string
+     *         'name' => string,        // The name of the requirement
+     *         'hyperlink' => string,   // Optional URL for the requirement
+     *         'description' => string  // Description of the requirement
      *      ],
      *      ...
-     *  ]
+     * ]
+     *
+     * The operation can only be performed by a manager with the 'venue-manager' role
+     * who belongs to the same department as the venue.
      *
      *
      * @param Venue $venue
@@ -373,7 +387,11 @@ class VenueService {
     }
 
     /**
-     * Retrieves the requirements of the venue with the id provided
+     * Retrieve all usage requirements for a specific venue.
+     *
+     * This method fetches the requirements associated with the venue identified
+     * by the given ID. The venue ID must be a positive integer. If no venue is
+     * found with the provided ID, the method will throw a `ModelNotFoundException`.
      *
      * @param int $venue_id
      * @return Collection
@@ -396,7 +414,24 @@ class VenueService {
  */
 
     /**
-     * Create a new Venue.
+     * Create a new venue.
+     *
+     * This method allows a system administrator to create a new venue with the
+     * provided data. All required fields must be present, and the specified
+     * department must exist. Only users with the 'system-admin' role are allowed
+     * to perform this operation.
+     *
+     * [
+     *      'manager_id' => integer,
+     *      'department_id' => integer,
+     *      'name' => string,
+     *      'code' => string,
+     *      'features' => string,
+     *      'capacity' => integer,
+     *      'test_capacity' => integer,
+     *      'opening_time' => time,
+     *      'closing_time' => time,
+     *   ]
      *
      * @param array $data
      * @param User $admin
@@ -597,7 +632,12 @@ class VenueService {
     }
 
     /**
-     * Soft deletes all the venues provided on the array
+     * Soft deletes (deactivates) multiple venues.
+     *
+     * This method allows a system administrator to deactivate one or more venues.
+     * Each element in the `$venues` array must be an instance of the `Venue` model.
+     * Soft deletion ensures that the venue data is retained in the database but
+     * marked as deleted. An audit log is created for each deactivated venue.
      *
      * @param array $venues
      * @param User $admin
