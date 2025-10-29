@@ -39,7 +39,7 @@ class ProcessFileUpload implements ShouldQueue
             $path = Storage::disk('uploads_temp')->path($document->getNameOfFile());
 
             // Create scanning process
-            $scan = new Process(['clamscan', $path]);
+            $scan = new Process(['clamdscan', $path]);
 
             // Run process
             $scan->run();

@@ -2,9 +2,10 @@
 
 use App\Jobs\ProcessFileUpload;
 use App\Models\Document;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+
 it('scans and moves a clean file using ClamAV', function () {
 
     $file_name = 'session.txt';

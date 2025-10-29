@@ -2,11 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Services\AuditService;
-use App\Services\DepartmentService;
 use App\Services\UserService;
 use App\Services\VenueService;
-use App\Support\Adapters\VenueCsvParser;
+use App\Adapters\VenueCsvParser;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
@@ -39,7 +37,7 @@ class ProcessCsvFileUpload implements ShouldQueue
         $filePath = Storage::disk('uploads_temp')->path($this->file_name);
 
         // Create scanning process
-        $scan = new Process(['clamscan', $filePath]);
+        $scan = new Process(['clamdscan', $filePath]);
 
         // Run process
         $scan->run();
