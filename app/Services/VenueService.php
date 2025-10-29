@@ -1,6 +1,5 @@
 <?php
 namespace App\Services;
-use App\Models\Department;
 use App\Models\User;
 use App\Models\Event;
 use App\Models\UseRequirement;
@@ -8,12 +7,10 @@ use App\Models\Venue;
 use Carbon\Carbon;
 use DateTime;
 use Exception;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
-use Throwable;
 
 class VenueService {
 
@@ -28,7 +25,6 @@ class VenueService {
         $this->useRequirementService = $useRequirementService;
         $this->auditService = $auditService;
         $this->userService = $userService;
-        //$this->auditService = $auditService;
         //$this->EventService = $eventService
     }
 
@@ -198,6 +194,8 @@ class VenueService {
     }
 
     /**
+     * Finds the venue model that contains the provided id
+     *
      * @param int $venue_id
      * @return Venue|null
      */
@@ -208,10 +206,12 @@ class VenueService {
     }
 
     /**
+     *
+     *
      * @param int $user_id
      * @return Collection
      */
-    public function getVenues(int $user_id): Collection
+    public function getVenuesWithDirectorId(int $user_id): Collection
     {
         if ($user_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
         return Venue::where('department_id', $this->userService->findUserById($user_id)->department->id)->get();
@@ -425,13 +425,13 @@ class VenueService {
      */
     public function createVenue(array $data, User $admin): Venue
     {
-        if ($admin->getRoleNames()->contains('system-admin')) {
+        if (!$admin->getRoleNames()->contains('system-admin')) {
             throw new InvalidArgumentException('Only admins can create venues.');
         }
 
         // Validate mandatory fields exist
         $requiredKeys = [
-            'manager_id', 'department_id', 'name', 'code',
+            'department_id', 'name', 'code',
             'features', 'capacity', 'test_capacity'
         ];
 
@@ -441,10 +441,13 @@ class VenueService {
             }
         }
 
+        if((!$this->departmentService->getDepartmentByID($data['department_id'])))
+        {
+            throw new InvalidArgumentException('The manager_id or department_id does not exist.');
+        }
 
         $venue = new Venue();
 
-        $venue->manager_id    = $data['manager_id'];
         $venue->department_id = $data['department_id'];
         $venue->name          = $data['name'];
         $venue->code          = $data['code'];
@@ -457,8 +460,6 @@ class VenueService {
         $venue->save();
 
         return $venue;
-
-
     }
 
     /**
