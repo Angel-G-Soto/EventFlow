@@ -45,66 +45,64 @@ it('allows system-admin to view any venues', function () {
 });
 
 it('denies non-admin to view any venues', function () {
-    expect($this->policy->viewAny($this->regularUser))->toBeFalse();
+    expect($this->policy->viewAny($this->departmentDirector))->toBeFalse()
+        ->and($this->policy->viewAny($this->departmentManager))->toBeFalse()
+        ->and($this->policy->viewAny($this->regularUser))->toBeFalse();
 });
 
-it('allows proper roles to view a venue in their department', function () {
-    expect($this->policy->view($this->systemAdmin, $this->venue))->toBeTrue();
-    expect($this->policy->view($this->departmentDirector, $this->venue))->toBeTrue();
-    expect($this->policy->view($this->departmentManager, $this->venue))->toBeTrue();
+it('allows department-director or venue-manager to view venues in their department', function () {
+    expect($this->policy->view($this->departmentDirector, $this->venue))->toBeTrue()
+        ->and($this->policy->view($this->departmentManager, $this->venue))->toBeTrue();
 });
 
-it('denies access to users from other departments', function () {
-    expect($this->policy->view($this->otherDirector, $this->venue))->toBeFalse();
-    expect($this->policy->view($this->otherManager, $this->venue))->toBeFalse();
-    expect($this->policy->view($this->regularUser, $this->venue))->toBeFalse();
+it('denies users from other departments or regular users', function () {
+    expect($this->policy->view($this->otherDirector, $this->venue))->toBeFalse()
+        ->and($this->policy->view($this->otherManager, $this->venue))->toBeFalse()
+        ->and($this->policy->view($this->regularUser, $this->venue))->toBeFalse();
 });
 
 it('allows only system-admin to create a venue', function () {
-    expect($this->policy->create($this->systemAdmin))->toBeTrue();
-    expect($this->policy->create($this->departmentDirector))->toBeFalse();
-    expect($this->policy->create($this->departmentManager))->toBeFalse();
-    expect($this->policy->create($this->regularUser))->toBeFalse();
+    expect($this->policy->create($this->systemAdmin))->toBeTrue()
+        ->and($this->policy->create($this->departmentDirector))->toBeFalse()
+        ->and($this->policy->create($this->departmentManager))->toBeFalse()
+        ->and($this->policy->create($this->regularUser))->toBeFalse();
 });
 
-it('allows system-admin and correct department users to update a venue', function () {
-    expect($this->policy->update($this->systemAdmin, $this->venue))->toBeTrue();
-    expect($this->policy->update($this->departmentDirector, $this->venue))->toBeTrue();
-    expect($this->policy->update($this->departmentManager, $this->venue))->toBeTrue();
-});
-
-it('denies update for other departments and regular users', function () {
-    expect($this->policy->update($this->otherDirector, $this->venue))->toBeFalse();
-    expect($this->policy->update($this->otherManager, $this->venue))->toBeFalse();
-    expect($this->policy->update($this->regularUser, $this->venue))->toBeFalse();
+it('allows only system-admin to update a venue', function () {
+    expect($this->policy->update($this->systemAdmin, $this->venue))->toBeTrue()
+        ->and($this->policy->update($this->departmentDirector, $this->venue))->toBeFalse()
+        ->and($this->policy->update($this->departmentManager, $this->venue))->toBeFalse()
+        ->and($this->policy->update($this->regularUser, $this->venue))->toBeFalse();
 });
 
 it('allows only system-admin to delete a venue', function () {
-    expect($this->policy->delete($this->systemAdmin))->toBeTrue();
-    expect($this->policy->delete($this->departmentDirector))->toBeFalse();
-    expect($this->policy->delete($this->departmentManager))->toBeFalse();
-    expect($this->policy->delete($this->regularUser))->toBeFalse();
+    expect($this->policy->delete($this->systemAdmin))->toBeTrue()
+        ->and($this->policy->delete($this->departmentDirector))->toBeFalse()
+        ->and($this->policy->delete($this->departmentManager))->toBeFalse()
+        ->and($this->policy->delete($this->regularUser))->toBeFalse();
 });
 
-it('allows system-admin and department director to assign manager', function () {
-    expect($this->policy->assignManager($this->systemAdmin, $this->venue))->toBeTrue();
+it('allows department-director to assign manager in their department', function () {
     expect($this->policy->assignManager($this->departmentDirector, $this->venue))->toBeTrue();
 });
 
-it('denies assigning manager for department managers and other directors', function () {
-    expect($this->policy->assignManager($this->departmentManager, $this->venue))->toBeFalse();
-    expect($this->policy->assignManager($this->otherDirector, $this->venue))->toBeFalse();
-    expect($this->policy->assignManager($this->regularUser, $this->venue))->toBeFalse();
+it('denies assigning manager for other directors, managers, or regular users', function () {
+    expect($this->policy->assignManager($this->otherDirector, $this->venue))->toBeFalse()
+        ->and($this->policy->assignManager($this->departmentManager, $this->venue))->toBeFalse()
+        ->and($this->policy->assignManager($this->regularUser, $this->venue))->toBeFalse();
 });
 
-it('allows system-admin and correct department users to update requirements', function () {
-    expect($this->policy->updateRequirements($this->systemAdmin, $this->venue))->toBeTrue();
-    expect($this->policy->updateRequirements($this->departmentDirector, $this->venue))->toBeTrue();
-    expect($this->policy->updateRequirements($this->departmentManager, $this->venue))->toBeTrue();
+it('allows venue-manager to update requirements and availability in their department', function () {
+    expect($this->policy->updateRequirements($this->departmentManager, $this->venue))->toBeTrue()
+        ->and($this->policy->updateAvailability($this->departmentManager, $this->venue))->toBeTrue();
 });
 
-it('denies update requirements for users from other departments or regular users', function () {
-    expect($this->policy->updateRequirements($this->otherDirector, $this->venue))->toBeFalse();
-    expect($this->policy->updateRequirements($this->otherManager, $this->venue))->toBeFalse();
-    expect($this->policy->updateRequirements($this->regularUser, $this->venue))->toBeFalse();
+it('denies updating requirements or availability for other departments, directors, or regular users', function () {
+    expect($this->policy->updateRequirements($this->otherManager, $this->venue))->toBeFalse()
+        ->and($this->policy->updateRequirements($this->departmentDirector, $this->venue))->toBeFalse()
+        ->and($this->policy->updateRequirements($this->regularUser, $this->venue))->toBeFalse()
+        ->and($this->policy->updateAvailability($this->otherManager, $this->venue))->toBeFalse()
+        ->and($this->policy->updateAvailability($this->departmentDirector, $this->venue))->toBeFalse()
+        ->and($this->policy->updateAvailability($this->regularUser, $this->venue))->toBeFalse();
+
 });

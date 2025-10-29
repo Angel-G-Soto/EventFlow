@@ -79,3 +79,38 @@ it('allows mass assignment of fillable fields', function () {
         expect($event->{$key})->toEqual($value);
     }
 });
+
+it('returns all history records for the event', function () {
+    $event = Event::factory()->create();
+
+    $history1 = EventHistory::factory()->create(['event_id' => $event->id]);
+    $history2 = EventHistory::factory()->create(['event_id' => $event->id]);
+
+    $result = $event->getHistory();
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('id'))->toContain($history1->id, $history2->id);
+});
+
+it('returns the most recent approver for the event', function () {
+    $event = Event::factory()->create();
+
+    $oldApprover = User::factory()->create();
+    $newApprover = User::factory()->create();
+
+    EventHistory::factory()->create([
+        'event_id' => $event->id,
+        'approver_id' => $oldApprover->id,
+        'created_at' => now()->subDay(),
+    ]);
+
+    EventHistory::factory()->create([
+        'event_id' => $event->id,
+        'approver_id' => $newApprover->id,
+        'created_at' => now(),
+    ]);
+
+    $result = $event->getCurrentApprover();
+
+    expect($result->id)->toBe($newApprover->id);
+});

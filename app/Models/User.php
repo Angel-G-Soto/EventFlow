@@ -107,6 +107,10 @@ class User extends Authenticatable
         return $this->hasMany(Event::class, 'creator_id');
     }
 
+    /**
+     * Relation between User and Role
+     * @return BelongsToMany
+     */
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_role');

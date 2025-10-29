@@ -19,8 +19,12 @@ class DepartmentService {
     ///////////////////////////////////////////// CRUD Operations ////////////////////////////////////////////////
 
     /**
-     * Returns the department that has the provided id
+     * Retrieve a Department model by its unique identifier.
      *
+     * This method fetches the Department record that matches the provided ID.
+     * If no department exists with the given ID, the method returns null.
+     * The provided ID must be a positive integer; otherwise, an InvalidArgumentException is
+ *
      * @param int $id
      * @return Department|null
      */
@@ -34,8 +38,11 @@ class DepartmentService {
     }
 
     /**
-     * Returns a collection of all the available departments
+     * Retrieve a collection of all departments.
      *
+     * This method returns all Department records available in the database.
+     * If an unexpected error occurs during retrieval, an Exception is thrown.
+ *
      * @return Collection
      * @throws Exception
      */
@@ -48,17 +55,28 @@ class DepartmentService {
     }
 
     /**
-     * Updates or creates the departments provided within an array.
-     * The array must be structured as follows:
+     * Create or update multiple departments based on the provided data array.
+     *
+     * This method iterates through an array of department definitions, validating
+     * each entry for the required fields: `name` and `code`. For every department,
+     * it will either update the existing record (matched by `name` and `code`) or
+     * create a new one if it does not exist. All successfully processed departments
+     * are returned as a collection.
+     *
+     * Expected input structure:
      *
      * [
      *      [
-     *          name => 'name_of_department'
-     *          code => 'code_of_department'
+     *          'name' => 'Department of Engineering',
+     *          'code' => 'ENG',
+     *      ],
+     *      [
+     *          'name' => 'Department of Science',
+     *          'code' => 'SCI',
      *      ],
      *      ...
      * ]
-     *
+ *
      * @param array $departmentData
      * @return mixed
      * @throws Exception
@@ -104,7 +122,11 @@ class DepartmentService {
     }
 
     /**
-     * Deletes the department that contains the specified id
+     * Delete a department by its unique identifier.
+     *
+     * This method attempts to locate the Department record with the given ID and perform
+     * a soft or hard delete (depending on the model configuration). If the department
+     * does not exist or the provided ID is invalid, an appropriate exception is thrown.
      *
      * @param int $id
      * @return bool
@@ -129,7 +151,12 @@ class DepartmentService {
 //    }
 
     /**
-     * The method assigns the given department to the given user
+     * Assign a user to a specified department.
+     *
+     * This method updates the given user's associated department by setting their
+     * `department_id` to match the provided Department model. Both the Department
+     * and User records must exist in the database; otherwise, a ModelNotFoundException
+     * will be thrown. Upon successful update, the modified User instance is returned.
      *
      * @param Department $department
      * @param User $manager
@@ -159,8 +186,11 @@ class DepartmentService {
     }
 
     /**
-     * This function retrieves all the venues assigned to the provided
-     * department
+     * Retrieve all venues associated with a given department.
+     *
+     * This method fetches the Department model matching the provided instance’s ID
+     * and returns the collection of Venue records linked to it through the department’s
+     * relationship. If the department does not exist, a ModelNotFoundException is thrown.
      *
      * @param Department $department
      * @return Collection
@@ -173,7 +203,11 @@ class DepartmentService {
     }
 
     /**
-     * Retrieves the department that contains exactly the name provided
+     * Retrieve a department by its exact name.
+     *
+     * This method searches the database for a Department record whose `name`
+     * field matches the provided string exactly. If no matching department is found,
+     * the method returns null.
      *
      * @param string $name
      * @return Department|null
@@ -184,7 +218,12 @@ class DepartmentService {
     }
 
     /**
-     * Retrieves the employees that belong to the same department as the director
+     * Retrieve all employees who belong to the same department as the specified director.
+     *
+     * This method locates the director by their user ID, determines their associated
+     * department, and returns a collection of all employees within that department,
+     * excluding the director themselves. The provided director ID must be a positive
+     * integer and must correspond to a user who is assigned to a department.
      *
      * @param int $director_id
      * @return Collection

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Document;
+use App\Services\DocumentService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
@@ -27,7 +28,13 @@ class ProcessFileUpload implements ShouldQueue
     }
 
     /**
-     * Execute the job.
+     * Handles scanning and processing of uploaded documents.
+     *
+     * This method iterates through each document in the `$documents` collection,
+     * validates that it is an instance of the `Document` class, and scans it for viruses
+     * using `clamdscan`. Based on the scan result, the document is either moved from
+     * the temporary uploads storage to the permanent documents storage or deleted if infected.
+     *
      */
     public function handle(): void
     {
@@ -44,18 +51,21 @@ class ProcessFileUpload implements ShouldQueue
             // Run process
             $scan->run();
 
-            // Examine output and take decision (move to public folder or delete)
+            // Examine output and take decision (move to documents folder or delete)
             if (Str::contains($scan->getOutput(), 'OK'))
             {
                 // Move file
                 $contents = Storage::disk('uploads_temp')->get($document->getNameOfFile());
                 Storage::disk('documents')->put($document->getNameOfFile(), $contents);
                 Storage::disk('uploads_temp')->delete($document->getNameOfFile());
+                $document->file_path = 'storage/app/tmp/uploads/'.$document->getNameOfFile();
+                $document->save();
             }
             elseif(Str::contains($scan->getOutput(), 'FOUND'))
             {
                 // Delete file
                 Storage::disk('uploads_temp')->delete($document->getNameOfFile());
+                app(DocumentService::class)->deleteDocument($document);
             }
             else throw new ProcessFailedException($scan);
         }

@@ -103,41 +103,31 @@ class Event extends Model
 
 
     //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+
+    /**
+     * Retrieve the full approval or modification history for this model.
+     *
+     * This method returns all related history records associated with the current model,
+     * typically representing approval steps, changes, or actions performed over time.
+     *
+     * @return Collection
+     */
     public function getHistory(): Collection
     {
         return $this->history()->get();
     }
 
+    /**
+     * Get the user who most recently acted as approver for this model.
+     *
+     * This method fetches the latest history record (by creation date) and returns
+     * the associated approver user instance. It assumes that at least one history
+     * record exists; otherwise, a null reference error may occur.
+     *
+     * @return User
+     */
     public function getCurrentApprover(): User
     {
         return $this->history()->orderBy('created_at', 'desc')->first()->approver;
-    }
-
-    public function getCurrentState(): User
-    {
-        return $this->status;
-    }
-
-    public function getCategories(): Collection
-    {
-        return $this->categories()->get();
-    }
-
-    public function getVenue(): Venue
-    {
-        return $this->venue;
-    }
-
-    public function getEventsByState(?string $state): Collection
-    {
-        if (!in_array(
-            strtolower($state),
-            ['draft', 'pending approval - advisor', 'pending approval - manager', 'pending approval - event approver', 'pending approval - deanship of administration', 'approved', 'rejected', 'cancelled', 'withdrawn', 'completed']
-        )
-        ){
-            throw new \InvalidArgumentException('');
-        }
-        elseif ($state === null) return $this->events()->get();
-        return $this->events()->where('state', strtolower($state))->get();
     }
 }

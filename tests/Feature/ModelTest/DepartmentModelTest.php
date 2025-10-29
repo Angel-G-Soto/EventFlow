@@ -3,7 +3,7 @@
 use App\Models\Department;
 use App\Models\Venue;
 use App\Models\User;
-use App\Models\UseRequirement;
+use App\Models\Role;
 
 it('has many venues', function () {
     $department = Department::factory()->create();
@@ -32,4 +32,23 @@ it('allows mass assignment of fillable fields', function () {
     foreach ($data as $key => $value) {
         expect($department->{$key})->toEqual($value);
     }
+});
+
+it('returns the department director', function () {
+    $department = Department::factory()->create();
+
+    $directorRole = Role::factory()->create(['name' => 'department-director']);
+    $staffRole = Role::factory()->create(['name' => 'staff']);
+
+    $director = User::factory()->create();
+    $staff = User::factory()->create();
+
+    $department->employees()->saveMany([$director, $staff]);
+
+    $director->roles()->attach($directorRole);
+    $staff->roles()->attach($staffRole);
+
+    $result = $department->getDirector();
+
+    expect($result->id)->toBe($director->id);
 });

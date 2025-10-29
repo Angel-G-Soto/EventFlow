@@ -61,3 +61,93 @@ it('allows mass assignment of fillable fields', function () {
         expect($venue->{$key})->toEqual($value);
     }
 });
+
+/// METHODS
+
+it('returns the department id', function () {
+    $department = Department::factory()->create();
+    $venue = Venue::factory()->create([
+        'department_id' => $department->id,
+    ]);
+
+    expect($venue->getDepartmentID())->toBe($department->id);
+});
+
+it('returns enabled features', function () {
+    $venue = Venue::factory()->create([
+        'features' => '1010', // online and teaching enabled
+    ]);
+
+    expect($venue->getFeatures())->toEqual(['online', 'teaching']);
+});
+
+it('correctly checks if venue is open', function () {
+    $venue = Venue::factory()->create([
+        'opening_time' => '08:00:00',
+        'closing_time' => '18:00:00',
+    ]);
+
+    $openTime = new DateTime('2025-10-29 10:00:00');
+    $closedTime = new DateTime('2025-10-29 19:00:00');
+
+    expect($venue->isOpenAt($openTime))->toBeTrue()
+        ->and($venue->isOpenAt($closedTime))->toBeFalse();
+});
+
+it('handles overnight hours correctly', function () {
+    $venue = Venue::factory()->create([
+        'opening_time' => '20:00:00',
+        'closing_time' => '06:00:00', // overnight
+    ]);
+
+    $nightTime = new DateTime('2025-10-29 22:00:00');
+    $morningTime = new DateTime('2025-10-30 05:00:00');
+    $dayTime = new DateTime('2025-10-29 15:00:00');
+
+    expect($venue->isOpenAt($nightTime))->toBeTrue()
+        ->and($venue->isOpenAt($morningTime))->toBeTrue()
+        ->and($venue->isOpenAt($dayTime))->toBeFalse();
+});
+
+it('detects conflicts with existing events', function () {
+    $venue = Venue::factory()->create();
+
+    Event::factory()->create([
+        'venue_id' => $venue->id,
+        'status' => 'approved',
+        'start_time' => '2025-10-29 10:00:00',
+        'end_time' => '2025-10-29 12:00:00',
+    ]);
+
+    $conflictingStart = new DateTime('2025-10-29 11:00:00');
+    $conflictingEnd = new DateTime('2025-10-29 13:00:00');
+
+    $nonConflictingStart = new DateTime('2025-10-29 12:30:00');
+    $nonConflictingEnd = new DateTime('2025-10-29 13:30:00');
+
+    expect($venue->hasConflict($conflictingStart, $conflictingEnd))->toBeTrue()
+        ->and($venue->hasConflict($nonConflictingStart, $nonConflictingEnd))->toBeFalse();
+});
+
+it('checks if venue is available', function () {
+    $venue = Venue::factory()->create([
+        'opening_time' => '08:00:00',
+        'closing_time' => '18:00:00',
+    ]);
+
+    Event::factory()->create([
+        'venue_id' => $venue->id,
+        'status' => 'approved',
+        'start_time' => '2025-10-29 10:00:00',
+        'end_time' => '2025-10-29 12:00:00',
+    ]);
+
+    $availableStart = new DateTime('2025-10-29 08:00:00');
+    $availableEnd = new DateTime('2025-10-29 09:00:00');
+
+    $unavailableStart = new DateTime('2025-10-29 11:00:00');
+    $unavailableEnd = new DateTime('2025-10-29 13:00:00');
+
+    expect($venue->isAvailable($availableStart, $availableEnd))->toBeTrue()
+        ->and($venue->isAvailable($unavailableStart, $unavailableEnd))->toBeFalse();
+});
