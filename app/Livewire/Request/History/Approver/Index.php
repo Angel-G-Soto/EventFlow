@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Request\Pending\org;
+namespace App\Livewire\Request\History\Approver;
 
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -37,10 +37,10 @@ class Index extends Component
 //        }
 
         // If your Event has MANY categories (pivot), replace the block above with:
-         if (!empty($this->filters['categories'])) {
-             $ids = $this->filters['categories'];
-             $q->whereHas('categories', fn($qq) => $qq->whereIn('categories.id', $ids));
-         }
+        if (!empty($this->filters['categories'])) {
+            $ids = $this->filters['categories'];
+            $q->whereHas('categories', fn($qq) => $qq->whereIn('categories.id', $ids));
+        }
 
         if (!empty($this->filters['venues'])) {
             $q->whereIn('venue_id', $this->filters['venues']);
@@ -52,6 +52,6 @@ class Index extends Component
 
         $events = $q->orderByDesc('created_at')->paginate(8);
 
-        return view('livewire.request.pending.approver.index', compact('events'));
+        return view('livewire.request.history.approver.index', compact('events'));
     }
 }
