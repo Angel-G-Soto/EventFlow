@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ $title ?? 'EventFlow' }}</title>
 
-  @vite(['resources/js/app.js'])
+  @vite(['resources/js/app.js','resources/scss/app.scss'])
   @livewireStyles
 </head>
 
@@ -74,12 +74,12 @@
   </main>
 
   @livewireScripts
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
     const navCollapse = document.getElementById('navMain');
     const navToggler = document.querySelector('.navbar-toggler');
-    
+
     // Toggle menu when hamburger is clicked
     navToggler.addEventListener('click', function(e) {
       e.preventDefault();
@@ -93,7 +93,7 @@
         navToggler.setAttribute('aria-expanded', 'true');
       }
     });
-    
+
     // Close menu when nav links are clicked
     document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
       link.addEventListener('click', () => {
@@ -101,7 +101,7 @@
         navToggler.setAttribute('aria-expanded', 'false');
       });
     });
-    
+
     // Close menu when scrolling
     window.addEventListener('scroll', () => {
       if (navCollapse.classList.contains('show')) {
