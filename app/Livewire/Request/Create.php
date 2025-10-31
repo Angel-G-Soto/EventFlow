@@ -16,7 +16,7 @@ class Create extends Component
 
 
 // Wizard state
-    public int $step = 3; // 1..3
+    public int $step = 1; // 1..3
 
 
 // Part 1
@@ -27,6 +27,11 @@ class Create extends Component
     public string $start_at = ''; // datetime-local string
     public string $end_at = '';
     public array $category_ids = [];
+    public bool $has_funds = false;
+    public bool $sells_food = false;
+    public bool $external_guest = false;
+    public array $requirementFiles = [];
+
 
 
 // Prefilled org/advisor
@@ -47,13 +52,15 @@ class Create extends Component
     public array $requiredDocuments = []; // from service
     public array $uploads = []; // key => TemporaryUploadedFile
 
+    /**
+     * mount
+     * Initialize defaults. This component expects an $organization array
+     * to be optionally passed from the route/controller.
+     *
+     * @param array{id?:int,name?:string,advisor_name?:string,advisor_phone?:string,advisor_email?:string}|null $organization
+     */
     public function mount(array $organization = []): void
     {
-// Prefill from the authenticated user's primary organization (customize as needed)
-//        $user = Auth::user();
-//        $organization = $org ?? ($user->organization ?? null); // adapt to your user->organization relation
-
-
         $this->organization_id   = $organization['id']            ?? null;  // optional
         $this->organization_name = $organization['name']          ?? '';
         $this->advisor_name      = $organization['advisor_name']  ?? '';
@@ -61,23 +68,33 @@ class Create extends Component
         $this->advisor_email     = $organization['advisor_email'] ?? '';
     }
 
-// === Validation per step ===
+    /**
+     * Return validation rules that apply *only* to the provided wizard step.
+     * This lets us validate progressively as the user advances.
+     *
+     * @param  int $step
+     * @return array<string,string|array<mixed>>
+     */
     protected function rulesForStep(int $step): array
     {
         if ($step === 1) {
             return [
-                'student_phone' => ['required','string','min:7','max:20'],
+                'student_phone' => ['required','string','regex:/^\D*(\d\D*){10}$/'],
                 'student_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10'],
                 'start_at' => ['required','date'],
                 'end_at' => ['required','date','after:start_at'],
-                'category_ids' => ['required','array','min:1'],
+                'category_ids' => ['array','min:0'],
 //                'category_ids.*' => ['integer', Rule::exists('categories','id')],
                 'organization_id' => ['nullable','integer'],
                 'advisor_name' => ['required','string','max:150'],
                 'advisor_phone' => ['required','string','max:20'],
                 'advisor_email' => ['required','email','max:150'],
+                'sells_food' => ['boolean'],
+                'external_guest' => ['boolean'],
+                'has_funds' => ['boolean'],
+
             ];
         }
 
@@ -104,9 +121,6 @@ class Create extends Component
     }
 
     // Reactivity: if time window changes, refresh venues if we are on step 2
-    public function updatedStartAt(): void { $this->refreshVenuesIfPossible(); }
-    public function updatedEndAt(): void { $this->refreshVenuesIfPossible(); }
-
 
     protected function refreshVenuesIfPossible(): void
     {
@@ -124,7 +138,11 @@ class Create extends Component
         }
     }
 
-
+    /**
+     * Move to the next step after validating the current one.
+     * Also performs side‑effects needed before entering the next step
+     * (e.g., loading venues upon entering the venue selection step).
+     */
     public function next(VenueAvailabilityService $venueService, DocumentRequirementService $docSvc): void
     {
         $this->validate($this->rulesForStep($this->step));
@@ -140,18 +158,23 @@ class Create extends Component
 
         if ($this->step === 2) {
             // Step 2 complete ⇒ fetch required docs for chosen venue
-            $this->requiredDocuments = $docSvc->forVenue((int) $this->venue_id);
+            $this->requiredDocuments = $docSvc->forVenue((int)3);
             $this->step = 3;
             return;
         }
     }
-
+    /**
+     * Go back one step.
+     */
     public function back(): void
     {
         if ($this->step > 1) $this->step--;
     }
 
-
+    /**
+     * Compute available venues for the current time range.
+     *
+     */
     protected function loadAvailableVenues(?VenueAvailabilityService $service = null): void
     {
         $this->loadingVenues = true;
@@ -168,6 +191,15 @@ class Create extends Component
         }
     }
 
+    /**
+     * Persist the Event and any related records/pivots atomically.
+     * Wraps everything in a DB transaction for consistency.
+     *
+     * Side‑effects:
+     * - Creates the Event row.
+     * - Attaches categories (pivot table).
+     * - Delegates document handling to {@see DocumentRequirementService}.
+     */
     public function submit(): void
     {
 // Validate step 3 (dynamic files)
@@ -216,17 +248,12 @@ class Create extends Component
         redirect()->route('events.create'); // or to a details/thanks page
     }
 
-
-
-
-
-
-
-
-
-
-
-
+    /**
+     * Render the Livewire view.
+     * The controller/route can also pass $organization externally when mounting.
+     *
+     * @return View
+     */
     public function render()
     {
         $category  = [
@@ -240,7 +267,7 @@ class Create extends Component
             ],
             [
                 'id' => 4,
-                'name' => 'Engoneering',
+                'name' => 'Engineering',
             ]
         ];
 

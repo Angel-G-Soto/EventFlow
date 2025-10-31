@@ -17,17 +17,20 @@ class DocumentRequirementService
 // Example rules per venue id.
         return match ($venueId) {
             1 => [
-                ['key' => 'advisor_approval', 'label' => "Advisor Approval Form", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240],
-                ['key' => 'floor_plan', 'label' => "Floor Plan / Layout", 'required' => false, 'mimes' => ['pdf'], 'max_kb' => 10240],
+                ['key' => 'advisor_approval', 'label' => "Advisor Approval Form", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240, 'url'=>'http://www.goodwin.com/'],
+                ['key' => 'floor_plan', 'label' => "Floor Plan / Layout", 'required' => false, 'mimes' => ['pdf'], 'max_kb' => 10240,'url'=>'http://www.goodwin.com/'],
             ],
             3 => [
-                ['key' => 'sound_permit', 'label' => "Sound Permit", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240],
-                ['key' => 'security_plan', 'label' => "Security Plan", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240],
-                ['key' => 'advisor_approval', 'label' => "Advisor Approval Form", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240],
+                ['key' => 'sound_permit', 'label' => "Sound Permit", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240, 'url'=>'http://www.goodwin.com/'],
+                ['key' => 'security_plan', 'label' => "Security Plan", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240, 'url'=>'http://www.goodwin.com/'],
+                ['key' => 'advisor_approval', 'label' => "Advisor Approval Form", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240, 'url'=>'http://www.goodwin.com/'],
 
             ],
             default => [
-                ['key' => 'advisor_approval', 'label' => "Advisor Approval Form", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240],
+                ['key' => 'advisor_approval', 'label' => "Advisor Approval Form", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240, 'url'=>'http://www.goodwin.com/'],
+                ['key' => 'sound_permit', 'label' => "Sound Permit", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240, 'url'=>'http://www.goodwin.com/'],
+                ['key' => 'security_plan', 'label' => "Security Plan", 'required' => true, 'mimes' => ['pdf'], 'max_kb' => 10240, 'url'=>'http://www.goodwin.com/'],
+
             ],
         };
     }

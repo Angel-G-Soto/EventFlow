@@ -15,6 +15,11 @@ class ManageVenues extends Component
 
 //    public $venues;
     public string $search = '';
+
+    public function configure(Venue $venue){
+
+        $this->redirectRoute('venues.requirements.edit', ['venue'=>$venue]);
+    }
     public function render()
     {
         $venues = Venue::query()

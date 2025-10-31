@@ -1,5 +1,4 @@
 <div>
-    {{-- Be like water. --}}
     @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
@@ -15,38 +14,43 @@
     {{-- STEP 1 --}}
     @if ($step === 1)
 
+            <p class="text-muted small">
+                <span class="text-danger" aria-hidden="true">*</span>
+                <span class="visually-hidden">required</span>
+                Fields marked with an asterisk are required.
+            </p>
         <form wire:submit.prevent="next">
 
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label">Student phone</label>
+                    <label class="form-label required">Student phone</label>
                     <input type="text" class="form-control" wire:model.defer="student_phone">
                     @error('student_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Student ID / Number</label>
+                    <label class="form-label required">Student ID / Number</label>
                     <input type="text" class="form-control" wire:model.defer="student_number">
                     @error('student_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Event Title</label>
+                    <label class="form-label required">Event Title</label>
                     <input type="text" class="form-control" wire:model.defer="title">
                     @error('title') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Event description</label>
+                    <label class="form-label required">Event description</label>
                     <textarea class="form-control" rows="4" wire:model.defer="description"></textarea>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Start time</label>
+                    <label class="form-label required">Start time</label>
                     <input type="datetime-local" class="form-control" wire:model.live="start_at">
                     @error('start_at') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">End time</label>
+                    <label class="form-label required">End time</label>
                     <input type="datetime-local" class="form-control" wire:model.live="end_at">
                     @error('end_at') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
@@ -58,27 +62,67 @@
                             <option value="{{ $cat['id'] }}">{{ $cat['name'] }}</option>
                         @endforeach
                     </select>
-                    @error('category_ids') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
+                {{--Check box for food handling --}}
+                <div class="form-check">
+                    <input
+                        id="sells_food"
+                        type="checkbox"
+                        class="form-check-input"
+                        wire:model.live="sells_food"
+                        aria-describedby="sellsFood"
+                    >
+                    <label class="form-check-label" for="sells_food">This event is to sell food</label>
+                    <div id="sellsFood" class="form-text"></div>
+                </div>
+
+                {{--Check box for institutional funds --}}
+                <div class="form-check">
+                    <input
+                        id="has_funds"
+                        type="checkbox"
+                        class="form-check-input"
+                        wire:model.live="has_funds"
+                        aria-describedby="hasFunds"
+                    >
+                    <label class="form-check-label" for="has_funds">This event uses institutional funds</label>
+                    <div id="hasFunds" class="form-text"></div>
+                </div>
+
+                {{--Check box for external guest--}}
+                <div class="form-check">
+                    <input
+                        id="external_guest"
+                        type="checkbox"
+                        class="form-check-input"
+                        wire:model.live="external_guest"
+                        aria-describedby="externalGuest"
+                    >
+                    <label class="form-check-label" for="external_guest">This event has an external guess</label>
+                    <div id="externalGuess" class="form-text"></div>
+
+                </div>
+
+
                 <div class="col-md-6">
-                    <label class="form-label">Organization</label>
+                    <label class="form-label required">Organization</label>
                     <input type="text" class="form-control" value="{{ $organization_name }}" disabled>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Advisor name</label>
+                    <label class="form-label required">Advisor name</label>
                     <input type="text" class="form-control" wire:model.defer="advisor_name">
                     @error('advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Advisor phone</label>
+                    <label class="form-label required">Advisor phone</label>
                     <input type="text" class="form-control" wire:model.defer="advisor_phone">
                     @error('advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Advisor email</label>
+                    <label class="form-label required">Advisor email</label>
                     <input type="email" class="form-control" wire:model.defer="advisor_email">
                     @error('advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
@@ -133,25 +177,30 @@
             @if (empty($requiredDocuments))
                 <div class="alert alert-secondary">No documents required for this venue.</div>
             @else
-                <div class="row g-3">
+                <ul class="row">
                     @foreach ($requiredDocuments as $doc)
-                        <div class="col-md-6" wire:key="doc-{{ $doc['key'] }}">
-                            <label class="form-label">
-                                {{ $doc['label'] }}
-                                @if ($doc['required'])
-                                    <span class="badge bg-danger ms-1">Required</span>
-                                @else
-                                    <span class="badge bg-secondary ms-1">Optional</span>
-                                @endif
-                            </label>
-                            <input type="file" class="form-control"
-                                   wire:model="uploads.{{ $doc['key'] }}"
-                                   accept="{{ empty($doc['mimes']) ? '' : implode(',', array_map(fn($m) => '.' . ($m === 'jpg' ? 'jpg' : $m), $doc['mimes'])) }}">
-                            @error('uploads.' . $doc['key']) <div class="text-danger small">{{ $message }}</div> @enderror
-                            {{-- Livewire upload progress --}}
-                            <div wire:loading wire:target="uploads.{{ $doc['key'] }}" class="form-text">Uploading…</div>
-                        </div>
+                        <li wire:key="doc-{{ $doc['key'] }}">
+                                <a href="{{$doc['url']}}">
+                                    {{ $doc['label'] }}
+                                </a>
+                        </li>
                     @endforeach
+                </ul>
+                <div class="mb-3">
+                    <label for="requirementFiles" class="form-label">Upload Requirement Documents</label>
+                    <input type="file"
+                           class="form-control"
+                           id="requirementFiles"
+                           wire:model="requirementFiles"
+                           multiple
+                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>
+                    <div class="form-text">
+                        Upload all required documents here. Accepted formats: PDF, DOCX, JPG, PNG.
+                    </div>
+
+                    @error('requirementFiles.*')
+                    <div class="text-danger">{{ $message }}</div>
+                    @enderror
                 </div>
             @endif
 

@@ -2,11 +2,12 @@
 
 namespace App\Livewire\Request\Pending\Approver;
 
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithPagination;
 use App\Models\Event;
-
+#[layout('components.layouts.header.public')]
 class Index extends Component
 {
     use WithPagination;

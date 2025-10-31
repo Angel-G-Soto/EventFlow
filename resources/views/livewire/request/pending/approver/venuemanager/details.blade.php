@@ -1,4 +1,51 @@
 <div>
+    {{-- Only render when there are conflicts (uses paginator's total to avoid extra query) --}}
+    @if ($conflicts->total() > 0)
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert" aria-live="polite">
+            <i class="bi bi-exclamation-triangle-fill fs-4" aria-hidden="true"></i>
+            <div>
+                <h2 class="h5 mb-1">Potential scheduling conflicts</h2>
+                <p class="mb-0">
+                    We found {{ $conflicts->total() }}
+                    {{ \Illuminate\Support\Str::plural('overlapping event', $conflicts->total()) }}
+                    for this time window{{ isset($event->venue_id) ? ' and venue' : '' }}.
+                </p>
+            </div>
+        </div>
+
+        <div class="card mb-4" aria-labelledby="conflict-list-title">
+            <div class="card-header">
+                <h3 id="conflict-list-title" class="h6 mb-0">Conflicting events</h3>
+            </div>
+
+            <ul class="list-group list-group-flush">
+                @foreach ($conflicts as $c)
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="me-3">
+                            <div class="fw-semibold">{{ $c->title }}</div>
+                            <div class="small text-body-secondary">
+                                {{ \Illuminate\Support\Carbon::parse($c->start_time)->format('M j, Y g:ia') }}
+                                &ndash;
+                                {{ \Illuminate\Support\Carbon::parse($c->end_time)->format('M j, Y g:ia') }}
+                                @if (!empty($c->organization_nexo_name))
+                                    &middot; {{ $c->organization_nexo_name }}
+                                @endif
+                            </div>
+                        </div>
+                        <span class="badge text-bg-danger align-self-center">Overlap</span>
+                    </li>
+                @endforeach
+            </ul>
+
+            {{-- Bootstrap 5 pagination (works if you’ve called Paginator::useBootstrapFive()) --}}
+            <nav class="p-3" aria-label="Conflicting events pages">
+                {{ $conflicts->onEachSide(1)->links() }}
+            </nav>
+        </div>
+    @endif
+
+
+
     <h1>Event Details</h1>
 
     <div class="card container">

@@ -30,9 +30,8 @@ class Venues extends Component
     public function mount(?int $departmentId = null): void
     {
         $this->departmentId = $departmentId ?? $this->departmentId
-            ?? auth()->user()?->department_id; // still works in prod
+            ?? auth()->user()?->department_id;
 
-        // Simple guard: you can hard-fail if it's missing
         if (! $this->departmentId) {
             abort(403, 'Department is required.');
         }

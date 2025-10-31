@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'EventFlow' }}</title>
 
-    @vite(['resources/js/app.js','resources/scss/app.scss'])
+    @vite(['resources/js/app.js','resources/scss/app.scss', 'resources/js/fullcalendar.js'])
     @livewireStyles
 </head>
 <body class="bg-body-tertiary">
@@ -63,5 +63,6 @@
 
 
 @livewireScripts
+@stack('scripts')
 </body>
 </html>

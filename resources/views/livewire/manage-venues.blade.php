@@ -37,7 +37,7 @@
                 <td class="fw-medium">{{ $v['code'] }}</td>
                 <td class="fw-medium">{{ $v['capacity'] }}</td>
                 <td class="fw-medium text-end">
-                    <button class="btn btn-outline-secondary text-end" style="text-align: right" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure">
+                    <button  wire:click="configure({{$v['id']}})" class="btn btn-outline-secondary text-end" style="text-align: right" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure">
                         <i class="bi bi-pencil"></i> Configure
                     </button>
                     <button class="btn btn-outline-secondary text-end" style="text-align: right" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure">

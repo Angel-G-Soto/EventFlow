@@ -42,10 +42,14 @@ class NotificationService
     }
 
     /**
-     * @param string $creatorEmail
-     * @param array $eventData
+     *
+     * Sends an email notifying the request creator about the rejection
+     * @param string $creatorEmail   Email of request creator
+     * @param array $eventData       Relevant devent details
      * @param string $justification
      * @return void
+     *
+     * Sed
      */
     public function dispatchRejectionNotification(string $creatorEmail,
                                                   array $eventData, string $justification): void
@@ -54,6 +58,8 @@ class NotificationService
     }
 
     /**
+     * Sends an email notifying the request creator about the approval
+     *
      * @param string $creatorEmail
      * @param array $eventData
      * @return void
@@ -65,6 +71,8 @@ class NotificationService
     }
 
     /**
+     * Sends an email notifying the relevant approvers about the event cancellation
+     *
      * @param array $recipientEmails
      * @param array $eventData
      * @param string $justification
@@ -78,6 +86,8 @@ class NotificationService
     }
 
     /**
+     * Sends an email notifying the relevant approvers about the event withdrawal
+     *
      * @param array $recipientEmails
      * @param array $eventData
      * @param string $justification

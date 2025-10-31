@@ -21,9 +21,16 @@ class Configure extends Component
     /** @var array<int> */
     public array $deleted = [];
 
+    /** Public state for the time inputs (HH:MM) */
+    public ?string $opens_at = null;
+    public ?string $closes_at = null;
+
     public function mount(Venue $venue): void
     {
         $this->venue = $venue;
+        $this->opens_at  = $venue->opening_time ? substr($venue->opening_time, 0, 5) : '';
+        $this->closes_at = $venue->closing_time ? substr($venue->closing_time, 0, 5) : '';
+
 
         $this->rows = $venue->requirements()->get()->map(function (UseRequirement $r) {
             return [
@@ -41,6 +48,15 @@ class Configure extends Component
         }
     }
 
+    protected function rules(): array
+    {
+        // When is_24h is true, both nullable. Otherwise require HH:MM and closes after opens.
+        return [
+            'opens_at' => ['required', 'date_format:H:i'],
+            'closes_at'=> ['required', 'date_format:H:i', 'after:opens_at'],
+        ];
+    }
+
     public function addRow(): void
     {
         $this->rows[] = [
@@ -50,6 +66,18 @@ class Configure extends Component
             'doc_url'     => '',
             'position'    => count($this->rows),
         ];
+    }
+
+    public function saveAvailability(): void
+    {
+        $this->validate();
+
+        $this->venue->update([
+            'opening_time'  => $this->opens_at,   // DB TIME will append :00 seconds
+            'closing_time' => $this->closes_at,
+        ]);
+
+        $this->dispatch('notify', type: 'success', message: 'Availability updated.');
     }
 
     public function removeRow(string $uuid): void
@@ -140,6 +168,17 @@ class Configure extends Component
             }
         }
         unset($row);
+    }
+    public function goBack(): void
+    {
+        $previous = url()->previous();
+        // Fallback if there's no referrer or it’s off-site
+        $fallback = route('venues.index');
+
+        // Basic same-origin check
+        $isSameOrigin = $previous && str_starts_with($previous, url('/'));
+
+        $this->redirect($isSameOrigin ? $previous : $fallback);
     }
 
     public function render()

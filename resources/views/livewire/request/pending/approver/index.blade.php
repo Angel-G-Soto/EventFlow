@@ -1,4 +1,25 @@
 
+
+<x-slot:pageActions>
+    <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.requests.pending') }}">Pending Request</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">Request History</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>
+        </li>
+
+    </ul>
+
+</x-slot:pageActions>
     <div>
         <h1 class="h4 mb-3">Pending Requests</h1>
 
@@ -9,24 +30,6 @@
             <livewire:request.pending.approver.filters/>
 
             <div class="card-body">
-
-                {{--                <div class="row g-2">--}}
-                {{--                    <div class="col-6 col-md-2">--}}
-                {{--                        <label class="form-label">Student Organization</label>--}}
-                {{--                        <input class="form-control" placeholder="e.g. CAHSI">--}}
-                {{--                    </div>--}}
-
-                {{--                    <div class="col-6 col-md-2">--}}
-                {{--                        <label class="form-label">Event Type</label>--}}
-                {{--                        <input class="form-control" >--}}
-                {{--                    </div>--}}
-
-                {{--                    <div class="col-6 col-md-2">--}}
-                {{--                        <label class="form-label">Venue</label>--}}
-                {{--                        <input class="form-control">--}}
-                {{--                    </div>--}}
-
-                {{--                </div>--}}
             </div>
         </div>
 
@@ -52,7 +55,7 @@
                                 <td class="fw-medium text-end">
                                     <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
-                                            onclick="window.location='{{ route('approver.requests',['id'=>$event->id]) }}'">
+                                            onclick="window.location='{{ route('approver.pending.request',['id'=>$event->id]) }}'">
                                         <i class="bi bi-eye me-1"></i> View details
                                     </button>
                                 </td>

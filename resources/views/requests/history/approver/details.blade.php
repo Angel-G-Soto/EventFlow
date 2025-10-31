@@ -1,5 +1,5 @@
 <x-layouts.header.public>
-    <livewire:request.details :event="$event">
+    <livewire:request.history.approver.details :event="$event">
 
-    </livewire:request.details>
+    </livewire:request.history.approver.details>
 </x-layouts.header.public>

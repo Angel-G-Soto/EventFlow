@@ -29,7 +29,7 @@ class Details extends Component
 
     public function back()
     {
-        $this->redirectRoute('approver.index');
+        $this->redirectRoute('approver.pending.index');
     }
 
 

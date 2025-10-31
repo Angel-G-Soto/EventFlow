@@ -1,17 +1,5 @@
 {{-- resources/views/livewire/venues/requirements-editor.blade.php --}}
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h4 mb-0">Requirements for: {{ $venue->name }}</h1>
-
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" type="button" wire:click="addRow">
-                <i class="bi bi-plus-lg"></i> Add requirement
-            </button>
-            <button class="btn btn-primary" type="button" wire:click="save">
-                <i class="bi bi-save"></i> Save changes
-            </button>
-        </div>
-    </div>
 
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -26,6 +14,86 @@
             <strong>Please fix the errors below:</strong>
         </div>
     @endif
+        <div class="container">
+        <a href="{{ route('home') }}"
+           class="btn btn-outline-secondary"
+           onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <h2 id="availability-title" class="h5 mb-0">Venue Availability</h2>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="opens_at" class="form-label">Opens at <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input
+                            id="opens_at"
+                            type="time"
+                            class="form-control @error('opens_at') is-invalid @enderror"
+                            wire:model.live="opens_at"
+                            aria-describedby="opensAtHelp {{ $errors->has('opens_at') ? 'opensAtError' : '' }}"
+                            required
+                        >
+                        <div id="opensAtHelp" class="form-text">Use 24-hour format (e.g., 08:00, 13:30).</div>
+                        @error('opens_at')
+                        <div id="opensAtError" class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="closes_at" class="form-label">Closes at <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input
+                            id="closes_at"
+                            type="time"
+                            class="form-control @error('closes_at') is-invalid @enderror"
+                            wire:model.live="closes_at"
+                            aria-describedby="closesAtHelp {{ $errors->has('closes_at') ? 'closesAtError' : '' }}"
+                            required
+                        >
+                        <div id="closesAtHelp" class="form-text">Must be after the opening time.</div>
+                        @error('closes_at')
+                        <div id="closesAtError" class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer d-flex gap-2 align-items-center">
+                <button class="btn btn-primary" wire:click="saveAvailability">
+                    Save availability
+                </button>
+                <span class="text-muted" role="status" aria-live="polite">
+            @if ($opens_at && $closes_at)
+                        Currently {{ $opens_at }} – {{ $closes_at }}.
+                    @else
+                        Not configured yet.
+                    @endif
+        </span>
+            </div>
+        </div>
+
+
+
+
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Requirements for: {{ $venue->name }}</h1>
+
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" type="button" wire:click="addRow">
+                <i class="bi bi-plus-lg"></i> Add requirement
+            </button>
+            <button class="btn btn-primary" type="button" wire:click="save">
+                <i class="bi bi-save"></i> Save changes
+            </button>
+        </div>
+    </div>
+
 
     <div class="table-responsive">
         <table class="table table-striped align-middle">

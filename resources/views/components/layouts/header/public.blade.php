@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'EventFlow' }}</title>
 
-    @vite(['resources/js/app.js','resources/scss/app.scss'])
+    @vite(['resources/js/app.js','resources/scss/app.scss','resources/js/fullcalendar.js'])
     @livewireStyles
 </head>
+
 <body class="bg-body-tertiary">
 
 <nav class="navbar navbar-expand-lg bg-success navbar-dark">
@@ -19,6 +20,11 @@
         </button>
 
         <div id="navMain" class="collapse navbar-collapse">
+
+                {{$pageActions}}
+
+
+
 {{--            <ul class="navbar-nav mx-auto">--}}
 {{--                <li class="nav-item">--}}
 {{--                    <a class="fw-bold nav-link {{ Route::is('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">--}}
@@ -50,7 +56,9 @@
                     <i class="bi bi-question-lg"></i>
                 </button>
                 <button class="btn btn-outline-light rounded-circle p-2" type="button" title="Profile">
-                    <i class="bi bi-person"></i>
+                    <a href="{{ route('saml.login') }}"
+                       class="bi bi-person"
+                    style="color: white"></a>
                 </button>
             </div>
         </div>

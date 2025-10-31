@@ -1,7 +1,6 @@
-@extends('components.layouts.app')
-@section('content')
+<x-layouts.header.public>
 <div class="container py-4">
     <div id="calendar"></div>
 </div>
-@endsection
 
+</x-layouts.header.public>
