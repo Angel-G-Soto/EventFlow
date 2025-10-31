@@ -65,23 +65,23 @@ class VenueService {
             if (!empty($filters)) {
                 // Verify that the requirementsData structure is met
 
-                // Check for invalid keys
-                $invalidKeys = array_diff(array_keys($filters), new Venue()->getFillable());
-                if (!empty($invalidKeys)) {
-                    throw new InvalidArgumentException(
-                        'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
-                    );
-                }
+                    // Check for invalid keys
+                    $invalidKeys = array_diff(array_keys($filters), new Venue()->getFillable());
+                    if (!empty($invalidKeys)) {
+                        throw new InvalidArgumentException(
+                            'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
+                        );
+                    }
 
-                // Check for null values
-                $nullKeys = array_keys(array_filter($filters, function ($value) {
-                    return is_null($value);
-                }));
-                if (!empty($nullKeys)) {
-                    throw new InvalidArgumentException(
-                        'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
-                    );
-                }
+                    // Check for null values
+                    $nullKeys = array_keys(array_filter($filters, function ($value) {
+                        return is_null($value);
+                    }));
+                    if (!empty($nullKeys)) {
+                        throw new InvalidArgumentException(
+                            'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
+                        );
+                    }
 
                 foreach ($filters as $key => $value) {
                     if ($value === null) {
@@ -501,7 +501,7 @@ class VenueService {
      */
     public function updateVenue(Venue $venue, array $data, User $admin): Venue
     {
-        try {
+        //try {
 
             // Validate admin role
             if (!$admin->getRoleNames()->contains('system-administrator')) {
@@ -535,9 +535,9 @@ class VenueService {
                 ],
                 $data
             );
-        }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
+        //}
+        //catch (InvalidArgumentException $exception) {throw $exception;}
+        //catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
     }
 
     /**
