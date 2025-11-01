@@ -1,4 +1,7 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
+// CSS is provided by resources/scss/app.scss via @vite in the layout.
+// Keep icons here (or move to SCSS if you prefer a single CSS pipeline):
 import 'bootstrap-icons/font/bootstrap-icons.css';
-// import './app.css';optional: your custom styles (create if needed)
-import 'bootstrap';           // JS (Popper included via @popperjs/core)
+
+// Make Bootstrap JS available globally for inline Blade scripts
+import * as bootstrap from 'bootstrap';
+window.bootstrap = bootstrap;

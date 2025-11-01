@@ -5,9 +5,11 @@
     const modalCache = new Map();
 
     function ensureModalInstance(el) {
-      let inst = bootstrap.Modal.getInstance(el);
+      const BS = window.bootstrap;
+      if (!BS) return null;
+      let inst = BS.Modal.getInstance(el);
       if (!inst) {
-        inst = new bootstrap.Modal(el, { backdrop: true, keyboard: true, focus: true });
+        inst = new BS.Modal(el, { backdrop: true, keyboard: true, focus: true });
         modalCache.set(el.id, inst);
 
         el.addEventListener('hidden.bs.modal', () => {
@@ -77,24 +79,52 @@
       const body = el.querySelector('[data-toast-body]');
       if (body) body.textContent = message;
 
-      const t = new bootstrap.Toast(el, { autohide: true, delay });
+      const BS = window.bootstrap;
+      if (!BS) return;
+      const t = new BS.Toast(el, { autohide: true, delay });
       t.show();
     }
 
-    // ---- Livewire bindings (global) ---------------------------------------
-    document.addEventListener('livewire:init', () => {
-      // Generic events you can dispatch from ANY component:
-      // $this->dispatch('bs:open', id: 'modalId');
-      // $this->dispatch('bs:close', id: 'modalId');
-      // $this->dispatch('toast', message: 'Saved', id: 'appToast', delay: 2200, className: 'text-bg-success');
+    // ---- Livewire/DOM event bindings (v3-friendly) ------------------------
+    // Generic events you can dispatch from ANY component:
+    // $this->dispatch('bs:open', id: 'modalId');
+    // $this->dispatch('bs:close', id: 'modalId');
+    // $this->dispatch('toast', message: 'Saved', id: 'appToast', delay: 2200, className: 'text-bg-success');
 
-      Livewire.on('bs:open', ({ id }) => openModal(id));
-      Livewire.on('bs:close', ({ id }) => closeModal(id));
+    function bindBridgeEvents() {
+      // Listen for bubbling DOM events dispatched by Livewire v3
+      document.addEventListener('bs:open', (e) => {
+        const { id } = e.detail || {};
+        if (id) openModal(id);
+      });
+      document.addEventListener('bs:close', (e) => {
+        const { id } = e.detail || {};
+        if (id) closeModal(id);
+      });
+      document.addEventListener('toast', (e) => {
+        const payload = e.detail || {};
+        showToast(payload);
+      });
 
-      Livewire.on('toast', (payload = {}) => showToast(payload));
+      // Fallback compatibility with older Livewire event bus (if present)
+      if (window.Livewire && typeof Livewire.on === 'function') {
+        Livewire.on('bs:open', (payload = {}) => {
+          const { id } = payload || {};
+          if (id) openModal(id);
+        });
+        Livewire.on('bs:close', (payload = {}) => {
+          const { id } = payload || {};
+          if (id) closeModal(id);
+        });
+        Livewire.on('toast', (payload = {}) => showToast(payload));
+      }
 
       // Safety net after any patch
       document.addEventListener('livewire:update', cleanupBackdrops);
-    });
+    }
+
+    // Bind immediately and also after Livewire initializes (idempotent)
+    bindBridgeEvents();
+    document.addEventListener('livewire:init', bindBridgeEvents, { once: true });
   })();
 </script>
