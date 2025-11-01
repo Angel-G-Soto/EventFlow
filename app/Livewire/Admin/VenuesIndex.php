@@ -20,6 +20,10 @@ class VenuesIndex extends Component
     public array $venues = [];
     public $csvFile;
 
+    // Sorting
+    public string $sortField = '';
+    public string $sortDirection = 'asc';
+
     // Accessors and Mutators
     /**
      * Dynamic list of departments based on the current venues (excluding soft-deleted).
@@ -107,6 +111,20 @@ class VenuesIndex extends Component
      */
     public function applySearch()
     {
+        $this->page = 1;
+    }
+
+    /**
+     * Toggle or set the active sort column and direction.
+     */
+    public function sortBy(string $field): void
+    {
+        if ($field === $this->sortField) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
         $this->page = 1;
     }
 
@@ -479,6 +497,12 @@ class VenuesIndex extends Component
     protected function paginated(): LengthAwarePaginator
     {
         $data = $this->filtered();
+        // Apply sorting only after user clicks a sort header
+        if ($this->sortField !== '') {
+            // Sort using natural, case-insensitive order by the active field
+            $options = SORT_NATURAL | SORT_FLAG_CASE;
+            $data = $data->sortBy(fn($row) => $row[$this->sortField] ?? '', $options, $this->sortDirection === 'desc')->values();
+        }
         $items = $data->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values();
         return new LengthAwarePaginator($items, $data->count(), $this->pageSize, $this->page, [
             'path' => request()->url(),

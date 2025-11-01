@@ -7,7 +7,8 @@ trait EventFilters
   // Text filters
   public string $search = '';
   public string $status = '';
-  public string $venue = '';
+  // Venue filter can be bound to a searchable dropdown (venue id) or a plain text value
+  public int|string|null $venue = null;
   public ?string $from = null;
   public ?string $to   = null;
   public string $requestor = '';

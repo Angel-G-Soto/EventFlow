@@ -15,12 +15,12 @@
         <div class="col-12 col-md-4">
           <label class="form-label" for="dept_search">Search</label>
           <div class="input-group">
-            <input id="dept_search" type="text" class="form-control" placeholder="Search by name, code, or director"
+            <input id="dept_search" type="text" class="form-control" placeholder="Search by name or director"
               wire:model.defer="search">
           </div>
         </div>
         <div class="col-6 col-md-2">
-          <label class="form-label" for="dept_code">Code</label>
+          <label class="form-label" for="dept_code">Department Code</label>
           <select id="dept_code" class="form-select" wire:model.live="code">
             <option value="">All</option>
             @foreach($codes as $c)
@@ -54,7 +54,21 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Name</th>
+            <th scope="col">
+              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+                aria-label="Sort by name">
+                Name
+                @if($sortField === 'name')
+                @if($sortDirection === 'asc')
+                <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+                @else
+                <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+                @endif
+                @else
+                <i class="bi bi-arrow-down-up text-muted" aria-hidden="true"></i>
+                @endif
+              </button>
+            </th>
             <th>Department Code</th>
             <th>Director</th>
 
@@ -70,11 +84,11 @@
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
-                  aria-label="Edit department {{ $d['name'] }}">
+                  aria-label="Edit department {{ $d['name'] }}" title="Edit department {{ $d['name'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $d['id'] }})"
-                  aria-label="Delete department {{ $d['name'] }}">
+                  aria-label="Delete department {{ $d['name'] }}" title="Delete department {{ $d['name'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>

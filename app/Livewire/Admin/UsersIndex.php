@@ -20,6 +20,10 @@ class UsersIndex extends Component
     // Properties / backing stores
     public array $users = [];
 
+    // Sorting
+    public string $sortField = '';
+    public string $sortDirection = 'asc';
+
     // Accessors and Mutators
     /**
      * Returns true if the current user has a role that does not require a department to be associated with them.
@@ -80,6 +84,20 @@ class UsersIndex extends Component
      */
     public function updatedRole()
     {
+        $this->page = 1;
+    }
+
+    /**
+     * Toggle or set the active sort column and direction.
+     */
+    public function sortBy(string $field): void
+    {
+        if ($field === $this->sortField) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
         $this->page = 1;
     }
 
@@ -351,6 +369,12 @@ class UsersIndex extends Component
     protected function paginated(): LengthAwarePaginator
     {
         $data = $this->filtered();
+        // Apply sorting only after user clicks a sort header
+        if ($this->sortField !== '') {
+            // Sort using natural, case-insensitive order by the active field
+            $options = SORT_NATURAL | SORT_FLAG_CASE;
+            $data = $data->sortBy(fn($row) => $row[$this->sortField] ?? '', $options, $this->sortDirection === 'desc')->values();
+        }
         $total = $data->count();
         $pageSize = max(1, $this->pageSize); // Prevent division by zero
 

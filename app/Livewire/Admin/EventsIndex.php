@@ -174,7 +174,7 @@ class EventsIndex extends Component
     {
         $this->search = '';
         $this->status = '';
-        $this->venue = '';
+        $this->venue = null;
         $this->from = null;
         $this->to = null;
         $this->requestor = '';
@@ -554,7 +554,15 @@ class EventsIndex extends Component
                 str_contains(mb_strtolower($request['title']), $s) ||
                 str_contains(mb_strtolower($request['requestor']), $s);
             $statOk  = $this->status === '' || $request['status'] === $this->status;
-            $venueOk = $this->venue === '' || $request['venue'] === $this->venue;
+            // Venue filter: support either venue id (int) or venue name (string)
+            $venueOk = true;
+            if (!is_null($this->venue) && $this->venue !== '') {
+                if (is_int($this->venue)) {
+                    $venueOk = (int)($request['venue_id'] ?? 0) === $this->venue;
+                } else {
+                    $venueOk = (string)$request['venue'] === (string)$this->venue;
+                }
+            }
             $catOk   = $this->category === '' || $request['category'] === $this->category;
             $orgVal  = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
             $orgOk   = $this->organization === '' || $orgVal === $this->organization;

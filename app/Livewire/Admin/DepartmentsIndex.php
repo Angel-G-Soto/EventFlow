@@ -20,6 +20,10 @@ class DepartmentsIndex extends Component
   /** @var array<int,array{name:string,code:string,director:string,id:int}> */
   public array $departments = [];
 
+  // Sorting
+  public string $sortField = '';
+  public string $sortDirection = 'asc';
+
   // Accessors and Mutators
   /**
    * Dynamic list of department codes for filter dropdown (unique, natural sort).
@@ -97,6 +101,20 @@ class DepartmentsIndex extends Component
   {
     $this->search = '';
     $this->code = '';
+    $this->page = 1;
+  }
+
+  /**
+   * Toggle or set the active sort column and direction.
+   */
+  public function sortBy(string $field): void
+  {
+    if ($field === $this->sortField) {
+      $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      $this->sortField = $field;
+      $this->sortDirection = 'asc';
+    }
     $this->page = 1;
   }
 
@@ -247,19 +265,24 @@ class DepartmentsIndex extends Component
   protected function filtered(): Collection
   {
     $s = mb_strtolower(trim((string) ($this->search ?? '')));
-    return $this->allDepartments()->filter(function ($departments) use ($s) {
+    $data = $this->allDepartments()->filter(function ($departments) use ($s) {
       $name = mb_strtolower(trim((string)($departments['name'] ?? '')));
-      $code = mb_strtolower(trim((string)($departments['code'] ?? '')));
       $director = mb_strtolower(trim((string)($departments['director'] ?? '')));
 
       $hit = $s === '' ||
         str_contains($name, $s) ||
-        str_contains($code, $s) ||
         str_contains($director, $s);
 
-      $codeOk = ($this->code ?? '') === '' || ($departments['code'] ?? '') === $this->code;
-      return $hit && $codeOk;
+      return $hit;
     })->values();
+
+    // Sort only when activated by user click
+    if ($this->sortField !== '') {
+      // Sort using natural, case-insensitive order by the active field
+      $options = SORT_NATURAL | SORT_FLAG_CASE;
+      $data = $data->sortBy(fn($row) => $row[$this->sortField] ?? '', $options, $this->sortDirection === 'desc')->values();
+    }
+    return $data;
   }
 
   /**

@@ -22,8 +22,9 @@
             @endforeach
           </select>
         </div>
-        <div class="col-md-2"><label class="form-label" for="ev_venue">Venue</label><input id="ev_venue"
-            class="form-control" wire:model.live="venue"></div>
+        <div class="col-md-3">
+          <livewire:controls.searchable-venue wire:model.live="venue" :label="'Venue'" />
+        </div>
         {{-- Category filter removed intentionally --}}
         <div class="col-md-2">
           <label class="form-label" for="ev_org">Organization</label>
@@ -89,7 +90,8 @@
                 \Illuminate\Support\Str::after($r['to'],' ') }}</div>
             </td>
             <td>
-              <span class="badge {{ $this->statusBadgeClass($r['status']) }}">{{ $r['status'] }}</span>
+              <span class="badge text-bg-light me-1 {{ $this->statusBadgeClass($r['status']) }}">{{ $r['status']
+                }}</span>
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
@@ -98,11 +100,11 @@
                   <i class="bi bi-info-lg"></i>
                 </button>
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})"
-                  aria-label="Edit request {{ $r['id'] }}">
+                  aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})"
-                  aria-label="Delete request {{ $r['id'] }}">
+                  aria-label="Delete request {{ $r['id'] }}" title="Delete request #{{ $r['id'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
