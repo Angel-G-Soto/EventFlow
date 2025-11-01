@@ -51,7 +51,21 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Name</th>
+            <th scope="col">
+              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+                aria-label="Sort by name">
+                Name
+                @if($sortField === 'name')
+                @if($sortDirection === 'asc')
+                <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+                @else
+                <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+                @endif
+                @else
+                <i class="bi bi-arrow-down-up text-muted" aria-hidden="true"></i>
+                @endif
+              </button>
+            </th>
             <th>Department</th>
             <th>Room</th>
             <th>Capacity</th>
@@ -77,11 +91,11 @@
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
-                  aria-label="Edit venue {{ $v['name'] }}">
+                  aria-label="Edit venue {{ $v['name'] }}" title="Edit venue {{ $v['name'] }}">
                   <i class="bi bi-pencil"></i> Edit
                 </button>
                 <button class="btn btn-outline-primary" wire:click="openAssign({{ $v['id'] }})"
-                  aria-label="Assign manager to {{ $v['name'] }}">
+                  aria-label="Assign manager to {{ $v['name'] }}" title="Assign manager to {{ $v['name'] }}">
                   <i class="bi bi-person-plus"></i> Assign Manager
                 </button>
               </div>
