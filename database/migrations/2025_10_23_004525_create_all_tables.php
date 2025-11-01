@@ -82,24 +82,23 @@ return new class extends Migration {
 
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('creator_id')->constrained('users');
-            $table->foreignId('venue_id')->constrained('venues');
-            $table->integer('organization_nexo_id');
-            $table->string('organization_nexo_name');
-            $table->string('organization_advisor_email');
-            $table->string('organization_advisor_name');
-            $table->string('organization_advisor_phone');
-            $table->string('student_number');
-            $table->string('student_phone');
-            $table->string('title');
-            $table->text('description');
-            $table->dateTime('start_time');
-            $table->dateTime('end_time');
-            $table->string('status');
-            $table->integer('guests');
-            $table->boolean('handles_food');
-            $table->boolean('use_institutional_funds');
-            $table->boolean('external_guest');
+            $table->foreignId('creator_id')->nullable()->constrained('users');
+            $table->foreignId('venue_id')->nullable()->constrained('venues');
+            $table->string('organization_name')->nullable();
+            $table->string('organization_advisor_email')->nullable();
+            $table->string('organization_advisor_name')->nullable();
+            $table->string('creator_institutional_number')->nullable();
+            $table->string('student_number')->nullable();
+            $table->string('creator_phone_number')->nullable();
+            $table->string('title')->nullable();
+            $table->text('description')->nullable();
+            $table->dateTime('start_time')->nullable();
+            $table->dateTime('end_time')->nullable();
+            $table->string('status')->nullable();
+            $table->integer('guest_size')->nullable();
+            $table->boolean('handles_food')->default(false);
+            $table->boolean('use_institutional_funds')->default(false);
+            $table->boolean('external_guest')->default(false);
             $table->timestamps();
         });
 
