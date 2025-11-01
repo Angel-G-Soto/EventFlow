@@ -11,12 +11,14 @@ use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.auth')] class extends Component {
+    // Properties
     #[Locked]
     public string $token = '';
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
 
+    // Lifecycle hooks
     /**
      * Mount the component.
      */
@@ -27,6 +29,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $this->email = request()->string('email');
     }
 
+    // Actions
     /**
      * Reset the password for the given user.
      */
@@ -76,35 +79,15 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
     <form method="POST" wire:submit="resetPassword" class="flex flex-col gap-6">
         <!-- Email Address -->
-        <flux:input
-            wire:model="email"
-            :label="__('Email')"
-            type="email"
-            required
-            autocomplete="email"
-        />
+        <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
 
         <!-- Password -->
-        <flux:input
-            wire:model="password"
-            :label="__('Password')"
-            type="password"
-            required
-            autocomplete="new-password"
-            :placeholder="__('Password')"
-            viewable
-        />
+        <flux:input wire:model="password" :label="__('Password')" type="password" required autocomplete="new-password"
+            :placeholder="__('Password')" viewable />
 
         <!-- Confirm Password -->
-        <flux:input
-            wire:model="password_confirmation"
-            :label="__('Confirm password')"
-            type="password"
-            required
-            autocomplete="new-password"
-            :placeholder="__('Confirm password')"
-            viewable
-        />
+        <flux:input wire:model="password_confirmation" :label="__('Confirm password')" type="password" required
+            autocomplete="new-password" :placeholder="__('Confirm password')" viewable />
 
         <div class="flex items-center justify-end">
             <flux:button type="submit" variant="primary" class="w-full" data-test="reset-password-button">
