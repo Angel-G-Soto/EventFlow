@@ -6,11 +6,11 @@ use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Http\Request;
-use App\Models\EventRequestHistory;
-
+use \Illuminate\Database\Eloquent\Collection;
 
 class Event extends Model
 {
@@ -28,29 +28,33 @@ class Event extends Model
      */
     protected $fillable = [
         'creator_id',
-        'current_approver_id',
         'venue_id',
-        'e_organization_nexo_id',
-        'e_advisor_name',
-        'e_advisor_email',
-        'e_advisor_phone',
-        'e_organization_name',
-        'e_title',
-        'e_type',
-        'e_description',
-        'e_status',
-        'e_status_code',
-        'e_upload_status',
-        'e_start_time',
-        'e_end_time',
-        'e_student_id',
-        'e_student_phone',
-        'e_guests',
-        'e_alcohol_policy_agreement',
-        'e_cleanup_policy_agreement',
+        'organization_nexo_id',
+        'organization_nexo_name',
+        'organization_advisor_email',
+        'organization_advisor_name',
+        'organization_advisor_phone',
+        'student_number',
+        'student_phone',
+        'title',
+        'description',
+        'start_time',
+        'end_time',
+        'status',
+        'guests',
+        'handles_food',
+        'use_institutional_funds',
+        'external_guest',
     ];
 
+    /**
+     * The database connection that should be used by the model.
+     *
+     * @var string
+     */
+    protected $connection = 'mariadb';
 
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
 
     /**
      * Relationship between the Event and User
@@ -58,7 +62,7 @@ class Event extends Model
      */
     public function requester(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'creator_id');
     }
 
     /**
@@ -71,34 +75,59 @@ class Event extends Model
     }
 
     /**
-     * Get the user who created the event request.
-     */
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'e_creator_id', 'user_id');
-    }
-
-    /**
-     * Get the user who is currently assigned to approve the request.
-     */
-    public function currentApprover(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'e_current_approver_id', 'user_id');
-    }
-
-    /**
-     * The documents that belong to the event request.
+     * Relationship between the Event and Document
+     * @return HasMany
      */
     public function documents(): HasMany
     {
-        return $this->HasMany(Document::class);
+        return $this->hasMany(Document::class);
     }
 
     /**
-     * Get the history for the event request.
+     * Relationship between the Event and Event History
+     * @return HasMany
      */
     public function history(): HasMany
     {
         return $this->hasMany(EventHistory::class);
+    }
+
+    /**
+     *
+     * @return BelongsToMany
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class);
+    }
+
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+
+    /**
+     * Retrieve the full approval or modification history for this model.
+     *
+     * This method returns all related history records associated with the current model,
+     * typically representing approval steps, changes, or actions performed over time.
+     *
+     * @return Collection
+     */
+    public function getHistory(): Collection
+    {
+        return $this->history()->get();
+    }
+
+    /**
+     * Get the user who most recently acted as approver for this model.
+     *
+     * This method fetches the latest history record (by creation date) and returns
+     * the associated approver user instance. It assumes that at least one history
+     * record exists; otherwise, a null reference error may occur.
+     *
+     * @return User
+     */
+    public function getCurrentApprover(): User
+    {
+        return $this->history()->orderBy('created_at', 'desc')->first()->approver;
     }
 }
