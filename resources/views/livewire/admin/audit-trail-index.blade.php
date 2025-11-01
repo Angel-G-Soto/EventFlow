@@ -93,7 +93,8 @@
             <td class="text-truncate" style="max-width:260px;" title="{{ $r->path }}">{{ $r->path }}</td>
             <td class="text-end">
               <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->audit_id }})"
-                aria-label="Show details for audit #{{ $r->audit_id }}">
+                aria-label="Show details for audit #{{ $r->audit_id }}"
+                title="Show details for audit #{{ $r->audit_id }}">
                 <i class="bi bi-info-circle"></i>
               </button>
             </td>

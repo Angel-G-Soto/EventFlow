@@ -60,7 +60,21 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Name</th>
+            <th scope="col">
+              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+                aria-label="Sort by name">
+                Name
+                @if($sortField === 'name')
+                @if($sortDirection === 'asc')
+                <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+                @else
+                <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+                @endif
+                @else
+                <i class="bi bi-arrow-down-up text-muted" aria-hidden="true"></i>
+                @endif
+              </button>
+            </th>
             <th>Email</th>
             <th>Department</th>
             <th>Roles</th>
@@ -88,11 +102,11 @@
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $user['id'] }})" type="button"
-                  aria-label="Edit user {{ $user['name'] }}">
+                  aria-label="Edit user {{ $user['name'] }}" title="Edit user {{ $user['name'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $user['id'] }})" type="button"
-                  aria-label="Delete user {{ $user['name'] }}">
+                  aria-label="Delete user {{ $user['name'] }}" title="Delete user {{ $user['name'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
