@@ -13,11 +13,38 @@ use App\Repositories\DepartmentRepository;
 #[Layout('layouts.app')]
 class DepartmentsIndex extends Component
 {
+  // Traits / shared state
   use DepartmentFilters, DepartmentEditState;
 
+  // Properties / backing stores
   /** @var array<int,array{name:string,code:string,director:string,id:int}> */
   public array $departments = [];
 
+  // Accessors and Mutators
+  /**
+   * Dynamic list of department codes for filter dropdown (unique, natural sort).
+   *
+   * @return array<int,string>
+   */
+  public function getCodesProperty(): array
+  {
+    $codes = $this->allDepartments()
+      ->pluck('code')
+      ->filter(fn($v) => is_string($v) && trim($v) !== '')
+      ->map(fn($v) => strtoupper(trim($v)))
+      ->all();
+
+    $map = [];
+    foreach ($codes as $c) {
+      $k = mb_strtolower($c);
+      if (!isset($map[$k])) $map[$k] = $c;
+    }
+    $values = array_values($map);
+    usort($values, fn($a, $b) => strnatcasecmp($a, $b));
+    return $values;
+  }
+
+  // Lifecycle
   /**
    * Load departments from CSV on mount.
    */
@@ -26,39 +53,7 @@ class DepartmentsIndex extends Component
     $this->departments = DepartmentRepository::all();
   }
 
-  /**
-   * Check if the current action type is 'bulkDelete'.
-   * 
-   * @return bool True if action type is 'bulkDelete'
-   */
-  // Removed: getIsBulkDeletingProperty no longer needed after bulk actions removal
-
-  // Static fixtures removed; data now sourced from CSV via DepartmentRepository
-
-  /**
-   * Returns a collection of all departments that are not deleted.
-   *
-   * This function takes into account soft-deleted departments (no hard delete),
-   * and also applies any edits that have been made to the departments.
-   *
-   * @return Collection
-   */
-  protected function allDepartments(): Collection
-  {
-    $deletedIndex = array_flip(array_unique(
-      array_map('intval', session('soft_deleted_department_ids', []))
-    ));
-
-    $combined = array_values(array_filter(
-      $this->departments,
-      function (array $departments) use ($deletedIndex) {
-        return !isset($deletedIndex[(int) $departments['id']]);
-      }
-    ));
-
-    return collect($combined);
-  }
-
+  // Pagination & filter reactions
   /**
    * Navigates to a given page number.
    *
@@ -80,6 +75,7 @@ class DepartmentsIndex extends Component
     // selection removed
   }
 
+  // Filters: search update reaction
   /**
    * Resets the current page to 1 when the search filter is updated.
    *
@@ -91,6 +87,7 @@ class DepartmentsIndex extends Component
     $this->page = 1;
   }
 
+  // Filters: clear/reset
   /**
    * Resets the search filter and the current page to 1.
    *
@@ -103,6 +100,7 @@ class DepartmentsIndex extends Component
     $this->page = 1;
   }
 
+  // Edit/Create workflows
   /**
    * Resets the edit fields to their default values and opens the edit department modal.
    *
@@ -133,34 +131,7 @@ class DepartmentsIndex extends Component
     $this->dispatch('bs:open', id: 'deptModal');
   }
 
-  /**
-   * Returns the validation rules for the justification field.
-   *
-   * The rules are as follows:
-   * - required: The justification field is required.
-   * - string: The justification field must be a string.
-   * - min:3: The justification field must be at least 3 characters in length.
-   *
-   * @return array The validation rules for the justification field.
-   */
-  protected function rules(): array
-  {
-    return [
-      'justification' => ['required', 'string', 'min:3'],
-    ];
-  }
-
-  /**
-   * Validates only the justification field.
-   *
-   * This function is a helper to validate only the justification field by calling
-   * `validateOnly` with the justification field as the parameter.
-   */
-  protected function validateJustification(): void
-  {
-    $this->validateOnly('justification');
-  }
-
+  // Persist edits / session writes
   /**
    * Opens the justification modal for saving the department data.
    *
@@ -189,10 +160,11 @@ class DepartmentsIndex extends Component
     $this->reset(['justification', 'actionType']);
   }
 
+  // Delete workflows
   /**
    * Opens the justification modal for deleting the department with the given ID.
    * This function should be called when the user wants to delete a department.
-   * It sets the currently edited department ID and the isDeleting flag to true, and then opens the justification modal.
+   * It sets the currently edited department ID and sets actionType to 'delete', then opens the justification modal.
    * @param int $id The ID of the department to delete
    */
   public function delete(int $id): void
@@ -220,12 +192,48 @@ class DepartmentsIndex extends Component
     $this->reset(['editId', 'justification', 'actionType']);
   }
 
+  // Render
+  /**
+   * Renders the departments index page.
+   *
+   * This function renders the departments index page and provides the necessary data
+   * to the view. It paginates the filtered collection of departments and ensures
+   * that the current page is within the bounds of the paginator. It then
+   * returns the view with the paginated data and the visible IDs.
+   *
+   * @return Response
+   */
+  public function render()
+  {
+    $paginator = $this->paginated();
+    $visibleIds = $paginator->pluck('id')->all();
+    return view('livewire.admin.departments-index', [
+      'rows' => $paginator,
+      'visibleIds' => $visibleIds,
+      'codes' => $this->codes,
+    ]);
+  }
+
+  // Private/Protected Helper Methods
+  // Data aggregation / sources
+  protected function allDepartments(): Collection
+  {
+    $deletedIndex = array_flip(array_unique(
+      array_map('intval', session('soft_deleted_department_ids', []))
+    ));
+
+    $combined = array_values(array_filter(
+      $this->departments,
+      function (array $departments) use ($deletedIndex) {
+        return !isset($deletedIndex[(int) $departments['id']]);
+      }
+    ));
+
+    return collect($combined);
+  }
+
   /**
    * Filters the departments based on the search query.
-   *
-   * The function takes the search query and filters the departments based on the name, code, or director.
-   * If the search query is empty, all departments are returned.
-   * The function returns a collection of filtered departments.
    */
   protected function filtered(): Collection
   {
@@ -246,35 +254,7 @@ class DepartmentsIndex extends Component
   }
 
   /**
-   * Dynamic list of department codes for filter dropdown (unique, natural sort).
-   *
-   * @return array<int,string>
-   */
-  public function getCodesProperty(): array
-  {
-    $codes = $this->allDepartments()
-      ->pluck('code')
-      ->filter(fn($v) => is_string($v) && trim($v) !== '')
-      ->map(fn($v) => strtoupper(trim($v)))
-      ->all();
-
-    $map = [];
-    foreach ($codes as $c) {
-      $k = mb_strtolower($c);
-      if (!isset($map[$k])) $map[$k] = $c;
-    }
-    $values = array_values($map);
-    usort($values, fn($a, $b) => strnatcasecmp($a, $b));
-    return $values;
-  }
-
-  /**
    * Paginates the filtered collection of departments.
-   *
-   * This function takes the filtered collection of departments, slices it based on the current page and page size,
-   * and returns a LengthAwarePaginator object. The paginator is configured to use the current URL and query string.
-   *
-   * @return LengthAwarePaginator
    */
   protected function paginated(): LengthAwarePaginator
   {
@@ -284,23 +264,20 @@ class DepartmentsIndex extends Component
   }
 
   /**
-   * Renders the departments index page.
-   *
-   * This function renders the departments index page and provides the necessary data
-   * to the view. It paginates the filtered collection of departments and ensures
-   * that the current page is within the bounds of the paginator. It then
-   * returns the view with the paginated data and the visible IDs.
-   *
-   * @return Response
+   * Returns the validation rules for the justification field.
    */
-  public function render()
+  protected function rules(): array
   {
-    $paginator = $this->paginated();
-    $visibleIds = $paginator->pluck('id')->all();
-    return view('livewire.admin.departments-index', [
-      'rows' => $paginator,
-      'visibleIds' => $visibleIds,
-      'codes' => $this->codes,
-    ]);
+    return [
+      'justification' => ['required', 'string', 'min:3'],
+    ];
+  }
+
+  /**
+   * Validates only the justification field.
+   */
+  protected function validateJustification(): void
+  {
+    $this->validateOnly('justification');
   }
 }

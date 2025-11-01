@@ -14,9 +14,10 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class AuditTrailIndex extends Component
 {
+  // Traits / shared state
   use WithPagination;
 
-  // Filters
+  // Filters / query params
   public ?int $userId = null;
   public string $action = '';           // e.g. 'USER_UPDATE'
   public ?string $from = null;          // '2025-01-01'
@@ -28,6 +29,7 @@ class AuditTrailIndex extends Component
   public ?int $detailsId = null;        // for modal
   public array $details = [];
 
+  // Filter reactions
   /**
    * Keep pagination in sync when filter fields change.
    *
@@ -40,6 +42,7 @@ class AuditTrailIndex extends Component
     }
   }
 
+  // Filters: clear/reset
   /**
    * Reset all filters to their defaults and reset pagination.
    */
@@ -50,6 +53,7 @@ class AuditTrailIndex extends Component
     $this->resetPage();
   }
 
+  // Details modal
   /**
    * Populate and show the details modal for the given audit record.
    *
@@ -114,84 +118,7 @@ class AuditTrailIndex extends Component
     $this->dispatch('bs:open', id: 'auditDetails'); // Bootstrap modal opener
   }
 
-  /**
-   * Resolve the primary key column name for the audit_trail table.
-   *
-   * @return string|null The column name if found, otherwise null.
-   */
-  private function resolveIdColumn(): ?string
-  {
-    foreach (['audit_id', 'id', 'at_id'] as $col) {
-      if (Schema::hasColumn('audit_trail', $col)) {
-        return $col;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Build the base query with aliased columns to normalize schema variations.
-   *
-   * @return \Illuminate\Database\Eloquent\Builder
-   */
-  protected function baseQuery()
-  {
-    // Alias common column variants to what the view expects.
-    // This lets us work whether the table uses columns like
-    //  - audit_id / a_action / a_created_at, or
-    //  - id / action / created_at (migration defaults), or
-    //  - at_id / at_action (older naming).
-    return self::filterAuditTrail(AuditTrail::query())
-      ->selectRaw(
-        "COALESCE(audit_id, at_id, id)               as audit_id, " .
-          "user_id, " .
-          "COALESCE(a_action, at_action, action)       as a_action, " .
-          "COALESCE(a_target_type, target_type)        as a_target_type, " .
-          "COALESCE(a_target_id, target_id)            as a_target_id, " .
-          "ip, method, path, " .
-          "COALESCE(a_created_at, created_at)          as a_created_at"
-      );
-  }
-
-  /**
-   * Build in-memory dummy rows when there is no database data yet.
-   */
-  protected function dummyRows(): Collection
-  {
-    $now = now();
-    $actions = ['USER_CREATE', 'USER_UPDATE', 'VENUE_CREATE', 'VENUE_UPDATE', 'EVENT_SUBMIT', 'EVENT_APPROVE', 'ADMIN_DELETE'];
-    $methods = ['GET', 'POST', 'PUT', 'DELETE'];
-    $targets = [
-      ['App\\Models\\User', 12],
-      ['App\\Models\\User', 34],
-      ['App\\Models\\Venue', 5],
-      ['App\\Models\\Event', 99],
-    ];
-
-    $rows = [];
-    for ($i = 1; $i <= 30; $i++) {
-      $t = $targets[array_rand($targets)];
-      $rows[] = (object) [
-        'audit_id'      => $i,
-        'user_id'       => rand(1, 10),
-        'a_action'      => $actions[array_rand($actions)],
-        'a_target_type' => $t[0],
-        'a_target_id'   => $t[1],
-        'ip'            => "192.168.1." . rand(2, 254),
-        'method'        => $methods[array_rand($methods)],
-        'path'          => '/api/example/' . $i,
-        'a_created_at'  => $now->copy()->subMinutes($i * 7)->toDateTimeString(),
-      ];
-    }
-    return collect($rows);
-  }
-
-  /**
-   * Render the audit trail index view using either dummy data or DB records.
-   *
-   * @return \Illuminate\Contracts\View\View
-   */
-
+  // Filtering helper
   /**
    * Apply all filters to the audit trail query.
    */
@@ -209,7 +136,7 @@ class AuditTrailIndex extends Component
     return $query;
   }
 
-
+  // Render
   /**
    * Render the Audit Trail list view.
    */
@@ -258,5 +185,81 @@ class AuditTrailIndex extends Component
 
     $rows = $searchTerm->paginate($this->perPage)->withQueryString();
     return view('livewire.admin.audit-trail-index', compact('rows'));
+  }
+
+  // Private/Protected Helper Methods
+  // Schema helpers
+  /**
+   * Resolve the primary key column name for the audit_trail table.
+   *
+   * @return string|null The column name if found, otherwise null.
+   */
+  private function resolveIdColumn(): ?string
+  {
+    foreach (['audit_id', 'id', 'at_id'] as $col) {
+      if (Schema::hasColumn('audit_trail', $col)) {
+        return $col;
+      }
+    }
+    return null;
+  }
+
+  // Query builder / base
+  /**
+   * Build the base query with aliased columns to normalize schema variations.
+   *
+   * @return \Illuminate\Database\Eloquent\Builder
+   */
+  protected function baseQuery()
+  {
+    // Alias common column variants to what the view expects.
+    // This lets us work whether the table uses columns like
+    //  - audit_id / a_action / a_created_at, or
+    //  - id / action / created_at (migration defaults), or
+    //  - at_id / at_action (older naming).
+    return self::filterAuditTrail(AuditTrail::query())
+      ->selectRaw(
+        "COALESCE(audit_id, at_id, id)               as audit_id, " .
+          "user_id, " .
+          "COALESCE(a_action, at_action, action)       as a_action, " .
+          "COALESCE(a_target_type, target_type)        as a_target_type, " .
+          "COALESCE(a_target_id, target_id)            as a_target_id, " .
+          "ip, method, path, " .
+          "COALESCE(a_created_at, created_at)          as a_created_at"
+      );
+  }
+
+  // Dummy data for development
+  /**
+   * Build in-memory dummy rows when there is no database data yet.
+   */
+  protected function dummyRows(): Collection
+  {
+    $now = now();
+    $actions = ['USER_CREATE', 'USER_UPDATE', 'VENUE_CREATE', 'VENUE_UPDATE', 'EVENT_SUBMIT', 'EVENT_APPROVE', 'ADMIN_DELETE'];
+    $methods = ['GET', 'POST', 'PUT', 'DELETE'];
+    $targets = [
+      ['App\\Models\\User', 12],
+      ['App\\Models\\User', 34],
+      ['App\\Models\\Venue', 5],
+      ['App\\Models\\Event', 99],
+    ];
+
+    $rows = [];
+    for ($i = 1; $i <= 30; $i++) {
+      $t = $targets[array_rand($targets)];
+      $rows[] = (object) [
+        'audit_id'      => $i,
+        'user_id'       => rand(1, 10),
+        'a_action'      => $actions[array_rand($actions)],
+        'a_target_type' => $t[0],
+        'a_target_id'   => $t[1],
+        'ip'            => "192.168.1." . rand(2, 254),
+        'method'        => $methods[array_rand($methods)],
+        'path'          => '/api/example/' . $i,
+        'a_created_at'  => $now->copy()->subMinutes($i * 7)->toDateTimeString(),
+      ];
+    }
+    return collect($rows);
   }
 }

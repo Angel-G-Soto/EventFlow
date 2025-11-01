@@ -13,50 +13,57 @@ use App\Livewire\Traits\VenueEditState;
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
+    // Traits / shared state
     use VenueFilters, VenueEditState;
 
+    // Properties / backing stores
     public array $venues = [];
     public $csvFile;
+
+    // Accessors and Mutators
+    /**
+     * Dynamic list of departments based on the current venues (excluding soft-deleted).
+     * Sorted naturally, case-insensitive.
+     *
+     * @return array<int,string>
+     */
+    public function getDepartmentsProperty(): array
+    {
+        // Gather departments from current venues (excluding soft-deleted)
+        $deps = $this->allVenues()
+            ->pluck('department')
+            ->filter(fn($venue) => is_string($venue) && trim($venue) !== '')
+            ->map(fn($venue) => trim($venue))
+            ->all();
+
+        // Case-insensitive de-duplication while preserving first casing seen
+        $map = [];
+        foreach ($deps as $d) {
+            $k = mb_strtolower($d);
+            if (!isset($map[$k])) {
+                $map[$k] = $d;
+            }
+        }
+
+        // Natural, case-insensitive sort
+        $values = array_values($map);
+        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
+        return $values;
+    }
 
     /**
      * Initializes the component by retrieving all the venues from the database.
      *
      * This function is called when the component is mounted.
      */
+    // Lifecycle
     public function mount()
     {
         $this->venues = VenueRepository::all();
     }
 
-    /**
-     * Returns a collection of all the venues, excluding any soft-deleted venues.
-     *
-     * This function uses the session variable 'soft_deleted_venue_ids' to filter
-     * out any venues that have been deleted. It returns a collection of all the
-     * remaining venues.
-     *
-     * @return Collection
-     */
-    protected function allVenues(): Collection
-    {
-        // Exclude soft-deleted IDs for this session
-        $deletedIds   = array_map('intval', session('soft_deleted_venue_ids', []));
-        $deletedIndex = array_flip(array_unique($deletedIds));
 
-        $combined = array_values(array_filter($this->venues, fn(array $venue) => !isset($deletedIndex[(int) ($venue['id'] ?? 0)])));
-
-        // Normalize minimal shape to avoid undefined index notices in views/filters
-        $combined = array_map(function (array $venue) {
-            $venue['manager']   = $venue['manager']   ?? '';
-            $venue['status']    = $venue['status']    ?? 'Active';
-            $venue['features']  = isset($venue['features']) && is_array($venue['features']) ? array_values(array_unique($venue['features'])) : [];
-            $venue['timeRanges'] = isset($venue['timeRanges']) && is_array($venue['timeRanges']) ? array_values($venue['timeRanges']) : [];
-            return $venue;
-        }, $combined);
-
-        return collect($combined);
-    }
-
+    // Filters: clear/reset
     /**
      * Resets all filters to their default values, and resets the current page to 1.
      *
@@ -71,6 +78,7 @@ class VenuesIndex extends Component
         $this->page = 1;
     }
 
+    // Pagination & filter reactions
     /**
      * Navigates to a given page number.
      *
@@ -90,6 +98,7 @@ class VenuesIndex extends Component
         $this->page = max(1, min($target, $last));
     }
 
+    // Filters: search update reaction
     /**
      * Resets the current page to 1 when the search filter is updated.
      *
@@ -101,6 +110,7 @@ class VenuesIndex extends Component
         $this->page = 1;
     }
 
+    // Create / modal workflows
     /**
      * Resets the edit fields to their default values and opens the edit venue modal.
      *
@@ -133,6 +143,7 @@ class VenuesIndex extends Component
         $this->dispatch('toast', message: 'CSV upload is disabled');
     }
 
+    // CSV import
     /**
      * Validates the CSV file, and then imports the venues from the CSV file.
      *
@@ -189,6 +200,7 @@ class VenuesIndex extends Component
         $this->dispatch('toast', message: 'Venues imported from CSV');
     }
 
+    // Edit workflow
     /**
      * Opens the edit venue modal with the given ID.
      * If the venue is not found, the function does nothing.
@@ -212,6 +224,7 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueModal');
     }
 
+    // Validation / rules
     /**
      * Returns an array of rules for the edit venue form.
      *
@@ -249,6 +262,7 @@ class VenuesIndex extends Component
         ]);
     }
 
+    // Persist edits / session writes
     /**
      * Validates the venue modal form and then opens the justification modal.
      *
@@ -319,10 +333,11 @@ class VenuesIndex extends Component
         $this->reset(['justification', 'actionType', 'editId']);
     }
 
+    // Delete workflows
     /**
      * Opens the justification modal for the venue with the given ID.
      * This function should be called when the user wants to delete a venue.
-     * It sets the currently edited venue ID and the isDeleting flag to true, and then opens the justification modal.
+     * It sets the currently edited venue ID and sets actionType to 'delete', then opens the justification modal.
      * @param int $id The ID of the venue to delete
      */
     public function delete(int $id): void
@@ -353,6 +368,7 @@ class VenuesIndex extends Component
     // Restore-all functionality removed
 
 
+    // Time range helpers
     /**
      * Adds a new time range to the list of time ranges.
      *
@@ -379,15 +395,55 @@ class VenuesIndex extends Component
         $this->timeRanges = array_values($this->timeRanges);
     }
 
+    // Render
+    /**
+     * Renders the venues index page.
+     *
+     * This function renders the venues index page and provides the necessary data
+     * to the view. It paginates the filtered collection of venues and ensures
+     * that the current page is within the bounds of the paginator. It then
+     * returns the view with the paginated data and the visible IDs.
+     */
+    public function render()
+    {
+        $paginator = $this->paginated();
+        if ($this->page !== $paginator->currentPage()) {
+            $paginator = $this->paginated();
+        }
+        $visibleIds = $paginator->pluck('id')->all();
+        return view('livewire.admin.venues-index', [
+            'rows' => $paginator,
+            'visibleIds' => $visibleIds,
+            'departments' => $this->departments,
+        ]);
+    }
+
+    // Private/Protected Helper Methods
+    /**
+     * Returns a collection of all the venues, excluding any soft-deleted venues.
+     */
+    protected function allVenues(): Collection
+    {
+        // Exclude soft-deleted IDs for this session
+        $deletedIds   = array_map('intval', session('soft_deleted_venue_ids', []));
+        $deletedIndex = array_flip(array_unique($deletedIds));
+
+        $combined = array_values(array_filter($this->venues, fn(array $venue) => !isset($deletedIndex[(int) ($venue['id'] ?? 0)])));
+
+        // Normalize minimal shape to avoid undefined index notices in views/filters
+        $combined = array_map(function (array $venue) {
+            $venue['manager']   = $venue['manager']   ?? '';
+            $venue['status']    = $venue['status']    ?? 'Active';
+            $venue['features']  = isset($venue['features']) && is_array($venue['features']) ? array_values(array_unique($venue['features'])) : [];
+            $venue['timeRanges'] = isset($venue['timeRanges']) && is_array($venue['timeRanges']) ? array_values($venue['timeRanges']) : [];
+            return $venue;
+        }, $combined);
+
+        return collect($combined);
+    }
+
     /**
      * Returns a filtered collection of venues based on the current search query.
-     *
-     * The collection is filtered on the following criteria:
-     * - The search query is empty, or the venue name or manager contains the search query.
-     * - The department filter is empty, or the venue department matches the filter.
-     * - The capacity filter is empty, or the venue capacity is within the range of the filter.
-     *
-     * @return Collection The filtered collection of venues
      */
     protected function filtered(): Collection
     {
@@ -410,13 +466,6 @@ class VenuesIndex extends Component
 
     /**
      * Paginate the filtered collection of venues.
-     *
-     * This function takes the filtered collection of venues and paginates it
-     * based on the current page and page size. It then returns a
-     * LengthAwarePaginator object, which can be used to display the
-     * paginated data.
-     *
-     * @return LengthAwarePaginator
      */
     protected function paginated(): LengthAwarePaginator
     {
@@ -429,42 +478,7 @@ class VenuesIndex extends Component
     }
 
     /**
-     * Dynamic list of departments based on the current venues (excluding soft-deleted).
-     * Sorted naturally, case-insensitive.
-     *
-     * @return array<int,string>
-     */
-    public function getDepartmentsProperty(): array
-    {
-        // Gather departments from current venues (excluding soft-deleted)
-        $deps = $this->allVenues()
-            ->pluck('department')
-            ->filter(fn($venue) => is_string($venue) && trim($venue) !== '')
-            ->map(fn($venue) => trim($venue))
-            ->all();
-
-        // Case-insensitive de-duplication while preserving first casing seen
-        $map = [];
-        foreach ($deps as $d) {
-            $k = mb_strtolower($d);
-            if (!isset($map[$k])) {
-                $map[$k] = $d;
-            }
-        }
-
-        // Natural, case-insensitive sort
-        $values = array_values($map);
-        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
-        return $values;
-    }
-
-    /**
      * Resets the edit form properties to their default values.
-     *
-     * This function is called when the edit form is closed or when the user
-     * submits the form successfully. It resets the properties to their
-     * default values, ensuring that the form is cleared and ready for
-     * the next edit operation.
      */
     protected function resetEdit(): void
     {
@@ -483,27 +497,5 @@ class VenuesIndex extends Component
         $this->vStatus   = 'Active';
         $this->vFeatures = [];
         $this->timeRanges = [];
-    }
-
-    /**
-     * Renders the venues index page.
-     *
-     * This function renders the venues index page and provides the necessary data
-     * to the view. It paginates the filtered collection of venues and ensures
-     * that the current page is within the bounds of the paginator. It then
-     * returns the view with the paginated data and the visible IDs.
-     */
-    public function render()
-    {
-        $paginator = $this->paginated();
-        if ($this->page !== $paginator->currentPage()) {
-            $paginator = $this->paginated();
-        }
-        $visibleIds = $paginator->pluck('id')->all();
-        return view('livewire.admin.venues-index', [
-            'rows' => $paginator,
-            'visibleIds' => $visibleIds,
-            'departments' => $this->departments,
-        ]);
     }
 }

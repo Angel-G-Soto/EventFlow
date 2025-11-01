@@ -166,19 +166,22 @@
               <div class="row g-2">
                 <div class="col-12 col-md-4">
                   <div class="form-check">
-                    <input id="ev_v_handles_food" class="form-check-input" type="checkbox" disabled {{ $eHandlesFood ? 'checked' : '' }}>
+                    <input id="ev_v_handles_food" class="form-check-input" type="checkbox" disabled {{ $eHandlesFood
+                      ? 'checked' : '' }}>
                     <label class="form-check-label" for="ev_v_handles_food">Handles food</label>
                   </div>
                 </div>
                 <div class="col-12 col-md-4">
                   <div class="form-check">
-                    <input id="ev_v_use_funds" class="form-check-input" type="checkbox" disabled {{ $eUseInstitutionalFunds ? 'checked' : '' }}>
+                    <input id="ev_v_use_funds" class="form-check-input" type="checkbox" disabled {{
+                      $eUseInstitutionalFunds ? 'checked' : '' }}>
                     <label class="form-check-label" for="ev_v_use_funds">Uses institutional funds</label>
                   </div>
                 </div>
                 <div class="col-12 col-md-4">
                   <div class="form-check">
-                    <input id="ev_v_external_guest" class="form-check-input" type="checkbox" disabled {{ $eExternalGuest ? 'checked' : '' }}>
+                    <input id="ev_v_external_guest" class="form-check-input" type="checkbox" disabled {{ $eExternalGuest
+                      ? 'checked' : '' }}>
                     <label class="form-check-label" for="ev_v_external_guest">External guests</label>
                   </div>
                 </div>
@@ -291,7 +294,7 @@
 
   {{-- Justification for save/delete/approve/deny --}}
   <x-justification id="oversightJustify"
-    submit="{{ $this->isDeleting ? 'confirmDelete' : (in_array($actionType, ['approve','deny']) ? 'confirmAction' : 'confirmSave') }}"
+    submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : (in_array(($actionType ?? ''), ['approve','deny']) ? 'confirmAction' : 'confirmSave') }}"
     model="justification" />
 
   {{-- Reroute modal --}}

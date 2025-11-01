@@ -16,6 +16,7 @@ use Illuminate\Validation\Rule;
 #[Layout('layouts.app')]
 class EventsIndex extends Component
 {
+    // Traits / shared state
     use EventFilters, EventEditState;
 
     /**
@@ -24,6 +25,7 @@ class EventsIndex extends Component
      *
      * @var array<int,array<string,mixed>>
      */
+    // Properties / backing stores
     public array $requests = [];
     /**
      * Pool of category names generated from CategoryFactory (no DB).
@@ -32,9 +34,63 @@ class EventsIndex extends Component
      */
     public array $categoryPool = [];
 
+    // Accessors and Mutators
+    /**
+     * Dynamic list of organizations derived from current requests (excluding soft-deleted).
+     * Falls back to requestor when organization is missing. Sorted naturally, case-insensitive.
+     *
+     * @return array<int,string>
+     */
+    public function getOrganizationsProperty(): array
+    {
+        $vals = $this->allRequests()
+            ->map(function ($request) {
+                $v = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
+                return is_string($v) ? trim($v) : '';
+            })
+            ->filter(fn($v) => $v !== '')
+            ->all();
+
+        // Case-insensitive unique preserving first seen casing
+        $map = [];
+        foreach ($vals as $v) {
+            $k = mb_strtolower($v);
+            if (!isset($map[$k])) $map[$k] = $v;
+        }
+
+        $values = array_values($map);
+        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
+        return $values;
+    }
+
+    /**
+     * Dynamic list of statuses from current requests (excluding soft-deleted).
+     * Unique, naturally sorted, preserves original casing of first occurrence.
+     *
+     * @return array<int,string>
+     */
+    public function getStatusesProperty(): array
+    {
+        $vals = $this->allRequests()
+            ->pluck('status')
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim($v))
+            ->all();
+
+        $map = [];
+        foreach ($vals as $v) {
+            $k = mb_strtolower($v);
+            if (!isset($map[$k])) $map[$k] = $v;
+        }
+        $values = array_values($map);
+        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
+        return $values;
+    }
+
     /**
      * Initialize the component with in-memory event requests and a category pool generated from factories.
      */
+    // Lifecycle
     public function mount(): void
     {
         // Generate a consistent set of fake events without touching the DB
@@ -95,29 +151,7 @@ class EventsIndex extends Component
         $this->requests = $mapped;
     }
 
-    /**
-     * Returns a collection of all events, excluding any soft-deleted events.
-     *
-     * This function uses the session variable 'soft_deleted_event_ids' to filter
-     * out any events that have been deleted. It returns a collection of all the
-     * remaining events.
-     *
-     * @return Collection
-     */
-    protected function allRequests(): Collection
-    {
-        $deletedIndex = array_flip(array_unique(array_map('intval', session('soft_deleted_event_ids', []))));
-
-        $combined = array_values(array_filter(
-            $this->requests,
-            function (array $request) use ($deletedIndex) {
-                return !isset($deletedIndex[(int) ($request['id'] ?? 0)]);
-            }
-        ));
-
-        return collect($combined);
-    }
-
+    // Filters: search update reaction
     /**
      * Resets the current page to 1 when the search filter is updated.
      *
@@ -129,7 +163,7 @@ class EventsIndex extends Component
         $this->page = 1;
     }
 
-
+    // Filters: clear/reset
 
     /**
      * Clears all filters and resets the current page to 1.
@@ -149,6 +183,7 @@ class EventsIndex extends Component
         $this->page = 1;
     }
 
+    // Edit/View workflows
     /**
      * Opens the edit event modal with the given ID.
      * If the event is not found, the function does nothing.
@@ -216,33 +251,7 @@ class EventsIndex extends Component
         $this->dispatch('bs:open', id: 'oversightView');
     }
 
-    /**
-     * Returns an array of validation rules for the justification field.
-     *
-     * The rules array contains a single key-value pair where the key is 'justification'
-     * and the value is an array of validation rules. The validation rules are
-     * 'required', 'string', and 'min:3'.
-     *
-     * @return array
-     */
-    protected function rules(): array
-    {
-        return [
-            'justification' => ['required', 'string', 'min:3']
-        ];
-    }
-
-    /**
-     * Validates only the justification field.
-     *
-     * This function is a helper to validate only the justification field by calling
-     * `validateOnly` with the justification field as the parameter.
-     */
-    protected function validateJustification(): void
-    {
-        $this->validateOnly('justification');
-    }
-
+    // Persist edits / session writes
     /**
      * Opens the justification modal for saving the event.
      *
@@ -275,6 +284,7 @@ class EventsIndex extends Component
         $this->reset(['actionType', 'justification']);
     }
 
+    // Delete workflows
     /**
      * Opens the justification modal for deleting an event.
      *
@@ -308,6 +318,7 @@ class EventsIndex extends Component
 
     // Restore-all functionality removed
 
+    // Action workflows (approve/deny/advance/reroute)
     /**
      * Opens the justification modal with the action type set to 'approve'.
      *
@@ -357,6 +368,7 @@ class EventsIndex extends Component
         $this->dispatch('bs:open', id: 'oversightReroute');
     }
 
+    // Confirm action flows
     /**
      * Closes the justification and edit modals and displays a toast message indicating that the action has been completed.
      *
@@ -455,19 +467,75 @@ class EventsIndex extends Component
     }
 
     /**
+     * Navigates to a given page number, clamping within valid bounds.
+     */
+    public function goToPage(int $target): void
+    {
+        $total = $this->filtered()->count();
+        $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
+        $this->page = max(1, min($target, $last));
+    }
+
+    /**
+     * Renders the events index page.
+     *
+     * The page is re-paginated if the current page number is not the same as the paginator's current page number.
+     * The visible IDs are obtained from the paginator.
+     * The view is rendered with the paginator, visible IDs, and organizations.
+     *
+     * @return Response
+     */
+    public function render()
+    {
+        $paginator = $this->paginated();
+        if ($this->page !== $paginator->currentPage()) {
+            $paginator = $this->paginated();
+        }
+        $visibleIds = $paginator->pluck('id')->all();
+        return view('livewire.admin.events-index', [
+            'rows' => $paginator,
+            'visibleIds' => $visibleIds,
+            'organizations' => $this->organizations,
+            'statuses' => $this->statuses,
+            'categories' => $this->categoryPool,
+        ]);
+    }
+
+    // Presentation helpers
+    /**
+     * Render the Events list with filters and modals.
+     */
+    public function statusBadgeClass(string $status): string
+    {
+        $s = mb_strtolower(trim($status));
+        if ($s === '') return 'text-bg-secondary';
+        if (str_contains($s, 'approve')) return 'text-bg-success';
+        if (str_contains($s, 'deny') || str_contains($s, 'reject') || str_contains($s, 'cancel') || str_contains($s, 'withdraw')) return 'text-bg-danger';
+        if (str_contains($s, 'pending')) return 'text-bg-primary';
+        if (str_contains($s, 'complete')) return 'text-bg-info';
+        return 'text-bg-secondary';
+    }
+
+    // Private/Protected Helper Methods
+    /**
+     * Returns a collection of all events, excluding any soft-deleted events.
+     */
+    protected function allRequests(): Collection
+    {
+        $deletedIndex = array_flip(array_unique(array_map('intval', session('soft_deleted_event_ids', []))));
+
+        $combined = array_values(array_filter(
+            $this->requests,
+            function (array $request) use ($deletedIndex) {
+                return !isset($deletedIndex[(int) ($request['id'] ?? 0)]);
+            }
+        ));
+
+        return collect($combined);
+    }
+
+    /**
      * Applies filters to the collection of all event requests (excluding soft-deleted).
-     *
-     * The filters are:
-     * - Search term: filters by title and requestor
-     * - Status: filters by status
-     * - Venue: filters by venue
-     * - Category: filters by category
-     * - Organization: filters by organization (falls back to requestor when organization is missing)
-     * - Date range: filters by from and to dates
-     *
-     * Returns a filtered collection of event requests.
-     *
-     * @return Collection
      */
     protected function filtered(): Collection
     {
@@ -532,11 +600,6 @@ class EventsIndex extends Component
 
     /**
      * Paginates the filtered collection of event requests.
-     *
-     * This function takes the filtered collection of event requests, slices it based on the current page and page size,
-     * and returns a LengthAwarePaginator object. The paginator is configured to use the current URL and query string.
-     *
-     * @return LengthAwarePaginator
      */
     protected function paginated(): LengthAwarePaginator
     {
@@ -546,103 +609,20 @@ class EventsIndex extends Component
     }
 
     /**
-     * Navigates to a given page number, clamping within valid bounds.
+     * Returns an array of validation rules for the justification field.
      */
-    public function goToPage(int $target): void
+    protected function rules(): array
     {
-        $total = $this->filtered()->count();
-        $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
-        $this->page = max(1, min($target, $last));
+        return [
+            'justification' => ['required', 'string', 'min:3']
+        ];
     }
 
     /**
-     * Dynamic list of organizations derived from current requests (excluding soft-deleted).
-     * Falls back to requestor when organization is missing. Sorted naturally, case-insensitive.
-     *
-     * @return array<int,string>
+     * Validates only the justification field.
      */
-    public function getOrganizationsProperty(): array
+    protected function validateJustification(): void
     {
-        $vals = $this->allRequests()
-            ->map(function ($request) {
-                $v = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
-                return is_string($v) ? trim($v) : '';
-            })
-            ->filter(fn($v) => $v !== '')
-            ->all();
-
-        // Case-insensitive unique preserving first seen casing
-        $map = [];
-        foreach ($vals as $v) {
-            $k = mb_strtolower($v);
-            if (!isset($map[$k])) $map[$k] = $v;
-        }
-
-        $values = array_values($map);
-        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
-        return $values;
-    }
-
-    /**
-     * Renders the events index page.
-     *
-     * The page is re-paginated if the current page number is not the same as the paginator's current page number.
-     * The visible IDs are obtained from the paginator.
-     * The view is rendered with the paginator, visible IDs, and organizations.
-     *
-     * @return Response
-     */
-    public function render()
-    {
-        $paginator = $this->paginated();
-        if ($this->page !== $paginator->currentPage()) {
-            $paginator = $this->paginated();
-        }
-        $visibleIds = $paginator->pluck('id')->all();
-        return view('livewire.admin.events-index', [
-            'rows' => $paginator,
-            'visibleIds' => $visibleIds,
-            'organizations' => $this->organizations,
-            'statuses' => $this->statuses,
-            'categories' => $this->categoryPool,
-        ]);
-    }
-
-    /**
-     * Dynamic list of statuses from current requests (excluding soft-deleted).
-     * Unique, naturally sorted, preserves original casing of first occurrence.
-     *
-     * @return array<int,string>
-     */
-    public function getStatusesProperty(): array
-    {
-        $vals = $this->allRequests()
-            ->pluck('status')
-            ->filter(fn($v) => is_string($v) && trim($v) !== '')
-            ->map(fn($v) => trim($v))
-            ->all();
-
-        $map = [];
-        foreach ($vals as $v) {
-            $k = mb_strtolower($v);
-            if (!isset($map[$k])) $map[$k] = $v;
-        }
-        $values = array_values($map);
-        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
-        return $values;
-    }
-
-    /**
-     * Render the Events list with filters and modals.
-     */
-    public function statusBadgeClass(string $status): string
-    {
-        $s = mb_strtolower(trim($status));
-        if ($s === '') return 'text-bg-secondary';
-        if (str_contains($s, 'approve')) return 'text-bg-success';
-        if (str_contains($s, 'deny') || str_contains($s, 'reject') || str_contains($s, 'cancel') || str_contains($s, 'withdraw')) return 'text-bg-danger';
-        if (str_contains($s, 'pending')) return 'text-bg-primary';
-        if (str_contains($s, 'complete')) return 'text-bg-info';
-        return 'text-bg-secondary';
+        $this->validateOnly('justification');
     }
 }

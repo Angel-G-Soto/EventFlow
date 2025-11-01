@@ -14,9 +14,26 @@ use App\Repositories\UserRepository;
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
+    // Traits / shared state
     use UserFilters, UserEditState;
 
+    // Properties / backing stores
     public array $users = [];
+
+    // Accessors and Mutators
+    /**
+     * Returns true if the current user has a role that does not require a department to be associated with them.
+     *
+     * This property is used to conditionally render a department select input for users who are being edited.
+     *
+     * @return bool True if the current user has a role that does not require a department, false otherwise.
+     */
+    public function getHasRoleWithoutDepartmentProperty(): bool
+    {
+        return $this->roleExemptsDepartment($this->editRoles);
+    }
+
+    // Lifecycle
     /**
      * Initialize the component by loading the base list of users from the repository.
      */
@@ -25,40 +42,7 @@ class UsersIndex extends Component
         $this->users = UserRepository::all();
     }
 
-    /**
-     * Returns a collection of all users, both seeded and created by users.
-     * This function takes into account soft-deleted users (no hard delete), and will not include them in the collection.
-     * It also normalizes the data by ensuring each user has a 'roles' key, and optionally includes 'department_id'.
-     *
-     * @return Collection An Eloquent Collection of User objects.
-     */
-    protected function allUsers(): Collection
-    {
-        // Base + newly created (session) users
-        $combined = array_merge($this->users, session('new_users', []));
-
-        // Exclude soft-deleted IDs
-        $deletedIds   = array_map('intval', session('soft_deleted_user_ids', []));
-        $deletedIndex = array_flip(array_unique($deletedIds));
-        $combined = array_values(array_filter($combined, fn($user) => !isset($deletedIndex[(int) ($user['id'] ?? 0)])));
-
-        // Apply edits and normalize in a single pass
-        $edited = session('edited_users', []);
-        $combined = array_map(function (array $user) use ($edited) {
-            if (isset($user['id']) && isset($edited[$user['id']])) {
-                $user = array_merge($user, $edited[$user['id']]);
-            }
-
-            // Ensure roles[] is present and unique (support legacy single 'role')
-            $roles = $user['roles'] ?? ((isset($user['role']) && $user['role'] !== '') ? [$user['role']] : []);
-            $user['roles'] = array_values(array_unique($roles));
-
-            return $user;
-        }, $combined);
-
-        return collect($combined);
-    }
-
+    // Pagination & filter reactions
     /**
      * Navigates to a given page number.
      *
@@ -99,6 +83,7 @@ class UsersIndex extends Component
         $this->page = 1;
     }
 
+    // Filters: clear/reset
     /**
      * Resets the search filter and the current page to 1.
      *
@@ -111,6 +96,7 @@ class UsersIndex extends Component
         $this->page = 1;
     }
 
+    // Edit/Create workflows
     /**
      * Resets the edit fields to their default values and opens the edit user modal.
      *
@@ -149,67 +135,7 @@ class UsersIndex extends Component
         $this->dispatch('bs:open', id: 'editUserModal');
     }
 
-    /**
-     * Returns an array of validation rules for the user edit form.
-     *
-     * The rules are as follows:
-     * - editName: required, string, max 255 characters, regex: /^[a-zA-Z\s]+$/ (only letters and spaces)
-     * - editEmail: required, email, regex: /@upr[a-z]*\.edu$/i (ends with @upr[a-z]*.edu)
-     * - editRoles: array, min 1 items, each item is a string
-     * - editRoles.*: string
-     * - editDepartment: required if the user does not have a role without a department, otherwise nullable, string
-     * - justification: nullable, string, max 200 characters
-     */
-    protected function rules(): array
-    {
-        $roleWithoutDept = $this->roleExemptsDepartment($this->editRoles);
-        return [
-            'editName'       => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'editEmail'      => 'required|email|regex:/@upr[a-z]*\.edu$/i',
-            'editRoles'      => 'array|min:1',
-            'editRoles.*'    => 'string',
-            'editDepartment' => $roleWithoutDept ? 'nullable' : 'required|string',
-            'justification'  => 'nullable|string|max:200',
-        ];
-    }
-
-    /**
-     * Validates only the justification length.
-     *
-     * This function is a helper to validate only the justification length by calling
-     * `validateOnly` with the justification field as the parameter.
-     */
-    protected function validateJustification(): void
-    {
-        $this->validateOnly('justification');
-    }
-
-    /**
-     * Generates a unique user ID by taking the maximum ID of all users (both existing and new),
-     * and incrementing it by 1.
-     *
-     * This function also takes into account IDs that were soft-deleted this session, to avoid
-     * reusing them.
-     *
-     * @return int A unique user ID.
-     */
-    protected function generateUserId(): int
-    {
-        $baseIds = array_column(
-            $this->users,
-            'id'
-        );
-        $new     = session('new_users', []);
-        $newIds  = array_column($new, 'id');
-
-        // Also avoid reusing IDs that were soft-deleted this session.
-        $soft = array_map('intval', session('soft_deleted_user_ids', []));
-        $allIds = array_merge($baseIds, $newIds, $soft);
-        $maxId  = $allIds ? max($allIds) : 0;
-
-        return $maxId + 1;
-    }
-
+    // Persist edits / session writes
     /**
      * Saves the user data after validation.
      *
@@ -279,10 +205,11 @@ class UsersIndex extends Component
         $this->reset(['editId', 'justification', 'actionType']);
     }
 
+    // Delete workflows
     /**
      * Opens the justification modal for the user with the given ID.
      * This function should be called when the user wants to delete a user.
-     * It sets the currently edited user ID and the isDeleting flag to true, and then opens the justification modal.
+     * It sets the currently edited user ID and sets actionType to 'delete', then opens the justification modal.
      * @param int $id The ID of the user to delete
      */
     public function delete(int $id): void
@@ -311,16 +238,85 @@ class UsersIndex extends Component
         $this->reset(['editId', 'justification', 'actionType']);
     }
 
+    // Private/Protected Helper Methods
+    /**
+     * Returns a collection of all users, both seeded and created by users.
+     * This function takes into account soft-deleted users (no hard delete), and will not include them in the collection.
+     * It also normalizes the data by ensuring each user has a 'roles' key, and optionally includes 'department_id'.
+     *
+     * @return Collection An Eloquent Collection of User objects.
+     */
+    protected function allUsers(): Collection
+    {
+        // Base + newly created (session) users
+        $combined = array_merge($this->users, session('new_users', []));
 
-    // Restore-all functionality removed
+        // Exclude soft-deleted IDs
+        $deletedIds   = array_map('intval', session('soft_deleted_user_ids', []));
+        $deletedIndex = array_flip(array_unique($deletedIds));
+        $combined = array_values(array_filter($combined, fn($user) => !isset($deletedIndex[(int) ($user['id'] ?? 0)])));
+
+        // Apply edits and normalize in a single pass
+        $edited = session('edited_users', []);
+        $combined = array_map(function (array $user) use ($edited) {
+            if (isset($user['id']) && isset($edited[$user['id']])) {
+                $user = array_merge($user, $edited[$user['id']]);
+            }
+
+            // Ensure roles[] is present and unique (support legacy single 'role')
+            $roles = $user['roles'] ?? ((isset($user['role']) && $user['role'] !== '') ? [$user['role']] : []);
+            $user['roles'] = array_values(array_unique($roles));
+
+            return $user;
+        }, $combined);
+
+        return collect($combined);
+    }
+
+    /**
+     * Returns an array of validation rules for the user edit form.
+     */
+    protected function rules(): array
+    {
+        $roleWithoutDept = $this->roleExemptsDepartment($this->editRoles);
+        return [
+            'editName'       => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
+            'editEmail'      => 'required|email|regex:/@upr[a-z]*\.edu$/i',
+            'editRoles'      => 'array|min:1',
+            'editRoles.*'    => 'string',
+            'editDepartment' => $roleWithoutDept ? 'nullable' : 'required|string',
+            'justification'  => 'nullable|string|max:200',
+        ];
+    }
+
+    /**
+     * Validates only the justification length.
+     */
+    protected function validateJustification(): void
+    {
+        $this->validateOnly('justification');
+    }
+
+    /**
+     * Generates a unique user ID by taking the maximum ID of all users (both existing and new),
+     * and incrementing it by 1.
+     */
+    protected function generateUserId(): int
+    {
+        $baseIds = array_column($this->users, 'id');
+        $new     = session('new_users', []);
+        $newIds  = array_column($new, 'id');
+
+        // Also avoid reusing IDs that were soft-deleted this session.
+        $soft = array_map('intval', session('soft_deleted_user_ids', []));
+        $allIds = array_merge($baseIds, $newIds, $soft);
+        $maxId  = $allIds ? max($allIds) : 0;
+
+        return $maxId + 1;
+    }
 
     /**
      * Returns a filtered collection of users based on the current search query and selected role.
-     *
-     * The filter function will return true if the search query is empty, or if the user's name or email contains the search query.
-     * Additionally, the filter function will return true if the user has a role that matches the selected role.
-     *
-     * @return Collection
      */
     protected function filtered(): Collection
     {
@@ -342,13 +338,6 @@ class UsersIndex extends Component
 
     /**
      * Paginate the filtered collection of users.
-     *
-     * This function takes the filtered collection of users and paginates it
-     * based on the current page and page size. It then returns a
-     * LengthAwarePaginator object, which can be used to display the
-     * paginated data.
-     *
-     * @return LengthAwarePaginator
      */
     protected function paginated(): LengthAwarePaginator
     {
@@ -368,22 +357,9 @@ class UsersIndex extends Component
     }
 
     /**
-     * Returns true if the current user has a role that does not require a department to be associated with them.
-     *
-     * This property is used to conditionally render a department select input for users who are being edited.
-     *
-     * @return bool True if the current user has a role that does not require a department, false otherwise.
-     */
-    public function getHasRoleWithoutDepartmentProperty(): bool
-    {
-        return $this->roleExemptsDepartment($this->editRoles);
-    }
-
-    /**
      * Determine if any of the given roles do not require a department.
      *
      * @param array<int,string> $roles The set of role names to evaluate.
-     * @return bool True when at least one role is exempt from having a department.
      */
     protected function roleExemptsDepartment(array $roles): bool
     {
@@ -391,6 +367,7 @@ class UsersIndex extends Component
     }
 
 
+    // Render
     /**
      * Renders the Livewire view for the users index page.
      *

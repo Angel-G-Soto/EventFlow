@@ -127,7 +127,7 @@
     </div>
   </div>
 
-  <x-justification id="deptJustify" submit="{{ $this->isDeleting ? 'confirmDelete' : 'confirmSave' }}"
+  <x-justification id="deptJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
     model="justification" />
 
   {{-- Toast --}}
