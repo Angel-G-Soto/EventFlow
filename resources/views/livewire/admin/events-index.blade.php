@@ -2,47 +2,44 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0">Event Oversight</h1>
 
-    <div class="d-none d-md-flex gap-2">
-      <button class="btn btn-outline-success btn-sm" wire:click="restoreUsers" type="button">
-        <i class="bi bi-arrow-clockwise me-1"></i> Restore Deleted
-      </button>
-    </div>
+    <div class="d-none d-md-flex gap-2"></div>
   </div>
 
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
         <div class="col-md-4">
-          <label class="form-label">Search</label>
-          <input class="form-control" placeholder="title, requestor" wire:model.live.debounce.300ms="search">
+          <label class="form-label" for="ev_search">Search</label>
+          <input id="ev_search" class="form-control" placeholder="title, requestor"
+            wire:model.live.debounce.300ms="search">
         </div>
         <div class="col-md-2">
-          <label class="form-label">Status</label>
-          <select class="form-select" wire:model.live="status">
+          <label class="form-label" for="ev_status">Status</label>
+          <select id="ev_status" class="form-select" wire:model.live="status">
             <option value="">All</option>
             @foreach($statuses as $st)
             <option value="{{ $st }}">{{ $st }}</option>
             @endforeach
           </select>
         </div>
-        <div class="col-md-2"><label class="form-label">Venue</label><input class="form-control"
-            wire:model.live="venue"></div>
+        <div class="col-md-2"><label class="form-label" for="ev_venue">Venue</label><input id="ev_venue"
+            class="form-control" wire:model.live="venue"></div>
         {{-- Category filter removed intentionally --}}
         <div class="col-md-2">
-          <label class="form-label">Organization</label>
-          <select class="form-select" wire:model.live="organization">
+          <label class="form-label" for="ev_org">Organization</label>
+          <select id="ev_org" class="form-select" wire:model.live="organization">
             <option value="">All</option>
             @foreach($organizations as $org)
             <option value="{{ $org }}">{{ $org }}</option>
             @endforeach
           </select>
         </div>
-        <div class="col-md-2"><label class="form-label">From</label><input type="datetime-local" class="form-control"
-            wire:model.live="from"></div>
-        <div class="col-md-2"><label class="form-label">To</label><input type="datetime-local" class="form-control"
-            wire:model.live="to"></div>
+        <div class="col-md-2"><label class="form-label" for="ev_from">From</label><input id="ev_from"
+            type="datetime-local" class="form-control" wire:model.live="from"></div>
+        <div class="col-md-2"><label class="form-label" for="ev_to">To</label><input id="ev_to" type="datetime-local"
+            class="form-control" wire:model.live="to"></div>
         <div class="col-12 col-md-2 d-flex align-items-end">
-          <button class="btn btn-outline-secondary w-100" wire:click="clearFilters" type="button">
+          <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
           </button>
         </div>
@@ -53,8 +50,8 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0">Rows</label>
-      <select class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
+      <label class="text-secondary small mb-0" for="ev_rows">Rows</label>
+      <select id="ev_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>
         <option>50</option>
@@ -96,13 +93,16 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-info" wire:click="openView({{ $r['id'] }})">
+                <button class="btn btn-outline-info" wire:click="openView({{ $r['id'] }})"
+                  aria-label="View request {{ $r['id'] }}">
                   <i class="bi bi-info-lg"></i>
                 </button>
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})">
+                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})"
+                  aria-label="Edit request {{ $r['id'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})">
+                <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})"
+                  aria-label="Delete request {{ $r['id'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
@@ -131,56 +131,55 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-eye me-2"></i>View Request #{{ $editId }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="row g-3">
-            <div class="col-md-6"><label class="form-label">Title</label><input class="form-control" readonly
-                value="{{ $eTitle }}"></div>
-            <div class="col-md-3"><label class="form-label">Organization</label><input class="form-control" readonly
-                value="{{ $eOrganization }}"></div>
-            <div class="col-md-3"><label class="form-label">Venue</label><input class="form-control" readonly
-                value="{{ $eVenue }}"></div>
-            <div class="col-md-3"><label class="form-label">Advisor Name</label><input class="form-control" readonly
-                value="{{ $eAdvisorName }}"></div>
-            <div class="col-md-3"><label class="form-label">Advisor Email</label><input class="form-control" readonly
-                value="{{ $eAdvisorEmail }}"></div>
-            <div class="col-md-3"><label class="form-label">Advisor Phone</label><input class="form-control" readonly
-                value="{{ $eAdvisorPhone }}"></div>
+            <div class="col-md-6"><label class="form-label" for="ev_v_title">Title</label><input id="ev_v_title"
+                class="form-control" readonly value="{{ $eTitle }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_org">Organization</label><input id="ev_v_org"
+                class="form-control" readonly value="{{ $eOrganization }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_venue">Venue</label><input id="ev_v_venue"
+                class="form-control" readonly value="{{ $eVenue }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_advisor">Advisor Name</label><input
+                id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
+                id="ev_v_advisor_email" class="form-control" readonly value="{{ $eAdvisorEmail }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_phone">Advisor Phone</label><input
+                id="ev_v_advisor_phone" class="form-control" readonly value="{{ $eAdvisorPhone }}"></div>
             <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
                 value="{{ $eStudentNumber }}"></div>
             <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control" readonly
                 value="{{ $eStudentPhone }}"></div>
-            <div class="col-md-3"><label class="form-label">From</label><input type="datetime-local"
-                class="form-control" readonly value="{{ $eFrom }}"></div>
-            <div class="col-md-3"><label class="form-label">To</label><input type="datetime-local" class="form-control"
-                readonly value="{{ $eTo }}"></div>
-            <div class="col-md-3"><label class="form-label">Attendees</label><input type="number" class="form-control"
-                readonly value="{{ $eAttendees }}"></div>
-            <div class="col-md-3"><label class="form-label">Category</label><input class="form-control" readonly
-                value="{{ $eCategory }}"></div>
-            <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" rows="3"
-                readonly>{{ $ePurpose }}</textarea></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_from">From</label><input id="ev_v_from"
+                type="datetime-local" class="form-control" readonly value="{{ $eFrom }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_to">To</label><input id="ev_v_to"
+                type="datetime-local" class="form-control" readonly value="{{ $eTo }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_attendees">Attendees</label><input
+                id="ev_v_attendees" type="number" class="form-control" readonly value="{{ $eAttendees }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_category">Category</label><input
+                id="ev_v_category" class="form-control" readonly value="{{ $eCategory }}"></div>
+            <div class="col-12"><label class="form-label" for="ev_v_purpose">Description</label><textarea
+                id="ev_v_purpose" class="form-control" rows="3" readonly>{{ $ePurpose }}</textarea></div>
             <div class="col-12">
               <label class="form-label">Policies</label>
               <div class="row g-2">
                 <div class="col-12 col-md-4">
                   <div class="form-check">
-                    <input class="form-check-input" type="checkbox" disabled {{ $eHandlesFood ? 'checked' : '' }}>
-                    <label class="form-check-label">Handles food</label>
+                    <input id="ev_v_handles_food" class="form-check-input" type="checkbox" disabled {{ $eHandlesFood ? 'checked' : '' }}>
+                    <label class="form-check-label" for="ev_v_handles_food">Handles food</label>
                   </div>
                 </div>
                 <div class="col-12 col-md-4">
                   <div class="form-check">
-                    <input class="form-check-input" type="checkbox" disabled {{ $eUseInstitutionalFunds ? 'checked' : ''
-                      }}>
-                    <label class="form-check-label">Uses institutional funds</label>
+                    <input id="ev_v_use_funds" class="form-check-input" type="checkbox" disabled {{ $eUseInstitutionalFunds ? 'checked' : '' }}>
+                    <label class="form-check-label" for="ev_v_use_funds">Uses institutional funds</label>
                   </div>
                 </div>
                 <div class="col-12 col-md-4">
                   <div class="form-check">
-                    <input class="form-check-input" type="checkbox" disabled {{ $eExternalGuest ? 'checked' : '' }}>
-                    <label class="form-check-label">External guests</label>
+                    <input id="ev_v_external_guest" class="form-check-input" type="checkbox" disabled {{ $eExternalGuest ? 'checked' : '' }}>
+                    <label class="form-check-label" for="ev_v_external_guest">External guests</label>
                   </div>
                 </div>
               </div>
@@ -188,7 +187,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
+            aria-label="Close details">Close</button>
         </div>
       </div>
     </div>
@@ -204,38 +204,38 @@
         </div>
         <div class="modal-body">
           <div class="row g-3">
-            <div class="col-md-6"><label class="form-label">Title</label><input class="form-control"
-                wire:model.live="eTitle"></div>
-            <div class="col-md-3"><label class="form-label">Organization</label><input class="form-control"
-                wire:model.live="eOrganization"></div>
-            <div class="col-md-3"><label class="form-label">Venue</label><input class="form-control"
-                wire:model.live="eVenue"></div>
-            <div class="col-md-3"><label class="form-label">Advisor Name</label><input class="form-control"
-                wire:model.live="eAdvisorName"></div>
-            <div class="col-md-3"><label class="form-label">Advisor Email</label><input class="form-control"
-                wire:model.live="eAdvisorEmail"></div>
-            <div class="col-md-3"><label class="form-label">Advisor Phone</label><input class="form-control"
-                wire:model.live="eAdvisorPhone"></div>
-            <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control"
-                wire:model.live="eStudentNumber"></div>
-            <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control"
-                wire:model.live="eStudentPhone"></div>
-            <div class="col-md-3"><label class="form-label">From</label><input type="datetime-local"
-                class="form-control" wire:model.live="eFrom"></div>
-            <div class="col-md-3"><label class="form-label">To</label><input type="datetime-local" class="form-control"
-                wire:model.live="eTo"></div>
-            <div class="col-md-3"><label class="form-label">Attendees</label><input type="number" class="form-control"
-                min="0" wire:model.live="eAttendees"></div>
+            <div class="col-md-6"><label class="form-label" for="ev_e_title">Title</label><input id="ev_e_title"
+                class="form-control" wire:model.live="eTitle"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_org">Organization</label><input id="ev_e_org"
+                class="form-control" wire:model.live="eOrganization"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_venue">Venue</label><input id="ev_e_venue"
+                class="form-control" wire:model.live="eVenue"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_advisor">Advisor Name</label><input
+                id="ev_e_advisor" class="form-control" wire:model.live="eAdvisorName"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_advisor_email">Advisor Email</label><input
+                id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label><input
+                id="ev_e_advisor_phone" class="form-control" wire:model.live="eAdvisorPhone"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
+                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_student_phone">Student Phone</label><input
+                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_from">From</label><input id="ev_e_from"
+                type="datetime-local" class="form-control" wire:model.live="eFrom"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_to">To</label><input id="ev_e_to"
+                type="datetime-local" class="form-control" wire:model.live="eTo"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_e_attendees">Attendees</label><input
+                id="ev_e_attendees" type="number" class="form-control" min="0" wire:model.live="eAttendees"></div>
             <div class="col-md-3">
-              <label class="form-label">Category</label>
-              <select class="form-select" wire:model.live="eCategory">
+              <label class="form-label" for="ev_e_category">Category</label>
+              <select id="ev_e_category" class="form-select" wire:model.live="eCategory">
                 @foreach($categories as $cat)
                 <option value="{{ $cat }}">{{ $cat }}</option>
                 @endforeach
               </select>
             </div>
-            <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" rows="3"
-                wire:model.live="ePurpose"></textarea></div>
+            <div class="col-12"><label class="form-label" for="ev_e_purpose">Description</label><textarea
+                id="ev_e_purpose" class="form-control" rows="3" wire:model.live="ePurpose"></textarea></div>
 
             <div class="col-12">
               <label class="form-label">Policies</label>
@@ -274,16 +274,16 @@
         </div>
         <div class="modal-footer d-flex justify-content-between">
           <div class="btn-group">
-            <button type="button" class="btn btn-outline-success" wire:click.prevent="approve"><i
-                class="bi bi-check2-circle me-1"></i>Approve</button>
-            <button type="button" class="btn btn-outline-danger" wire:click.prevent="deny"><i
+            <button type="button" class="btn btn-outline-success" wire:click.prevent="approve"
+              aria-label="Approve request"><i class="bi bi-check2-circle me-1"></i>Approve</button>
+            <button type="button" class="btn btn-outline-danger" wire:click.prevent="deny" aria-label="Deny request"><i
                 class="bi bi-x-octagon me-1"></i>Deny</button>
-            <button type="button" class="btn btn-outline-secondary" wire:click.prevent="advance"><i
-                class="bi bi-arrow-right-circle me-1"></i>Advance</button>
-            <button type="button" class="btn btn-outline-warning" wire:click.prevent="reroute"><i
-                class="bi bi-shuffle me-1"></i>Re-route</button>
+            <button type="button" class="btn btn-outline-secondary" wire:click.prevent="advance"
+              aria-label="Advance request"><i class="bi bi-arrow-right-circle me-1"></i>Advance</button>
+            <button type="button" class="btn btn-outline-warning" wire:click.prevent="reroute"
+              aria-label="Re-route request"><i class="bi bi-shuffle me-1"></i>Re-route</button>
           </div>
-          <button class="btn btn-primary" type="submit"><i class="bi me-1"></i>Save</button>
+          <button class="btn btn-primary" type="submit" aria-label="Save request"><i class="bi me-1"></i>Save</button>
         </div>
       </form>
     </div>
@@ -300,7 +300,7 @@
       <form class="modal-content" wire:submit.prevent="confirmReroute">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-shuffle me-2"></i>Re-route Request</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -311,8 +311,10 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-warning" type="submit"><i class="bi bi-shuffle me-1"></i>Re-route</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-warning" type="submit" aria-label="Confirm re-route"><i
+              class="bi bi-shuffle me-1"></i>Re-route</button>
         </div>
       </form>
     </div>
@@ -324,7 +326,7 @@
       <form class="modal-content" wire:submit.prevent="confirmAdvance">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-arrow-right-circle me-2"></i>Advance Request</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -335,8 +337,10 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-secondary" type="submit"><i class="bi bi-arrow-right-circle me-1"></i>Advance</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-secondary" type="submit" aria-label="Confirm advance"><i
+              class="bi bi-arrow-right-circle me-1"></i>Advance</button>
         </div>
       </form>
     </div>

@@ -51,8 +51,8 @@ class DepartmentsIndex extends Component
 
     $combined = array_values(array_filter(
       $this->departments,
-      function (array $d) use ($deletedIndex) {
-        return !isset($deletedIndex[(int) $d['id']]);
+      function (array $departments) use ($deletedIndex) {
+        return !isset($deletedIndex[(int) $departments['id']]);
       }
     ));
 
@@ -124,12 +124,12 @@ class DepartmentsIndex extends Component
    */
   public function openEdit(int $id): void
   {
-    $d = $this->filtered()->firstWhere('id', $id);
-    if (!$d) return;
-    $this->editId = $d['id'];
-    $this->dName = $d['name'];
-    $this->dCode = $d['code'];
-    $this->dDirector = $d['director'];
+    $departments = $this->filtered()->firstWhere('id', $id);
+    if (!$departments) return;
+    $this->editId = $departments['id'];
+    $this->dName = $departments['name'];
+    $this->dCode = $departments['code'];
+    $this->dDirector = $departments['director'];
     $this->dispatch('bs:open', id: 'deptModal');
   }
 
@@ -221,35 +221,6 @@ class DepartmentsIndex extends Component
   }
 
   /**
-   * Opens the justification modal for bulk deletion of departments.
-   *
-   * This function is called when the user wants to delete multiple departments at once.
-   * It sets the isBulkDeleting flag to true, and then opens the justification modal.
-   */
-  // Bulk delete removed
-
-  /**
-   * Confirms the bulk deletion of departments.
-   *
-   * This function will validate the justification entered by the user, and then delete the departments with the given IDs.
-   * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-   * Finally, it shows a toast message indicating the departments were deleted.
-   */
-  // Bulk delete confirm removed
-
-  /**
-   * Restore all soft deleted departments.
-   *
-   * This function will reset the soft_deleted_department_ids session key to an empty array,
-   * effectively restoring all soft deleted departments.
-   */
-  public function restoreUsers(): void
-  {
-    session(['soft_deleted_department_ids' => []]);
-    $this->dispatch('toast', message: 'All deleted departments restored');
-  }
-
-  /**
    * Filters the departments based on the search query.
    *
    * The function takes the search query and filters the departments based on the name, code, or director.
@@ -258,13 +229,18 @@ class DepartmentsIndex extends Component
    */
   protected function filtered(): Collection
   {
-    $s = mb_strtolower(trim($this->search));
-    return $this->allDepartments()->filter(function ($d) use ($s) {
+    $s = mb_strtolower(trim((string) ($this->search ?? '')));
+    return $this->allDepartments()->filter(function ($departments) use ($s) {
+      $name = mb_strtolower(trim((string)($departments['name'] ?? '')));
+      $code = mb_strtolower(trim((string)($departments['code'] ?? '')));
+      $director = mb_strtolower(trim((string)($departments['director'] ?? '')));
+
       $hit = $s === '' ||
-        str_contains(mb_strtolower($d['name']), $s) ||
-        str_contains(mb_strtolower($d['code']), $s) ||
-        str_contains(mb_strtolower($d['director']), $s);
-      $codeOk = $this->code === '' || ($d['code'] ?? '') === $this->code;
+        str_contains($name, $s) ||
+        str_contains($code, $s) ||
+        str_contains($director, $s);
+
+      $codeOk = ($this->code ?? '') === '' || ($departments['code'] ?? '') === $this->code;
       return $hit && $codeOk;
     })->values();
   }
@@ -308,13 +284,14 @@ class DepartmentsIndex extends Component
   }
 
   /**
-   * Renders the Livewire view for the departments index page.
+   * Renders the departments index page.
    *
-   * The view is passed the following variables:
-   * - $rows: The paginated collection of Department objects
-   * - $visibleIds: The array of visible department IDs
+   * This function renders the departments index page and provides the necessary data
+   * to the view. It paginates the filtered collection of departments and ensures
+   * that the current page is within the bounds of the paginator. It then
+   * returns the view with the paginated data and the visible IDs.
    *
-   * @return \Illuminate\Contracts\View\View
+   * @return Response
    */
   public function render()
   {

@@ -2,9 +2,11 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0">Events This Week</h1>
     <div class="btn-group">
-      <button class="btn btn-outline-secondary btn-sm" wire:click="goWeek('prev')">&laquo; Previous</button>
+      <button class="btn btn-outline-secondary btn-sm" wire:click="goWeek('prev')" aria-label="Previous week">&laquo;
+        Previous</button>
       <span class="btn btn-outline-secondary btn-sm disabled">{{ $weekLabel }}</span>
-      <button class="btn btn-outline-secondary btn-sm" wire:click="goWeek('next')">Next &raquo;</button>
+      <button class="btn btn-outline-secondary btn-sm" wire:click="goWeek('next')" aria-label="Next week">Next
+        &raquo;</button>
     </div>
   </div>
 
@@ -20,7 +22,8 @@
         <ul class="list-group list-group-flush">
           @forelse($eventsByDay[$day->toDateString()] ?? [] as $e)
           <li class="list-group-item small">
-            <button class="btn btn-link p-0 text-start" wire:click="openEvent({{ $e['id'] }})">
+            <button class="btn btn-link p-0 text-start" wire:click="openEvent({{ $e['id'] }})"
+              aria-label="Open event {{ $e['title'] }} details">
               <div class="fw-semibold">{{ $e['title'] }}</div>
               <div class="text-muted">
                 {{ \Carbon\Carbon::parse($e['starts_at'])->format('g:ia') }}
@@ -51,7 +54,7 @@
           <p class="mb-0">{{ $modal['summary'] ?? '' }}</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="Close details">Close</button>
         </div>
       </div>
     </div>

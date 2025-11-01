@@ -60,7 +60,7 @@ class AuditTrailIndex extends Component
   public function showDetails(int $auditId): void
   {
     // If we're in demo mode (no rows in DB), pull details from dummy rows
-    if (!Schema::hasTable('audit_trail') || AuditTrail::query()->count() === 0) {
+    if (!Schema::hasTable('audit_trail') || self::filterAuditTrail(AuditTrail::query())->count() === 0) {
       $r = $this->dummyRows()->firstWhere('audit_id', $auditId);
       if (!$r) return;
       $this->detailsId = $auditId;
@@ -84,7 +84,7 @@ class AuditTrailIndex extends Component
     $idColumn = $this->resolveIdColumn();
     if (!$idColumn) return;
 
-    $row = AuditTrail::query()->where($idColumn, $auditId)->first();
+    $row = self::filterAuditTrail(AuditTrail::query())->where($idColumn, $auditId)->first();
     if (!$row) return;
 
     $action = $row->a_action ?? $row->at_action ?? $row->action ?? null;
@@ -141,7 +141,7 @@ class AuditTrailIndex extends Component
     //  - audit_id / a_action / a_created_at, or
     //  - id / action / created_at (migration defaults), or
     //  - at_id / at_action (older naming).
-    return AuditTrail::query()
+    return self::filterAuditTrail(AuditTrail::query())
       ->selectRaw(
         "COALESCE(audit_id, at_id, id)               as audit_id, " .
           "user_id, " .
@@ -191,10 +191,32 @@ class AuditTrailIndex extends Component
    *
    * @return \Illuminate\Contracts\View\View
    */
+
+  /**
+   * Apply all filters to the audit trail query.
+   */
+  public function filterAuditTrail($query)
+  {
+    if (!empty($this->searchTerm)) {
+      $query->where('action', 'like', '%' . $this->searchTerm . '%')
+        ->orWhere('user_name', 'like', '%' . $this->searchTerm . '%');
+    }
+
+    if (!empty($this->dateRange)) {
+      $query->whereBetween('created_at', $this->dateRange);
+    }
+
+    return $query;
+  }
+
+
+  /**
+   * Render the Audit Trail list view.
+   */
   public function render()
   {
     // If table is missing or empty, serve in-memory dummy data for development.
-    if (!Schema::hasTable('audit_trail') || AuditTrail::query()->count() === 0) {
+    if (!Schema::hasTable('audit_trail') || self::filterAuditTrail(AuditTrail::query())->count() === 0) {
       $data = $this->dummyRows()
         ->when($this->userId, fn($c) => $c->where('user_id', $this->userId))
         ->when($this->action !== '', fn($c) => $c->where('a_action', $this->action))
@@ -219,22 +241,22 @@ class AuditTrailIndex extends Component
       return view('livewire.admin.audit-trail-index', compact('rows'));
     }
 
-    $q = $this->baseQuery()
-      ->when($this->userId, fn($q) => $q->where('user_id', $this->userId))
+    $searchTerm = $this->baseQuery()
+      ->when($this->userId, fn($searchTerm) => $searchTerm->where('user_id', $this->userId))
       // Filter on real column; alias is used only for select
-      ->when($this->action !== '', fn($q) => $q->whereRaw('(COALESCE(a_action, at_action, action)) = ?', [$this->action]))
-      ->when($this->adminOnly, fn($q) => $q->whereRaw('(COALESCE(a_action, at_action, action)) LIKE ?', ['ADMIN\_%']))
-      ->when($this->from, function ($q) {
+      ->when($this->action !== '', fn($searchTerm) => $searchTerm->whereRaw('(COALESCE(a_action, at_action, action)) = ?', [$this->action]))
+      ->when($this->adminOnly, fn($searchTerm) => $searchTerm->whereRaw('(COALESCE(a_action, at_action, action)) LIKE ?', ['ADMIN\_%']))
+      ->when($this->from, function ($searchTerm) {
         $from = CarbonImmutable::parse($this->from)->startOfDay();
-        $q->whereRaw('(COALESCE(a_created_at, created_at)) >= ?', [$from]);
+        $searchTerm->whereRaw('(COALESCE(a_created_at, created_at)) >= ?', [$from]);
       })
-      ->when($this->to, function ($q) {
+      ->when($this->to, function ($searchTerm) {
         $to = CarbonImmutable::parse($this->to)->endOfDay();
-        $q->whereRaw('(COALESCE(a_created_at, created_at)) <= ?', [$to]);
+        $searchTerm->whereRaw('(COALESCE(a_created_at, created_at)) <= ?', [$to]);
       })
       ->orderByDesc('a_created_at');
 
-    $rows = $q->paginate($this->perPage)->withQueryString();
+    $rows = $searchTerm->paginate($this->perPage)->withQueryString();
     return view('livewire.admin.audit-trail-index', compact('rows'));
   }
 }

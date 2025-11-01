@@ -9,23 +9,23 @@
     <div class="card-body">
       <div class="row g-2">
         <div class="col-6 col-md-2">
-          <label class="form-label">User ID</label>
-          <input type="number" class="form-control" wire:model.live="userId" min="1" placeholder="e.g. 12">
+          <label class="form-label" for="audit_user_id">User ID</label>
+          <input id="audit_user_id" type="number" class="form-control" wire:model.live="userId" min="1" placeholder="e.g. 12">
         </div>
 
         <div class="col-6 col-md-3">
-          <label class="form-label">Action Code</label>
-          <input type="text" class="form-control" wire:model.live="action" placeholder="e.g. USER_UPDATE">
+          <label class="form-label" for="audit_action">Action Code</label>
+          <input id="audit_action" type="text" class="form-control" wire:model.live="action" placeholder="e.g. USER_UPDATE">
         </div>
 
         <div class="col-6 col-md-2">
-          <label class="form-label">From</label>
-          <input type="date" class="form-control" wire:model.live="from">
+          <label class="form-label" for="audit_from">From</label>
+          <input id="audit_from" type="date" class="form-control" wire:model.live="from">
         </div>
 
         <div class="col-6 col-md-2">
-          <label class="form-label">To</label>
-          <input type="date" class="form-control" wire:model.live="to">
+          <label class="form-label" for="audit_to">To</label>
+          <input id="audit_to" type="date" class="form-control" wire:model.live="to">
         </div>
 
         <div class="col-12 col-md-2 d-flex align-items-end">
@@ -48,8 +48,8 @@
       {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
     </small>
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0">Rows</label>
-      <select class="form-select form-select-sm" style="width:auto" wire:model.live="perPage">
+      <label class="text-secondary small mb-0" for="audit_rows">Rows</label>
+      <select id="audit_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="perPage">
         <option>25</option>
         <option>50</option>
         <option>100</option>
@@ -69,7 +69,6 @@
             <th>Target</th>
             <th>Method</th>
             <th>Path</th>
-            <th>IP</th>
             <th class="text-end" style="width: 80px;">Details</th>
           </tr>
         </thead>
@@ -88,16 +87,15 @@
             </td>
             <td>{{ $r->method }}</td>
             <td class="text-truncate" style="max-width:260px;" title="{{ $r->path }}">{{ $r->path }}</td>
-            <td>{{ $r->ip }}</td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->audit_id }})">
+              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->audit_id }})" aria-label="Show details for audit #{{ $r->audit_id }}">
                 <i class="bi bi-info-circle"></i>
               </button>
             </td>
           </tr>
           @empty
           <tr>
-            <td colspan="8" class="text-center text-secondary py-4">No audit entries found.</td>
+            <td colspan="7" class="text-center text-secondary py-4">No audit entries found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -126,8 +124,6 @@
             <dd class="col-sm-9">{{ $details['a_action'] ?? '' }}</dd>
             <dt class="col-sm-3">Target</dt>
             <dd class="col-sm-9">{{ $details['a_target'] ?? '—' }}</dd>
-            <dt class="col-sm-3">IP</dt>
-            <dd class="col-sm-9">{{ $details['ip'] ?? '—' }}</dd>
             <dt class="col-sm-3">Method</dt>
             <dd class="col-sm-9">{{ $details['method'] ?? '—' }}</dd>
             <dt class="col-sm-3">Path</dt>

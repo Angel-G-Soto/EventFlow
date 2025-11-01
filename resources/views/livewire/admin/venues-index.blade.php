@@ -3,13 +3,11 @@
     <h1 class="h4 mb-0">Venues</h1>
 
     <div class="d-none d-md-flex gap-2">
-      <button class="btn btn-outline-success btn-sm" wire:click="restoreUsers" type="button">
-        <i class="bi bi-arrow-clockwise me-1"></i> Restore Deleted
-      </button>
-      <button class="btn btn-primary btn-sm" wire:click="openCreate">
+      <button class="btn btn-primary btn-sm" wire:click="openCreate" aria-label="Add venue">
         <i class="bi bi-house-add me-1"></i> Add Venue
       </button>
-      <button class="btn btn-secondary btn-sm" wire:click="openCsvModal" type="button">
+      <button class="btn btn-secondary btn-sm" wire:click="openCsvModal" type="button"
+        aria-label="Open CSV upload modal">
         <i class="bi bi-upload me-1"></i> Add Venues by CSV
       </button>
     </div>
@@ -20,18 +18,18 @@
     <div class="card-body">
       <div class="row g-2">
         <div class="col-12 col-md-4">
-          <label class="form-label">Search</label>
+          <label class="form-label" for="venue_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
-              <input type="text" class="form-control" placeholder="Search by name, code, or manager..."
-                wire:model.defer="search">
+              <input id="venue_search" type="text" class="form-control"
+                placeholder="Search by name, code, or manager..." wire:model.defer="search">
             </div>
           </form>
         </div>
 
         <div class="col-6 col-md-2">
-          <label class="form-label">Department</label>
-          <select class="form-select" wire:model.live="department">
+          <label class="form-label" for="venue_department">Department</label>
+          <select id="venue_department" class="form-select" wire:model.live="department">
             <option value="">All</option>
             @foreach($departments as $dept)
             <option value="{{ $dept }}">{{ $dept }}</option>
@@ -40,15 +38,15 @@
         </div>
 
         <div class="col-6 col-md-2">
-          <label class="form-label">Cap. Min</label>
-          <input type="number" class="form-control" wire:model.live="capMin" min="0">
+          <label class="form-label" for="venue_cap_min">Cap. Min</label>
+          <input id="venue_cap_min" type="number" class="form-control" wire:model.live="capMin" min="0">
         </div>
         <div class="col-6 col-md-2">
-          <label class="form-label">Cap. Max</label>
-          <input type="number" class="form-control" wire:model.live="capMax" min="0">
+          <label class="form-label" for="venue_cap_max">Cap. Max</label>
+          <input id="venue_cap_max" type="number" class="form-control" wire:model.live="capMax" min="0">
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
-          <button class="btn btn-outline-secondary w-100" wire:click="clearFilters" type="button">
+          <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
           </button>
         </div>
@@ -59,8 +57,8 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0">Rows</label>
-      <select class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
+      <label class="text-secondary small mb-0" for="venue_rows">Rows</label>
+      <select id="venue_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>
         <option>50</option>
@@ -99,7 +97,10 @@
               </span>
             </td>
             <td class="text-truncate" style="max-width:220px;">
-              @if (isset($v['timeRanges']) && is_array($v['timeRanges']) && count($v['timeRanges']) > 0)
+              @php $hasOC = !empty($v['opening'] ?? '') || !empty($v['closing'] ?? ''); @endphp
+              @if ($hasOC)
+              <div class="small">{{ $v['opening'] ?? '' }} – {{ $v['closing'] ?? '' }}</div>
+              @elseif (isset($v['timeRanges']) && is_array($v['timeRanges']) && count($v['timeRanges']) > 0)
               @foreach ($v['timeRanges'] as $tr)
               <div class="small">
                 {{ $tr['from'] ?? '' }} – {{ $tr['to'] ?? '' }}
@@ -114,10 +115,12 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})">
+                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
+                  aria-label="Edit venue {{ $v['name'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="delete({{ $v['id'] }})">
+                <button class="btn btn-outline-danger" wire:click="delete({{ $v['id'] }})"
+                  aria-label="Delete venue {{ $v['name'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
@@ -145,23 +148,27 @@
   {{-- CSV Upload Modal --}}
   <div class="modal fade" id="csvModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
     <div class="modal-dialog modal-dialog-centered">
-      <form class="modal-content" wire:submit.prevent="uploadCsv">
+      <form class="modal-content" wire:submit.prevent="csvUploadDisabled">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Add Venues by CSV</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">CSV File</label>
-            <input type="file" class="form-control" wire:model="csvFile" accept=".csv">
-            <small class="text-muted">CSV must include columns: name, room, capacity, department,
+            <label class="form-label" for="csv_file">CSV File</label>
+            <input id="csv_file" type="file" class="form-control" accept=".csv" disabled aria-disabled="true"
+              title="CSV upload is disabled">
+            <small class="text-muted">CSV upload is currently disabled. CSV must include columns: name, room, capacity,
+              department,
               features</small>
           </div>
           @error('csvFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit"><i class="bi bi-upload me-1"></i>Upload</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-primary" type="submit" aria-label="Upload CSV"><i
+              class="bi bi-upload me-1"></i>Upload</button>
         </div>
       </form>
     </div>
@@ -176,12 +183,12 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label">Name</label>
-              <input class="form-control" required wire:model.live="vName">
+              <label class="form-label" for="v_name">Name</label>
+              <input id="v_name" class="form-control" required wire:model.live="vName">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Department</label>
-              <select class="form-select" wire:model.live="vDepartment" required>
+              <label class="form-label" for="v_department">Department</label>
+              <select id="v_department" class="form-select" wire:model.live="vDepartment" required>
                 <option value="">Select department</option>
                 @foreach($departments as $dept)
                 <option value="{{ $dept }}">{{ $dept }}</option>
@@ -189,20 +196,20 @@
               </select>
             </div>
             <div class="col-md-2">
-              <label class="form-label">Venue Code</label>
-              <input class="form-control" required wire:model.live="vRoom">
+              <label class="form-label" for="v_room">Venue Code</label>
+              <input id="v_room" class="form-control" required wire:model.live="vRoom">
             </div>
             <div class="col-md-2">
-              <label class="form-label">Capacity</label>
-              <input type="number" min="0" class="form-control" required wire:model.live="vCapacity">
+              <label class="form-label" for="v_capacity">Capacity</label>
+              <input id="v_capacity" type="number" min="0" class="form-control" required wire:model.live="vCapacity">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Manager</label>
-              <input class="form-control" wire:model.live="vManager" placeholder="username/email">
+              <label class="form-label" for="v_manager">Manager</label>
+              <input id="v_manager" class="form-control" wire:model.live="vManager" placeholder="username/email">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Status</label>
-              <select class="form-select" wire:model.live="vStatus">
+              <label class="form-label" for="v_status">Status</label>
+              <select id="v_status" class="form-select" wire:model.live="vStatus">
                 <option>Active</option>
                 <option>Inactive</option>
               </select>
@@ -243,9 +250,9 @@
                   <tbody>
                     @forelse($timeRanges as $i=>$b)
                     <tr>
-                      <td><input type="time" class="form-control form-control-sm"
+                      <td><input type="time" class="form-control form-control-sm" aria-label="From time"
                           wire:model.live="timeRanges.{{ $i }}.from"></td>
-                      <td><input type="time" class="form-control form-control-sm"
+                      <td><input type="time" class="form-control form-control-sm" aria-label="To time"
                           wire:model.live="timeRanges.{{ $i }}.to">
                       </td>
                       <td class="align-top">
@@ -258,7 +265,7 @@
                       </td>
                       <td>
                         <button type="button" class="btn btn-outline-danger btn-sm"
-                          wire:click="removeTimeRange({{ $i }})">
+                          aria-label="Remove time range {{ $i }}" wire:click="removeTimeRange({{ $i }})">
                           <i class="bi bi-x-lg"></i>
                         </button>
                       </td>
@@ -279,8 +286,9 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit"><i class="bi me-1"></i>Save</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-primary" type="submit" aria-label="Save venue"><i class="bi me-1"></i>Save</button>
         </div>
       </form>
     </div>

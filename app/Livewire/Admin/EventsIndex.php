@@ -58,9 +58,9 @@ class EventsIndex extends Component
 
         $rows = is_array($raw) && isset($raw[0]) ? $raw : [$raw];
         $mapped = [];
-        foreach (array_values($rows) as $i => $r) {
-            $from = $r['start_time'];
-            $to   = $r['end_time'];
+        foreach (array_values($rows) as $i => $request) {
+            $from = $request['start_time'];
+            $to   = $request['end_time'];
             if ($from instanceof DateTimeInterface) $from = $from->format('Y-m-d H:i');
             if ($to instanceof DateTimeInterface)   $to   = $to->format('Y-m-d H:i');
 
@@ -70,25 +70,25 @@ class EventsIndex extends Component
 
             $mapped[] = [
                 'id' => 1000 + $i,
-                'title' => (string)($r['title'] ?? 'Untitled'),
-                'requestor' => 'User ' . (string)($r['creator_id'] ?? 'N/A'),
-                'organization' => (string)($r['organization_nexo_name'] ?? ''),
-                'organization_advisor_name' => (string)($r['organization_advisor_name'] ?? ''),
-                'organization_advisor_email' => (string)($r['organization_advisor_email'] ?? ''),
-                'organization_advisor_phone' => (string)($r['organization_advisor_phone'] ?? ''),
-                'student_number' => (string)($r['student_number'] ?? ''),
-                'student_phone'  => (string)($r['student_phone'] ?? ''),
-                'venue' => 'Venue ' . (string)($r['venue_id'] ?? 'N/A'),
+                'title' => (string)($request['title'] ?? 'Untitled'),
+                'requestor' => 'User ' . (string)($request['creator_id'] ?? 'N/A'),
+                'organization' => (string)($request['organization_nexo_name'] ?? ''),
+                'organization_advisor_name' => (string)($request['organization_advisor_name'] ?? ''),
+                'organization_advisor_email' => (string)($request['organization_advisor_email'] ?? ''),
+                'organization_advisor_phone' => (string)($request['organization_advisor_phone'] ?? ''),
+                'student_number' => (string)($request['student_number'] ?? ''),
+                'student_phone'  => (string)($request['student_phone'] ?? ''),
+                'venue' => 'Venue ' . (string)($request['venue_id'] ?? 'N/A'),
                 'from' => (string)$from,
                 'to' => (string)$to,
-                'status' => (string)($r['status'] ?? 'pending'),
-                'category' => (string)($r['category'] ?? $category),
+                'status' => (string)($request['status'] ?? 'pending'),
+                'category' => (string)($request['category'] ?? $category),
                 'updated' => now()->format('Y-m-d H:i'),
-                'description' => (string)($r['description'] ?? ''),
-                'attendees' => (int)($r['guests'] ?? 0),
-                'handles_food' => (bool)($r['handles_food'] ?? false),
-                'use_institutional_funds' => (bool)($r['use_institutional_funds'] ?? false),
-                'external_guest' => (bool)($r['external_guest'] ?? false),
+                'description' => (string)($request['description'] ?? ''),
+                'attendees' => (int)($request['guests'] ?? 0),
+                'handles_food' => (bool)($request['handles_food'] ?? false),
+                'use_institutional_funds' => (bool)($request['use_institutional_funds'] ?? false),
+                'external_guest' => (bool)($request['external_guest'] ?? false),
             ];
         }
 
@@ -110,8 +110,8 @@ class EventsIndex extends Component
 
         $combined = array_values(array_filter(
             $this->requests,
-            function (array $r) use ($deletedIndex) {
-                return !isset($deletedIndex[(int) ($r['id'] ?? 0)]);
+            function (array $request) use ($deletedIndex) {
+                return !isset($deletedIndex[(int) ($request['id'] ?? 0)]);
             }
         ));
 
@@ -157,28 +157,28 @@ class EventsIndex extends Component
      */
     public function openEdit(int $id): void
     {
-        $r = $this->filtered()->firstWhere('id', $id);
-        if (!$r) return;
-        $this->editId = $r['id'];
-        $this->eTitle = $r['title'];
-        $this->ePurpose = $r['description'] ?? ($r['purpose'] ?? '');
-        $this->eVenue = $r['venue'];
-        $this->eFrom = substr($r['from'], 0, 16);
-        $this->eTo   = substr($r['to'], 0, 16);
-        $this->eAttendees = $r['attendees'] ?? 0;
-        $this->eCategory  = $r['category'] ?? '';
+        $request = $this->filtered()->firstWhere('id', $id);
+        if (!$request) return;
+        $this->editId = $request['id'];
+        $this->eTitle = $request['title'];
+        $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
+        $this->eVenue = $request['venue'];
+        $this->eFrom = substr($request['from'], 0, 16);
+        $this->eTo   = substr($request['to'], 0, 16);
+        $this->eAttendees = $request['attendees'] ?? 0;
+        $this->eCategory  = $request['category'] ?? '';
         // Policies
-        $this->eHandlesFood = (bool)($r['handles_food'] ?? false);
-        $this->eUseInstitutionalFunds = (bool)($r['use_institutional_funds'] ?? false);
-        $this->eExternalGuest = (bool)($r['external_guest'] ?? false);
+        $this->eHandlesFood = (bool)($request['handles_food'] ?? false);
+        $this->eUseInstitutionalFunds = (bool)($request['use_institutional_funds'] ?? false);
+        $this->eExternalGuest = (bool)($request['external_guest'] ?? false);
 
         // Organization and student info
-        $this->eOrganization   = $r['organization'] ?? ($r['organization_nexo_name'] ?? '');
-        $this->eAdvisorName    = $r['organization_advisor_name']  ?? '';
-        $this->eAdvisorEmail   = $r['organization_advisor_email'] ?? '';
-        $this->eAdvisorPhone   = $r['organization_advisor_phone'] ?? '';
-        $this->eStudentNumber  = $r['student_number'] ?? '';
-        $this->eStudentPhone   = $r['student_phone']  ?? '';
+        $this->eOrganization   = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
+        $this->eAdvisorName    = $request['organization_advisor_name']  ?? '';
+        $this->eAdvisorEmail   = $request['organization_advisor_email'] ?? '';
+        $this->eAdvisorPhone   = $request['organization_advisor_phone'] ?? '';
+        $this->eStudentNumber  = $request['student_number'] ?? '';
+        $this->eStudentPhone   = $request['student_phone']  ?? '';
 
         $this->dispatch('bs:open', id: 'oversightEdit');
     }
@@ -190,28 +190,28 @@ class EventsIndex extends Component
      */
     public function openView(int $id): void
     {
-        $r = $this->filtered()->firstWhere('id', $id);
-        if (!$r) return;
-        $this->editId = $r['id'];
-        $this->eTitle = $r['title'];
-        $this->ePurpose = $r['description'] ?? ($r['purpose'] ?? '');
-        $this->eVenue = $r['venue'];
-        $this->eFrom = substr($r['from'], 0, 16);
-        $this->eTo   = substr($r['to'], 0, 16);
-        $this->eAttendees = $r['attendees'] ?? 0;
-        $this->eCategory  = $r['category'] ?? '';
+        $request = $this->filtered()->firstWhere('id', $id);
+        if (!$request) return;
+        $this->editId = $request['id'];
+        $this->eTitle = $request['title'];
+        $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
+        $this->eVenue = $request['venue'];
+        $this->eFrom = substr($request['from'], 0, 16);
+        $this->eTo   = substr($request['to'], 0, 16);
+        $this->eAttendees = $request['attendees'] ?? 0;
+        $this->eCategory  = $request['category'] ?? '';
         // Policies
-        $this->eHandlesFood = (bool)($r['handles_food'] ?? false);
-        $this->eUseInstitutionalFunds = (bool)($r['use_institutional_funds'] ?? false);
-        $this->eExternalGuest = (bool)($r['external_guest'] ?? false);
+        $this->eHandlesFood = (bool)($request['handles_food'] ?? false);
+        $this->eUseInstitutionalFunds = (bool)($request['use_institutional_funds'] ?? false);
+        $this->eExternalGuest = (bool)($request['external_guest'] ?? false);
 
         // Organization and student info
-        $this->eOrganization   = $r['organization'] ?? ($r['organization_nexo_name'] ?? '');
-        $this->eAdvisorName    = $r['organization_advisor_name']  ?? '';
-        $this->eAdvisorEmail   = $r['organization_advisor_email'] ?? '';
-        $this->eAdvisorPhone   = $r['organization_advisor_phone'] ?? '';
-        $this->eStudentNumber  = $r['student_number'] ?? '';
-        $this->eStudentPhone   = $r['student_phone']  ?? '';
+        $this->eOrganization   = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
+        $this->eAdvisorName    = $request['organization_advisor_name']  ?? '';
+        $this->eAdvisorEmail   = $request['organization_advisor_email'] ?? '';
+        $this->eAdvisorPhone   = $request['organization_advisor_phone'] ?? '';
+        $this->eStudentNumber  = $request['student_number'] ?? '';
+        $this->eStudentPhone   = $request['student_phone']  ?? '';
 
         $this->dispatch('bs:open', id: 'oversightView');
     }
@@ -306,17 +306,7 @@ class EventsIndex extends Component
         $this->reset(['editId', 'actionType', 'justification']);
     }
 
-    /**
-     * Restore all soft deleted events.
-     *
-     * This function will reset the soft_deleted_event_ids session key to an empty array,
-     * effectively restoring all soft deleted events.
-     */
-    public function restoreUsers(): void
-    {
-        session(['soft_deleted_event_ids' => []]);
-        $this->dispatch('toast', message: 'All deleted events restored');
-    }
+    // Restore-all functionality removed
 
     /**
      * Opens the justification modal with the action type set to 'approve'.
@@ -386,14 +376,14 @@ class EventsIndex extends Component
                 default   => null,
             };
             if ($newStatus !== null) {
-                foreach ($this->requests as &$r) {
-                    if ((int)($r['id'] ?? 0) === (int)$this->editId) {
-                        $r['status']  = $newStatus;
-                        $r['updated'] = now()->format('Y-m-d H:i');
+                foreach ($this->requests as &$request) {
+                    if ((int)($request['id'] ?? 0) === (int)$this->editId) {
+                        $request['status']  = $newStatus;
+                        $request['updated'] = now()->format('Y-m-d H:i');
                         break;
                     }
                 }
-                unset($r);
+                unset($request);
             }
 
             // More descriptive toast
@@ -420,15 +410,15 @@ class EventsIndex extends Component
         ]);
 
         if ($this->editId) {
-            foreach ($this->requests as &$r) {
-                if ((int)($r['id'] ?? 0) === (int)$this->editId) {
-                    $r['status']     = 'Pending';
-                    $r['updated']    = now()->format('Y-m-d H:i');
-                    $r['routed_to']  = (string)($data['advanceTo'] ?? $this->advanceTo);
+            foreach ($this->requests as &$request) {
+                if ((int)($request['id'] ?? 0) === (int)$this->editId) {
+                    $request['status']     = 'Pending';
+                    $request['updated']    = now()->format('Y-m-d H:i');
+                    $request['routed_to']  = (string)($data['advanceTo'] ?? $this->advanceTo);
                     break;
                 }
             }
-            unset($r);
+            unset($request);
         }
 
         $this->dispatch('bs:close', id: 'oversightAdvance');
@@ -447,15 +437,15 @@ class EventsIndex extends Component
         ]);
 
         if ($this->editId) {
-            foreach ($this->requests as &$r) {
-                if ((int)($r['id'] ?? 0) === (int)$this->editId) {
-                    $r['status']     = 'Pending';
-                    $r['updated']    = now()->format('Y-m-d H:i');
-                    $r['routed_to']  = (string)($data['rerouteTo'] ?? $this->rerouteTo);
+            foreach ($this->requests as &$request) {
+                if ((int)($request['id'] ?? 0) === (int)$this->editId) {
+                    $request['status']     = 'Pending';
+                    $request['updated']    = now()->format('Y-m-d H:i');
+                    $request['routed_to']  = (string)($data['rerouteTo'] ?? $this->rerouteTo);
                     break;
                 }
             }
-            unset($r);
+            unset($request);
         }
 
         $this->dispatch('bs:close', id: 'oversightReroute');
@@ -482,19 +472,19 @@ class EventsIndex extends Component
     protected function filtered(): Collection
     {
         $s = mb_strtolower(trim($this->search));
-        return $this->allRequests()->filter(function ($r) use ($s) {
+        return $this->allRequests()->filter(function ($request) use ($s) {
             $hit = $s === '' ||
-                str_contains(mb_strtolower($r['title']), $s) ||
-                str_contains(mb_strtolower($r['requestor']), $s);
-            $statOk  = $this->status === '' || $r['status'] === $this->status;
-            $venueOk = $this->venue === '' || $r['venue'] === $this->venue;
-            $catOk   = $this->category === '' || $r['category'] === $this->category;
-            $orgVal  = $r['organization'] ?? ($r['organization_nexo_name'] ?? ($r['requestor'] ?? ''));
+                str_contains(mb_strtolower($request['title']), $s) ||
+                str_contains(mb_strtolower($request['requestor']), $s);
+            $statOk  = $this->status === '' || $request['status'] === $this->status;
+            $venueOk = $this->venue === '' || $request['venue'] === $this->venue;
+            $catOk   = $this->category === '' || $request['category'] === $this->category;
+            $orgVal  = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
             $orgOk   = $this->organization === '' || $orgVal === $this->organization;
 
             $dateOk = true;
-            if ($this->from) $dateOk = $dateOk && ($r['from'] >= $this->from);
-            if ($this->to)   $dateOk = $dateOk && ($r['to']   <= $this->to);
+            if ($this->from) $dateOk = $dateOk && ($request['from'] >= $this->from);
+            if ($this->to)   $dateOk = $dateOk && ($request['to']   <= $this->to);
 
             return $hit && $statOk && $venueOk && $dateOk && $catOk && $orgOk;
         })->values();
@@ -574,8 +564,8 @@ class EventsIndex extends Component
     public function getOrganizationsProperty(): array
     {
         $vals = $this->allRequests()
-            ->map(function ($r) {
-                $v = $r['organization'] ?? ($r['organization_nexo_name'] ?? ($r['requestor'] ?? ''));
+            ->map(function ($request) {
+                $v = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
                 return is_string($v) ? trim($v) : '';
             })
             ->filter(fn($v) => $v !== '')
@@ -643,7 +633,7 @@ class EventsIndex extends Component
     }
 
     /**
-     * Return a Bootstrap badge class based on a status string.
+     * Render the Events list with filters and modals.
      */
     public function statusBadgeClass(string $status): string
     {

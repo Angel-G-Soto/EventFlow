@@ -43,15 +43,15 @@ class VenuesIndex extends Component
         $deletedIds   = array_map('intval', session('soft_deleted_venue_ids', []));
         $deletedIndex = array_flip(array_unique($deletedIds));
 
-        $combined = array_values(array_filter($this->venues, fn(array $v) => !isset($deletedIndex[(int) ($v['id'] ?? 0)])));
+        $combined = array_values(array_filter($this->venues, fn(array $venue) => !isset($deletedIndex[(int) ($venue['id'] ?? 0)])));
 
         // Normalize minimal shape to avoid undefined index notices in views/filters
-        $combined = array_map(function (array $v) {
-            $v['manager']   = $v['manager']   ?? '';
-            $v['status']    = $v['status']    ?? 'Active';
-            $v['features']  = isset($v['features']) && is_array($v['features']) ? array_values(array_unique($v['features'])) : [];
-            $v['timeRanges'] = isset($v['timeRanges']) && is_array($v['timeRanges']) ? array_values($v['timeRanges']) : [];
-            return $v;
+        $combined = array_map(function (array $venue) {
+            $venue['manager']   = $venue['manager']   ?? '';
+            $venue['status']    = $venue['status']    ?? 'Active';
+            $venue['features']  = isset($venue['features']) && is_array($venue['features']) ? array_values(array_unique($venue['features'])) : [];
+            $venue['timeRanges'] = isset($venue['timeRanges']) && is_array($venue['timeRanges']) ? array_values($venue['timeRanges']) : [];
+            return $venue;
         }, $combined);
 
         return collect($combined);
@@ -197,17 +197,17 @@ class VenuesIndex extends Component
      */
     public function openEdit(int $id): void
     {
-        $v = $this->filtered()->firstWhere('id', $id);
-        if (!$v) return;
-        $this->editId    = $v['id'];
-        $this->vName     = $v['name'];
-        $this->vRoom     = $v['room'];
-        $this->vCapacity = $v['capacity'];
-        $this->vDepartment = $v['department'];
-        $this->vManager  = $v['manager'];
-        $this->vStatus   = $v['status'];
-        $this->vFeatures = $v['features'];
-        $this->timeRanges = $v['timeRanges'] ?? [];
+        $venue = $this->filtered()->firstWhere('id', $id);
+        if (!$venue) return;
+        $this->editId    = $venue['id'];
+        $this->vName     = $venue['name'];
+        $this->vRoom     = $venue['room'];
+        $this->vCapacity = $venue['capacity'];
+        $this->vDepartment = $venue['department'];
+        $this->vManager  = $venue['manager'];
+        $this->vStatus   = $venue['status'];
+        $this->vFeatures = $venue['features'];
+        $this->timeRanges = $venue['timeRanges'] ?? [];
 
         $this->dispatch('bs:open', id: 'venueModal');
     }
@@ -304,7 +304,7 @@ class VenuesIndex extends Component
             $this->venues[] = $venue;
         } else {
             foreach ($this->venues as &$v) {
-                if ($v['id'] === $this->editId) {
+                if ($venue['id'] === $this->editId) {
                     $v = $venue;
                     break;
                 }
@@ -350,19 +350,7 @@ class VenuesIndex extends Component
         $this->reset(['editId', 'justification', 'actionType']);
     }
 
-    /**
-     * Restore all soft deleted venues.
-     *
-     * This function will reset the soft_deleted_venue_ids session key to an empty array,
-     * effectively restoring all soft deleted venues.
-     *
-     * @return void
-     */
-    public function restoreUsers(): void
-    {
-        session(['soft_deleted_venue_ids' => []]);
-        $this->dispatch('toast', message: 'All deleted venues restored');
-    }
+    // Restore-all functionality removed
 
 
     /**
@@ -404,17 +392,17 @@ class VenuesIndex extends Component
     protected function filtered(): Collection
     {
         $needle = mb_strtolower(trim($this->search));
-        return $this->allVenues()->filter(function ($v) use ($needle) {
+        return $this->allVenues()->filter(function ($venue) use ($needle) {
             $hit = $needle === '' ||
-                str_contains(mb_strtolower($v['name']), $needle) ||
-                str_contains(mb_strtolower($v['room']), $needle) ||
-                str_contains(mb_strtolower($v['manager']), $needle);
+                str_contains(mb_strtolower($venue['name']), $needle) ||
+                str_contains(mb_strtolower($venue['room']), $needle) ||
+                str_contains(mb_strtolower($venue['manager']), $needle);
 
-            $deptOk = $this->department === '' || $v['department'] === $this->department;
+            $deptOk = $this->department === '' || $venue['department'] === $this->department;
 
             $capOk = true;
-            if ($this->capMin !== null) $capOk = $capOk && ($v['capacity'] >= $this->capMin);
-            if ($this->capMax !== null) $capOk = $capOk && ($v['capacity'] <= $this->capMax);
+            if ($this->capMin !== null) $capOk = $capOk && ($venue['capacity'] >= $this->capMin);
+            if ($this->capMax !== null) $capOk = $capOk && ($venue['capacity'] <= $this->capMax);
 
             return $hit && $deptOk && $capOk;
         })->values();
@@ -451,8 +439,8 @@ class VenuesIndex extends Component
         // Gather departments from current venues (excluding soft-deleted)
         $deps = $this->allVenues()
             ->pluck('department')
-            ->filter(fn($v) => is_string($v) && trim($v) !== '')
-            ->map(fn($v) => trim($v))
+            ->filter(fn($venue) => is_string($venue) && trim($venue) !== '')
+            ->map(fn($venue) => trim($venue))
             ->all();
 
         // Case-insensitive de-duplication while preserving first casing seen

@@ -40,44 +40,23 @@ class UsersIndex extends Component
         // Exclude soft-deleted IDs
         $deletedIds   = array_map('intval', session('soft_deleted_user_ids', []));
         $deletedIndex = array_flip(array_unique($deletedIds));
-        $combined = array_values(array_filter($combined, fn($u) => !isset($deletedIndex[(int) ($u['id'] ?? 0)])));
+        $combined = array_values(array_filter($combined, fn($user) => !isset($deletedIndex[(int) ($user['id'] ?? 0)])));
 
         // Apply edits and normalize in a single pass
         $edited = session('edited_users', []);
-        $combined = array_map(function (array $u) use ($edited) {
-            if (isset($u['id']) && isset($edited[$u['id']])) {
-                $u = array_merge($u, $edited[$u['id']]);
+        $combined = array_map(function (array $user) use ($edited) {
+            if (isset($user['id']) && isset($edited[$user['id']])) {
+                $user = array_merge($user, $edited[$user['id']]);
             }
 
             // Ensure roles[] is present and unique (support legacy single 'role')
-            $roles = $u['roles'] ?? ((isset($u['role']) && $u['role'] !== '') ? [$u['role']] : []);
-            $u['roles'] = array_values(array_unique($roles));
+            $roles = $user['roles'] ?? ((isset($user['role']) && $user['role'] !== '') ? [$user['role']] : []);
+            $user['roles'] = array_values(array_unique($roles));
 
-            return $u;
+            return $user;
         }, $combined);
 
         return collect($combined);
-    }
-
-    /**
-     * Returns a Bootstrap CSS class based on the given role.
-     *
-     * This function returns a string that corresponds to a Bootstrap CSS class
-     * that can be used to style a badge based on the given role.
-     *
-     * @param string $role The role to get the class for.
-     * @return string The Bootstrap CSS class for the given role.
-     */
-    public function roleClass(string $role): string
-    {
-        return match ($role) {
-            'Admin'   => 'text-bg-danger',
-            'Student Org Rep'   => 'text-bg-primary',
-            'Student Org Advisor'   => 'text-bg-secondary',
-            'Venue Manager'   => 'text-bg-info',
-            'DSCA Staff'   => 'text-bg-secondary',
-            'Dean of Administration'   => 'text-bg-success',
-        };
     }
 
     /**
@@ -155,14 +134,14 @@ class UsersIndex extends Component
      */
     public function openEdit(int $id): void
     {
-        $u = $this->allUsers()->firstWhere('id', $id);
-        if (!$u) return;
+        $user = $this->allUsers()->firstWhere('id', $id);
+        if (!$user) return;
 
-        $this->editId     = $u['id'];
-        $this->editName   = $u['name'];
-        $this->editEmail  = $u['email'];
-        $this->editRoles = $u['roles'] ?? [];
-        $this->editDepartment = $u['department'] ?? '';
+        $this->editId     = $user['id'];
+        $this->editName   = $user['name'];
+        $this->editEmail  = $user['email'];
+        $this->editRoles = $user['roles'] ?? [];
+        $this->editDepartment = $user['department'] ?? '';
 
         $this->resetErrorBag();
         $this->resetValidation();
@@ -333,19 +312,7 @@ class UsersIndex extends Component
     }
 
 
-    /**
-     * Restores all soft deleted users.
-     *
-     * This function will reset the soft_deleted_user_ids session key to an empty array,
-     * effectively restoring all soft deleted users.
-     *
-     * @return void
-     */
-    public function restoreUsers(): void
-    {
-        session(['soft_deleted_user_ids' => []]);
-        $this->dispatch('toast', message: 'All deleted users restored');
-    }
+    // Restore-all functionality removed
 
     /**
      * Returns a filtered collection of users based on the current search query and selected role.
@@ -361,12 +328,12 @@ class UsersIndex extends Component
         $selectedRole = $this->role;
 
         return $this->allUsers()
-            ->filter(function ($u) use ($s, $selectedRole) {
+            ->filter(function ($user) use ($s, $selectedRole) {
                 $hit = $s === '' ||
-                    str_contains(mb_strtolower($u['name']), $s) ||
-                    str_contains(mb_strtolower($u['email']), $s);
+                    str_contains(mb_strtolower($user['name']), $s) ||
+                    str_contains(mb_strtolower($user['email']), $s);
 
-                $roles = $u['roles'] ?? [];
+                $roles = $user['roles'] ?? [];
                 $roleOk = $selectedRole === '' || in_array($selectedRole, $roles, true);
                 return $hit && $roleOk;
             })
@@ -423,14 +390,11 @@ class UsersIndex extends Component
         return count(array_intersect($roles, UserConstants::ROLES_WITHOUT_DEPARTMENT)) > 0;
     }
 
+
     /**
      * Renders the Livewire view for the users index page.
      *
-     * The view is passed the following variables:
-     * - $rows: The paginated collection of User objects
-     * - $visibleIds: The array of visible user IDs
-     *
-     * @return \Illuminate\Contracts\View\View
+     * @return \Illuminate\Http\Response
      */
     public function render()
     {

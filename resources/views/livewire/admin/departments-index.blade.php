@@ -3,10 +3,7 @@
     <h1 class="h4 mb-0">Departments</h1>
 
     <div class="d-none d-md-flex gap-2">
-      <button class="btn btn-outline-success btn-sm" wire:click="restoreUsers" type="button">
-        <i class="bi bi-arrow-clockwise me-1"></i> Restore Deleted
-      </button>
-      <button class="btn btn-primary btn-sm" wire:click="openCreate">
+      <button class="btn btn-primary btn-sm" wire:click="openCreate" aria-label="Add department">
         <i class="bi bi-building-add me-1"></i> Add Department
       </button>
     </div>
@@ -16,16 +13,15 @@
     <div class="card-body">
       <div class="row g-2">
         <div class="col-12 col-md-4">
-          <label class="form-label">Search</label>
+          <label class="form-label" for="dept_search">Search</label>
           <div class="input-group">
-            <span class="input-group">
-              <input type="text" class="form-control" placeholder="Search by name, code, or director..."
-                wire:model.defer="search">
+            <input id="dept_search" type="text" class="form-control" placeholder="Search by name, code, or director"
+              wire:model.defer="search">
           </div>
         </div>
         <div class="col-6 col-md-2">
-          <label class="form-label">Code</label>
-          <select class="form-select" wire:model.live="code">
+          <label class="form-label" for="dept_code">Code</label>
+          <select id="dept_code" class="form-select" wire:model.live="code">
             <option value="">All</option>
             @foreach($codes as $c)
             <option value="{{ $c }}">{{ $c }}</option>
@@ -33,7 +29,7 @@
           </select>
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
-          <button class="btn btn-outline-secondary w-100" wire:click="clearFilters" type="button">
+          <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
           </button>
         </div>
@@ -44,8 +40,8 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0">Rows</label>
-      <select class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
+      <label class="text-secondary small mb-0" for="dept_rows">Rows</label>
+      <select id="dept_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>
         <option>50</option>
@@ -73,10 +69,12 @@
             <td>{{ trim($d['director'] ?? '') }}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})">
+                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
+                  aria-label="Edit department {{ $d['name'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="delete({{ $d['id'] }})">
+                <button class="btn btn-outline-danger" wire:click="delete({{ $d['id'] }})"
+                  aria-label="Delete department {{ $d['name'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
@@ -106,22 +104,24 @@
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-building-gear me-2"></i>{{ $editId ? 'Edit Department' : 'New
             Department' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="row g-3">
-            <div class="col-md-6"><label class="form-label">Name</label><input class="form-control"
-                wire:model.live="dName" required></div>
-            <div class="col-md-3"><label class="form-label">Code</label><input class="form-control"
-                wire:model.live="dCode" required></div>
-            <div class="col-md-3"><label class="form-label">Director</label><input class="form-control"
-                wire:model.live="dDirector"></div>
+            <div class="col-md-6"><label class="form-label" for="dept_name">Name</label><input id="dept_name"
+                class="form-control" wire:model.live="dName" required></div>
+            <div class="col-md-3"><label class="form-label" for="dept_code_edit">Code</label><input id="dept_code_edit"
+                class="form-control" wire:model.live="dCode" required></div>
+            <div class="col-md-3"><label class="form-label" for="dept_director">Director</label><input
+                id="dept_director" class="form-control" wire:model.live="dDirector"></div>
 
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit"><i class="bi bi me-1"></i>Save</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-primary" type="submit" aria-label="Save department"><i
+              class="bi bi me-1"></i>Save</button>
         </div>
       </form>
     </div>
