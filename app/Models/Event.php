@@ -32,7 +32,7 @@ class Event extends Model
         'organization_name',
         'organization_advisor_email',
         'organization_advisor_name',
-        'organization_advisor_phone',
+        //'organization_advisor_phone',
         'creator_institutional_number',
         'creator_phone_number',
         'title',
