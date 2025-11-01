@@ -1,24 +1,24 @@
-{--
-    View: Configure Venue (Livewire)
-    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5)
-    Date: 2025-11-01
 
-    Description:
-    - Edit a venue's requirements and availability hours (single opening/closing time).
-    - Pairs with the Configure Livewire component for validation and persistence.
+{{--    View: Configure Venue (Livewire)--}}
+{{--    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5)--}}
+{{--    Date: 2025-11-01--}}
 
-    Variables (typical):
-    - \App\Models\Venue $venue
-    - \Illuminate\Support\Collection|array $requirements
-    - string|null $opening_time
-    - string|null $closing_time
+{{--    Description:--}}
+{{--    - Edit a venue's requirements and availability hours (single opening/closing time).--}}
+{{--    - Pairs with the Configure Livewire component for validation and persistence.--}}
 
-    Accessibility notes:
-    - Each input must have a <label for> and visible required indicator where applicable.
-    - Use input type="time" for hours and ensure 24h vs 12h labels are clear.
-    - Announce validation errors with role="alert" and aria-describedby pointing to error text.
-    - Buttons and links must have discernible text; icon-only buttons need aria-label.
---}
+{{--    Variables (typical):--}}
+{{--    - \App\Models\Venue $venue--}}
+{{--    - \Illuminate\Support\Collection|array $requirements--}}
+{{--    - string|null $opening_time--}}
+{{--    - string|null $closing_time--}}
+
+{{--    Accessibility notes:--}}
+{{--    - Each input must have a <label for> and visible required indicator where applicable.--}}
+{{--    - Use input type="time" for hours and ensure 24h vs 12h labels are clear.--}}
+{{--    - Announce validation errors with role="alert" and aria-describedby pointing to error text.--}}
+{{--    - Buttons and links must have discernible text; icon-only buttons need aria-label.--}}
+
 
 {{-- resources/views/livewire/venues/requirements-editor.blade.php --}}
 <div class="container py-4">
