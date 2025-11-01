@@ -5,73 +5,53 @@ namespace App\Repositories;
 class DepartmentRepository
 {
   /**
-   * Parse the campus CSV and return unique departments.
+   * Static department seed compiled from rum_building_data4-_1_.csv.
    * Fields returned:
    * - id: incremental int
-   * - name: Department Name (CSV column "Department Name")
-   * - code: Building code (CSV column "Bldg Code")
-   * - director: Email (CSV column "Email")
+   * - name: Department Name
+   * - code: Building code
+   * - director: Email (first encountered for the name+code pair)
    *
-   * Deduplication key: strtolower(trim(name)) + '|' + strtoupper(trim(code))
-   * First email encountered for a key wins.
+   * Source last synced: 2025-11-01.
    */
   public static function all(): array
   {
-    $path = function_exists('base_path') ? base_path('rum_building_data4-_1_.csv') : __DIR__ . '/../../rum_building_data4-_1_.csv';
-    if (!is_file($path) || !is_readable($path)) {
-      return [];
-    }
+    // Unique (name, code) pairs with first-seen director email from the CSV
+    $rows = [
+      ['name' => 'COLLEGE OF BUSINESS ADMINISTRATION', 'code' => 'AE',   'director' => 'naomy.martin@upr.edu'],
+      ['name' => 'DECANATO DE ESTUDIANTES',            'code' => 'CH',   'director' => 'antonio.ramos4@upr.edu'],
+      ['name' => 'DECANATO DE ESTUDIANTES',            'code' => 'CE',   'director' => 'francisco.maldonado5@upr.edu'],
+      ['name' => 'KINESIOLOGIA',                       'code' => 'CM',   'director' => 'margarita.fernandez1@upr.edu'],
+      ['name' => 'ACTIVIDADES ATLETICAS',              'code' => 'CM',   'director' => 'sr. jose riera'],
+      ['name' => 'RECTORIA',                           'code' => 'PA',   'director' => 'maria.gaud@upr.edu'],
+      ['name' => 'DECANATO DE ESTUDIANTES',            'code' => 'EDDE', 'director' => 'wilson.lugo@upr.edu'],
+      ['name' => 'DECANATO DE ADMINISTRACION',         'code' => 'EDIFB', 'director' => 'dario.torres@upr.edu'],
+      ['name' => 'OFICINA DEL DECANO DE ADMINISTRACION', 'code' => 'DARL', 'director' => 'lucas.aviles@upr.edu'],
+      ['name' => 'CENTRO DE RECURSOS PARA CIENCIAS E INGENIERIA', 'code' => 'F', 'director' => 'frederick.just@upr.edu'],
+      ['name' => 'DECANATO DE ESTUDIANTES',            'code' => 'Q',    'director' => 'rene.vieta@upr.edu'],
+      ['name' => 'KINESIOLOGIA',                       'code' => 'GE',   'director' => 'margarita.fernandez1@upr.edu'],
+      ['name' => 'OFICINA DEL DECANO Y DIRECTOR DE CIENCIAS AGRICOLAS', 'code' => 'P', 'director' => 'gladys.gonzalez7@upr.edu'],
+      ['name' => 'CENTRO DE TECNOLOGIAS DE INFORMACION (CTI)', 'code' => 'M', 'director' => 'martin.melendez@upr.edu'],
+      ['name' => 'RECTORIA',                           'code' => 'MUSA', 'director' => 'zorali.deferia@upr.edu'],
+      ['name' => 'COMPLEJO NATATORIO',                 'code' => 'CT',  'director' => 'margarita.fernandez1@upr.edu'],
+      ['name' => 'CENTRO DE RECURSOS PARA LA EDUCACION GENERAL (CIVIS)', 'code' => 'BG', 'director' => 'd.collins@upr.edu'],
+      ['name' => 'OFICINA DEL DECANO DE ARTES Y CIENCIAS', 'code' => 'C', 'director' => 'manuel.valdes@upr.ed'],
+      ['name' => 'ACTIVIDADES ATLETICAS',              'code' => 'PA',   'director' => 'jose.estevez8@upr.edu'],
+      // Optional pair with blank email in CSV (first seen director is empty)
+      ['name' => 'KINESIOLOGIA',                       'code' => 'PS',   'director' => ''],
+    ];
 
-    $fh = fopen($path, 'r');
-    if ($fh === false) return [];
-
-    $header = fgetcsv($fh);
-    if ($header === false) {
-      fclose($fh);
-      return [];
-    }
-
-    // normalize headers
-    $norm = array_map(fn($h) => strtolower(trim((string)$h)), $header);
-    $idx = function (string $name) use ($norm) {
-      $name = strtolower(trim($name));
-      $pos = array_search($name, $norm, true);
-      return $pos === false ? null : $pos;
-    };
-
-    $iDeptName = $idx('department name') ?? $idx(' department') ?? $idx('department');
-    $iBldgCode = $idx('bldg code') ?? $idx(' bldg code');
-    $iEmail    = $idx('email') ?? $idx(' email');
-
-    $seen = [];
-    $out  = [];
-    $id   = 1;
-
-    while (($row = fgetcsv($fh)) !== false) {
-      if ($row === [null] || count($row) === 0) continue;
-      $get = function ($i) use ($row) {
-        return $i === null ? '' : (isset($row[$i]) ? trim((string)$row[$i]) : '');
-      };
-
-      $name = $get($iDeptName);
-      $code = $get($iBldgCode);
-      $mail = $get($iEmail);
-
-      if ($name === '' && $code === '') continue;
-
-      $key = strtolower($name) . '|' . strtoupper($code);
-      if (isset($seen[$key])) continue; // keep first occurrence
-
+    // Assign incremental IDs
+    $out = [];
+    $id  = 1;
+    foreach ($rows as $r) {
       $out[] = [
         'id'       => $id++,
-        'name'     => $name,
-        'code'     => $code,
-        'director' => $mail, // director now carries the email
+        'name'     => (string)($r['name'] ?? ''),
+        'code'     => (string)($r['code'] ?? ''),
+        'director' => (string)($r['director'] ?? ''),
       ];
-      $seen[$key] = true;
     }
-
-    fclose($fh);
     return $out;
   }
 }
