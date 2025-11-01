@@ -295,6 +295,15 @@ class EventsIndex extends Component
     {
         $this->editId = $id;
         $this->actionType = 'delete';
+        $this->dispatch('bs:open', id: 'oversightConfirm');
+    }
+
+    /**
+     * Proceeds from the delete confirmation to the justification modal.
+     */
+    public function proceedDelete(): void
+    {
+        $this->dispatch('bs:close', id: 'oversightConfirm');
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
 

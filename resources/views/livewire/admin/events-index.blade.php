@@ -297,6 +297,10 @@
     submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : (in_array(($actionType ?? ''), ['approve','deny']) ? 'confirmAction' : 'confirmSave') }}"
     model="justification" />
 
+  {{-- Confirm delete --}}
+  <x-confirm-delete id="oversightConfirm" title="Delete request" message="Are you sure you want to delete this request?"
+    confirm="proceedDelete" />
+
   {{-- Reroute modal --}}
   <div class="modal fade" id="oversightReroute" tabindex="-1" aria-hidden="true" wire:ignore.self>
     <div class="modal-dialog">

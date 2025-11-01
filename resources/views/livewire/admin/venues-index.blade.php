@@ -298,6 +298,10 @@
   <x-justification id="venueJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
     model="justification" />
 
+  {{-- Confirm delete --}}
+  <x-confirm-delete id="venueConfirm" title="Delete venue" message="Are you sure you want to delete this venue?"
+    confirm="proceedDelete" />
+
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
     <div id="venueToast" class="toast text-bg-success" role="alert">

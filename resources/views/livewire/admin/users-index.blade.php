@@ -198,6 +198,10 @@
   <x-justification id="userJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
     model="justification" />
 
+  {{-- Confirm delete --}}
+  <x-confirm-delete id="userConfirm" title="Delete user" message="Are you sure you want to delete this user?"
+    confirm="proceedDelete" />
+
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
     <div id="userToast" class="toast text-bg-success" role="alert">

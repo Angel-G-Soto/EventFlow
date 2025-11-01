@@ -130,6 +130,10 @@
   <x-justification id="deptJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
     model="justification" />
 
+  {{-- Confirm delete --}}
+  <x-confirm-delete id="deptConfirm" title="Delete department"
+    message="Are you sure you want to delete this department?" confirm="proceedDelete" />
+
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
     <div id="deptToast" class="toast text-bg-success" role="alert">

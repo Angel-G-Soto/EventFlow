@@ -216,6 +216,15 @@ class UsersIndex extends Component
     {
         $this->editId = $id;
         $this->actionType = 'delete';
+        $this->dispatch('bs:open', id: 'userConfirm');
+    }
+
+    /**
+     * Proceeds from the delete confirmation to the justification modal.
+     */
+    public function proceedDelete(): void
+    {
+        $this->dispatch('bs:close', id: 'userConfirm');
         $this->dispatch('bs:open', id: 'userJustify');
     }
 
