@@ -10,12 +10,14 @@
       <div class="row g-2">
         <div class="col-6 col-md-2">
           <label class="form-label" for="audit_user_id">User ID</label>
-          <input id="audit_user_id" type="number" class="form-control" wire:model.live="userId" min="1" placeholder="e.g. 12">
+          <input id="audit_user_id" type="number" class="form-control" wire:model.live="userId" min="1"
+            placeholder="e.g. 12">
         </div>
 
         <div class="col-6 col-md-3">
           <label class="form-label" for="audit_action">Action Code</label>
-          <input id="audit_action" type="text" class="form-control" wire:model.live="action" placeholder="e.g. USER_UPDATE">
+          <input id="audit_action" type="text" class="form-control" wire:model.live="action"
+            placeholder="e.g. USER_UPDATE">
         </div>
 
         <div class="col-6 col-md-2">
@@ -36,7 +38,9 @@
         </div>
 
         <div class="col-6 col-md-1 d-flex align-items-end">
-          <button class="btn btn-outline-secondary w-100" type="button" wire:click="clearFilters">Clear</button>
+          <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
+            <i class="bi bi-x-circle me-1"></i> Clear
+          </button>
         </div>
       </div>
     </div>
@@ -88,7 +92,8 @@
             <td>{{ $r->method }}</td>
             <td class="text-truncate" style="max-width:260px;" title="{{ $r->path }}">{{ $r->path }}</td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->audit_id }})" aria-label="Show details for audit #{{ $r->audit_id }}">
+              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->audit_id }})"
+                aria-label="Show details for audit #{{ $r->audit_id }}">
                 <i class="bi bi-info-circle"></i>
               </button>
             </td>

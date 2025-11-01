@@ -15,7 +15,8 @@
   <nav class="navbar navbar-expand-lg bg-success navbar-dark">
     <div class="container">
       <a class="navbar-brand fw-semibold" href="{{ url('/') }}">EventFlow</a>
-      <button class="navbar-toggler" type="button" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <button class="navbar-toggler" type="button" aria-controls="navMain" aria-expanded="false"
+        aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
 
@@ -61,10 +62,12 @@
           <button class="btn btn-success-subtle text-white p-2" type="button" title="Help" aria-label="Open help">
             <i class="bi bi-question-lg"></i>
           </button>
-          <button class="btn btn-success-subtle text-white p-2" type="button" title="Profile"
-            aria-label="Open profile menu">
-            <i class="bi bi-person"></i>
-          </button>
+          <form method="POST" action="{{ route('logout') }}" class="m-0">
+            @csrf
+            <button class="btn btn-success-subtle text-white p-2" type="submit" title="Log out" aria-label="Log out">
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
+          </form>
         </div>
       </div>
     </div>
