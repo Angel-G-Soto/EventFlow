@@ -220,10 +220,11 @@
             @else
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
-                        <li wire:key="doc-{{ $doc['key'] }}">
-                                <a href="{{$doc['url']}}">
-                                    {{ $doc['label'] }}
+                        <li wire:key="doc-{{ $doc['id'] }}">
+                                <a href="{{$doc['hyperlink']}}" target="_blank">
+                                    {{ $doc['name'] . ": "}}
                                 </a>
+                                {{$doc['description']}}
                         </li>
                     @endforeach
                 </ul>
@@ -234,9 +235,11 @@
                            id="requirementFiles"
                            wire:model="requirementFiles"
                            multiple
-                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>
+{{--                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>--}}
+                            accept=".pdf"/>
                     <div class="form-text">
-                        Upload all required documents here. Accepted formats: PDF, DOCX, JPG, PNG.
+{{--                        Upload all required documents here. Accepted formats: PDF, DOCX, JPG, PNG.--}}
+                        Upload all required documents here. Accepted formats: PDF.
                     </div>
 
                     @error('requirementFiles.*')

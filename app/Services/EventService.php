@@ -33,7 +33,7 @@ class EventService {
 
         // FORM
 
-        public function updateOrCreateFromEventForm(array $data, array $document_ids, array $categories_ids, User $creator, string $action)
+        public function updateOrCreateFromEventForm(array $data, ?array $document_ids = [], ?array $categories_ids = [], User $creator, string $action)
         {
             return DB::transaction(function () use ($data, $document_ids, $categories_ids, $creator, $action) {
                 // Validate existence of related entities

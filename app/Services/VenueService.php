@@ -170,7 +170,10 @@ class VenueService {
                         });
                 })
                 ->pluck('venue_id')
-                ->unique();
+                ->unique()
+                ->toArray();
+
+            //dd(Venue::whereNotIn('id', $unavailableEventVenues)->get());
 
             // Return venues that are not in the approved events.
             return Venue::whereNotIn('id', $unavailableEventVenues)->get();

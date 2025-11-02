@@ -18,10 +18,13 @@
 namespace App\Livewire\Request;
 
 use App\Models\Event;
-use App\Services\DocumentRequirementService;
-use App\Services\VenueAvailabilityService;
+//use App\Services\DocumentRequirementService;
+use App\Services\UseRequirementService;
+//use App\Services\VenueAvailabilityService;
+use App\Services\VenueService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -241,14 +244,14 @@ class Create extends Component
      * Also performs side‑effects needed before entering the next step
      * (e.g., loading venues upon entering the venue selection step).
      */
-    public function next(VenueAvailabilityService $venueService, DocumentRequirementService $docSvc): void
+    public function next(/*DocumentRequirementService $docSvc*/): void
     {
-        $this->validate($this->rulesForStep($this->step));
+        //$this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
             // Step 1 complete ⇒ preload venues for Step 2
-            $this->loadAvailableVenues($venueService);
+            $this->loadAvailableVenues();
             $this->step = 2;
             return;
         }
@@ -256,7 +259,9 @@ class Create extends Component
 
         if ($this->step === 2) {
             // Step 2 complete ⇒ fetch required docs for chosen venue
-            $this->requiredDocuments = $docSvc->forVenue((int)3);
+            //$this->requiredDocuments = $docSvc->forVenue((int)3);
+            $this->requiredDocuments = app(VenueService::class)->getVenueRequirements($this->venue_id)->toArray();
+            //dd($this->requiredDocuments);
             $this->step = 3;
             return;
         }
@@ -273,15 +278,16 @@ class Create extends Component
      * Compute available venues for the current time range.
      *
      */
-    protected function loadAvailableVenues(?VenueAvailabilityService $service = null): void
+    protected function loadAvailableVenues(?VenueService $service = null): void
     {
         $this->loadingVenues = true;
         $this->availableVenues = [];
         try {
             $start = Carbon::parse($this->start_at);
             $end = Carbon::parse($this->end_at);
-            $service = $service ?? app(VenueAvailabilityService::class);
-            $this->availableVenues = $service->availableBetween($start, $end);
+            $service = $service ?? app(VenueService::class);
+            $this->availableVenues = $service->getAvailableVenues($start, $end)->toArray();
+            //dd($this->availableVenues);
         } catch (\Throwable $e) {
             $this->addError('venue_id', 'Could not load venue availability.');
         } finally {
@@ -303,6 +309,15 @@ class Create extends Component
 // Validate step 3 (dynamic files)
         $this->validate($this->rulesForStep(3));
 
+        // Roadmap
+
+            // create document and category models and store on DB. Store them on arrays
+
+            // call updateOrCreateFromEventForm
+
+            // call document service that scans documents. Dispatches job
+
+            // return home or pending requests or ...
 
         DB::transaction(function () {
             $event = Event::create([
