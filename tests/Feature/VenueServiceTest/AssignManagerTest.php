@@ -1,5 +1,32 @@
 <?php
 
+<<<<<<< HEAD
+use App\Models\Event;
+use App\Models\Venue;
+use App\Services\VenueService;
+use App\Models\Department;
+use App\Models\User;
+use App\Services\DepartmentService;
+
+it('assigns manager to venue department successfully', function () {
+
+    $department = Department::factory()->create();
+    $venue = Venue::factory()->create([
+        'department_id' => $department->id,
+    ]);
+
+    $manager = User::factory()->create();
+    $admin = User::factory()->create();
+
+    //Assign roles
+
+    VenueService::assignManager($venue, $manager, $admin);
+
+    $manager->refresh();
+    expect($manager->department_id)->toBe($venue->department_id);
+});
+
+=======
 use App\Models\User;
 use App\Models\Venue;
 use App\Models\Department;
@@ -82,3 +109,4 @@ it('throws generic exception if audit logging fails', function () {
 
     $this->venueService->assignManager($this->venue, $this->manager, $this->director);
 })->throws(Exception::class, 'Unable to assign the manager to its venue.');
+>>>>>>> origin/restructuring_and_optimizations

@@ -22,11 +22,19 @@ class RoleFactory extends Factory
      */
     public function definition(): array
     {
+<<<<<<< HEAD
+        $name = $this->faker->unique()->jobTitle();
+
+        return [
+            'r_name' => $name,
+            'r_code' => Str::slug($name), // e.g., "Lead Developer" becomes "lead-developer"
+=======
         $name = fake()->unique()->jobTitle();
 
         return [
             'name' => $name,
             'code' => Str::slug($name), // e.g., "Lead Developer" becomes "lead-developer"
+>>>>>>> origin/restructuring_and_optimizations
         ];
     }
 }

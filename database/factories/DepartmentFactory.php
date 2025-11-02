@@ -17,8 +17,13 @@ class DepartmentFactory extends Factory
     public function definition(): array
     {
         return [
+<<<<<<< HEAD
+            'd_name' => fake()->unique()->company() . ' Department',
+            'd_code' => fake()->unique()->buildingNumber(),
+=======
             'name' => fake()->randomElement(['Ingeniería Mecánica', 'Economía Agrícola', 'Inglés', 'Matemáticas', 'Historia']),
             'code' => 'INITIALS'.fake()->numberBetween(101, 200),
+>>>>>>> origin/restructuring_and_optimizations
         ];
     }
 }

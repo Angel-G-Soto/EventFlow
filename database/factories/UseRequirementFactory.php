@@ -2,8 +2,11 @@
 
 namespace Database\Factories;
 
+<<<<<<< HEAD
+=======
 use App\Models\Department;
 use App\Models\Venue;
+>>>>>>> origin/restructuring_and_optimizations
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,6 +22,17 @@ class UseRequirementFactory extends Factory
     public function definition(): array
     {
         return [
+<<<<<<< HEAD
+            'department_id' => null,
+            'venue_id' => null,
+            'ur_document_link' => fake()->url(),
+            'ur_name' => fake()->words(3, true),
+            'ur_description' => fake()->paragraph(),
+            'ur_label' => fake()->word(),
+        ];
+    }
+}
+=======
             'venue_id' => Venue::factory(),
             'hyperlink' => fake()->url(),
             'name' => fake()->name(),
@@ -26,3 +40,4 @@ class UseRequirementFactory extends Factory
         ];
     }
 }
+>>>>>>> origin/restructuring_and_optimizations

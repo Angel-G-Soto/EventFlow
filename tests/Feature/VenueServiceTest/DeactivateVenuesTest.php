@@ -2,6 +2,29 @@
 
 use App\Models\User;
 use App\Models\Venue;
+<<<<<<< HEAD
+use App\Services\VenueService;
+
+it('soft deletes all venues provided in the array', function () {
+    $venues = Venue::factory()->count(3)->create();  // Create 3 venue instances
+
+    VenueService::deactivateVenues($venues->all());
+
+    foreach ($venues as $venue) {
+        $venue->refresh();
+        expect($venue->deleted_at)->not()->toBeNull();
+    }
+});
+
+it('throws an exception when array contains non-venue elements', function () {
+    $users = User::factory()->count(2)->create();
+
+    expect(function () use ($users) {
+        VenueService::deactivateVenues($users->all());
+    })->toThrow(\InvalidArgumentException::class, 'List contains elements that are not venues.');
+});
+
+=======
 use App\Services\UserService;
 use App\Services\VenueService;
 use App\Services\AuditService;
@@ -90,3 +113,4 @@ it('throws generic exception if delete fails internally', function () {
 
     $this->venueService->deactivateVenues([$venue], $this->admin);
 })->throws(Exception::class, 'Unable to remove the venues.');
+>>>>>>> origin/restructuring_and_optimizations

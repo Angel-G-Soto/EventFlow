@@ -9,9 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UseRequirement extends Model
 {
+<<<<<<< HEAD
+    use HasFactory;
+=======
     /** @use HasFactory<\Database\Factories\UseRequirementFactory> */
     use HasFactory;
 
+>>>>>>> origin/restructuring_and_optimizations
     /**
      * The primary key associated with the table.
      *
@@ -19,30 +23,27 @@ class UseRequirement extends Model
      */
     protected $primaryKey = 'id';
 
-    /**
-     * The database connection that should be used by the model.
-     *
-     * @var string
-     */
-    protected $connection = 'mariadb';
-
-    /**
-     * The attributes that are mass assignable.
-     * @var string[]
-     */
     protected $fillable = [
+<<<<<<< HEAD
+        'us_doc_drive',
+        'us_instructions',
+        'us_alcohol_policy',
+        'us_cleanup_policy',
+        'id',
+=======
         'venue_id',
         'name',
         'hyperlink',
         'description',
+>>>>>>> origin/restructuring_and_optimizations
     ];
 
     /**
      * Relationship between the Use Requirement and Venue
-     * @return BelongsTo
+     * @return HasMany
      */
-    public function venue(): BelongsTo
+    public function venue(): HasMany
     {
-        return $this->belongsTo(Venue::class);
+        return $this->HasMany(Venue::class);
     }
 }

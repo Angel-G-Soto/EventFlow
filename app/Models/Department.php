@@ -69,4 +69,26 @@ class Department extends Model
             ->whereHas('roles', fn($q) => $q->where('name', 'department-director'))
             ->first();
     }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public function getEmployees(): Collection
+    {
+        return $this->employees()->get();
+    }
+
+    public function getEmployeeCount(): int
+    {
+        return $this->employees()->count();
+    }
+
+    public function getVenues(): Collection
+    {
+        return $this->venues()->get();
+    }
+
+    public function getVenueCount(): int
+    {
+        return $this->venues()->count();
+    }
+
 }

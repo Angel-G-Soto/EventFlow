@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+<<<<<<< HEAD
+=======
 use DateTime;
 use Illuminate\Database\Eloquent\Collection;
+>>>>>>> origin/restructuring_and_optimizations
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,6 +36,26 @@ class Venue extends Model
      * @var string[]
      */
     protected $fillable = [
+<<<<<<< HEAD
+        'v_department',
+        'v_manager_id',
+        'v_name',
+        'v_code',
+        'v_features',
+        'v_capacity',
+        'v_test_capacity',
+        'use_requirement_id',
+        'department_id'
+    ];
+
+    /**
+     * Relationship between the Venue and Use Requirement
+     * @return BelongsTo
+     */
+    public function requirements(): BelongsTo
+    {
+        return $this->belongsTo(UseRequirements::class, 'use_requirement_id');
+=======
         'manager_id',
         'department_id',
         'name',
@@ -51,13 +74,14 @@ class Venue extends Model
     public function requirements(): HasMany
     {
         return $this->hasMany(UseRequirement::class, 'venue_id');
+>>>>>>> origin/restructuring_and_optimizations
     }
 
     /**
      * Relationship between the Venue and Event
      * @return HasMany
      */
-    public function requests(): HasMany
+    public function events(): HasMany
     {
         return $this->hasMany(Event::class);
     }
@@ -65,6 +89,20 @@ class Venue extends Model
     /**
      * Relationship between the Venue and Department
      * @return BelongsTo
+<<<<<<< HEAD
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Returns the venue usage requirements
+     *
+     * @param int $requirementId
+     * @return UseRequirements|null
+=======
+>>>>>>> origin/restructuring_and_optimizations
      */
     public function department(): BelongsTo
     {
@@ -169,6 +207,8 @@ class Venue extends Model
             })
             ->exists();
     }
+<<<<<<< HEAD
+=======
 
     /**
      * Determine whether the venue is available for a given time range.
@@ -186,4 +226,5 @@ class Venue extends Model
         return $this->isOpenAt($startTime) && !$this->hasConflict($startTime, $endTime);
     }
 
+>>>>>>> origin/restructuring_and_optimizations
 }
