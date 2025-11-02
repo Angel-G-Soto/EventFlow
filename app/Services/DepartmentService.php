@@ -2,28 +2,6 @@
 namespace App\Services;
 use App\Models\Department;
 use App\Models\User;
-<<<<<<< HEAD
-use App\Models\Venue;
-use \Illuminate\Database\Eloquent\Collection;
-
-class DepartmentService {
-
-    public static function updateDepartmentAssignment(Department $department, Venue $venue): void
-    {
-        $venue->department_id = $department->id;
-        $venue->save();
-    }
-
-    public static function updateUserDepartment(Department $department, User $manager): void
-    {
-        $manager->department_id = $department->id;
-        $manager->save();
-    }
-
-    public static function getDepartmentVenues(Department $department): Collection
-    {
-        return Department::with('venues')->where('id', $department->id)->get();
-=======
 use Exception;
 use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -46,7 +24,7 @@ class DepartmentService {
      * This method fetches the Department record that matches the provided ID.
      * If no department exists with the given ID, the method returns null.
      * The provided ID must be a positive integer; otherwise, an InvalidArgumentException is
- *
+     *
      * @param int $id
      * @return Department|null
      */
@@ -64,7 +42,7 @@ class DepartmentService {
      *
      * This method returns all Department records available in the database.
      * If an unexpected error occurs during retrieval, an Exception is thrown.
- *
+     *
      * @return Collection
      * @throws Exception
      */
@@ -98,7 +76,7 @@ class DepartmentService {
      *      ],
      *      ...
      * ]
- *
+     *
      * @param array $departmentData
      * @return mixed
      * @throws Exception
@@ -263,6 +241,5 @@ class DepartmentService {
         }
 
         return Department::findOrFail($director->department_id)->employees()->where('id', '<>', $director_id)->get();
->>>>>>> origin/restructuring_and_optimizations
     }
 }

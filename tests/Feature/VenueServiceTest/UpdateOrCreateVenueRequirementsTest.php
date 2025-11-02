@@ -1,69 +1,124 @@
 <?php
 
-use App\Models\Venue;
 use App\Models\User;
-use App\Models\UseRequirements;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Venue;
+use App\Models\Department;
+use App\Services\UserService;
 use App\Services\VenueService;
+use App\Services\AuditService;
+use App\Services\DepartmentService;
+use App\Services\UseRequirementService;
+use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-it('successfully creates venue requirements', function () {
+beforeEach(function () {
+    $this->auditService = Mockery::mock(AuditService::class);
+    $this->departmentService = Mockery::mock(DepartmentService::class);
+    $this->useRequirementService = Mockery::mock(UseRequirementService::class);
+    $this->userService = Mockery::mock(UserService::class);
 
-    $venue = Venue::factory()->create();
-    $manager = User::factory()->create();
-
-    $hyperlink = 'http://example.com';
-    $instructions = 'Follow the guidelines.';
-    $alcohol_policy = true;
-    $cleanup_policy = false;
-
-    $updatedVenue = VenueService::updateOrCreateVenueRequirements(
-        $venue,
-        $hyperlink,
-        $instructions,
-        $alcohol_policy,
-        $cleanup_policy,
-        $manager
+    $this->venueService = new VenueService(
+        $this->departmentService,
+        $this->useRequirementService,
+        $this->auditService,
+        $this->userService,
     );
 
-    expect($updatedVenue->requirements)->toBeInstanceOf(UseRequirements::class);
-    expect($updatedVenue->requirements->us_doc_drive)->toBe($hyperlink);
-    expect($updatedVenue->requirements->us_instructions)->toBe($instructions);
-    expect((bool)$updatedVenue->requirements->us_alcohol_policy)->toBe($alcohol_policy);
-    expect((bool)$updatedVenue->requirements->us_cleanup_policy)->toBe($cleanup_policy);
-
-    $updatedVenue->refresh();
-    expect($updatedVenue->use_requirement_id)->toBe($updatedVenue->requirements->id);
+    $this->admin = Mockery::mock(User::class)->makePartial();
+    $this->admin->id = 1;
+    $this->admin->name = 'Admin User';
 });
 
-it('successfully updates venue requirements', function () {
 
-    $venue = Venue::factory()->create();
-    $manager = User::factory()->create();
-    $existingRequirement = UseRequirements::factory()->create();
+it('creates or updates venues successfully from valid import data', function () {
+    $department = Department::factory()->create(['name' => 'ADEM']);
+    $venueData = [
+        [
+            'name' => 'SALON DE CLASES',
+            'code' => 'AE-102',
+            'department' => 'ADEM',
+            'features' => '0101',
+            'capacity' => 50,
+            'test_capacity' => 40,
+        ],
+        [
+            'name' => 'LABORATORIO',
+            'code' => 'AE-103',
+            'department' => 'ADEM',
+            'features' => '0110',
+            'capacity' => 30,
+            'test_capacity' => 20,
+        ],
+    ];
 
-    $venue->use_requirement_id = $existingRequirement->id;
-    $venue->save();
+    $this->departmentService
+        ->shouldReceive('findByName')
+        ->twice()
+        ->with('ADEM')
+        ->andReturn($department);
 
-    $newHyperlink = 'http://updated-example.com';
-    $newInstructions = 'Updated instructions for the venue.';
-    $newAlcoholPolicy = false;
-    $newCleanupPolicy = true;
+    $this->auditService
+        ->shouldReceive('logAdminAction')
+        ->once()
+        //->with($this->admin->id, '', 'Updated venues from import data.')
+        ->andReturn(Mockery::mock(\App\Models\AuditTrail::class));
 
-    $updatedVenue = VenueService::updateOrCreateVenueRequirements(
-        $venue,
-        $newHyperlink,
-        $newInstructions,
-        $newAlcoholPolicy,
-        $newCleanupPolicy,
-        $manager
-    );
+    $result = $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
 
-    expect($updatedVenue->requirements)->toBeInstanceOf(UseRequirements::class);
-    expect($updatedVenue->requirements->us_doc_drive)->toBe($newHyperlink);
-    expect($updatedVenue->requirements->us_instructions)->toBe($newInstructions);
-    expect((bool)$updatedVenue->requirements->us_alcohol_policy)->toBe($newAlcoholPolicy);
-    expect((bool)$updatedVenue->requirements->us_cleanup_policy)->toBe($newCleanupPolicy);
-
-    $updatedVenue->refresh();
-    expect($updatedVenue->use_requirement_id)->toBe($updatedVenue->requirements->id);
+    expect($result)
+        ->toBeInstanceOf(Collection::class)
+        ->and($result->count())->toBe(2)
+        ->and(Venue::count())->toBe(2);
 });
+
+
+it('throws exception when venue data contains invalid keys', function () {
+    $venueData = [
+        [
+            'name' => 'Invalid Venue',
+            'code' => 'AE-001',
+            'department' => 'ADEM',
+            'wrong_key' => 'unexpected',
+        ]
+    ];
+
+    $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
+})->throws(InvalidArgumentException::class, 'Invalid attribute keys detected');
+
+
+it('throws exception when any venue data contains null values', function () {
+    $venueData = [
+        [
+            'name' => null,
+            'code' => 'AE-002',
+            'department' => 'ADEM',
+            'features' => '0101',
+            'capacity' => 50,
+            'test_capacity' => 40,
+        ]
+    ];
+
+    $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
+})->throws(InvalidArgumentException::class, 'Null values are not allowed for keys: name');
+
+
+it('throws exception when department does not exist', function () {
+    $venueData = [
+        [
+            'name' => 'CLASSROOM 101',
+            'code' => 'AE-104',
+            'department' => 'NON_EXISTENT',
+            'features' => '1111',
+            'capacity' => 60,
+            'test_capacity' => 50,
+        ]
+    ];
+
+    $this->departmentService
+        ->shouldReceive('findByName')
+        ->once()
+        ->with('NON_EXISTENT')
+        ->andReturn(null);
+
+    $this->venueService->updateOrCreateFromImportData($venueData, $this->admin);
+})->throws(ModelNotFoundException::class, 'Department [NON_EXISTENT] does not exist.');

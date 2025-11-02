@@ -15,7 +15,8 @@ use Illuminate\Database\Eloquent\Collection;
  * It handles user creation, retrieval, and the management of internal roles.
  */
 class UserService
-{   
+{
+    protected AuditService $auditService;
     public function __construct(AuditService $auditService)
     {
         $this->auditService = $auditService;
@@ -28,11 +29,11 @@ class UserService
      * @param string $name The full name of the user from the SSO provider.
      * @return User The found or newly created Eloquent User object.
      */
-    public function findOrCreateUser(string $email, string $name): User 
+    public function findOrCreateUser(string $email, string $name): User
     {
         return User::firstOrCreate(
-            ['u_email' => $email],
-            ['u_name' => $name], 
+            ['email' => $email],
+            ['first_name' => $name],
         );
     }
 
@@ -66,9 +67,9 @@ class UserService
         // Audit the action
         $this->auditService->logAdminAction(
             $admin->user_id,
-            $admin->u_name,
+            $admin->name,
             'USER_ROLES_UPDATED',
-            "Updated roles for user '{$user->u_name}' (ID: {$user->user_id}) to: " . implode(', ', $roleCodes)
+            "Updated roles for user '{$user->name}' (ID: {$user->user_id}) to: " . implode(', ', $roleCodes)
         );
 
         // Return the user with the fresh roles loaded
@@ -94,9 +95,9 @@ class UserService
         // Audit the action
         $this->auditService->logAdminAction(
             $admin->user_id,
-            $admin->u_name,
+            $admin->name,
             'USER_DEPT_ASSIGNED',
-            "Assigned user '{$user->u_name}' to department '{$department->d_name}'."
+            "Assigned user '{$user->name}' to department '{$department->d_name}'."
         );
 
         return $user;
@@ -106,7 +107,7 @@ class UserService
      * Updates a user's profile information.
      *
      * @param int $userId The ID of the user to update.
-     * @param array $data An associative array of data to update (e.g., ['u_name' => 'New Name']).
+     * @param array $data An associative array of data to update (e.g., ['first_name' => 'New Name']).
      * @param int $adminId The ID of the administrator performing the action.
      * @param string $adminName The name of the administrator performing the action.
      * @return User The updated User object.
@@ -114,16 +115,16 @@ class UserService
     public function updateUserProfile(User $user, array $data, User $admin): User
     {
         // Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
-        $fillableData = Arr::only($data, ['u_name', 'u_email']);
+        $fillableData = Arr::only($data, ['first_name', 'email']);
 
         $user->fill($fillableData);
         $user->save();
 
         $this->auditService->logAdminAction(
             $admin->user_id,
-            $admin->u_name,
+            $admin->name,
             'USER_PROFILE_UPDATED',
-            "Updated profile for user '{$user->u_name}' (ID: {$user->user_id})."
+            "Updated profile for user '{$user->name}' (ID: {$user->user_id})."
         );
 
         return $user;
@@ -140,15 +141,15 @@ class UserService
     public function deleteUser(User $user, User $admin): void
     {
         // It's important to get the user's name *before* deleting them for the audit log.
-        $deletedUserName = $user->u_name;
-        $deletedUserEmail = $user->u_email;
+        $deletedUserName = $user->name;
+        $deletedUserEmail = $user->email;
         $deletedUserId = $user->user_id;
 
         $user->delete();
 
         $this->auditService->logAdminAction(
             $admin->user_id,
-            $admin->u_name,
+            $admin->name,
             'USER_DELETED',
             "Permanently deleted user '{$deletedUserName}' (Email: {$deletedUserEmail}) (ID: {$deletedUserId})."
         );

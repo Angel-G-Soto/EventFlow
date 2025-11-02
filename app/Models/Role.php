@@ -2,10 +2,7 @@
 
 namespace App\Models;
 
-<<<<<<< HEAD
-=======
 use Illuminate\Database\Eloquent\Builder;
->>>>>>> origin/restructuring_and_optimizations
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,12 +11,7 @@ class Role extends Model
 {
     use HasFactory;
 
-<<<<<<< HEAD
-    protected $table = 'role';                  // @var string The table associated with the model.
-    protected $primaryKey = 'role_id';          // @var string The primary key associated with the table.
-=======
     protected $table = 'roles';                  // @var string The table associated with the model.
->>>>>>> origin/restructuring_and_optimizations
 
     /**
      * The attributes that are mass assignable.
@@ -27,13 +19,8 @@ class Role extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-<<<<<<< HEAD
-        'r_name',             
-        'r_code'
-=======
         'name',
         'code'
->>>>>>> origin/restructuring_and_optimizations
     ];
 
     /**
@@ -41,9 +28,6 @@ class Role extends Model
      */
     public function users(): BelongsToMany
     {
-<<<<<<< HEAD
-        return $this->belongsToMany(User::class, 'Role Assignment', 'role_id', 'user_id');
-=======
         return $this->belongsToMany(User::class, 'user_role');
     }
     /**
@@ -88,6 +72,5 @@ class Role extends Model
     public function getUserCountAttribute(): int
     {
         return $this->users()->count();
->>>>>>> origin/restructuring_and_optimizations
     }
 }

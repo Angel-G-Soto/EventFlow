@@ -28,13 +28,13 @@ class VenueService {
         //$this->EventService = $eventService
     }
 
-/*
-                              ____ _____ _   _ _____ ____      _    _       _   _ ____  _____
-                             / ___| ____| \ | | ____|  _ \    / \  | |     | | | / ___|| ____|
-                            | |  _|  _| |  \| |  _| | |_) |  / _ \ | |     | | | \___ \|  _|
-                            | |_| | |___| |\  | |___|  _ <  / ___ \| |___  | |_| |___) | |___
-                             \____|_____|_| \_|_____|_| \_\/_/   \_\_____|  \___/|____/|_____|
-*/
+    /*
+                                  ____ _____ _   _ _____ ____      _    _       _   _ ____  _____
+                                 / ___| ____| \ | | ____|  _ \    / \  | |     | | | / ___|| ____|
+                                | |  _|  _| |  \| |  _| | |_) |  / _ \ | |     | | | \___ \|  _|
+                                | |_| | |___| |\  | |___|  _ <  / ___ \| |___  | |_| |___) | |___
+                                 \____|_____|_| \_|_____|_| \_\/_/   \_\_____|  \___/|____/|_____|
+    */
 
     /**
      * Creates a custom query for venues based on the filter parameters.
@@ -65,23 +65,23 @@ class VenueService {
             if (!empty($filters)) {
                 // Verify that the requirementsData structure is met
 
-                    // Check for invalid keys
-                    $invalidKeys = array_diff(array_keys($filters), new Venue()->getFillable());
-                    if (!empty($invalidKeys)) {
-                        throw new InvalidArgumentException(
-                            'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
-                        );
-                    }
+                // Check for invalid keys
+                $invalidKeys = array_diff(array_keys($filters), new Venue()->getFillable());
+                if (!empty($invalidKeys)) {
+                    throw new InvalidArgumentException(
+                        'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
+                    );
+                }
 
-                    // Check for null values
-                    $nullKeys = array_keys(array_filter($filters, function ($value) {
-                        return is_null($value);
-                    }));
-                    if (!empty($nullKeys)) {
-                        throw new InvalidArgumentException(
-                            'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
-                        );
-                    }
+                // Check for null values
+                $nullKeys = array_keys(array_filter($filters, function ($value) {
+                    return is_null($value);
+                }));
+                if (!empty($nullKeys)) {
+                    throw new InvalidArgumentException(
+                        'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
+                    );
+                }
 
                 foreach ($filters as $key => $value) {
                     if ($value === null) {
@@ -124,7 +124,7 @@ class VenueService {
      * This method attempts to find a venue with the given ID.
      * If the provided ID is less than 0, an InvalidArgumentException is thrown.
      * If any other error occurs during the retrieval, a generic Exception is thrown.
- *
+     *
      * @param int $venue_id
      * @return Venue|null
      * @throws Exception
@@ -206,15 +206,15 @@ class VenueService {
         return Venue::where('department_id', $this->userService->findUserById($user_id)->department->id)->get();
     }
 
-/*
+    /*
 
-                                         ____ ___ ____  _____ ____ _____ ___  ____
-                                        |  _ \_ _|  _ \| ____/ ___|_   _/ _ \|  _ \
-                                        | | | | || |_) |  _|| |     | || | | | |_) |
-                                        | |_| | ||  _ <| |__| |___  | || |_| |  _ <
-                                        |____/___|_| \_\_____\____| |_| \___/|_| \_\
+                                             ____ ___ ____  _____ ____ _____ ___  ____
+                                            |  _ \_ _|  _ \| ____/ ___|_   _/ _ \|  _ \
+                                            | | | | || |_) |  _|| |     | || | | | |_) |
+                                            | |_| | ||  _ <| |__| |___  | || |_| |  _ <
+                                            |____/___|_| \_\_____\____| |_| \___/|_| \_\
 
- */
+     */
 
     /**
      * Assign a manager to a venue.
@@ -250,6 +250,7 @@ class VenueService {
 
             $this->auditService->logAction($director->id,
                 '',
+                '',
                 'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'); // MOCK FROM SERVICE
 
         }
@@ -257,16 +258,16 @@ class VenueService {
         catch (\Throwable $exception) {throw new Exception('Unable to assign the manager to its venue.');}
     }
 
-/*
+    /*
 
-                                              __  __    _    _   _    _    ____ _____ ____
-                                             |  \/  |  / \  | \ | |  / \  / ___| ____|  _ \
-                                             | |\/| | / _ \ |  \| | / _ \| |  _|  _| | |_) |
-                                             | |  | |/ ___ \| |\  |/ ___ \ |_| | |___|  _ <
-                                             |_|  |_/_/   \_\_| \_/_/   \_\____|_____|_| \_\
+                                                  __  __    _    _   _    _    ____ _____ ____
+                                                 |  \/  |  / \  | \ | |  / \  / ___| ____|  _ \
+                                                 | |\/| | / _ \ |  \| | / _ \| |  _|  _| | |_) |
+                                                 | |  | |/ ___ \| |\  |/ ___ \ |_| | |___|  _ <
+                                                 |_|  |_/_/   \_\_| \_/_/   \_\____|_____|_| \_\
 
 
- */
+     */
 
     /**
      * Update the operating hours of a venue.
@@ -291,7 +292,10 @@ class VenueService {
                 throw new InvalidArgumentException('The user must be venue-manager.');
             }
 
-            $this->auditService->logAction($manager->id,'', 'Updated operating hours for venue #'.$venue->id); // MOCK FROM SERVICE
+            $this->auditService->logAction($manager->id,
+                '',
+                '',
+                'Updated operating hours for venue #'.$venue->id); // MOCK FROM SERVICE
 
             // Update the venue with the filtered data
             return Venue::updateOrCreate(
@@ -377,7 +381,10 @@ class VenueService {
                 $requirement->hyperlink = $r['hyperlink'];
                 $requirement->description = $r['description'];
                 $requirement->save();
-                $this->auditService->logAction($manager->id, '', 'Create requirement for venue #'.$venue->id); // MOCK FROM SERVICE
+                $this->auditService->logAction($manager->id,
+                    '',
+                    '',
+                    'Create requirement for venue #'.$venue->id); // MOCK FROM SERVICE
             }
 
 
@@ -402,16 +409,16 @@ class VenueService {
         return Venue::findOrFail($venue_id)->requirements;
     }
 
-/*
+    /*
 
-                             _    ____  __  __ ___ _   _ ___ ____ _____ ____      _  _____ ___  ____
-                            / \  |  _ \|  \/  |_ _| \ | |_ _/ ___|_   _|  _ \    / \|_   _/ _ \|  _ \
-                           / _ \ | | | | |\/| || ||  \| || |\___ \ | | | |_) |  / _ \ | || | | | |_) |
-                          / ___ \| |_| | |  | || || |\  || | ___) || | |  _ <  / ___ \| || |_| |  _ <
-                         /_/   \_\____/|_|  |_|___|_| \_|___|____/ |_| |_| \_\/_/   \_\_| \___/|_| \_\
+                                 _    ____  __  __ ___ _   _ ___ ____ _____ ____      _  _____ ___  ____
+                                / \  |  _ \|  \/  |_ _| \ | |_ _/ ___|_   _|  _ \    / \|_   _/ _ \|  _ \
+                               / _ \ | | | | |\/| || ||  \| || |\___ \ | | | |_) |  / _ \ | || | | | |_) |
+                              / ___ \| |_| | |  | || || |\  || | ___) || | |  _ <  / ___ \| || |_| |  _ <
+                             /_/   \_\____/|_|  |_|___|_| \_|___|____/ |_| |_| \_\/_/   \_\_| \___/|_| \_\
 
 
- */
+     */
 
     /**
      * Create a new venue.
@@ -503,38 +510,41 @@ class VenueService {
     {
         //try {
 
-            // Validate admin role
-            if (!$admin->getRoleNames()->contains('system-administrator')) {
-                throw new InvalidArgumentException('The manager and the director must be system-administrator.');
-            }
+        // Validate admin role
+        if (!$admin->getRoleNames()->contains('system-administrator')) {
+            throw new InvalidArgumentException('The manager and the director must be system-administrator.');
+        }
 
-            // Check for invalid keys
-            $invalidKeys = array_diff(array_keys($data), $venue->getFillable());
-            if (!empty($invalidKeys)) {
-                throw new InvalidArgumentException(
-                    'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
-                );
-            }
-
-            // Check for null values
-            $nullKeys = array_keys(array_filter($data, function ($value) {
-                return is_null($value);
-            }));
-            if (!empty($nullKeys)) {
-                throw new InvalidArgumentException(
-                    'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
-                );
-            }
-
-            $this->auditService->logAdminAction($admin->id,'', 'Updated venue #'.$venue->id); // MOCK FROM SERVICE
-
-            // Update the venue with the filtered data
-            return Venue::updateOrCreate(
-                [
-                    'id' => $venue->id
-                ],
-                $data
+        // Check for invalid keys
+        $invalidKeys = array_diff(array_keys($data), $venue->getFillable());
+        if (!empty($invalidKeys)) {
+            throw new InvalidArgumentException(
+                'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
             );
+        }
+
+        // Check for null values
+        $nullKeys = array_keys(array_filter($data, function ($value) {
+            return is_null($value);
+        }));
+        if (!empty($nullKeys)) {
+            throw new InvalidArgumentException(
+                'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
+            );
+        }
+
+        $this->auditService->logAdminAction($admin->id,
+            '',
+            '',
+            'Updated venue #'.$venue->id); // MOCK FROM SERVICE
+
+        // Update the venue with the filtered data
+        return Venue::updateOrCreate(
+            [
+                'id' => $venue->id
+            ],
+            $data
+        );
         //}
         //catch (InvalidArgumentException $exception) {throw $exception;}
         //catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
@@ -622,7 +632,10 @@ class VenueService {
                 ));
             }
 
-            $this->auditService->logAdminAction($admin->id, '', 'Updated venues from import data.'); // MOCK FROM SERVICE
+            $this->auditService->logAdminAction($admin->id,
+                '',
+                '',
+                'Updated venues from import data.'); // MOCK FROM SERVICE
 
             // Return collection of updated values
             return $updatedVenues;
@@ -658,7 +671,10 @@ class VenueService {
 
             foreach ($venues as $venue) {
                 $venue->delete();
-                $this->auditService->logAdminAction($admin->id, '', 'Deactivated venue #'.$venue->id);  // MOCK FROM SERVICE
+                $this->auditService->logAdminAction($admin->id,
+                    '',
+                    '',
+                    'Deactivated venue #'.$venue->id);  // MOCK FROM SERVICE
             };
         }
         catch (\InvalidArgumentException $exception) {throw $exception;}

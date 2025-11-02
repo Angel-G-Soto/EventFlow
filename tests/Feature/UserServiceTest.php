@@ -36,51 +36,51 @@ class UserServiceTest extends TestCase
     }
 
     #[Test]
-    public function find_or_create_user_returns_existing_user(): void
+    public function find_ocreate_usereturns_existing_user(): void
     {
         // Arrange: Create a user that already exists in the database.
         $existingUser = User::factory()->create([
-            'u_email' => 'jane.doe@example.com',
-            'u_name' => 'Jane Doe',
+            'email' => 'jane.doe@example.com',
+            'first_name' => 'Jane Doe',
         ]);
 
         // Act: Call the method with the same email.
         $foundUser = $this->userService->findOrCreateUser('jane.doe@example.com', 'Jane Doe');
 
         // Assert: Ensure it returned the correct user and didn't create a new one.
-        $this->assertEquals($existingUser->user_id, $foundUser->user_id);
-        $this->assertDatabaseCount('User', 1);
+        $this->assertEquals($existingUser->id, $foundUser->id);
+        $this->assertDatabaseCount('user', 1);
     }
 
     #[Test]
-    public function find_or_create_user_creates_new_user_if_not_exists(): void
+    public function find_ocreate_usecreates_new_useif_not_exists(): void
     {
         // Act: Call the method with an email that doesn't exist.
         $newUser = $this->userService->findOrCreateUser('john.doe@example.com', 'John Doe');
 
         // Assert: Ensure a new user was created with the correct details.
         $this->assertNotNull($newUser);
-        $this->assertEquals('john.doe@example.com', $newUser->u_email);
-        $this->assertDatabaseHas('User', ['u_email' => 'john.doe@example.com']);
-        $this->assertDatabaseCount('User', 1);
+        $this->assertEquals('john.doe@example.com', $newUser->email);
+        $this->assertDatabaseHas('users', ['email' => 'john.doe@example.com']);
+        $this->assertDatabaseCount('users', 1);
     }
 
     #[Test]
-    public function update_user_roles_correctly_syncs_roles_and_audits(): void
+    public function update_useroles_correctly_syncs_roles_and_audits(): void
     {
         // Arrange: Create an admin, a user, and some roles.
         $admin = User::factory()->create();
         $user = User::factory()->create();
-        $role1 = Role::factory()->create(['r_code' => 'space-manager']);
-        $role2 = Role::factory()->create(['r_code' => 'dsca-staff']);
+        $role1 = Role::factory()->create(['code' => 'space-manager']);
+        $role2 = Role::factory()->create(['code' => 'dsca-staff']);
 
         // Expect the AuditService's logAdminAction method to be called once.
         $this->auditServiceMock
             ->shouldReceive('logAdminAction')
             ->once()
             ->with(
-                $admin->user_id,
-                $admin->u_name,
+                $admin->id,
+                $admin->name,
                 'USER_ROLES_UPDATED',
                 Mockery::any() // We don't need to assert the exact description string
             );
@@ -95,7 +95,7 @@ class UserServiceTest extends TestCase
     }
 
     #[Test]
-    public function assign_user_to_department_updates_user_and_audits(): void
+    public function assign_useto_department_updates_useand_audits(): void
     {
         // Arrange: Create an admin, a user, and a department.
         $admin = User::factory()->create();
@@ -107,10 +107,10 @@ class UserServiceTest extends TestCase
             ->shouldReceive('logAdminAction')
             ->once()
             ->with(
-                $admin->user_id,
-                $admin->u_name,
+                $admin->id,
+                $admin->name,
                 'USER_DEPT_ASSIGNED',
-                "Assigned user '{$user->u_name}' to department '{$department->d_name}'."
+                "Assigned user '{$user->name}' to department '{$department->d_name}'."
             );
 
         // Act: Assign the user to the department.
@@ -124,7 +124,7 @@ class UserServiceTest extends TestCase
     public function get_users_with_role_returns_correct_users(): void
     {
         // Arrange: Create a role and several users.
-        $dscaRole = Role::factory()->create(['r_code' => 'dsca-staff']);
+        $dscaRole = Role::factory()->create(['code' => 'dsca-staff']);
         $userWithRole1 = User::factory()->create();
         $userWithRole2 = User::factory()->create();
         $userWithoutRole = User::factory()->create();
@@ -149,20 +149,20 @@ class UserServiceTest extends TestCase
         // Arrange
         $admin = User::factory()->create();
         $user = User::factory()->create([
-            'u_name' => 'Old Name',
-            'u_email' => 'Old Email',
+            'first_name' => 'Old Name',
+            'email' => 'Old Email',
         ]);
         $newData = [
-            'u_name' => 'New Name',
-            'u_email' => 'New Email',
+            'first_name' => 'New Name',
+            'email' => 'New Email',
         ];
 
         $this->auditServiceMock
             ->shouldReceive('logAdminAction')
             ->once()
             ->with(
-                $admin->user_id,
-                $admin->u_name,
+                $admin->id,
+                $admin->name,
                 'USER_PROFILE_UPDATED',
                 Mockery::any()
             );
@@ -171,27 +171,27 @@ class UserServiceTest extends TestCase
         $this->userService->updateUserProfile($user, $newData, $admin);
 
         // Assert
-        $this->assertDatabaseHas('User', [
-            'user_id' => $user->user_id,
-            'u_name' => 'New Name'
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'first_name' => 'New Name'
         ]);
-        $this->assertDatabaseMissing('User', [
-            'user_id' => $user->user_id,
-            'u_name' => 'Old Name',
+        $this->assertDatabaseMissing('users', [
+            'id' => $user->id,
+            'first_name' => 'Old Name',
         ]);
 
-        $this->assertDatabaseHas('User', [
-            'user_id' => $user->user_id,
-            'u_email' => 'New Email'
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'email' => 'New Email'
         ]);
-        $this->assertDatabaseMissing('User', [
-            'user_id' => $user->user_id,
-            'u_email' => 'Old Email',
+        $this->assertDatabaseMissing('users', [
+            'id' => $user->id,
+            'email' => 'Old Email',
         ]);
     }
 
     #[Test]
-    public function delete_user_removes_record_and_audits(): void
+    public function delete_useremoves_record_and_audits(): void
     {
         // Arrange
         $admin = User::factory()->create();
@@ -201,18 +201,18 @@ class UserServiceTest extends TestCase
             ->shouldReceive('logAdminAction')
             ->once()
             ->with(
-                $admin->user_id,
-                $admin->u_name,
+                $admin->id,
+                $admin->name,
                 'USER_DELETED',
-                "Permanently deleted user '{$userToDelete->u_name}' (Email: {$userToDelete->u_email}) (ID: {$userToDelete->user_id})."
+                "Permanently deleted user '{$userToDelete->name}' (Email: {$userToDelete->email}) (ID: {$userToDelete->id})."
             );
 
         // Act
         $this->userService->deleteUser($userToDelete, $admin);
 
         // Assert
-        $this->assertDatabaseMissing('User', [
-            'user_id' => $userToDelete->user_id,
+        $this->assertDatabaseMissing('users', [
+            'id' => $userToDelete->id,
         ]);
     }
 }
