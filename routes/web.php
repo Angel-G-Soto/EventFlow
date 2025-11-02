@@ -30,7 +30,16 @@ Route::get('/approver/requests/history/{event}',\App\Livewire\Request\History\De
 //Approver Request Pending-------------------------------------------------------------
 Route::get('approver/requests/history/',\App\Livewire\Request\History\Index::class)->name('approver.history.index');
 
-
+/**
+ * Dummy 'events.create' route target used by ImportController redirect.
+ * Returns JSON so your tests and API consumers get a clear payload.
+ */
+Route::get('/events/create', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Dummy events.create reached'
+    ]);
+})->name('events.create');
 
 //Route::get('/approver/requests/history/{id}',function (){
 ////    $event = Event::query()->findOrFail(request()->id);

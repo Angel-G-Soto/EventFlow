@@ -58,7 +58,7 @@ class Department extends Model
         $employees = $this->employees()->get();
 
         foreach ($employees as $employee) {
-            if ($employee->role()->name == 'department-director') {
+            if ($employee->roles()->pluck('name')->contains('department-director')) {
                 return $employee;
             }
         }
