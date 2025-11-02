@@ -47,8 +47,8 @@ class DocumentService
         // 2) Create DB record
         $doc = Document::create([
             'event_id' => $eventId,
-            'd_name' => $tmpRelativePath,
-            'd_file_path' => '',
+            'name' => $tmpRelativePath,
+            'file_path' => '',
         ]);
 
         // 3) Queue virus scan & move to final storage
@@ -64,7 +64,7 @@ class DocumentService
      */
     public function deleteDocument(Document $document): bool
     {
-        $path = $document->d_file_path;
+        $path = $document->file_path;
 
         // 1) Remove physical file
         try {
@@ -103,7 +103,7 @@ class DocumentService
      */
     public function getDocumentStream(Document $document)
     {
-        $path = $document->d_file_path;
+        $path = $document->file_path;
 
         if (!$path || !Storage::disk($this->finalDisk())->exists($path)) {
             // Let caller decide how to present this (404 vs soft message)

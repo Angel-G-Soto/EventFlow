@@ -27,9 +27,9 @@ describe('handleUpload', function () {
 
         expect($document)->toBeInstanceOf(Document::class)
             ->and($document->event_id)->toBe($event->id)
-            ->and($document->d_name)->not->toBeEmpty();
+            ->and($document->name)->not->toBeEmpty();
 
-        expect(Storage::disk('uploads_temp')->exists($document->d_name))->toBeTrue();
+        expect(Storage::disk('uploads_temp')->exists($document->name))->toBeTrue();
         Queue::assertPushed(ProcessFileUpload::class);
     });
 
@@ -47,7 +47,7 @@ describe('handleUpload', function () {
 
 describe('deleteDocument', function () {
     it('successfully deletes document and file', function () {
-        $document = Document::factory()->create(['d_file_path' => 'test/file.pdf']);
+        $document = Document::factory()->create(['file_path' => 'test/file.pdf']);
         Storage::disk('documents')->put('test/file.pdf', 'content');
 
         $result = $this->service->deleteDocument($document);
@@ -67,7 +67,7 @@ describe('deleteDocument', function () {
     });*/
 
     it('throws StorageException on storage error', function () {
-        $document = Document::factory()->create(['d_file_path' => 'test.pdf']);
+        $document = Document::factory()->create(['file_path' => 'test.pdf']);
         $mockDisk = Mockery::mock();
         $mockDisk->shouldReceive('exists')->andThrow(new Exception('Storage error'));
         Storage::shouldReceive('disk')->with('documents')->andReturn($mockDisk);
@@ -79,7 +79,7 @@ describe('deleteDocument', function () {
 
 describe('getDocumentStream', function () {
     it('returns valid stream for existing file', function () {
-        $document = Document::factory()->create(['d_file_path' => 'test.pdf']);
+        $document = Document::factory()->create(['file_path' => 'test.pdf']);
         Storage::disk('documents')->put('test.pdf', 'file content');
 
         $stream = $this->service->getDocumentStream($document);
@@ -96,7 +96,7 @@ describe('getDocumentStream', function () {
     });*/
 
     it('throws StorageException when readStream fails', function () {
-        $document = Document::factory()->create(['d_file_path' => 'test.pdf']);
+        $document = Document::factory()->create(['file_path' => 'test.pdf']);
         $mockDisk = Mockery::mock();
         $mockDisk->shouldReceive('exists')->andReturn(true);
         $mockDisk->shouldReceive('readStream')->andThrow(new Exception('Read error'));
@@ -107,7 +107,7 @@ describe('getDocumentStream', function () {
     });
 
     it('throws StorageException for invalid stream', function () {
-        $document = Document::factory()->create(['d_file_path' => 'test.pdf']);
+        $document = Document::factory()->create(['file_path' => 'test.pdf']);
         $mockDisk = Mockery::mock();
         $mockDisk->shouldReceive('exists')->andReturn(true);
         $mockDisk->shouldReceive('readStream')->andReturn(false);
