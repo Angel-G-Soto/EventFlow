@@ -19,9 +19,29 @@
 {{--    - Announce validation errors with role="alert" and aria-describedby pointing to error text.--}}
 {{--    - Buttons and links must have discernible text; icon-only buttons need aria-label.--}}
 
+<x-slot:pageActions>
+    <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+            <a class="fw-bold nav-link {{ Route::is('public.calendar') ? 'active' : '' }}" href="{{ route('public.calendar') }}">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="fw-bold nav-link  {{ Route::is('approver.pending.index') ? 'active' : '' }}" href="{{ route('approver.pending.index') }}">Pending Request</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="fw-bold nav-link {{ Route::is('approver.history.index') ? 'active' : '' }} " href="{{ route('approver.history.index') }}">Request History</a>
+        </li>
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('venues.manage') }}">My Venues</a>
+        </li>
+
+    </ul>
+
+</x-slot:pageActions>
+
 
 {{-- resources/views/livewire/venues/requirements-editor.blade.php --}}
-<div class="container py-4">
+<div class="container py-2">
 
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -36,13 +56,15 @@
             <strong>Please fix the errors below:</strong>
         </div>
     @endif
-        <div class="container">
-        <a href="{{ route('home') }}"
-           class="btn btn-outline-secondary"
+        <div class="d-flex">
+        <a href="{{ route('venues.manage') }}"
+           class="btn btn-secondary ms-auto"
            onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
             <i class="bi bi-arrow-left"></i> Back
         </a>
         </div>
+
+        <div class="py-4">
 
         <div class="card shadow-sm mb-3">
             <div class="card-header">
@@ -86,17 +108,18 @@
             </div>
 
             <div class="card-footer d-flex gap-2 align-items-center">
-                <button class="btn btn-primary" wire:click="saveAvailability">
+                <button class="btn btn-primary ms-auto" wire:click="saveAvailability">
                     Save availability
                 </button>
                 <span class="text-muted" role="status" aria-live="polite">
-            @if ($opens_at && $closes_at)
+                    @if ($opens_at && $closes_at)
                         Currently {{ $opens_at }} – {{ $closes_at }}.
                     @else
                         Not configured yet.
                     @endif
-        </span>
+                </span>
             </div>
+        </div>
         </div>
 
 

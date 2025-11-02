@@ -14,7 +14,7 @@
  * @since   2025-11-01
  */
 
-namespace App\Livewire\Venue\Managers;
+namespace App\Livewire\Venue;
 use App\Models\Venue;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -27,7 +27,7 @@ use Livewire\Component;
  *
  * @property Venue $venue The venue being displayed.
  */
-#[layout('components.layouts.header.public')]
+#[Layout('layouts.user')]
 /**
  * Class Show
  *
@@ -75,7 +75,7 @@ class Show extends Component
      */
     public function render()
     {
-        return view('livewire.venue.managers.show', [
+        return view('livewire.venue.show', [
             'open'  => $this->fmtTime($this->venue->opening_time),
             'close' => $this->fmtTime($this->venue->closing_time),
         ]);

@@ -15,7 +15,26 @@
 {{--    - Use a semantic definition list (<dl>) or table with <th scope> for label/value pairs.--}}
 {{--    - Ensure time values are localized and have clear labels (e.g., aria-label).--}}
 {{--    - Buttons/links must include discernible text for screen readers.--}}
+<x-slot:pageActions>
+    <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>
+        </li>
 
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.history.index') }}">Request History</a>
+        </li>
+
+        {{--        <li class="nav-item">--}}
+        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
+        {{--        </li>--}}
+
+    </ul>
+
+</x-slot:pageActions>
 
 <div>
     <h1>Event Details</h1>

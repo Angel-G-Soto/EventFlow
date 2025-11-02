@@ -21,19 +21,19 @@
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">Home</a>
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
         </li>
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.requests.pending') }}">Pending Request</a>
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>
         </li>
 
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">Request History</a>
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.history.index') }}">Request History</a>
         </li>
 
-        <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>
-        </li>
+{{--        <li class="nav-item">--}}
+{{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
+{{--        </li>--}}
 
     </ul>
 
@@ -45,7 +45,7 @@
 
 
         <div class="card shadow-sm mb-3">
-            <livewire:request.pending.approver.filters/>
+            <livewire:request.pending.filters/>
 
             <div class="card-body">
             </div>
@@ -73,7 +73,7 @@
                                 <td class="fw-medium text-end">
                                     <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
-                                            onclick="window.location='{{ route('approver.pending.request',['id'=>$event->id]) }}'">
+                                            onclick="window.location='{{ route('approver.pending.request',['event'=>$event]) }}'">
                                         <i class="bi bi-eye me-1"></i> View details
                                     </button>
                                 </td>

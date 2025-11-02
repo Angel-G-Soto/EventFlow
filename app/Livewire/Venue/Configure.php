@@ -16,7 +16,7 @@
  * @since   2025-11-01
  */
 
-namespace App\Livewire\Venue\Managers;
+namespace App\Livewire\Venue;
 
 use App\Models\Venue;
 use App\Models\UseRequirement;
@@ -26,7 +26,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Layout('components.layouts.header.public')]
+#[Layout('layouts.user')]
 /**
  * Class Configure
  *
@@ -251,7 +251,7 @@ class Configure extends Component
 
     public function render()
     {
-        return view('livewire.venue.managers.configure');
+        return view('livewire.venue.configure');
     }
 }
 

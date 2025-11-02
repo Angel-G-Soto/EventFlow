@@ -22,7 +22,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-#[layout('layouts.public')]
+#[Layout('layouts.user')]
 /**
  * Class Index
  *
@@ -50,7 +50,7 @@ class Index extends Component
 
     public function configure(Venue $venue){
 
-        $this->redirectRoute('venues.requirements.edit', ['venue'=>$venue]);
+        $this->redirectRoute('venue.requirements.edit', ['venue'=>$venue]);
     }
 /**
  * Render the Manage Venues view with venues and managers.

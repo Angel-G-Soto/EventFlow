@@ -24,13 +24,28 @@ Route::get('/admin/events', EventsIndex::class)->name('admin.events');
 Route::get('/admin/audit-log', AuditTrailIndex::class)
   ->name('admin.audit');
 
-//Approver Request History-----------------------------------------------------------
-Route::get('approver/requests/history',\App\Livewire\Request\History\Index::class)->name('approver.history.index');
+//Approver Request History----------------------------------------------------------------------
+Route::get('/approver/requests/history',\App\Livewire\Request\History\Index::class)->name('approver.history.index');
 Route::get('/approver/requests/history/{event}',\App\Livewire\Request\History\Details::class)->name('approver.history.request');
-//Approver Request Pending-------------------------------------------------------------
-Route::get('approver/requests/history/',\App\Livewire\Request\History\Index::class)->name('approver.history.index');
+
+//Approver Request Pending---------------------------------------------------------------------------
+Route::get('/approver/requests/pending',\App\Livewire\Request\Pending\Index::class)->name('approver.pending.index');
+Route::get('/approver/requests/pending/{event}',\App\Livewire\Request\Pending\Details::class)->name('approver.pending.request');
+
+//Student organization----------------------------------------------------------------------------------
+Route::get('/org/requests',\App\Livewire\Request\Org\Index::class)->name('org.index');
+Route::get('/org/requests/{event}',\App\Livewire\Request\Org\Details::class)->name('org.request');
+
+//Venue Manager------------------------------------------------------------------------------------------
+Route::get('/venues',\App\Livewire\Venue\Index::class)->name('venues.manage');
+Route::get('/venues/{venue}', \App\Livewire\Venue\Show::class)->name('venue.show');
+Route::get('/venues/requirements/{venue}', \App\Livewire\Venue\Configure::class)
+    ->name('venue.requirements.edit');
 
 
+
+//Event Creation
+Route::get('/event/create', \App\Livewire\Request\Create::class)->name('event.create');
 
 //Route::get('/approver/requests/history/{id}',function (){
 ////    $event = Event::query()->findOrFail(request()->id);

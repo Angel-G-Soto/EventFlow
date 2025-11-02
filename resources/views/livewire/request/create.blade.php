@@ -18,6 +18,26 @@
 {{--    - Announce validation errors near inputs with role="alert" and aria-describedby.--}}
 {{--    - Ensure the primary submit <button> has type="submit" and discernible text.--}}
 
+<x-slot:pageActions>
+    <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
+        </li>
+        {{--        <li class="nav-item">--}}
+        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>--}}
+        {{--        </li>--}}
+
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.history.index') }}">Request History</a>
+        </li>
+
+        {{--        <li class="nav-item">--}}
+        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
+        {{--        </li>--}}
+
+    </ul>
+
+</x-slot:pageActions>
 
 <div>
     @if (session('success'))
