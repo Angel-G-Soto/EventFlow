@@ -418,7 +418,7 @@ class EventService {
 
     // GET
 
-        public function getBookedVenues(DateTime $startTime, DateTime $endTime): Collection
+        public function getBookedVenues(DateTime $startTime, DateTime $endTime): \Illuminate\Database\Eloquent\Collection|\Illuminate\Support\Collection
         {
             return Event::where('status', 'Approved')
             ->where(function ($query) use ($startTime, $endTime) {
@@ -441,11 +441,11 @@ class EventService {
         {
             $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id')
                 ->whereHas('history', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
+                    $query->where('approver_id', $user->id);
                 })
                 ->with(['history' => function ($query) use ($user) {
-                    $query->select('id', 'user_id', 'event_id')
-                        ->where('user_id', $user->id);
+                    $query->select('id', 'approver_id', 'event_id')
+                        ->where('approver_id', $user->id);
                 }]);
 
             // Apply venue_id filter if values are provided

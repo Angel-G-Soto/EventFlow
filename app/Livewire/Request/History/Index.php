@@ -19,6 +19,7 @@
 
 namespace App\Livewire\Request\History;
 
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithPagination;
@@ -109,7 +110,7 @@ class Index extends Component
 
 //         $events = $q->orderByDesc('created_at')->paginate(8);
 
-        EventService::getApproverRequestHistory(Auth::user(),
+        $events = app(EventService::class)->getApproverRequestHistory(Auth::user(),
             [
                 'venue_id' => $this->filters['venues'],
                 'category_id' => $this->filters['categories'],
