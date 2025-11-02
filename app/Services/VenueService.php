@@ -202,7 +202,7 @@ class VenueService {
      */
     public function getVenuesWithDirectorId(int $user_id): Collection
     {
-        if ($user_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
+        if ($user_id < 0) {throw new InvalidArgumentException('User id must be greater than zero.');}
         return Venue::where('department_id', $this->userService->findUserById($user_id)->department->id)->get();
     }
 

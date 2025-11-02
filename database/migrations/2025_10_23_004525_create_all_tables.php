@@ -86,6 +86,7 @@ return new class extends Migration {
             $table->foreignId('venue_id')->nullable()->constrained('venues');
             $table->string('organization_name')->nullable();
             $table->string('organization_advisor_email')->nullable();
+            $table->index('organization_advisor_email');
             $table->string('organization_advisor_name')->nullable();
             $table->string('creator_institutional_number')->nullable();
             $table->string('student_number')->nullable();
@@ -95,6 +96,7 @@ return new class extends Migration {
             $table->dateTime('start_time')->nullable();
             $table->dateTime('end_time')->nullable();
             $table->string('status')->nullable();
+            $table->index('status');
             $table->integer('guest_size')->nullable();
             $table->boolean('handles_food')->default(false);
             $table->boolean('use_institutional_funds')->default(false);

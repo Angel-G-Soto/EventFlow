@@ -5,9 +5,15 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\Document;
 use App\Models\Event;
+use App\Models\EventHistory;
 use App\Models\User;
 Use App\Models\Venue;
+use Carbon\Carbon;
+use DateTime;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Event\EventCollection;
+use Ramsey\Collection\Collection;
 
 class EventService {
 
@@ -60,7 +66,7 @@ class EventService {
                         'organization_name' => $data['organization_name'] ?? null,
                         'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
                         'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
-                        'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+                        //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
 
                         'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
                         'creator_phone_number' => $data['creator_phone_number'] ?? null,
@@ -77,6 +83,8 @@ class EventService {
                         'external_guest' => $data['external_guests'] ?? false,
                     ]
                 );
+
+                if ($event->status == 'draft') {return $event;}
 
                 // Attach documents (hasMany)
                 if (!empty($document_ids)) {
@@ -250,27 +258,177 @@ class EventService {
         }
 
 
-    // Creator withdrawal or cancellation
+    // Status related methods
 
+        // Request creator withdraws event
+        public function withdrawEvent(Event $event, User $approver): Event
+        {
+            return DB::transaction(function () use ($event, $approver) {
+                Event::where('id', $event->id)->whereIn('status', 'like', 'pending')->update(['status' => 'withdrawm']);
 
+                // Run audit trail
 
+                // Send email to the approvers
 
+            });
+        }
 
-    // Completion method
+        // Request creator cancels event
+        public function cancelEvent(Event $event, User $approver): Event
+        {
+            return DB::transaction(function () use ($event, $approver) {
+                Event::where('id', $event->id)->where('status', 'approved')->update(['status' => 'withdrawm']);
 
+                // Run audit trail
 
+                // Send email to the approvers
 
+            });
+        }
+
+        // Mark event as completed
+        public function markEventAsCompleted()
+        {
+            DB::transaction(function () {
+                // Get the start and end of yesterday
+                $yesterdayStart = Carbon::yesterday()->startOfDay();
+                $yesterdayEnd = Carbon::yesterday()->endOfDay();
+
+                // Update events that ended yesterday and are approved
+                Event::where('status', 'approved')
+                    ->whereBetween('end_time', [$yesterdayStart, $yesterdayEnd])
+                    ->update(['status' => 'completed']);
+            });
+        }
 
     // Dashboards
 
+    public function getRequestedEventsDashboard(User $user): LengthAwarePaginator
+        {
+            return Event::where('creator_id', $user->id)
+                ->latest('start_time')
+                ->paginate(15);
+        }
 
+    public function getPendingEventsForAdvisor(User $user): LengthAwarePaginator
+    {
+        return Event::where('organization_advisor_email', $user->email)
+            ->where('status', 'pending - advisor approval')
+            ->with('venue')
+            ->latest('created_at')
+            ->paginate(15);
+    }
 
+    public function getPendingEventsForVenueManager(User $user): LengthAwarePaginator
+    {
+        return Event::whereIn('venue_id', $user->manages()->pluck('id'))
+            ->where('status', 'pending - venue manager approval')
+            ->with('venue')
+            ->latest('created_at')
+            ->paginate(15);
+    }
+
+    public function getPendingEventsForDSCA(User $user): LengthAwarePaginator
+    {
+        return Event::whereIn('venue_id', $user->manages()->pluck('id'))
+            ->where('status', 'pending - dsca approval')
+            ->with('venue')
+            ->latest('created_at')
+            ->paginate(15);
+    }
+
+    public function getPendingEventsForAdministration(User $user): LengthAwarePaginator
+    {
+        return Event::whereIn('venue_id', $user->manages()->pluck('id'))
+            ->where('status', 'pending - deanship of administration approval')
+            ->with('venue')
+            ->latest('created_at')
+            ->paginate(15);
+    }
+//        public function getEventsForApproverDashboard(User $user): LengthAwarePaginator
+//        {
+//            // Create table that matches role with the status
+//            $stateApprover = [
+//                'advisor' => 'pending - advisor approval',
+//                'venue-manager' => 'pending - venue manager approval',
+//                'event-approver' => 'pending - dsca approval',
+//                'deanship-of-administration-approver' => 'pending - deanship of administration approval',
+//            ];
+//
+//            // Query event by status and return it as a paginator
+//            return
+
+//        }
 
     // Administrator's overrides
 
+        // NOTE: REMOVE OR FOCUS IT ON VENUE MANAGER SINCE THE OTHER APPROVERS ARE NOT SPECIFIC (ROLE IS THE ONLY DETERMINING FACTOR).
+        // THE LATTER IS BASICALLY DONE BY THE DIRECTOR
+//        public function reroutePendingEventApproval(Event $event, User $old_manager, User $new_manager): Event
+//        {
+//            return DB::transaction(function () use ($event, $old_manager, $new_manager) {
+//                // Change venue manager
+//
+//                // Get pending requests on the venue manager step
+//
+//                // Email the request creator, old manager, new manager and the director. To the advisor as well if available
+//            });
+//        }
 
 
+        public function performManualOverride(Event $event, array $data, User $user, string $justification, string $action): Event
+        {
+            return DB::transaction(function () use ($event, $data, $user, $justification) {
+                // Make changes
+                $event = Event::update(
+                    [
+                        'id' => $data['id']
+                    ],
+                    [
+                        'venue_id' => $data['venue_id'],
+
+                        'organization_name' => $data['organization_name'] ?? null,
+                        'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
+                        'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
+                        //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+
+                        'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
+                        'creator_phone_number' => $data['creator_phone_number'] ?? null,
+
+                        'title' => $data['title'],
+                        'description' => $data['description'] ?? null,
+                        'start_time' => $data['start_time'],
+                        'end_time' => $data['end_time'],
+
+                        'status' => $data['end_time'],
+                        'guest_size' => $data['guests'] ?? null,
+                        'handles_food' => $data['handles_food'] ?? false,
+                        'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
+                        'external_guest' => $data['external_guests'] ?? false,
+                    ]
+                );
+                // Run audit trail
+                AuditService::logAdminAction($user->id, $user->name, 'ADMIN_OVERRIDE', $justification);
+
+                // Add to event history
+                EventHistory::create(['id' => $user->id, 'action' => 'manual override', 'comment' => $justification]);
+            });
+        }
 
 
     // GET
+
+        public function getBookedVenues(DateTime $startTime, DateTime $endTime): Collection
+        {
+            return Event::where('status', 'Approved')
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query->where('start_time', '<', $endTime)
+                    ->where('end_time', '>', $startTime);
+            })->get();
+        }
+
+        public function getAllEvents(array $filters = []): LengthAwarePaginator
+        {
+            return Event::all()->paginate(15);
+        }
 }
