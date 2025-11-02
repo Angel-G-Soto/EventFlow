@@ -89,6 +89,9 @@ class Details extends Component
             ['title' => 'Syllabus', 'url' => asset('23382.pdf'), 'description' => 'Fall 2025'],
             ['title' => 'Reglamento interno', 'url' => asset('REGLAMENTO-INTERNO.pdf'), 'description' => 'Fall 2025']
         ];
+
+        // Use document service method that accepts event_id and return the array of docs.
+
         return view('livewire.request.history.details', compact('docs'));
     }
 }
