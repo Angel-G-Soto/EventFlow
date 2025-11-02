@@ -52,22 +52,17 @@ class Department extends Model
         return $this->hasMany(User::class);
     }
 
-    ////////////////////////////////////////////// Methods //////////////////////////////////////////////////////////
-
-    /**
-     * Retrieve the department director associated with this model.
-     *
-     * This method returns the first employee (User) related to this model
-     * who has been assigned the role named "department-director".
-     *
-     * @return User|null
-     */
+    ///////////////////////// VALIDATE FUNCTIONALITY OF THE ROLES ///////////////////////////////////////
     public function getDirector(): User|null
     {
-        return $this->employees()
-            ->with('roles')
-            ->whereHas('roles', fn($q) => $q->where('name', 'department-director'))
-            ->first();
+        $employees = $this->employees()->get();
+
+        foreach ($employees as $employee) {
+            if ($employee->role()->name == 'department-director') {
+                return $employee;
+            }
+        }
+        return null;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -90,5 +85,4 @@ class Department extends Model
     {
         return $this->venues()->count();
     }
-
 }
