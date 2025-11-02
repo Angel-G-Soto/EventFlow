@@ -45,12 +45,17 @@ class AuditTrail extends Model
         'target_id',
     ];
 
+    protected $casts = [
+        'user_id'   => 'int',
+        'created_at'=> 'datetime',
+        'updated_at'=> 'datetime',
+    ];
     /**
      * Get the user (actor) who performed the audited action.
      */
     public function actor(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     // Optionally, constants can be added later if needed by other tests
