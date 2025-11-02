@@ -22,18 +22,17 @@
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">Home</a>
+            <a class="fw-bold nav-link {{ Route::is('public.calendar') ? 'active' : '' }}" href="{{ route('public.calendar') }}">Home</a>
         </li>
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.requests.pending') }}">Pending Request</a>
-        </li>
-
-        <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">Request History</a>
+            <a class="fw-bold nav-link  {{ Route::is('approver.pending.index') ? 'active' : '' }}" href="{{ route('approver.pending.index') }}">Pending Request</a>
         </li>
 
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>
+            <a class="fw-bold nav-link {{ Route::is('approver.history.index') ? 'active' : '' }} " href="{{ route('approver.history.index') }}">Request History</a>
+        </li>
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('venues.manage') }}">My Venues</a>
         </li>
 
     </ul>
@@ -48,16 +47,16 @@
 
     <div class="d-flex gap-2">
         {{-- Back link with safe fallback to venues.index --}}
-        <a href="{{ route('home') }}"
-           class="btn btn-outline-secondary"
+        <a href="{{ route('venues.manage') }}"
+           class="btn btn-secondary"
            onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
             <i class="bi bi-arrow-left"></i> Back
         </a>
 
-        {{-- Optional: link to your existing Configure screen for this venue --}}
-        <a href="{{ route('home', $venue) }}" class="btn btn-primary" @if (function_exists('wire')) wire:navigate @endif>
-            <i class="bi bi-pencil-square"></i> Edit
-        </a>
+{{--        --}}{{-- Optional: link to your existing Configure screen for this venue --}}
+{{--        <a href="{{ route('home', $venue) }}" class="btn btn-primary" @if (function_exists('wire')) wire:navigate @endif>--}}
+{{--            <i class="bi bi-pencil-square"></i> Edit--}}
+{{--        </a>--}}
     </div>
 </div>
 

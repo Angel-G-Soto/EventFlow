@@ -21,19 +21,18 @@
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
+            <a class="fw-bold nav-link {{ Route::is('public.calendar') ? 'active' : '' }}" href="{{ route('public.calendar') }}">Home</a>
         </li>
-{{--        <li class="nav-item">--}}
-{{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>--}}
-{{--        </li>--}}
+        <li class="nav-item">
+            <a class="fw-bold nav-link  {{ Route::is('approver.pending.index') ? 'active' : '' }}" href="{{ route('approver.pending.index') }}">Pending Request</a>
+        </li>
 
         <li class="nav-item">
             <a class="fw-bold nav-link {{ Route::is('approver.history.index') ? 'active' : '' }} " href="{{ route('approver.history.index') }}">Request History</a>
         </li>
-
-{{--        <li class="nav-item">--}}
-{{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
-{{--        </li>--}}
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('venues.manage') }}">My Venues</a>
+        </li>
 
     </ul>
 
@@ -45,27 +44,6 @@
 
     <div class="card shadow-sm mb-3">
         <livewire:request.history.filters/>
-
-        <div class="card-body">
-
-            {{--                <div class="row g-2">--}}
-            {{--                    <div class="col-6 col-md-2">--}}
-            {{--                        <label class="form-label">Student Organization</label>--}}
-            {{--                        <input class="form-control" placeholder="e.g. CAHSI">--}}
-            {{--                    </div>--}}
-
-            {{--                    <div class="col-6 col-md-2">--}}
-            {{--                        <label class="form-label">Event Type</label>--}}
-            {{--                        <input class="form-control" >--}}
-            {{--                    </div>--}}
-
-            {{--                    <div class="col-6 col-md-2">--}}
-            {{--                        <label class="form-label">Venue</label>--}}
-            {{--                        <input class="form-control">--}}
-            {{--                    </div>--}}
-
-            {{--                </div>--}}
-        </div>
     </div>
 
     <div class="card shadow-sm">

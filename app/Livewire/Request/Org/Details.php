@@ -18,6 +18,7 @@
 namespace App\Livewire\Request\Org;
 
 use App\Models\Event;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 /**
@@ -26,6 +27,7 @@ use Livewire\Component;
  * Presents a single Venue's details.
  * Accepts a Venue or ID in mount() and renders the details Blade view.
  */
+#[Layout('layouts.user')]
 class Details extends Component
 {
 /**

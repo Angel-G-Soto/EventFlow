@@ -21,13 +21,14 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithPagination;
 use App\Models\Event;
-#[layout('components.layouts.header.public')]
+
 /**
  * Class Index
  *
  * Livewire index/list component with optional multi-filters and pagination.
  * Suitable for listing Events or Requests and reacting to filter changes.
  */
+#[layout('layouts.user')]
 class Index extends Component
 {
     use WithPagination;

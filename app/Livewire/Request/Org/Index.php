@@ -17,6 +17,7 @@
 namespace App\Livewire\Request\Org;
 
 use App\Models\Event;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -27,6 +28,8 @@ use Livewire\WithPagination;
  * Livewire index/list component with optional multi-filters and pagination.
  * Suitable for listing Events or Requests and reacting to filter changes.
  */
+#[Layout('layouts.user')]
+
 class Index extends Component
 {
 

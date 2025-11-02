@@ -19,6 +19,7 @@ namespace App\Livewire\Request\Pending\VenueManager;
 use App\Models\Event;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -28,6 +29,8 @@ use Livewire\WithPagination;
  * Presents a single Venue's details.
  * Accepts a Venue or ID in mount() and renders the details Blade view.
  */
+
+#[Layout('layouts.user')]
 class Details extends Component
 {
     use WithPagination;

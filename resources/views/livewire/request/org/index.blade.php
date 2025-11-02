@@ -16,7 +16,26 @@
 {{--    - Ensure interactive elements have discernible text; use aria-labels as needed.--}}
 {{--    - Pagination via $items->links() includes ARIA attributes; place it within <nav>.--}}
 
+<x-slot:pageActions>
+    <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
+        </li>
+        {{--        <li class="nav-item">--}}
+        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>--}}
+        {{--        </li>--}}
 
+        <li class="nav-item">
+            <a class="fw-bold nav-link {{ Route::is('approver.history.index') ? 'active' : '' }} " href="{{ route('approver.history.index') }}">Request History</a>
+        </li>
+
+        {{--        <li class="nav-item">--}}
+        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
+        {{--        </li>--}}
+
+    </ul>
+
+</x-slot:pageActions>
 
 <div>
     <h1 class="h4 mb-3">Request History</h1>
@@ -62,7 +81,7 @@
                         <td class="fw-medium text-end">
                             <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
-                                    onclick="window.location='{{ route('org.requests',['id'=>$event->id]) }}'">
+                                    onclick="window.location='{{ route('org.request',['event'=>$event]) }}'">
                                 <i class="bi bi-eye me-1"></i> View details
                             </button>
                         </td>

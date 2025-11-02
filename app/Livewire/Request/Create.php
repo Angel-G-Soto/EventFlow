@@ -22,6 +22,7 @@ use App\Services\DocumentRequirementService;
 use App\Services\VenueAvailabilityService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -31,6 +32,8 @@ use Livewire\WithFileUploads;
  * Livewire component for creating a new resource.
  * Provides reactive form state, validation, and persistence.
  */
+
+#[Layout('layouts.user')]
 class Create extends Component
 {
     use WithFileUploads;

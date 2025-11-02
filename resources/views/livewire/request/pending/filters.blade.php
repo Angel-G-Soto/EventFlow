@@ -17,7 +17,25 @@
 {{--    - Associate <label for="..."> with inputs; ensure each control has an accessible name.--}}
 {{--    - Group checkbox lists inside <fieldset> with a <legend> to convey context.--}}
 {{--    - Provide focus styles and keyboard operability for dropdowns/multiselects.--}}
+<x-slot:pageActions>
+    <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>
+        </li>
 
+        <li class="nav-item">
+            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.history.index') }}">Request History</a>
+        </li>
+
+        {{--        <li class="nav-item">--}}
+        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
+        {{--        </li>--}}
+
+    </ul>
+</x-slot:pageActions>
 
 <div class="row container-fluid">
     <div class="accordion my-2 w-25" id="eventFilters">
