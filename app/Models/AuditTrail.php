@@ -34,14 +34,15 @@ class AuditTrail extends Model
 {
     use HasFactory;
 
-    protected $table = 'audit_trail';       // @var string The table associated with the model.
-    protected $primaryKey = 'at_id';        // @var string The primary key associated with the table.
+    // Table is audit_trail with default primary key 'id' created by the migration
+    protected $table = 'audit_trail';
 
+    // Mass-assignable fields per migration schema
     protected $fillable = [
-        'user_id',          // FK to User
-        'at_action',
-        'at_description',
-        'at_user'
+        'user_id',
+        'action',
+        'target_type',
+        'target_id',
     ];
 
     /**
@@ -52,16 +53,5 @@ class AuditTrail extends Model
         return $this->belongsTo(User::class);
     }
 
-    /*
-
-    Column constants (avoid typos).
-
-    public const COL_AUDIT_ID      = 'audit_id';
-    public const COL_USER_ID       = 'user_id';
-    public const COL_ACTION        = 'a_action';
-    public const COL_TARGET_TYPE   = 'a_target_type';
-    public const COL_TARGET_ID     = 'a_target_id';
-    public const COL_CREATED_AT    = 'a_created_at';
-    public const COL_UPDATED_AT    = 'a_updated_at';
-     */
+    // Optionally, constants can be added later if needed by other tests
 }

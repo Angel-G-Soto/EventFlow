@@ -20,6 +20,7 @@ class AuditService
      * This is the primary method used to log a standard action performed by any authenticated user.
      *
      * @param int    $userId The ID of the authenticated user performing the action.
+     * @param string $userName The display name of the user performing the action.
      * @param string $actionCode A machine-readable string identifying the action (e.g., EVENT_CREATED).
      * @param string $description A human-readable sentence describing the action.
      * @return AuditTrail The newly created AuditTrail Eloquent model instance.
@@ -57,12 +58,15 @@ class AuditService
             throw new \TypeError('Required argument was null.');
         }
 
-        // Create the record using the fields defined in the ERD.
+        // Map legacy parameters to canonical columns
+        // action => action code
+        // target_type => free-form context (use user display name)
+        // target_id => free-form identifier (use description summary)
         return AuditTrail::create([
-            'user_id'       => $userId,
-            'at_action'     => mb_substr($actionCode, 0, 255),
-            'at_description' => mb_substr($description, 0, 255),
-            'at_user'       => mb_substr($userName, 0, 255),
+            'user_id'     => $userId,
+            'action'      => mb_substr($actionCode, 0, 255),
+            'target_type' => mb_substr($userName, 0, 255),
+            'target_id'   => mb_substr($description, 0, 255),
         ]);
     }
 
@@ -76,7 +80,7 @@ class AuditService
     public function getPaginatedLogs(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         $query = AuditTrail::query()
-            ->select(['id', 'user_id', 'at_user', 'at_action', 'at_description', 'created_at'])
+            ->select(['id', 'user_id', 'target_type', 'action', 'target_id', 'created_at'])
             ->orderByDesc('created_at');
 
         if (!empty($filters['user_id'])) {
@@ -84,7 +88,7 @@ class AuditService
         }
 
         if (!empty($filters['action'])) {
-            $query->where('at_action', 'like', '%' . trim($filters['action']) . '%');
+            $query->where('action', 'like', '%' . trim($filters['action']) . '%');
         }
 
         if (!empty($filters['date_from'])) {
@@ -117,14 +121,14 @@ class AuditService
     public function getAuditedUsers(): array
     {
         return AuditTrail::query()
-            ->select('user_id', 'at_user')
+            // target_type stores the display name captured at log time
+            ->select('user_id', 'target_type')
             ->whereNotNull('user_id')
-            ->whereNotNull('at_user')
+            ->whereNotNull('target_type')
             ->distinct()
-            ->orderBy('at_user')
+            ->orderBy('target_type')
             ->get()
-            ->pluck('at_user', 'user_id')
+            ->pluck('target_type', 'user_id')
             ->toArray();
     }
-
 }
