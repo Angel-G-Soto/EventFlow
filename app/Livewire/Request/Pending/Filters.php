@@ -69,11 +69,10 @@ class Filters extends Component
         $this->venues     = Venue::orderBy('name')->get(['id','name'])->toArray();
 
         $this->orgs = Event::query()
-            ->select('organization_nexo_id', DB::raw('MIN(organization_nexo_name) as organization_nexo_name'))
-            ->whereNotNull('organization_nexo_id')
-            ->groupBy('organization_nexo_id')          // one row per org id
-            ->orderBy('organization_nexo_name')
-            ->get()
+            ->whereNotNull('organization_name')
+            ->distinct()
+            ->orderBy('organization_name', 'asc')
+            ->get(['organization_name'])
             ->toArray();
         // $this->orgs = Organization::orderBy('name')->get(['id','name'])->toArray();
     }
@@ -87,7 +86,7 @@ class Filters extends Component
     {
         if ($which === 'categories') $this->selectedCategories = array_column($this->categories, 'id');
         if ($which === 'venues')     $this->selectedVenues     = array_column($this->venues, 'id');
-        if ($which === 'orgs')       $this->selectedOrgs       = array_column($this->orgs, 'organization_nexo_id');
+        if ($which === 'orgs')       $this->selectedOrgs       = array_column($this->orgs, 'organization_name');
         $this->apply();
     }
 /**

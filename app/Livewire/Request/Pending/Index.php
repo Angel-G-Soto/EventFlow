@@ -16,6 +16,8 @@
 
 namespace App\Livewire\Request\Pending;
 
+use App\Services\VenueService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -90,10 +92,17 @@ class Index extends Component
         }
 
         if (!empty($this->filters['orgs'])) {
-            $q->whereIn('organization_nexo_id', $this->filters['orgs']);
+            $q->whereIn('organization_name', $this->filters['orgs']);
         }
 
         $events = $q->orderByDesc('created_at')->paginate(8);
+
+
+        // Determine role of the user;
+
+        // Select function in accordance to the role. Save result on variable
+
+        // Return view with result
 
         return view('livewire.request.pending.index', compact('events'));
     }

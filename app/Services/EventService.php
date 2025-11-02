@@ -138,7 +138,7 @@ class EventService {
         *
         * @return Event The updated event with refreshed status and relationships.
         */
-        public function denyEvent(array $data, Event $event, User $approver): Event
+        public function denyEvent(string $justification, Event $event, User $approver): Event
         {
             $updated = Event::where('id', $event->id)
                 ->whereNotIn('status', ['approved', 'withdrawn', 'cancelled', 'rejected'])
@@ -174,9 +174,9 @@ class EventService {
          *
          * @throws \InvalidArgumentException If the event has an invalid or unexpected status.
          */
-        public function approveEvent(array $data, Event $event, User $approver): Event
+        public function approveEvent(string $justification, Event $event, User $approver): Event
         {
-            return DB::transaction(function () use ($data, $event, $approver) {
+            return DB::transaction(function () use ($justification, $event, $approver) {
                 $statusFlow = [
                     'pending - advisor approval' => 'pending - venue manager approval',
                     'pending - venue manager approval' => 'pending - dsca approval',
