@@ -439,7 +439,7 @@ class EventService {
         // ]
         public function getApproverRequestHistory(User $user, $filters = [])
         {
-            $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id')
+            $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
                 ->whereHas('history', function ($query) use ($user) {
                     $query->where('approver_id', $user->id);
                 })

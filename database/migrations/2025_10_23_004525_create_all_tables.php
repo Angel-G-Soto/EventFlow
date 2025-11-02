@@ -89,7 +89,7 @@ return new class extends Migration {
             $table->index('organization_advisor_email');
             $table->string('organization_advisor_name')->nullable();
             $table->string('creator_institutional_number')->nullable();
-            $table->string('student_number')->nullable();
+            //$table->string('student_number')->nullable();
             $table->string('creator_phone_number')->nullable();
             $table->string('title')->nullable();
             $table->text('description')->nullable();

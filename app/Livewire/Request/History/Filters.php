@@ -76,16 +76,14 @@ class Filters extends Component
 
     public function mount(): void
     {
-        $this->categories = Category::orderBy('name')->get(['id','name'])->toArray();
-        $this->venues     = Venue::orderBy('name')->get(['id','name'])->toArray();
+        $this->categories = Category::orderBy('name', 'asc')->get(['id','name'])->toArray();
+        $this->venues     = Venue::orderBy('name', 'asc')->get(['id','name'])->toArray();
 
         $this->orgs = Event::query()
-            ->select('organization_name')//, DB::raw('MIN(organization_nexo_name) as organization_nexo_name'))
             ->whereNotNull('organization_name')
-            //->groupBy('organization_nexo_id')          // one row per org id
             ->distinct()
-            ->orderBy('organization_name')
-            ->pluck('organization_name')
+            ->orderBy('organization_name', 'asc')
+            ->get(['organization_name'])
             ->toArray();
         // $this->orgs = Organization::orderBy('name')->get(['id','name'])->toArray();
     }

@@ -63,7 +63,7 @@
                 @forelse ($events as $event)
                     <tr>
                         <td class="fw-medium">{{$event->title ?? '—' }}</td>
-                        <td class="fw-medium">{{$event->organization_nexo_name  ?? '—' }}</td>
+                        <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
                         <td class="fw-medium">{{ $event->created_at}}</td>
                         <td class="fw-medium text-end">
                             <button class="btn btn-outline-secondary text-end" style="text-align: right"

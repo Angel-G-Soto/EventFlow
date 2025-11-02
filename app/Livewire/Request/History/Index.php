@@ -117,6 +117,7 @@ class Index extends Component
                 'organization_name' => $this->filters['orgs']
             ]
         );
+        //dd($events);
 
         return view('livewire.request.history.index', compact('events'));
     }
