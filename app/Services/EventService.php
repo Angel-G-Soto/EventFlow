@@ -84,7 +84,7 @@ class EventService {
                     ]
                 );
 
-                if ($event->status == 'draft') {return $event;}
+                if ($event->status === 'draft') {return $event;}
 
                 // Attach documents (hasMany)
                 if (!empty($document_ids)) {

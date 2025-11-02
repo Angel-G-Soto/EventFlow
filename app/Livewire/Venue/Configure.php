@@ -16,7 +16,7 @@
  * @since   2025-11-01
  */
 
-namespace App\Livewire\Venue\Managers;
+namespace App\Livewire\Venue;
 
 use App\Models\Venue;
 use App\Models\UseRequirement;
