@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            // Register Nexo API key middleware so routes can use ->middleware('nexo.api')
+            'nexo.api' => \App\Http\Middleware\VerifyApiKey::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
