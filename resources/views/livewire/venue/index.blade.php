@@ -36,7 +36,7 @@
     </ul>
 
 </x-slot:pageActions>
-
+<div class="container">
 {{--<div class="container">--}}
 {{--    <h1 class="h4 mb-3">Manage Venues</h1>--}}
 {{--    <div class="card shadow-sm mb-3">--}}

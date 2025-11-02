@@ -291,14 +291,14 @@ class VenueService {
         try {
 
             // Validate admin role
-            if (!$manager->getRoleNames()->contains('venue-manager')) {
-                throw new InvalidArgumentException('The user must be venue-manager.');
-            }
+//            if (!$manager->getRoleNames()->contains('venue-manager')) {
+//                throw new InvalidArgumentException('The user must be venue-manager.');
+//            }
 
-            $this->auditService->logAction($manager->id,
-                '',
-                '',
-                'Updated operating hours for venue #'.$venue->id); // MOCK FROM SERVICE
+//            $this->auditService->logAction($manager->id,
+//                '',
+//                '',
+//                'Updated operating hours for venue #'.$venue->id); // MOCK FROM SERVICE
 
             // Update the venue with the filtered data
             return Venue::updateOrCreate(
@@ -343,18 +343,23 @@ class VenueService {
     public function updateOrCreateVenueRequirements(Venue $venue, array $requirementsData, User $manager): Void
     {
         try {
-            // Validate manager role to be 'venue-manager' and to belong to the departments of the venues
-            if (!$manager->getRoleNames()->contains('venue-manager')) {
-                throw new \InvalidArgumentException('Manager does not have the required role.');
-            }
-            elseif (!$manager->department()->where('id', $venue->department_id)->first() != null) {
-                throw new \InvalidArgumentException('Manager does not belong to the venue department.');
-            }
+//            // Validate manager role to be 'venue-manager' and to belong to the departments of the venues
+//            if (!$manager->getRoleNames()->contains('venue-manager')) {
+//                throw new \InvalidArgumentException('Manager does not have the required role.');
+//            }
+//            elseif (!$manager->department()->where('id', $venue->department_id)->first() != null) {
+//                throw new \InvalidArgumentException('Manager does not belong to the venue department.');
+//            }
 
             // Verify that the requirementsData structure is met
             $expectedKeys = ['name', 'hyperlink', 'description'];
 
-            foreach ($requirementsData as $i => $doc) {
+            $trimmedData = array_map(function ($requirement) use ($expectedKeys) {
+                // Use array_intersect_key to filter only the required keys
+                return array_intersect_key($requirement, array_flip($expectedKeys));
+            }, $requirementsData);
+
+            foreach ($trimmedData as $i => $doc) {
                 if (!is_array($doc)) {
                     throw new \InvalidArgumentException("Requirement at index {$i} must be an array.");
                 }
@@ -375,19 +380,19 @@ class VenueService {
 
             // Remove all requirements
             $this->useRequirementService->deleteVenueUseRequirements($venue->id); // MOCK FROM SERVICE
-
+//            dd($requirementsData);
             // Place requirements
-            foreach ($requirementsData as $r) {
+            foreach ($trimmedData as $r) {
                 $requirement = new UseRequirement();
                 $requirement->venue_id = $venue->id;
                 $requirement->name = $r['name'];
                 $requirement->hyperlink = $r['hyperlink'];
                 $requirement->description = $r['description'];
                 $requirement->save();
-                $this->auditService->logAction($manager->id,
-                    '',
-                    '',
-                    'Create requirement for venue #'.$venue->id); // MOCK FROM SERVICE
+//                $this->auditService->logAction($manager->id,
+//                    '',
+//                    '',
+//                    'Create requirement for venue #'.$venue->id); // MOCK FROM SERVICE
             }
 
 

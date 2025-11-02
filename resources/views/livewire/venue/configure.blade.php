@@ -181,16 +181,16 @@
                         <div class="input-group">
                             <input
                                 type="url"
-                                class="form-control @error("rows.$i.doc_url") is-invalid @enderror"
+                                class="form-control @error("rows.$i.hyperlink") is-invalid @enderror"
                                 placeholder="https://…"
-                                wire:model.lazy="rows.{{ $i }}.doc_url"
+                                wire:model.lazy="rows.{{ $i }}.hyperlink"
                             >
-                            @if (!empty($row['doc_url']))
-                                <a class="btn btn-outline-secondary" href="{{ $row['doc_url'] }}" target="_blank" rel="noopener">
+                            @if (!empty($row['hyperlink']))
+                                <a class="btn btn-outline-secondary" href="{{ $row['hyperlink'] }}" target="_blank" rel="noopener">
                                     Open
                                 </a>
                             @endif
-                            @error("rows.$i.doc_url")
+                            @error("rows.$i.hyperlink")
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>

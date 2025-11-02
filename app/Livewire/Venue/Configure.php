@@ -20,6 +20,9 @@ namespace App\Livewire\Venue;
 
 use App\Models\Venue;
 use App\Models\UseRequirement;
+use App\Services\VenueService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -40,7 +43,7 @@ class Configure extends Component
  */
     public Venue $venue;
 
-    /** @var array<int,array{id?:int, uuid:string, name:string, description:?string, doc_url:?string, position:int}> */
+    /** @var array<int,array{id?:int, uuid:string, name:string, description:?string, user.index:?string, position:int}> */
     public array $rows = [];
 
     /** @var array<int> */
@@ -71,7 +74,7 @@ class Configure extends Component
                 'uuid'        => (string) Str::uuid(), // stable wire:key per row
                 'name'        => $r->name,
                 'description' => $r->description,
-                'doc_url'     => $r->hyperlink,
+                'user.index'     => $r->hyperlink,
                 'position'    => $r->position ?? 0,
             ];
         })->values()->all();
@@ -104,7 +107,7 @@ class Configure extends Component
             'uuid'        => (string) Str::uuid(),
             'name'        => '',
             'description' => '',
-            'doc_url'     => '',
+            'user.index'     => '',
             'position'    => count($this->rows),
         ];
     }
@@ -117,10 +120,17 @@ class Configure extends Component
     {
         $this->validate();
 
-        $this->venue->update([
-            'opening_time'  => $this->opens_at,   // DB TIME will append :00 seconds
-            'closing_time' => $this->closes_at,
-        ]);
+//        $this->venue->update([
+//            'opening_time'  => $this->opens_at,   // DB TIME will append :00 seconds
+//            'closing_time' => $this->closes_at,
+//        ]);
+
+        $opens = Carbon::parse($this->opens_at);
+        $closes = Carbon::parse($this->closes_at);
+
+        app(VenueService::class)->updateVenueOperatingHours($this->venue, $opens, $closes, Auth::user());
+
+        session()->flash('success', 'Availability updated.');
 
         $this->dispatch('notify', type: 'success', message: 'Availability updated.');
     }
@@ -164,49 +174,53 @@ class Configure extends Component
             'rows'                 => 'array|min:1',
             'rows.*.name'          => 'required|string|max:255',
             'rows.*.description'   => 'nullable|string|max:2000',
-            'rows.*.doc_url'       => 'nullable|url|max:2048',
+            'rows.*.user.index'       => 'nullable|url|max:2048',
             'rows.*.position'      => 'integer|min:0',
         ], [], [
             'rows.*.name' => 'requirement name',
-            'rows.*.doc_url' => 'document link',
+            'rows.*.user.index' => 'document link',
         ]);
 
-        DB::transaction(function () {
-            // Delete removed ones
-            if (!empty($this->deleted)) {
-                UseRequirement::where('venue_id', $this->venue->id)
-                    ->whereIn('id', $this->deleted)
-                    ->delete();
-                $this->deleted = [];
-            }
+//        dd($this->venue,$this->rows);
 
-            // Upsert rows
-            foreach ($this->rows as $row) {
-                if (isset($row['id'])) {
-                    // update existing
-                    UseRequirement::where('id', $row['id'])
-                        ->where('venue_id', $this->venue->id)
-                        ->update([
-                            'name'        => $row['name'],
-                            'description' => $row['description'],
-                            'hyperlink'     => $row['doc_url'],
-                            'position'    => $row['position'],
-                        ]);
-                } else {
-                    // create new (ignore completely empty rows)
-                    if (trim($row['name']) !== '' || trim((string) $row['doc_url']) !== '' || trim((string) $row['description']) !== '') {
-                        $created = $this->venue->requirements()->create([
-                            'name'        => $row['name'],
-                            'description' => $row['description'],
-                            'hyperlink'     => $row['doc_url'],
-                            'position'    => $row['position'],
-                        ]);
-                        // carry the new id back so the row is now "existing"
-                        $this->replaceUuidWithId($row['uuid'], $created->id);
-                    }
-                }
-            }
-        });
+        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, $this->rows, Auth::user());
+
+//        DB::transaction(function () {
+//            // Delete removed ones
+//            if (!empty($this->deleted)) {
+//                UseRequirement::where('venue_id', $this->venue->id)
+//                    ->whereIn('id', $this->deleted)
+//                    ->delete();
+//                $this->deleted = [];
+//            }
+//
+//            // Upsert rows
+//            foreach ($this->rows as $row) {
+//                if (isset($row['id'])) {
+//                    // update existing
+//                    UseRequirement::where('id', $row['id'])
+//                        ->where('venue_id', $this->venue->id)
+//                        ->update([
+//                            'name'        => $row['name'],
+//                            'description' => $row['description'],
+//                            'hyperlink'     => $row['user.index'],
+//                            'position'    => $row['position'],
+//                        ]);
+//                } else {
+//                    // create new (ignore completely empty rows)
+//                    if (trim($row['name']) !== '' || trim((string) $row['user.index']) !== '' || trim((string) $row['description']) !== '') {
+//                        $created = $this->venue->requirements()->create([
+//                            'name'        => $row['name'],
+//                            'description' => $row['description'],
+//                            'hyperlink'     => $row['user.index'],
+//                            'position'    => $row['position'],
+//                        ]);
+//                        // carry the new id back so the row is now "existing"
+//                        $this->replaceUuidWithId($row['uuid'], $created->id);
+//                    }
+//                }
+//            }
+//        });
 
         session()->flash('success', 'Venue requirements saved.');
         // Optional: refresh from DB to get cleaned state
