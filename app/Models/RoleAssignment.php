@@ -1,5 +1,8 @@
 <?php
 
+// This model is deprecated
+
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
