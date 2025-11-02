@@ -432,17 +432,40 @@ class EventService {
             return Event::all()->paginate(15);
         }
 
-        public function getApproverRequestHistory(User $user)
+        // [
+        //     venue_id => [],
+        //     category_id => [],
+        //     organization_name => []
+        // ]
+        public function getApproverRequestHistory(User $user, $filters = [])
         {
-            return Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id')
+            $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id')
                 ->whereHas('history', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
                 ->with(['history' => function ($query) use ($user) {
                     $query->select('id', 'user_id', 'event_id')
                         ->where('user_id', $user->id);
-                }])
-                ->paginate(15);
+                }]);
+
+            // Apply venue_id filter if values are provided
+            if (!empty($filters['venue_id'])) {
+                $query->whereIn('venue_id', $filters['venue_id']);
+            }
+
+            // Apply organization_name filter if values are provided
+            if (!empty($filters['organization_name'])) {
+                $query->whereIn('organization_name', $filters['organization_name']);
+            }
+
+            // Apply category_id filter if values are provided (Many-to-Many relationship)
+            if (!empty($filters['category_id'])) {
+                $query->whereHas('categories', function ($query) use ($filters) {
+                    $query->whereIn('category_id', $filters['category_id']);
+                });
+            }
+
+            return $query->paginate(15);
         }
 
 }
