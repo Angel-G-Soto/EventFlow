@@ -33,6 +33,22 @@ describe('handleUpload', function () {
         Queue::assertPushed(ProcessFileUpload::class);
     });
 
+    it('dispatches job with created document in payload', function () {
+        $event = Event::factory()->create();
+        $file = UploadedFile::fake()->create('payload.pdf', 10);
+
+        $document = $this->service->handleUpload($file, 1, $event->id);
+
+        Queue::assertPushed(ProcessFileUpload::class, function ($job) use ($document) {
+            // Use reflection to access protected $documents
+            $ref = new ReflectionClass($job);
+            $prop = $ref->getProperty('documents');
+            $prop->setAccessible(true);
+            $collection = $prop->getValue($job);
+            return $collection->count() === 1 && $collection->first()->id === $document->id;
+        });
+    });
+
     it('throws StorageException when temp storage fails', function () {
         $mockDisk = Mockery::mock();
         $mockDisk->shouldReceive('putFileAs')->andReturn(false);
@@ -57,19 +73,40 @@ describe('deleteDocument', function () {
         expect(Document::find($document->id))->toBeNull();
     });
 
-    /*it('handles missing file gracefully', function () {
+    it('treats missing physical file as deleted and removes DB row', function () {
+        // File does not exist on disk by default with fake disk
+        $document = Document::factory()->create(['file_path' => 'missing/file.pdf']);
+
+        $result = $this->service->deleteDocument($document);
+
+        expect($result)->toBeTrue();
+        expect(Document::find($document->id))->toBeNull();
+    });
+
+    it('handles missing file gracefully', function () {
         $document = Document::factory()->withoutFilePath()->create();
 
         $result = $this->service->deleteDocument($document);
 
         expect($result)->toBeTrue();
         expect(Document::find($document->id))->toBeNull();
-    });*/
+    });
 
     it('throws StorageException on storage error', function () {
         $document = Document::factory()->create(['file_path' => 'test.pdf']);
         $mockDisk = Mockery::mock();
         $mockDisk->shouldReceive('exists')->andThrow(new Exception('Storage error'));
+        Storage::shouldReceive('disk')->with('documents')->andReturn($mockDisk);
+
+        expect(fn() => $this->service->deleteDocument($document))
+            ->toThrow(StorageException::class, 'Storage driver error while deleting file.');
+    });
+
+    it('throws StorageException when delete operation returns false', function () {
+        $document = Document::factory()->create(['file_path' => 'stubborn.pdf']);
+        $mockDisk = Mockery::mock();
+        $mockDisk->shouldReceive('exists')->andReturn(true);
+        $mockDisk->shouldReceive('delete')->andReturn(false);
         Storage::shouldReceive('disk')->with('documents')->andReturn($mockDisk);
 
         expect(fn() => $this->service->deleteDocument($document))
@@ -88,12 +125,12 @@ describe('getDocumentStream', function () {
         fclose($stream);
     });
 
-    /*it('throws FileNotFoundException for missing file', function () {
-        $document = Document::factory()->withoutFilePath()->create();
+    it('throws FileNotFoundException for missing file', function () {
+        $document = Document::factory()->create(['file_path' => 'not-there.pdf']);
 
         expect(fn() => $this->service->getDocumentStream($document))
             ->toThrow(FileNotFoundException::class);
-    });*/
+    });
 
     it('throws StorageException when readStream fails', function () {
         $document = Document::factory()->create(['file_path' => 'test.pdf']);

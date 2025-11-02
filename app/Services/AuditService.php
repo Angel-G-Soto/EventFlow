@@ -58,7 +58,6 @@ class AuditService
             throw new \TypeError('Required argument was null.');
         }
 
-        // Map legacy parameters to canonical columns
         // action => action code
         // target_type => free-form context (use user display name)
         // target_id => free-form identifier (use description summary)
