@@ -106,11 +106,11 @@
                         <div class="form-check">
                             <input class="form-check-input"
                                    type="checkbox"
-                                   id="ven-{{ $v['organization_nexo_id'] }}"
-                                   value="{{ $v['organization_nexo_id'] }}"
+                                   id="ven-{{ $v['organization_name'] }}"
+                                   value="{{ $v['organization_name'] }}"
                                    wire:model.defer="selectedOrgs"
                                    wire:click.stop>
-                            <label class="form-check-label" for="ven-{{ $v['organization_nexo_id'] }}">{{ $v['organization_nexo_name'] }}</label>
+                            <label class="form-check-label" for="ven-{{ $v['organization_name'] }}">{{ $v['organization_name'] }}</label>
                         </div>
                     @endforeach
                     <button type="button" class="btn btn-primary mt-3" wire:click="apply">Apply</button>

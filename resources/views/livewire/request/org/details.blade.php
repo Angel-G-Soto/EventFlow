@@ -42,7 +42,7 @@
     <div class="card container">
         <div class="card-body" style="text-align: justify">
             <h3>Event Name: {{$event->title}}</h3>
-            <h5>Student Organization: {{$event->organization_nexo_name}}</h5>
+            <h5>Student Organization: {{$event->organization_name}}</h5>
             Description: {{$event->description}}
             <br>
             <br>

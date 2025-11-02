@@ -38,7 +38,7 @@
 </x-slot:pageActions>
 
 <div>
-    <h1 class="h4 mb-3">Request History</h1>
+    <h1 class="h4 mb-3">My Requests</h1>
 
 
 
@@ -66,7 +66,7 @@
                 @forelse ($events as $event)
                     <tr>
                         <td class="fw-medium">{{$event->title ?? '—' }}</td>
-                        <td class="fw-medium">{{$event->organization_nexo_name  ?? '—' }}</td>
+                        <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
                         <td class="fw-medium">{{ $event->created_at}}</td>
                         <td class="fw-medium">
                         @if($event->status === 'cancelled' || $event->status === 'withdrawn' || $event->status === 'rejected')
@@ -81,7 +81,7 @@
                         <td class="fw-medium text-end">
                             <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
-                                    onclick="window.location='{{ route('org.request',['event'=>$event]) }}'">
+                                    onclick="window.location='{{ route('user.request',['event'=>$event]) }}'">
                                 <i class="bi bi-eye me-1"></i> View details
                             </button>
                         </td>

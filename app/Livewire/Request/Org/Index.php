@@ -74,7 +74,7 @@ class Index extends Component
 
     public function render()
     {
-        $q = Event::query()->with(['venue','categories']);
+        $q = Event::query()->with(['venue','categories'])->where('creator_id', auth()->id());
 
         // If your Event has a SINGLE category_id column, use this:
 //        if (!empty($this->filters['categories'])) {
@@ -92,7 +92,7 @@ class Index extends Component
         }
 
         if (!empty($this->filters['orgs'])) {
-            $q->whereIn('organization_nexo_id', $this->filters['orgs']);
+            $q->whereIn('organization_name', $this->filters['orgs']);
         }
 
         $events = $q->orderByDesc('created_at')->paginate(8);

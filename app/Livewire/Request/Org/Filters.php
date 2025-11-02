@@ -94,11 +94,10 @@ class Filters extends Component
         $this->venues     = Venue::orderBy('name')->get(['id','name'])->toArray();
 
         $this->orgs = Event::query()
-            ->select('organization_name')//, DB::raw('MIN(organization_nexo_name) as organization_nexo_name'))
             ->whereNotNull('organization_name')
-            //->groupBy('organization_nexo_id')          // one row per org id
-            ->orderBy('organization_name')
-            ->get()
+            ->distinct()
+            ->orderBy('organization_name', 'asc')
+            ->get(['organization_name'])
             ->toArray();
         // $this->orgs = Organization::orderBy('name')->get(['id','name'])->toArray();
     }

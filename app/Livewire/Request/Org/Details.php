@@ -55,7 +55,7 @@ class Details extends Component
     {
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
-        $this->redirectRoute('org.index');
+        $this->redirectRoute('user.index');
     }
 /**
  * Approve action.
@@ -65,7 +65,7 @@ class Details extends Component
     public function approve()
     {
         // ... do your action
-        $this->redirectRoute('org.index');
+        $this->redirectRoute('user.index');
     }
 /**
  * Back action.
@@ -74,7 +74,7 @@ class Details extends Component
 
     public function back()
     {
-        $this->redirectRoute('org.index');
+        $this->redirectRoute('user.index');
     }
 /**
  * Render the venue details Blade view.

@@ -33,8 +33,8 @@ Route::get('/approver/requests/pending',\App\Livewire\Request\Pending\Index::cla
 Route::get('/approver/requests/pending/{event}',\App\Livewire\Request\Pending\Details::class)->name('approver.pending.request');
 
 //Student organization----------------------------------------------------------------------------------
-Route::get('/org/requests',\App\Livewire\Request\Org\Index::class)->name('org.index');
-Route::get('/org/requests/{event}',\App\Livewire\Request\Org\Details::class)->name('org.request');
+Route::get('/user/requests',\App\Livewire\Request\Org\Index::class)->name('user.index');
+Route::get('/user/requests/{event}',\App\Livewire\Request\Org\Details::class)->name('user.request');
 
 //Venue Manager------------------------------------------------------------------------------------------
 Route::get('/venues',\App\Livewire\Venue\Index::class)->name('venues.manage');
