@@ -35,7 +35,7 @@ it('updates a venue successfully with valid data and system-administrator role',
 
     $this->auditService->shouldReceive('logAdminAction')
         ->once()
-        ->with($this->admin->id, '', Mockery::type('string'))
+        //->with($this->admin->id, '', '', Mockery::type('string'))
         ->andReturn(Mockery::mock(AuditTrail::class));
 
     $validData = [

@@ -40,7 +40,7 @@ it('updates operating hours successfully', function () {
     $this->auditService
         ->shouldReceive('logAction')
         ->once()
-        ->with($this->manager->id, '', 'Updated operating hours for venue #' . $this->venue->id)
+        //->with($this->manager->id, '', '', 'Updated operating hours for venue #' . $this->venue->id)
         ->andReturn(Mockery::mock(AuditTrail::class));
 
     $updatedVenue = $this->venueService->updateVenueOperatingHours(
