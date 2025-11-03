@@ -352,6 +352,10 @@ class EventService {
             ->paginate(15);
     }
 
+    public function getMyRequestedEvents(User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        return Event::where('creator_id', $user->id);
+    }
 
     public function genericGetPendingRequests(User $user, Role $role): \Illuminate\Database\Eloquent\Builder
     {

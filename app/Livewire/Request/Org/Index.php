@@ -17,6 +17,8 @@
 namespace App\Livewire\Request\Org;
 
 use App\Models\Event;
+use App\Services\EventService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -74,7 +76,9 @@ class Index extends Component
 
     public function render()
     {
-        $q = Event::query()->with(['venue','categories'])->where('creator_id', auth()->id());
+//        $q = Event::query()->with(['venue','categories'])->where('creator_id', auth()->id());
+        $q = app(EventService::class)->getMyRequestedEvents(Auth::user());
+        $q->with(['venue','categories']);
 
         // If your Event has a SINGLE category_id column, use this:
 //        if (!empty($this->filters['categories'])) {
