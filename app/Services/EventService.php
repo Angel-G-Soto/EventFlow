@@ -440,6 +440,10 @@ class EventService {
             }]);
     }
 
+    public function getEventDocuments(Event $event): Collection
+    {
+        return $event->documents;
+    }
 
 //        public function getEventsForApproverDashboard(User $user): LengthAwarePaginator
 //        {
