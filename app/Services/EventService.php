@@ -374,6 +374,73 @@ class EventService {
                 ->where('creator_id', $user->id),
         };
     }
+
+    public function genericGetPendingRequestsV2(User $user, ?Role $role = null): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Event::query();  // Start with the base query
+
+        if (!$role) {
+            // If limiting to a single role, apply conditions for only that role
+            switch ($role->name) {
+                case 'advisor':
+                    $query->where('organization_advisor_email', $user->email)
+                        ->where('status', 'pending - advisor approval');
+                    break;
+                case 'venue-manager':
+                    $query->whereIn('venue_id', $user->manages()->pluck('id'))
+                        ->where('status', 'pending - venue manager approval');
+                    break;
+                case 'event-approver':
+                    $query->where('status', 'pending - dsca approval');
+                    break;
+                case 'deanship-of-administration-approver':
+                    $query->where('status', 'pending - deanship of administration approval');
+                    break;
+                default:
+                    $query->where('creator_id', $user->id);
+                    break;
+            }
+        } else {
+            foreach ($user->roles as $user_role) {
+                switch ($user_role->name) {
+                    case 'advisor':
+                        $query->orWhere('organization_advisor_email', $user->email)
+                            ->where('status', 'pending - advisor approval');
+                        break;
+                    case 'venue-manager':
+                        $query->orWhereIn('venue_id', $user->manages()->pluck('id'))
+                            ->where('status', 'pending - venue manager approval');
+                        break;
+                    case 'event-approver':
+                        $query->orWhere('status', 'pending - dsca approval');
+                        break;
+                    case 'deanship-of-administration-approver':
+                        $query->orWhere('status', 'pending - deanship of administration approval');
+                        break;
+                    default:
+                        $query->orWhere('creator_id', $user->id);
+                        break;
+                }
+            }
+        }
+
+        return $query;
+    }
+
+
+    public function genericApproverRequestHistory(User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        return Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
+            ->whereHas('history', function ($query) use ($user) {
+                $query->where('approver_id', $user->id);
+            })
+            ->with(['history' => function ($query) use ($user) {
+                $query->select('id', 'approver_id', 'event_id')
+                    ->where('approver_id', $user->id);
+            }]);
+    }
+
+
 //        public function getEventsForApproverDashboard(User $user): LengthAwarePaginator
 //        {
 //            // Create table that matches role with the status

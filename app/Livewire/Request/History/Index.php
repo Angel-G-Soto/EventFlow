@@ -87,36 +87,37 @@ class Index extends Component
      */
     public function render()
     {
-//         $q = Event::query()->with(['venue','categories']);
+         //$q = Event::query()->with(['venue','categories']);
+        $q = app(EventService::class)->genericApproverRequestHistory(Auth::user());
 
-//         // If your Event has a SINGLE category_id column, use this:
-// //        if (!empty($this->filters['categories'])) {
-// //            $q->whereIn('category_id', $this->filters['categories']);
-// //        }
+         // If your Event has a SINGLE category_id column, use this:
+ //        if (!empty($this->filters['categories'])) {
+ //            $q->whereIn('category_id', $this->filters['categories']);
+ //        }
 
-//         // If your Event has MANY categories (pivot), replace the block above with:
-//         if (!empty($this->filters['categories'])) {
-//             $ids = $this->filters['categories'];
-//             $q->whereHas('categories', fn($qq) => $qq->whereIn('categories.id', $ids));
-//         }
+         // If your Event has MANY categories (pivot), replace the block above with:
+         if (!empty($this->filters['categories'])) {
+             $ids = $this->filters['categories'];
+             $q->whereHas('categories', fn($qq) => $qq->whereIn('categories.id', $ids));
+         }
 
-//         if (!empty($this->filters['venues'])) {
-//             $q->whereIn('venue_id', $this->filters['venues']);
-//         }
+         if (!empty($this->filters['venues'])) {
+             $q->whereIn('venue_id', $this->filters['venues']);
+         }
 
-//         if (!empty($this->filters['orgs'])) {
-//             $q->whereIn('organization_nexo_id', $this->filters['orgs']);
-//         }
+         if (!empty($this->filters['orgs'])) {
+             $q->whereIn('organization_nexo_id', $this->filters['orgs']);
+         }
 
-//         $events = $q->orderByDesc('created_at')->paginate(8);
+         $events = $q->orderByDesc('created_at')->paginate(8);
 
-        $events = app(EventService::class)->getApproverRequestHistory(Auth::user(),
-            [
-                'venue_id' => $this->filters['venues'],
-                'category_id' => $this->filters['categories'],
-                'organization_name' => $this->filters['orgs']
-            ]
-        );
+//        $events = app(EventService::class)->getApproverRequestHistory(Auth::user(),
+//            [
+//                'venue_id' => $this->filters['venues'],
+//                'category_id' => $this->filters['categories'],
+//                'organization_name' => $this->filters['orgs']
+//            ]
+//        );
         //dd($events);
 
         return view('livewire.request.history.index', compact('events'));
