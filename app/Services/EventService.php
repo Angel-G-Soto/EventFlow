@@ -33,7 +33,7 @@ class EventService {
 
         // FORM
 
-        public function updateOrCreateFromEventForm(array $data, ?array $document_ids = [], ?array $categories_ids = [], User $creator, string $action)
+        public function updateOrCreateFromEventForm(array $data, User $creator, string $action, ?array $document_ids = [], ?array $categories_ids = [])
         {
             return DB::transaction(function () use ($data, $document_ids, $categories_ids, $creator, $action) {
                 // Validate existence of related entities
@@ -221,7 +221,8 @@ class EventService {
          */
         protected function updateEventStatus(Event $event, string $currentStatus, string $nextStatus): int
         {
-            return Event::where('id', $event->id)
+            return Event::whereNotIn('status', ['approved', 'withdrawn', 'cancelled', 'rejected'])
+                ->where('id', $event->id)
                 ->where('status', $currentStatus)
                 ->update(['status' => $nextStatus]);
         }
@@ -253,7 +254,7 @@ class EventService {
             $event->histories()->create([
                 'action' => 'pending',
                 'approver_id' => null,
-                'comment' => "pending {$nextStatus}.",
+                'comment' => $nextStatus,
             ]);
         }
 
@@ -261,10 +262,12 @@ class EventService {
     // Status related methods
 
         // Request creator withdraws event
-        public function withdrawEvent(Event $event, User $approver): Event
+        public function withdrawEvent(Event $event, User $user): Event
         {
-            return DB::transaction(function () use ($event, $approver) {
-                Event::where('id', $event->id)->whereIn('status', 'like', 'pending')->update(['status' => 'withdrawm']);
+            return DB::transaction(function () use ($event, $user) {
+                Event::where('id', $event->id)
+                    ->whereIn('status', 'like', 'pending')
+                    ->update(['status' => 'withdrawm']);
 
                 // Run audit trail
 
@@ -277,7 +280,9 @@ class EventService {
         public function cancelEvent(Event $event, User $approver): Event
         {
             return DB::transaction(function () use ($event, $approver) {
-                Event::where('id', $event->id)->where('status', 'approved')->update(['status' => 'withdrawm']);
+                Event::where('id', $event->id)
+                    ->where('status', 'approved')
+                    ->update(['status' => 'withdrawn']);
 
                 // Run audit trail
 
@@ -330,8 +335,7 @@ class EventService {
 
     public function getPendingEventsForDSCA(User $user): LengthAwarePaginator
     {
-        return Event::whereIn('venue_id', $user->manages()->pluck('id'))
-            ->where('status', 'pending - dsca approval')
+        return Event::where('status', 'pending - dsca approval')
             ->with('venue')
             ->latest('created_at')
             ->paginate(15);
@@ -339,8 +343,7 @@ class EventService {
 
     public function getPendingEventsForAdministration(User $user): LengthAwarePaginator
     {
-        return Event::whereIn('venue_id', $user->manages()->pluck('id'))
-            ->where('status', 'pending - deanship of administration approval')
+        return Event::where('status', 'pending - deanship of administration approval')
             ->with('venue')
             ->latest('created_at')
             ->paginate(15);
