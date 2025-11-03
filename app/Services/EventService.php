@@ -17,6 +17,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Event\EventCollection;
 use Ramsey\Collection\Collection;
+use function PHPUnit\Framework\isEmpty;
 
 class EventService {
 
@@ -375,57 +376,50 @@ class EventService {
         };
     }
 
-    public function genericGetPendingRequestsV2(User $user, ?Role $role = null): \Illuminate\Database\Eloquent\Builder
+    public function genericGetPendingRequestsV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Event::query();  // Start with the base query
+        $query = Event::query();
 
-        if (!$role) {
-            // If limiting to a single role, apply conditions for only that role
-            switch ($role->name) {
-                case 'advisor':
-                    $query->where('organization_advisor_email', $user->email)
-                        ->where('status', 'pending - advisor approval');
-                    break;
-                case 'venue-manager':
-                    $query->whereIn('venue_id', $user->manages()->pluck('id'))
-                        ->where('status', 'pending - venue manager approval');
-                    break;
-                case 'event-approver':
-                    $query->where('status', 'pending - dsca approval');
-                    break;
-                case 'deanship-of-administration-approver':
-                    $query->where('status', 'pending - deanship of administration approval');
-                    break;
-                default:
-                    $query->where('creator_id', $user->id);
-                    break;
+        // If no roles were passed, use all roles assigned to the user
+        $activeRoles = !empty($roles)
+            ? $roles
+            : $user->roles->pluck('name')->toArray();
+
+        // Group all role conditions together
+        $query->where(function ($outer) use ($activeRoles, $user) {
+            foreach ($activeRoles as $role) {
+                $outer->orWhere(function ($q) use ($role, $user) {
+                    switch ($role) {
+                        case 'advisor':
+                            $q->where('organization_advisor_email', $user->email)
+                                ->where('status', 'pending - advisor approval');
+                            break;
+
+                        case 'venue-manager':
+                            $q->whereIn('venue_id', $user->manages()->pluck('id'))
+                                ->where('status', 'pending - venue manager approval');
+                            break;
+
+                        case 'event-approver':
+                            $q->where('status', 'pending - dsca approval');
+                            break;
+
+                        case 'deanship-of-administration-approver':
+                            $q->where('status', 'pending - deanship of administration approval');
+                            break;
+
+                        // Optional default: if user has "creator" or other roles
+                        // case 'creator':
+                        //     $q->where('creator_id', $user->id);
+                        //     break;
+                    }
+                });
             }
-        } else {
-            foreach ($user->roles as $user_role) {
-                switch ($user_role->name) {
-                    case 'advisor':
-                        $query->orWhere('organization_advisor_email', $user->email)
-                            ->where('status', 'pending - advisor approval');
-                        break;
-                    case 'venue-manager':
-                        $query->orWhereIn('venue_id', $user->manages()->pluck('id'))
-                            ->where('status', 'pending - venue manager approval');
-                        break;
-                    case 'event-approver':
-                        $query->orWhere('status', 'pending - dsca approval');
-                        break;
-                    case 'deanship-of-administration-approver':
-                        $query->orWhere('status', 'pending - deanship of administration approval');
-                        break;
-                    default:
-                        $query->orWhere('creator_id', $user->id);
-                        break;
-                }
-            }
-        }
+        });
 
         return $query;
     }
+
 
 
     public function genericApproverRequestHistory(User $user): \Illuminate\Database\Eloquent\Builder

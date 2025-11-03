@@ -46,6 +46,7 @@ class Index extends Component
         'categories' => [],
         'venues'     => [],
         'orgs'       => [],
+        'roles'      => [],
     ];
 
     #[On('filters-changed')]
@@ -58,12 +59,14 @@ class Index extends Component
  * @param array $orgs
  * @return void
  */
-    public function onFiltersChanged(array $categories = [], array $venues = [], array $orgs = []): void
+    public function onFiltersChanged(array $categories = [], array $venues = [], array $orgs = [], array $roles = []): void
     {
         $this->filters['categories'] = array_map('intval', $categories);
         $this->filters['venues']     = array_map('intval', $venues);
-        $this->filters['orgs']       = array_map('intval', $orgs);
+        $this->filters['orgs']       = $orgs;//array_map('intval', $orgs);
+        $this->filters['roles']      = $roles;//array_map('intval', $roles);
 
+        //dd($this->filters['roles']);
         $this->resetPage(); // go back to page 1 after changing filters
     }
 /**
@@ -76,7 +79,8 @@ class Index extends Component
     public function render()
     {
 //        dd(Auth::user()->roles()->first());
-        $q = app(EventService::class)->genericGetPendingRequests(Auth::user(), Auth::user()->roles()->first()); // Replace the second parameter with the role selected by the user
+//        dd(app(EventService::class)->genericGetPendingRequestsV2(Auth::user(), ['venue-manager'])->get());
+        $q = app(EventService::class)->genericGetPendingRequestsV2(Auth::user(), $this->filters['roles']); // Replace the second parameter with the role selected by the user
         $q->with(['venue','categories']);
 
         // If your Event has a SINGLE category_id column, use this:
