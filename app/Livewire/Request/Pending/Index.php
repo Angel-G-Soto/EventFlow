@@ -16,6 +16,7 @@
 
 namespace App\Livewire\Request\Pending;
 
+use App\Services\EventService;
 use App\Services\VenueService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -74,7 +75,9 @@ class Index extends Component
 
     public function render()
     {
-        $q = Event::query()->with(['venue','categories']);
+//        dd(Auth::user()->roles()->first());
+        $q = app(EventService::class)->genericGetPendingRequests(Auth::user(), Auth::user()->roles()->first()); // Replace the second parameter with the role selected by the user
+        $q->with(['venue','categories']);
 
         // If your Event has a SINGLE category_id column, use this:
 //        if (!empty($this->filters['categories'])) {

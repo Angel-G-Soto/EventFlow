@@ -6,10 +6,13 @@ use App\Models\Category;
 use App\Models\Document;
 use App\Models\Event;
 use App\Models\EventHistory;
+use App\Models\Role;
 use App\Models\User;
 Use App\Models\Venue;
 use Carbon\Carbon;
 use DateTime;
+use Doctrine\DBAL\Query;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Event\EventCollection;
@@ -347,6 +350,25 @@ class EventService {
             ->with('venue')
             ->latest('created_at')
             ->paginate(15);
+    }
+
+
+    public function genericGetPendingRequests(User $user, Role $role): \Illuminate\Database\Eloquent\Builder
+    {
+        return match ($role->name) {
+            'advisor' => Event::query()
+                ->where('organization_advisor_email', $user->email)
+                ->where('status', 'pending - advisor approval'),
+            'venue-manager' => Event::query()
+                ->whereIn('venue_id', $user->manages()->pluck('id'))
+                ->where('status', 'pending - venue manager approval'),
+            'event-approver' => Event::query()
+                ->where('status', 'pending - dsca approval'),
+            'deanship-of-administration-approver' => Event::query()
+                ->where('status', 'pending - deanship of administration approval'),
+            default => Event::query()
+                ->where('creator_id', $user->id),
+        };
     }
 //        public function getEventsForApproverDashboard(User $user): LengthAwarePaginator
 //        {
