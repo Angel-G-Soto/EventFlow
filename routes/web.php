@@ -56,6 +56,7 @@ Route::get('/events/create', function () {
     ]);
 })->name('events.create');
 
+Route::get('director/test', \App\Livewire\Director\VenuesIndex::class)->name('director.venues.index');
 //Route::get('/approver/requests/history/{id}',function (){
 ////    $event = Event::query()->findOrFail(request()->id);
 //

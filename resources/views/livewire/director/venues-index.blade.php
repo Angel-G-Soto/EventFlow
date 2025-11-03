@@ -3,33 +3,33 @@
     <h1 class="h4 mb-0">Department Venues</h1>
   </div>
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <div class="row g-2">
-        <div class="col-12 col-md-4">
-          <label class="form-label" for="dir_venue_search">Search</label>
-          <div class="input-group">
-            <input id="dir_venue_search" class="form-control" placeholder="Name, room, department"
-              wire:model.defer="search">
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label" for="dir_venue_department">Department</label>
-          <select id="dir_venue_department" class="form-select" wire:model.live="department">
-            <option value="">All departments</option>
-            @foreach($departments as $d)
-            <option value="{{ $d }}">{{ $d }}</option>
-            @endforeach
-          </select>
-        </div>
-        <div class="col-12 col-md-2 d-flex align-items-end">
-          <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
-            <i class="bi bi-x-circle me-1"></i> Clear
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+{{--  <div class="card shadow-sm mb-3">--}}
+{{--    <div class="card-body">--}}
+{{--      <div class="row g-2">--}}
+{{--        <div class="col-12 col-md-4">--}}
+{{--          <label class="form-label" for="dir_venue_search">Search</label>--}}
+{{--          <div class="input-group">--}}
+{{--            <input id="dir_venue_search" class="form-control" placeholder="Name, room, department"--}}
+{{--              wire:model.defer="search">--}}
+{{--          </div>--}}
+{{--        </div>--}}
+{{--        <div class="col-6 col-md-3">--}}
+{{--          <label class="form-label" for="dir_venue_department">Department</label>--}}
+{{--          <select id="dir_venue_department" class="form-select" wire:model.live="department">--}}
+{{--            <option value="">All departments</option>--}}
+{{--            @foreach($departments as $d)--}}
+{{--            <option value="{{ $d }}">{{ $d }}</option>--}}
+{{--            @endforeach--}}
+{{--          </select>--}}
+{{--        </div>--}}
+{{--        <div class="col-12 col-md-2 d-flex align-items-end">--}}
+{{--          <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">--}}
+{{--            <i class="bi bi-x-circle me-1"></i> Clear--}}
+{{--          </button>--}}
+{{--        </div>--}}
+{{--      </div>--}}
+{{--    </div>--}}
+{{--  </div>--}}
 
   {{-- Top bar --}}
   <div class="d-flex align-items-center justify-content-between mb-2">
