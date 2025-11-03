@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ImportRequest; //
 use App\Services\AuthService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Unifies SAML (SSO) and Nexo endpoints.
@@ -27,11 +28,38 @@ class AuthController extends Controller
         return $this->auth->samlRedirect();
     }
 
+    private function redirectAfterLogin() // NEW
+    {
+        $user = Auth::user();
+
+        // pull roles from relation or accessor; if none, treat as empty array
+        $roles = method_exists($user, 'roles')
+            ? $user->roles->pluck('name')->all()
+            : (array) ($user->roles ?? []);
+
+        if (count($roles) <= 1) {
+            // single role → set it and go directly to its home
+            $active = $roles[0] ?? null;
+            if ($active) session(['active_role' => $active]);
+
+            // pick a sensible landing by role
+            return match ($active) {
+                'System Admin'          => redirect()->route('admin.events'),
+                'Department Director'   => redirect()->route('admin.departments'),
+                'Venue Manager'         => redirect()->route('admin.venues'),
+                'DSCA Staff'            => redirect()->route('admin.events'),
+                default                 => redirect()->route('calendar.public'),
+            };
+        }
+
+        // multi-role → let the user choose
+        return redirect()->route('choose-role');
+    }
     /** SAML callback: authenticate then send to /calendar. */
     public function samlCallback(): RedirectResponse
     {
         $this->auth->handleSamlCallback(stateless: false);
-        return redirect()->intended('/calendar');
+        return $this->redirectAfterLogin(); // NEW    
     }
 
     /* -----------------------------------------------------------------
@@ -53,6 +81,6 @@ class AuthController extends Controller
 
         $this->auth->handleNexoPayload($payload);
 
-        return redirect()->intended('/events/create');
+        return $this->redirectAfterLogin(); // NEW
     }
 }
