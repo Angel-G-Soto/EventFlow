@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Director;
 
+use App\Services\VenueService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -13,11 +15,7 @@ class VenuesIndex extends Component
   // Mock data until DB arrives
   protected function allVenues(): Collection
   {
-    return collect([
-      ['id' => 1, 'name' => 'Auditorium A', 'department' => 'Humanities', 'room' => 'A-101', 'capacity' => 220, 'status' => 'Active', 'manager' => '—'],
-      ['id' => 2, 'name' => 'Courtyard', 'department' => 'Student Life', 'room' => 'Outdoor', 'capacity' => 500, 'status' => 'Active', 'manager' => '—'],
-      ['id' => 3, 'name' => 'Lab West', 'department' => 'Chemistry', 'room' => 'W-204', 'capacity' => 40, 'status' => 'Active', 'manager' => '—'],
-    ]);
+    return Auth::user()->department->venues;
   }
 
   public string $search = '';
@@ -40,33 +38,33 @@ class VenuesIndex extends Component
   public ?int $assignId = null;
   public string $assignManager = '';
 
-  public function openEdit(int $id): void
-  {
-    $v = $this->allVenues()->firstWhere('id', $id);
-    if (!$v) return;
-    $this->editId    = $v['id'];
-    $this->vName     = $v['name'];
-    $this->vRoom     = $v['room'];
-    $this->vCapacity = (int) $v['capacity'];
-    $this->vStatus   = $v['status'];
-    $this->resetErrorBag();
-    $this->resetValidation();
-    $this->dispatch('bs:open', id: 'editVenue');
-  }
+//  public function openEdit(int $id): void
+//  {
+//    $v = $this->allVenues()->firstWhere('id', $id);
+//    if (!$v) return;
+//    $this->editId    = $v['id'];
+//    $this->vName     = $v['name'];
+//    $this->vRoom     = $v['code'];
+//    $this->vCapacity = (int) $v['capacity'];
+//    $this->vStatus   = 'X';//$v['status'];
+//    $this->resetErrorBag();
+//    $this->resetValidation();
+//    $this->dispatch('bs:open', id: 'editVenue');
+//  }
 
-  public function saveEdit(): void
-  {
-    $this->validate([
-      'vName'     => 'required|string|max:120',
-      'vRoom'     => 'required|string|max:60',
-      'vCapacity' => 'required|integer|min:1|max:99999',
-      'vStatus'   => 'required|in:Active,Suspended,Inactive',
-    ]);
-    // persist later
-    $this->dispatch('bs:close', id: 'editVenue');
-    $this->dispatch('toast', message: 'Venue updated');
-    $this->reset(['editId']);
-  }
+//  public function saveEdit(): void
+//  {
+//    $this->validate([
+//      'vName'     => 'required|string|max:120',
+//      'vRoom'     => 'required|string|max:60',
+//      'vCapacity' => 'required|integer|min:1|max:99999',
+//      'vStatus'   => 'required|in:Active,Suspended,Inactive',
+//    ]);
+//    // persist later
+//    $this->dispatch('bs:close', id: 'editVenue');
+//    $this->dispatch('toast', message: 'Venue updated');
+//    $this->reset(['editId']);
+//  }
 
   public function openAssign(int $id): void
   {
@@ -80,6 +78,9 @@ class VenuesIndex extends Component
     $this->validate([
       'assignManager' => 'required|email', // later: user selector of role "Venue Manager"
     ]);
+
+    app(VenueService::class)->assignManager($this->editId, $this->assignManager, Auth::user());
+
     $this->dispatch('bs:close', id: 'assignManager');
     $this->dispatch('toast', message: 'Venue manager assigned');
     $this->reset(['assignId', 'assignManager']);
@@ -160,8 +161,14 @@ class VenuesIndex extends Component
 
   public function render()
   {
-    $rows = $this->paginated();
-    $departments = $this->allVenues()->pluck('department')->unique()->values()->all();
-    return view('livewire.director.venues-index', compact('rows', 'departments'));
+
+//    $rows = $this->paginated();
+//    $departments = $this->allVenues()->pluck('department')->unique()->values()->all();
+
+      $rows = Auth::user()->department->venues()->orderBy('name', $this->sortDirection)->paginate(15);
+      //$departments = new Collection();
+      $employees = Auth::user()->department->employees;
+
+    return view('livewire.director.venues-index', compact('rows', 'employees'));
   }
 }

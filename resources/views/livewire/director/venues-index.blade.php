@@ -32,19 +32,19 @@
 {{--  </div>--}}
 
   {{-- Top bar --}}
-  <div class="d-flex align-items-center justify-content-between mb-2">
-    <small class="text-secondary">
-      {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
-    </small>
-    <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="dir_venue_rows">Rows</label>
-      <select id="dir_venue_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="perPage">
-        <option>25</option>
-        <option>50</option>
-        <option>100</option>
-      </select>
-    </div>
-  </div>
+{{--  <div class="d-flex align-items-center justify-content-between mb-2">--}}
+{{--    <small class="text-secondary">--}}
+{{--      {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results--}}
+{{--    </small>--}}
+{{--    <div class="d-flex align-items-center gap-2">--}}
+{{--      <label class="text-secondary small mb-0" for="dir_venue_rows">Rows</label>--}}
+{{--      <select id="dir_venue_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="perPage">--}}
+{{--        <option>25</option>--}}
+{{--        <option>50</option>--}}
+{{--        <option>100</option>--}}
+{{--      </select>--}}
+{{--    </div>--}}
+{{--  </div>--}}
 
   <div class="card shadow-sm">
     <div class="table-responsive">
@@ -66,7 +66,7 @@
                 @endif
               </button>
             </th>
-            <th>Department</th>
+{{--            <th>Department</th>--}}
             <th>Room</th>
             <th>Capacity</th>
             <th>Status</th>
@@ -78,8 +78,8 @@
           @forelse($rows as $v)
           <tr>
             <td class="fw-medium">{{ $v['name'] }}</td>
-            <td>{{ $v['department'] }}</td>
-            <td>{{ $v['room'] }}</td>
+{{--            <td>{{ $v['department'] }}</td>--}}
+            <td>{{ $v['code'] }}</td>
             <td>{{ $v['capacity'] }}</td>
             <td>
               <span
@@ -87,13 +87,13 @@
                 {{ $v['status'] }}
               </span>
             </td>
-            <td>{{ $v['manager'] }}</td>
+            <td>{{ $email = $employees->find($v['manager_id'])->email ?? null}}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
-                  aria-label="Edit venue {{ $v['name'] }}" title="Edit venue {{ $v['name'] }}">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
+{{--                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"--}}
+{{--                  aria-label="Edit venue {{ $v['name'] }}" title="Edit venue {{ $v['name'] }}">--}}
+{{--                  <i class="bi bi-pencil"></i> Edit--}}
+{{--                </button>--}}
                 <button class="btn btn-outline-primary" wire:click="openAssign({{ $v['id'] }})"
                   aria-label="Assign manager to {{ $v['name'] }}" title="Assign manager to {{ $v['name'] }}">
                   <i class="bi bi-person-plus"></i> Assign Manager
@@ -109,6 +109,9 @@
         </tbody>
       </table>
     </div>
+
+
+
     <div class="card-footer d-flex justify-content-between align-items-center">
       <small class="text-muted">
         {{ method_exists($rows,'total') ? $rows->total() : count($rows) }} results
@@ -118,53 +121,53 @@
   </div>
 
   {{-- Edit Venue Modal --}}
-  <div class="modal fade" id="editVenue" tabindex="-1" wire:ignore.self>
-    <div class="modal-dialog">
-      <form class="modal-content" wire:submit.prevent="saveEdit">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Edit Venue</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-2">
-            <label class="form-label" for="dir_v_name">Name</label>
-            <input id="dir_v_name" class="form-control @error('vName') is-invalid @enderror" wire:model.live="vName"
-              required>
-            @error('vName')<div class="invalid-feedback">{{ $message }}</div>@enderror
-          </div>
-          <div class="mb-2">
-            <label class="form-label" for="dir_v_room">Room</label>
-            <input id="dir_v_room" class="form-control @error('vRoom') is-invalid @enderror" wire:model.live="vRoom"
-              required>
-            @error('vRoom')<div class="invalid-feedback">{{ $message }}</div>@enderror
-          </div>
-          <div class="row g-2">
-            <div class="col-md-6">
-              <label class="form-label" for="dir_v_capacity">Capacity</label>
-              <input id="dir_v_capacity" type="number" min="1"
-                class="form-control @error('vCapacity') is-invalid @enderror" wire:model.live="vCapacity" required>
-              @error('vCapacity')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="dir_v_status">Status</label>
-              <select id="dir_v_status" class="form-select @error('vStatus') is-invalid @enderror"
-                wire:model.live="vStatus" required>
-                <option>Active</option>
-                <option>Suspended</option>
-                <option>Inactive</option>
-              </select>
-              @error('vStatus')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button"
-            aria-label="Cancel and close">Cancel</button>
-          <button class="btn btn-primary" type="submit" aria-label="Save venue">Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
+{{--  <div class="modal fade" id="editVenue" tabindex="-1" wire:ignore.self>--}}
+{{--    <div class="modal-dialog">--}}
+{{--      <form class="modal-content" wire:submit.prevent="saveEdit">--}}
+{{--        <div class="modal-header">--}}
+{{--          <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Edit Venue</h5>--}}
+{{--          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>--}}
+{{--        </div>--}}
+{{--        <div class="modal-body">--}}
+{{--          <div class="mb-2">--}}
+{{--            <label class="form-label" for="dir_v_name">Name</label>--}}
+{{--            <input id="dir_v_name" class="form-control @error('vName') is-invalid @enderror" wire:model.live="vName"--}}
+{{--              required>--}}
+{{--            @error('vName')<div class="invalid-feedback">{{ $message }}</div>@enderror--}}
+{{--          </div>--}}
+{{--          <div class="mb-2">--}}
+{{--            <label class="form-label" for="dir_v_room">Room</label>--}}
+{{--            <input id="dir_v_room" class="form-control @error('vRoom') is-invalid @enderror" wire:model.live="vRoom"--}}
+{{--              required>--}}
+{{--            @error('vRoom')<div class="invalid-feedback">{{ $message }}</div>@enderror--}}
+{{--          </div>--}}
+{{--          <div class="row g-2">--}}
+{{--            <div class="col-md-6">--}}
+{{--              <label class="form-label" for="dir_v_capacity">Capacity</label>--}}
+{{--              <input id="dir_v_capacity" type="number" min="1"--}}
+{{--                class="form-control @error('vCapacity') is-invalid @enderror" wire:model.live="vCapacity" required>--}}
+{{--              @error('vCapacity')<div class="invalid-feedback">{{ $message }}</div>@enderror--}}
+{{--            </div>--}}
+{{--            <div class="col-md-6">--}}
+{{--              <label class="form-label" for="dir_v_status">Status</label>--}}
+{{--              <select id="dir_v_status" class="form-select @error('vStatus') is-invalid @enderror"--}}
+{{--                wire:model.live="vStatus" required>--}}
+{{--                <option>Active</option>--}}
+{{--                <option>Suspended</option>--}}
+{{--                <option>Inactive</option>--}}
+{{--              </select>--}}
+{{--              @error('vStatus')<div class="invalid-feedback">{{ $message }}</div>@enderror--}}
+{{--            </div>--}}
+{{--          </div>--}}
+{{--        </div>--}}
+{{--        <div class="modal-footer">--}}
+{{--          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button"--}}
+{{--            aria-label="Cancel and close">Cancel</button>--}}
+{{--          <button class="btn btn-primary" type="submit" aria-label="Save venue">Save</button>--}}
+{{--        </div>--}}
+{{--      </form>--}}
+{{--    </div>--}}
+{{--  </div>--}}
 
   {{-- Assign Manager Modal --}}
   <div class="modal fade" id="assignManager" tabindex="-1" wire:ignore.self>
