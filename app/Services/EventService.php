@@ -109,6 +109,7 @@ class EventService {
                             'action' => 'pending',
                             'approver_id' => $creator->id,
                             'comment' => 'Event submitted for approval.',
+                            'status_when_signed' => $status,
                         ]);
                     }
                 } else {
@@ -260,6 +261,7 @@ class EventService {
                 'action' => 'pending',
                 'approver_id' => null,
                 'comment' => $nextStatus,
+                'status_when_signed' => $nextStatus,
             ]);
         }
 
