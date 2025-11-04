@@ -105,7 +105,7 @@ class EventService {
                 if (!empty($data['organization_advisor_email'])) {
                     if ($status === 'pending - advisor approval') {
                         // Example: log event history
-                        $event->histories()->create([
+                        $event->history()->create([
                             'action' => 'pending',
                             'approver_id' => $creator->id,
                             'comment' => 'Event submitted for approval.',

@@ -65,13 +65,13 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label required">Student phone</label>
-                    <input type="text" class="form-control" wire:model.defer="student_phone">
-                    @error('student_phone') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="text" class="form-control" wire:model.defer="creator_phone_number">
+                    @error('creator_phone_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
                     <label class="form-label required">Student ID / Number</label>
-                    <input type="text" class="form-control" wire:model.defer="student_number">
-                    @error('student_number') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number">
+                    @error('creator_institutional_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event Title</label>
@@ -86,14 +86,14 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Start time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="start_at">
-                    @error('start_at') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="datetime-local" class="form-control" wire:model.live="start_time">
+                    @error('start_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">End time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="end_at">
-                    @error('end_at') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="datetime-local" class="form-control" wire:model.live="end_time">
+                    @error('end_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-12">
@@ -108,14 +108,14 @@
                 {{--Check box for food handling --}}
                 <div class="form-check">
                     <input
-                        id="sells_food"
+                        id="handles_food"
                         type="checkbox"
                         class="form-check-input"
-                        wire:model.live="sells_food"
-                        aria-describedby="sellsFood"
+                        wire:model.live="handles_food"
+                        aria-describedby="handles_food"
                     >
-                    <label class="form-check-label" for="sells_food">This event is to sell food</label>
-                    <div id="sellsFood" class="form-text"></div>
+                    <label class="form-check-label" for="handles_food">This event is to sell food</label>
+                    <div id="handles_food" class="form-text"></div>
                 </div>
 
                 {{--Check box for institutional funds --}}
@@ -124,7 +124,7 @@
                         id="has_funds"
                         type="checkbox"
                         class="form-check-input"
-                        wire:model.live="has_funds"
+                        wire:model.live="use_institutional_funds"
                         aria-describedby="hasFunds"
                     >
                     <label class="form-check-label" for="has_funds">This event uses institutional funds</label>
@@ -141,8 +141,7 @@
                         aria-describedby="externalGuest"
                     >
                     <label class="form-check-label" for="external_guest">This event has an external guess</label>
-                    <div id="externalGuess" class="form-text"></div>
-
+c
                 </div>
 
 
@@ -153,19 +152,19 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" class="form-control" wire:model.defer="advisor_name">
-                    @error('advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="text" class="form-control" wire:model.defer="organization_advisor_name">
+                    @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
-                <div class="col-md-6">
-                    <label class="form-label required">Advisor phone</label>
-                    <input type="text" class="form-control" wire:model.defer="advisor_phone">
-                    @error('advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
-                </div>
+{{--                <div class="col-md-6">--}}
+{{--                    <label class="form-label required">Advisor phone</label>--}}
+{{--                    <input type="text" class="form-control" wire:model.defer="advisor_phone">--}}
+{{--                    @error('advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror--}}
+{{--                </div>--}}
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" class="form-control" wire:model.defer="advisor_email">
-                    @error('advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="email" class="form-control" wire:model.defer="organization_advisor_email">
+                    @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
@@ -179,7 +178,7 @@
     @if ($step === 2)
         <form wire:submit.prevent="next">
             <div class="mb-3">
-                <div class="form-text">Showing venues available between <strong>{{ $start_at ?: '—' }}</strong> and <strong>{{ $end_at ?: '—' }}</strong>.</div>
+                <div class="form-text">Showing venues available between <strong>{{ $start_time ?: '—' }}</strong> and <strong>{{ $end_time ?: '—' }}</strong>.</div>
             </div>
 
 

@@ -83,11 +83,6 @@ class Index extends Component
         $q = app(EventService::class)->genericGetPendingRequestsV2(Auth::user(), $this->filters['roles']); // Replace the second parameter with the role selected by the user
         $q->with(['venue','categories']);
 
-        // If your Event has a SINGLE category_id column, use this:
-//        if (!empty($this->filters['categories'])) {
-//            $q->whereIn('category_id', $this->filters['categories']);
-//        }
-
         // If your Event has MANY categories (pivot), replace the block above with:
          if (!empty($this->filters['categories'])) {
              $ids = $this->filters['categories'];

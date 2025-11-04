@@ -17,13 +17,19 @@
 
 namespace App\Livewire\Request;
 
-use App\Models\Event;
 //use App\Services\DocumentRequirementService;
-use App\Services\UseRequirementService;
+//use App\Services\UseRequirementService;
 //use App\Services\VenueAvailabilityService;
+//use Illuminate\Support\Facades\DB;
+
+use App\Services\CategoryService;
+use App\Services\EventService;
 use App\Services\VenueService;
+use App\Services\DocumentService;
+use App\Services\UserService;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -40,6 +46,7 @@ use Livewire\WithFileUploads;
 class Create extends Component
 {
     use WithFileUploads;
+    protected DocumentService $docs;
 
 
 // Wizard state
@@ -53,11 +60,11 @@ class Create extends Component
 /**
  * @var string
  */
-    public string $student_phone = '';
+    public string $creator_phone_number = '';
 /**
  * @var string
  */
-    public string $student_number = '';
+    public string $creator_institutional_number = '';
 /**
  * @var string
  */
@@ -69,23 +76,29 @@ class Create extends Component
 /**
  * @var string
  */
-    public string $start_at = ''; // datetime-local string
+    public string $start_time = ''; // datetime-local string
 /**
  * @var string
  */
-    public string $end_at = '';
+    public string $end_time = '';
 /**
  * @var array
  */
     public array $category_ids = [];
+
+ /**
+  * @var int[]
+  */
+    public array $uploadedDocumentIds = [];
+
 /**
  * @var bool
  */
-    public bool $has_funds = false;
+    public bool $use_institutional_funds = false;
 /**
  * @var bool
  */
-    public bool $sells_food = false;
+    public bool $handles_food = false;
 /**
  * @var bool
  */
@@ -109,15 +122,17 @@ class Create extends Component
 /**
  * @var string
  */
-    public string $advisor_name = '';
+    public string $organization_advisor_name = '';
+
+///**
+// * @var string
+// */
+//    public string $advisor_phone = '';
+
 /**
  * @var string
  */
-    public string $advisor_phone = '';
-/**
- * @var string
- */
-    public string $advisor_email = '';
+    public ?string $organization_advisor_email = '';
 
 
 // Part 2
@@ -150,16 +165,23 @@ class Create extends Component
      * Initialize defaults. This component expects an $organization array
      * to be optionally passed from the route/controller.
      *
-     * @param array{id?:int,name?:string,advisor_name?:string,advisor_phone?:string,advisor_email?:string}|null $organization
+     * @param array{id?:int,name?:string,organization_advisor_name?:string,advisor_phone?:string,advisor_email?:string}|null $organization
      */
     public function mount(array $organization = []): void
     {
         $this->organization_id   = $organization['id']            ?? null;  // optional
         $this->organization_name = $organization['name']          ?? '';
-        $this->advisor_name      = $organization['advisor_name']  ?? '';
-        $this->advisor_phone     = $organization['advisor_phone'] ?? '';
-        $this->advisor_email     = $organization['advisor_email'] ?? '';
+        $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
+//        $this->advisor_phone     = $organization['advisor_phone'] ?? '';
+        $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
     }
+
+
+    public function boot(DocumentService $docs)
+    {
+        $this->docs = $docs;
+    }
+
 
     /**
      * Return validation rules that apply *only* to the provided wizard step.
@@ -172,21 +194,21 @@ class Create extends Component
     {
         if ($step === 1) {
             return [
-                'student_phone' => ['required','string','regex:/^\D*(\d\D*){10}$/'],
-                'student_number' => ['required','string','max:30'],
+                'creator_phone_number' => ['required','string','regex:/^\D*(\d\D*){10}$/'],
+                'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10'],
-                'start_at' => ['required','date'],
-                'end_at' => ['required','date','after:start_at'],
+                'start_time' => ['required','date'],
+                'end_time' => ['required','date','after:start_time'],
                 'category_ids' => ['array','min:0'],
 //                'category_ids.*' => ['integer', Rule::exists('categories','id')],
                 'organization_id' => ['nullable','integer'],
-                'advisor_name' => ['required','string','max:150'],
-                'advisor_phone' => ['required','string','max:20'],
-                'advisor_email' => ['required','email','max:150'],
-                'sells_food' => ['boolean'],
+                'organization_advisor_name' => ['required','string','max:150'],
+//                'advisor_phone' => ['required','string','max:20'],
+                'organization_advisor_email' => ['required','email','max:150'],
+                'handles_food' => ['boolean'],
                 'external_guest' => ['boolean'],
-                'has_funds' => ['boolean'],
+                'use_institutional_funds' => ['boolean'],
 
             ];
         }
@@ -198,19 +220,25 @@ class Create extends Component
             ];
         }
 
+//        Step 3
+        return [
+            'requirementFiles'   => ['array'],
+            'requirementFiles.*' => ['file', 'mimes:pdf', 'max:10240'], // 10 MB each
+        ];
 
-// Step 3: dynamic files
-        $fileRules = [];
-        foreach ($this->requiredDocuments as $doc) {
-            $key = $doc['key'];
-            $base = ['file','max:'.$doc['max_kb']];
-            if (!empty($doc['mimes'])) {
-                $base[] = 'mimes:'.implode(',', $doc['mimes']);
-            }
-// required or nullable depending on rule
-            $fileRules["uploads.$key"] = $doc['required'] ? array_merge(['required'], $base) : array_merge(['nullable'], $base);
-        }
-        return $fileRules;
+
+//// Step 3: dynamic files
+//        $fileRules = [];
+//        foreach ($this->requiredDocuments as $doc) {
+//            $key = $doc['key'];
+//            $base = ['file','max:'.$doc['max_kb']];
+//            if (!empty($doc['mimes'])) {
+//                $base[] = 'mimes:'.implode(',', $doc['mimes']);
+//            }
+//// required or nullable depending on rule
+//            $fileRules["uploads.$key"] = $doc['required'] ? array_merge(['required'], $base) : array_merge(['nullable'], $base);
+//        }
+//        return $fileRules;
     }
 
     // Reactivity: if time window changes, refresh venues if we are on step 2
@@ -231,9 +259,9 @@ class Create extends Component
  */
     protected function validTimeRange(): bool
     {
-        if (empty($this->start_at) || empty($this->end_at)) return false;
+        if (empty($this->start_time) || empty($this->end_time)) return false;
         try {
-            return Carbon::parse($this->end_at)->gt(Carbon::parse($this->start_at));
+            return Carbon::parse($this->end_time)->gt(Carbon::parse($this->start_time));
         } catch (\Throwable $e) {
             return false;
         }
@@ -283,8 +311,8 @@ class Create extends Component
         $this->loadingVenues = true;
         $this->availableVenues = [];
         try {
-            $start = Carbon::parse($this->start_at);
-            $end = Carbon::parse($this->end_at);
+            $start = Carbon::parse($this->start_time);
+            $end = Carbon::parse($this->end_time);
             $service = $service ?? app(VenueService::class);
             $this->availableVenues = $service->getAvailableVenues($start, $end)->toArray();
             //dd($this->availableVenues);
@@ -306,59 +334,105 @@ class Create extends Component
      */
     public function submit(): void
     {
+
+
+//        $data['venue_id']
+//        $data['organization_name']
+//        $data['organization_advisor_name']
+//        $data['organization_advisor_email']
+//        $data['creator_institutional_number']
+//        $data['creator_phone_number']
+//        $data['title']
+//        $data['description']
+//        $data['start_time']
+//        $data['end_time']
+//        $data['guests']
+//        $data['handles_food']
+//        $data['use_institutional_funds']
+//        $data['external_guests']
+
 // Validate step 3 (dynamic files)
         $this->validate($this->rulesForStep(3));
 
         // Roadmap
+            //create event
+
+        $userService = app(UserService::class);
+        $user = Auth::user();
+
+
+
+        $data = [
+            'venue_id' => $this->venue_id,
+            'creator_phone_number' => $this->creator_phone_number,
+            'creator_institutional_number' => $this->creator_institutional_number,
+            'title' => $this->title,
+            'description' => $this->description,
+            'start_time' => $this->start_time,
+            'end_time' => $this->end_time,
+            'organization_advisor_name' => $this->organization_advisor_name,
+            'organization_advisor_email' => $this->organization_advisor_email,
+            'handles_food' => $this->handles_food,
+            'external_guest' => $this->external_guest,
+            'use_institutional_funds' => $this->use_institutional_funds,
+        ];
+
+        $eventService = $eventService ?? app(EventService::class);
+
+        $event = $eventService->updateOrCreateFromEventForm(
+            data: $data,
+            creator: $user,
+            action: 'publish',
+            categories_ids: $this->category_ids,
+        );
+
+        $data['id'] = $event->id;
 
             // create document and category models and store on DB. Store them on arrays
 
+        $service = $this->docs ?? app(DocumentService::class);
+
+        foreach ($this->requirementFiles as $file) {
+            // Livewire’s TemporaryUploadedFile generally extends/behaves like UploadedFile.
+            // If your version complains about the type hint, cast defensively:
+            $uploaded = (is_object($file) && method_exists($file, 'toUploadedFile'))
+                ? $file->toUploadedFile()
+                : $file;
+
+            try {
+                $doc = $service->handleUpload(
+                    file:   $uploaded,          // UploadedFile-compatible
+                    userId: auth()->id(),  // or pass the student/submitter id you need
+                    eventId:$event->id
+                );
+                $this->uploadedDocumentIds[] = $doc->id;
+
+            } catch (\App\Exceptions\StorageException $e) {
+                // Surface a friendly message but keep going (or break—your call)
+                $this->addError('requirementFiles', "Failed to enqueue scan for {$file->getClientOriginalName()}.");
+                report($e);
+            }
+        }
+
+        $eventService->updateOrCreateFromEventForm(
+            data: $data,
+            creator: $user,
+            action: 'publish',
+            document_ids: $this->uploadedDocumentIds,
+        );
+
+
+
+
             // call updateOrCreateFromEventForm
 
-            // call document service that scans documents. Dispatches job
 
             // return home or pending requests or ...
 
-        DB::transaction(function () {
-            $event = Event::create([
-                'student_phone' => $this->student_phone,
-                'student_number' => $this->student_number,
-                'title' => $this->title,
-                'description' => $this->description,
-                'start_at' => Carbon::parse($this->start_at),
-                'end_at' => Carbon::parse($this->end_at),
-                'organization_id' => $this->organization_id,
-                'venue_id' => $this->venue_id,
-                'advisor_name' => $this->advisor_name,
-                'advisor_phone' => $this->advisor_phone,
-                'advisor_email' => $this->advisor_email,
-            ]);
-
-
-            $event->categories()->sync($this->category_ids);
-
-
-// Store uploads
-            foreach ($this->requiredDocuments as $doc) {
-                $key = $doc['key'];
-                $file = $this->uploads[$key] ?? null; // may be null if not required/omitted
-                if (!$file) continue;
-
-
-                $storedPath = $file->store("events/{$event->id}", 'public');
-                $event->documents()->create([
-                    'key' => $key,
-                    'original_name' => $file->getClientOriginalName(),
-                    'path' => $storedPath,
-                    'mime' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                ]);
-            }
-        });
 
 
         session()->flash('success', 'Event submitted successfully.');
-        redirect()->route('events.create'); // or to a details/thanks page
+        redirect()->route('public.calendar'); // or to a details/thanks page
     }
 
     /**
@@ -369,20 +443,7 @@ class Create extends Component
      */
     public function render()
     {
-        $category  = [
-            [
-                'id' => 1,
-                'name' => 'Food Sell',
-            ],
-            [
-                'id' => 2,
-                'name' => 'Workshop',
-            ],
-            [
-                'id' => 4,
-                'name' => 'Engineering',
-            ]
-        ];
+        $category  = app(CategoryService::class)->getAllCategories()->toArray();
 
         return view('livewire.request.create',[
             'allCategories' => $category,
