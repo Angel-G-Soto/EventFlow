@@ -109,7 +109,7 @@ return new class extends Migration {
             $table->foreignId('approver_id')->constrained('users');
             $table->foreignId('event_id')->constrained('events');
             $table->string('action')->nullable();
-            $table->string('comment');
+            $table->string('comment')->nullable();
             $table->string('status_when_signed');
             $table->timestamps();
         });
