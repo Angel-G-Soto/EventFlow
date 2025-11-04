@@ -110,6 +110,7 @@ return new class extends Migration {
             $table->foreignId('event_id')->constrained('events');
             $table->string('action')->nullable();
             $table->string('comment');
+            $table->string('status_when_signed');
             $table->timestamps();
         });
 

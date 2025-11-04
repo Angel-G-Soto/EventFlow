@@ -23,6 +23,7 @@ class EventHistoryFactory extends Factory
             'comment' => fake()->sentence(),
             'event_id' => Event::factory(),
             'approver_id' => User::factory(),
+            'status_when_signed' => $this->faker->randomElement(['pending', 'pending - advisor approval', 'pending - venue manager approval', 'pending - dsca approval']),
         ];
     }
 }

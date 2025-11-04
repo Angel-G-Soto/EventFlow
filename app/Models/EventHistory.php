@@ -32,6 +32,7 @@ class EventHistory extends Model
         'approver_id',
         'action',
         'comment',
+        'status_when_signed',
     ];
 
     //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
