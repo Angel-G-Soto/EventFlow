@@ -9,16 +9,22 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
 use App\Livewire\Traits\UserEditState;
-use App\Repositories\UserRepository;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\Department;
+use App\Services\UserService;
+use App\Services\DepartmentService;
+use Illuminate\Support\Facades\Auth;
 
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
+    // Constants
+    public const ROLES = UserConstants::ROLES;
+
     // Traits / shared state
     use UserFilters, UserEditState;
 
-    // Properties / backing stores
-    public array $users = [];
 
     // Sorting
     public string $sortField = '';
@@ -38,13 +44,7 @@ class UsersIndex extends Component
     }
 
     // Lifecycle
-    /**
-     * Initialize the component by loading the base list of users from the repository.
-     */
-    public function mount()
-    {
-        $this->users = UserRepository::all();
-    }
+    // No mount preload required when querying directly from the DB
 
     // Pagination & filter reactions
     /**
@@ -112,6 +112,12 @@ class UsersIndex extends Component
         $this->search = '';
         $this->role = '';
         $this->page = 1;
+    }
+
+    protected function splitName(string $full): array
+    {
+        $parts = preg_split('/\s+/', trim($full), 2);
+        return [$parts[0] ?? '', $parts[1] ?? ''];
     }
 
     // Edit/Create workflows
@@ -193,35 +199,77 @@ class UsersIndex extends Component
      */
     public function confirmSave(): void
     {
-        $isEditing = (bool) $this->editId;
+        $this->validate();
 
-        if ($isEditing) {
-            $this->validateJustification();
-            $editedUsers = session('edited_users', []);
-            $editedUsers[$this->editId] = [
-                'name'       => $this->editName,
-                'email'      => $this->editEmail,
-                'roles'      => array_values(array_unique($this->editRoles)),
-                'department' => $this->editDepartment,
-            ];
-            session(['edited_users' => $editedUsers]);
+        if ($this->editId) {
+            $user = User::findOrFail($this->editId);
+            [$first, $last] = $this->splitName($this->editName);
+            $user->fill([
+                'first_name' => $first,
+                'last_name' => $last,
+                'email' => $this->editEmail,
+                'department_id' => $this->resolveDepartmentIdFromName($this->editDepartment),
+            ])->save();
+
+            // Ensure roles exist and sync by name
+            $existing = Role::whereIn('name', $this->editRoles)->pluck('id', 'name');
+            $missing  = array_values(array_diff($this->editRoles, $existing->keys()->all()));
+            foreach ($missing as $rname) {
+                $created = Role::create([
+                    'name' => $rname,
+                    'code' => \Illuminate\Support\Str::slug($rname),
+                ]);
+                $existing[$rname] = $created->id;
+            }
+            $user->roles()->sync(array_values($existing->all()));
+
+            // log audit later with justification
+            $this->toast('User updated');
         } else {
-            $newUsers   = session('new_users', []);
-            $newUsers[] = [
-                'id'         => $this->generateUserId(),
-                'name'       => $this->editName,
-                'email'      => $this->editEmail,
-                'roles'      => array_values(array_unique($this->editRoles)),
-                'department' => $this->editDepartment,
-            ];
-            session(['new_users' => $newUsers]);
+            [$first, $last] = $this->splitName($this->editName);
+            $user = User::create([
+                'first_name' => $first,
+                'last_name' => $last,
+                'email' => $this->editEmail,
+                'department_id' => $this->resolveDepartmentIdFromName($this->editDepartment),
+                'auth_type' => 'saml',
+                'password' => bcrypt(str()->random(16)), // temp
+            ]);
+            // Ensure roles exist and sync by name
+            $existing = Role::whereIn('name', $this->editRoles)->pluck('id', 'name');
+            $missing  = array_values(array_diff($this->editRoles, $existing->keys()->all()));
+            foreach ($missing as $rname) {
+                $created = Role::create([
+                    'name' => $rname,
+                    'code' => \Illuminate\Support\Str::slug($rname),
+                ]);
+                $existing[$rname] = $created->id;
+            }
+            $user->roles()->sync(array_values($existing->all()));
+            $this->toast('User created');
+        }
+
+        // Assign department via DepartmentService if required and provided
+        try {
+            if ($this->roleRequiresDepartment($this->editRoles)) {
+                $deptName = trim((string)$this->editDepartment);
+                if ($deptName !== '' && $deptName !== '—') {
+                    $dept = Department::firstOrCreate(
+                        ['name' => $deptName],
+                        ['code' => \Illuminate\Support\Str::slug($deptName)]
+                    );
+                    app(DepartmentService::class)->updateUserDepartment($dept, $user);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Do not fallback to direct Eloquent writes
         }
 
         $this->dispatch('bs:close', id: 'userJustify');
         $this->dispatch('bs:close', id: 'editUserModal');
-        $this->dispatch('toast', message: $isEditing ? 'User updated' : 'User created');
-        $this->reset(['editId', 'justification', 'actionType']);
+        $this->reset(['editId', 'justification', 'editRoles', 'editDepartment']);
     }
+
 
     // Delete workflows
     /**
@@ -255,14 +303,30 @@ class UsersIndex extends Component
      */
     public function confirmDelete(): void
     {
+        $this->validateOnly('justification');
+
         if ($this->editId) {
-            $this->validateJustification();
-            session()->push('soft_deleted_user_ids', $this->editId);
+            try {
+                $user = app(UserService::class)->findUserById((int)$this->editId);
+                if ($user) {
+                    // Delete via service; if no admin available, surface an error
+                    $admin = Auth::user();
+                    if ($admin && is_object($admin)) {
+                        app(UserService::class)->deleteUser($user, $admin);
+                    } else {
+                        $this->addError('justification', 'Unable to delete user without an admin context.');
+                        return;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->addError('justification', 'Unable to delete user.');
+                return;
+            }
         }
 
         $this->dispatch('bs:close', id: 'userJustify');
-        $this->dispatch('toast', message: 'User deleted');
-        $this->reset(['editId', 'justification', 'actionType']);
+        $this->toast('User deleted');
+        $this->reset(['editId', 'justification']);
     }
 
     // Private/Protected Helper Methods
@@ -275,29 +339,58 @@ class UsersIndex extends Component
      */
     protected function allUsers(): Collection
     {
-        // Base + newly created (session) users
-        $combined = array_merge($this->users, session('new_users', []));
+        // Fetch users via service to avoid direct model queries from the view
+        $svc = app(UserService::class);
+        $users = collect();
 
-        // Exclude soft-deleted IDs
-        $deletedIds   = array_map('intval', session('soft_deleted_user_ids', []));
-        $deletedIndex = array_flip(array_unique($deletedIds));
-        $combined = array_values(array_filter($combined, fn($user) => !isset($deletedIndex[(int) ($user['id'] ?? 0)])));
-
-        // Apply edits and normalize in a single pass
-        $edited = session('edited_users', []);
-        $combined = array_map(function (array $user) use ($edited) {
-            if (isset($user['id']) && isset($edited[$user['id']])) {
-                $user = array_merge($user, $edited[$user['id']]);
+        if (!empty($this->role)) {
+            try {
+                $users = $svc->getUsersWithRole($this->role);
+            } catch (\Throwable $e) {
+                $users = collect();
             }
+        } else {
+            foreach (UserConstants::ROLES as $code) {
+                try {
+                    $users = $users->merge($svc->getUsersWithRole($code));
+                } catch (\Throwable $e) {
+                    // ignore service errors for individual role fetches
+                }
+            }
+            // De-duplicate by primary key (id or user_id depending on schema)
+            $users = $users->unique(function ($u) {
+                return $u->id ?? $u->user_id ?? spl_object_id($u);
+            })->values();
+        }
 
-            // Ensure roles[] is present and unique (support legacy single 'role')
-            $roles = $user['roles'] ?? ((isset($user['role']) && $user['role'] !== '') ? [$user['role']] : []);
-            $user['roles'] = array_values(array_unique($roles));
+        // Apply search filter in-memory to avoid coupling to schema in service
+        $s = mb_strtolower(trim((string)($this->search ?? '')));
 
-            return $user;
-        }, $combined);
+        return collect($users)
+            ->filter(function ($u) use ($s) {
+                $name = trim(trim((string)($u->first_name ?? '')) . ' ' . trim((string)($u->last_name ?? '')));
+                $hay = mb_strtolower($name . ' ' . (string)($u->email ?? ''));
+                return $s === '' || str_contains($hay, $s);
+            })
+            ->map(fn($u) => $this->mapUserToRow($u))
+            ->values();
+    }
 
-        return collect($combined);
+    /**
+     * Normalize a User model into the row shape used by the UI.
+     * @param object $u
+     * @return array{id:int,name:string,email:string,department:string,roles:array}
+     */
+    protected function mapUserToRow($u): array
+    {
+        $name = trim(trim((string)($u->first_name ?? '')) . ' ' . trim((string)($u->last_name ?? '')));
+        return [
+            'id' => (int)($u->id ?? $u->user_id),
+            'name' => $name,
+            'email' => (string)($u->email ?? ''),
+            'department' => (string)optional($u->department)->name ?? '—',
+            'roles' => method_exists($u, 'roles') ? $u->roles->pluck('name')->all() : [],
+        ];
     }
 
     /**
@@ -305,13 +398,14 @@ class UsersIndex extends Component
      */
     protected function rules(): array
     {
-        $roleWithoutDept = $this->roleExemptsDepartment($this->editRoles);
+        // Department should only be provided when the user has the "Venue Manager" role
+        $deptRequired = $this->roleRequiresDepartment($this->editRoles);
         return [
             'editName'       => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
             'editEmail'      => 'required|email|regex:/@upr[a-z]*\.edu$/i',
             'editRoles'      => 'array|min:1',
-            'editRoles.*'    => 'string',
-            'editDepartment' => $roleWithoutDept ? 'nullable' : 'required|string',
+            'editRoles.*'    => 'string|in:' . implode(',', self::ROLES), // while DB seeding lands later
+            'editDepartment' => $deptRequired ? 'required|string' : 'nullable|string',
             'justification'  => 'nullable|string|max:200',
         ];
     }
@@ -324,23 +418,7 @@ class UsersIndex extends Component
         $this->validateOnly('justification');
     }
 
-    /**
-     * Generates a unique user ID by taking the maximum ID of all users (both existing and new),
-     * and incrementing it by 1.
-     */
-    protected function generateUserId(): int
-    {
-        $baseIds = array_column($this->users, 'id');
-        $new     = session('new_users', []);
-        $newIds  = array_column($new, 'id');
-
-        // Also avoid reusing IDs that were soft-deleted this session.
-        $soft = array_map('intval', session('soft_deleted_user_ids', []));
-        $allIds = array_merge($baseIds, $newIds, $soft);
-        $maxId  = $allIds ? max($allIds) : 0;
-
-        return $maxId + 1;
-    }
+    // Removed legacy in-memory ID generator; DB auto-increment IDs are used
 
     /**
      * Returns a filtered collection of users based on the current search query and selected role.
@@ -399,6 +477,48 @@ class UsersIndex extends Component
         return count(array_intersect($roles, UserConstants::ROLES_WITHOUT_DEPARTMENT)) > 0;
     }
 
+    /**
+     * Determine if any of the given roles explicitly require a department.
+     * Only the "Venue Manager" role requires a department.
+     *
+     * @param array<int,string> $roles
+     */
+    protected function roleRequiresDepartment(array $roles): bool
+    {
+        // Only the 'venue-manager' role requires a department
+        return in_array('venue-manager', $roles, true);
+    }
+
+    /**
+     * Fire a UI toast event for the front-end to display a message.
+     */
+    protected function toast(string $message): void
+    {
+        $this->dispatch('ui:toast', message: $message);
+    }
+
+    /**
+     * Resolve department id from the selected department name.
+     * Treat empty or placeholder values (e.g., '—') as null. If roles exempt department, also return null.
+     */
+    protected function resolveDepartmentIdFromName(?string $name): ?int
+    {
+        // Only set department when the role requires it (Venue Manager)
+        if (!$this->roleRequiresDepartment($this->editRoles)) {
+            return null;
+        }
+        $name = trim((string)$name);
+        if ($name === '' || $name === '—') {
+            return null;
+        }
+        // Ensure the department exists; create it on-the-fly if missing so it appears in the table
+        $dept = Department::firstOrCreate(
+            ['name' => $name],
+            ['code' => \Illuminate\Support\Str::slug($name)]
+        );
+        return (int) $dept->id;
+    }
+
 
     // Render
     /**
@@ -409,11 +529,19 @@ class UsersIndex extends Component
     public function render()
     {
         $paginator = $this->paginated();
-        $visibleIds = $paginator->pluck('id')->all();
+
+        // Load departments via service
+        try {
+            $departments = app(DepartmentService::class)->getAllDepartments()->sortBy('name')->values();
+        } catch (\Throwable $e) {
+            $departments = collect();
+        }
 
         return view('livewire.admin.users-index', [
-            'rows' => $paginator,
-            'visibleIds' => $visibleIds,
+            'rows'        => $paginator,
+            'visibleIds'  => $paginator->pluck('id')->all(),
+            'departments' => $departments,
+            'allRoles'    => self::ROLES, // until DB roles are ready
         ]);
     }
 }

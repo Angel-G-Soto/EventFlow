@@ -14,10 +14,15 @@
       <div class="row g-2">
         <div class="col-12 col-md-4">
           <label class="form-label" for="dept_search">Search</label>
-          <div class="input-group">
-            <input id="dept_search" type="text" class="form-control" placeholder="Search by name or director"
-              wire:model.defer="search">
-          </div>
+          <form wire:submit.prevent="applySearch">
+            <div class="input-group">
+              <input id="dept_search" type="text" class="form-control" placeholder="Search by name or director"
+                wire:model.defer="search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label" for="dept_code">Department Code</label>
@@ -123,11 +128,13 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-6"><label class="form-label" for="dept_name">Name</label><input id="dept_name"
-                class="form-control" wire:model.live="dName" required></div>
+                class="form-control" wire:model.live="dName" required placeholder="Department name (e.g., Engineering)">
+            </div>
             <div class="col-md-3"><label class="form-label" for="dept_code_edit">Code</label><input id="dept_code_edit"
-                class="form-control" wire:model.live="dCode" required></div>
+                class="form-control" wire:model.live="dCode" required placeholder="ENG"></div>
             <div class="col-md-3"><label class="form-label" for="dept_director">Director</label><input
-                id="dept_director" class="form-control" wire:model.live="dDirector"></div>
+                id="dept_director" class="form-control" wire:model.live="dDirector"
+                placeholder="Director name or email"></div>
 
           </div>
         </div>

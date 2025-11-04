@@ -19,6 +19,9 @@
             <div class="input-group">
               <input id="users_search" type="text" class="form-control" placeholder="Search by name or email…"
                 wire:model.defer="search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search">
+                <i class="bi bi-search"></i>
+              </button>
             </div>
           </form>
         </div>
@@ -27,8 +30,8 @@
           <label class="form-label" for="users_role">Role</label>
           <select id="users_role" class="form-select" wire:model.live="role">
             <option value="">All roles</option>
-            @foreach(\App\Support\UserConstants::ROLES as $rname)
-            <option value="{{ $rname }}">{{ $rname }}</option>
+            @foreach(($allRoles ?? []) as $r)
+            <option value="{{ $r }}">{{ $r }}</option>
             @endforeach
           </select>
         </div>
@@ -161,7 +164,7 @@
             <div class="col-12 col-md-6">
               <label class="form-label">Roles</label>
               <div class="border rounded p-2" style="max-height:120px;overflow-y:auto;">
-                @foreach(\App\Support\UserConstants::ROLES as $rname)
+                @foreach(($allRoles ?? []) as $rname)
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox"
                     id="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}" value="{{ $rname }}"
@@ -177,23 +180,22 @@
             <div class="col-12 col-md-6">
               <label class="form-label" for="edit_department">Department</label>
               @php
-              $hasRoleWithoutDepartment = !empty(array_intersect($editRoles ?? [],
-              \App\Support\UserConstants::ROLES_WITHOUT_DEPARTMENT));
+              $isVenueManager = in_array('venue-manager', $editRoles ?? []);
               @endphp
-              @if($hasRoleWithoutDepartment)
-              <input type="text" class="form-control" value="—" disabled>
-              <small class="text-muted">Only Venue Managers have departments</small>
-              @else
+              @if($isVenueManager)
               <select id="edit_department" class="form-select @error('editDepartment') is-invalid @enderror"
                 wire:model.live="editDepartment">
                 <option value="">Select Department</option>
-                @foreach(\App\Support\UserConstants::DEPARTMENTS as $dept)
-                <option value="{{ $dept }}">{{ $dept }}</option>
+                @foreach(($departments ?? []) as $dept)
+                <option value="{{ $dept->name }}">{{ $dept->name }}</option>
                 @endforeach
               </select>
               @error('editDepartment')
               <div class="invalid-feedback">{{ $message }}</div>
               @enderror
+              @else
+              <input type="text" class="form-control" value="—" disabled>
+              <small class="text-muted">Only Venue Managers have departments</small>
               @endif
             </div>
           </div>
@@ -225,4 +227,17 @@
       </div>
     </div>
   </div>
+  <script>
+    document.addEventListener('ui:toast', (e) => {
+      try {
+        const el = document.getElementById('userToast');
+        const msg = document.getElementById('userToastMsg');
+        if (!el || !msg) return;
+        msg.textContent = e.detail?.message ?? 'Done';
+        // Bootstrap 5 toast
+        const toast = bootstrap.Toast.getOrCreateInstance(el, { delay: 3000 });
+        toast.show();
+      } catch (_) { /* noop */ }
+    });
+  </script>
 </div>

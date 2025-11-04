@@ -8,7 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\DepartmentFilters;
 use App\Livewire\Traits\DepartmentEditState;
-use App\Repositories\DepartmentRepository;
+use App\Services\DepartmentService;
 
 #[Layout('layouts.app')]
 class DepartmentsIndex extends Component
@@ -17,8 +17,7 @@ class DepartmentsIndex extends Component
   use DepartmentFilters, DepartmentEditState;
 
   // Properties / backing stores
-  /** @var array<int,array{name:string,code:string,director:string,id:int}> */
-  public array $departments = [];
+  // Legacy in-memory store removed; data now comes directly from DB
 
   // Sorting
   public string $sortField = '';
@@ -50,11 +49,11 @@ class DepartmentsIndex extends Component
 
   // Lifecycle
   /**
-   * Load departments from CSV on mount.
+   * Initialize component; no in-memory preload when using DB.
    */
   public function mount(): void
   {
-    $this->departments = DepartmentRepository::all();
+    // No preload required; queries read directly from DB
   }
 
   // Pagination & filter reactions
@@ -158,6 +157,11 @@ class DepartmentsIndex extends Component
    */
   public function save(): void
   {
+    // Basic field validation (name/code required)
+    $this->validate([
+      'dName' => ['required', 'string', 'max:150'],
+      'dCode' => ['required', 'string', 'max:50'],
+    ]);
     $this->actionType = 'save';
     $this->dispatch('bs:open', id: 'deptJustify');
   }
@@ -171,11 +175,25 @@ class DepartmentsIndex extends Component
   public function confirmSave(): void
   {
     $this->validateJustification();
-    $isCreating = !$this->editId;
+
+    // Use DepartmentService to upsert the department
+    try {
+      app(DepartmentService::class)->updateOrCreateDepartment([
+        [
+          'name' => (string)$this->dName,
+          'code' => (string)$this->dCode,
+        ]
+      ]);
+    } catch (\Throwable $e) {
+      // Do not fallback to direct Eloquent writes; surface an error instead
+      $this->addError('justification', 'Unable to save department.');
+      return;
+    }
+
     $this->dispatch('bs:close', id: 'deptJustify');
     $this->dispatch('bs:close', id: 'deptModal');
     $this->dispatch('toast', message: 'Department saved');
-    $this->reset(['justification', 'actionType']);
+    $this->reset(['justification', 'actionType', 'editId', 'dName', 'dCode', 'dDirector']);
   }
 
   // Delete workflows
@@ -212,7 +230,13 @@ class DepartmentsIndex extends Component
   {
     if ($this->editId) {
       $this->validateJustification();
-      session()->push('soft_deleted_department_ids', $this->editId);
+      try {
+        app(DepartmentService::class)->deleteDepartment((int)$this->editId);
+      } catch (\Throwable $e) {
+        // Do not fallback to direct Eloquent deletes; surface an error instead
+        $this->addError('justification', 'Unable to delete department.');
+        return;
+      }
     }
     $this->dispatch('bs:close', id: 'deptJustify');
     $this->dispatch('toast', message: 'Department deleted');
@@ -245,18 +269,40 @@ class DepartmentsIndex extends Component
   // Data aggregation / sources
   protected function allDepartments(): Collection
   {
-    $deletedIndex = array_flip(array_unique(
-      array_map('intval', session('soft_deleted_department_ids', []))
-    ));
+    // Load via service and normalize shape expected by the view
+    $rows = app(DepartmentService::class)
+      ->getAllDepartments()
+      ->map(function ($d) {
+        // Compute director from eager-loaded employees/roles, preferring explicit Department Director
+        $directorUser = null;
+        foreach (($d->employees ?? []) as $emp) {
+          $names = collect($emp->roles)->pluck('name')->filter()->map(fn($r) => mb_strtolower((string)$r));
+          $codes = collect($emp->roles)->pluck('code')->filter()->map(fn($c) => mb_strtolower((string)$c));
+          $hasExact = $names->contains('department director') || $codes->contains('department-director');
+          $hasGeneric = $names->contains(function ($n) {
+            return str_contains($n, 'director');
+          });
+          if ($hasExact || $hasGeneric) {
+            $directorUser = $emp;
+            break;
+          }
+        }
+        $director = '';
+        if ($directorUser) {
+          $first = (string)($directorUser->first_name ?? '');
+          $last  = (string)($directorUser->last_name ?? '');
+          $full  = trim(trim($first . ' ' . $last));
+          $director = $full !== '' ? $full : (string)($directorUser->email ?? '');
+        }
+        return [
+          'id' => (int)$d->id,
+          'name' => (string)$d->name,
+          'code' => (string)($d->code ?? ''),
+          'director' => $director,
+        ];
+      });
 
-    $combined = array_values(array_filter(
-      $this->departments,
-      function (array $departments) use ($deletedIndex) {
-        return !isset($deletedIndex[(int) $departments['id']]);
-      }
-    ));
-
-    return collect($combined);
+    return collect($rows);
   }
 
   /**
@@ -265,15 +311,19 @@ class DepartmentsIndex extends Component
   protected function filtered(): Collection
   {
     $s = mb_strtolower(trim((string) ($this->search ?? '')));
-    $data = $this->allDepartments()->filter(function ($departments) use ($s) {
+    $activeCode = strtoupper(trim((string)($this->code ?? '')));
+    $data = $this->allDepartments()->filter(function ($departments) use ($s, $activeCode) {
       $name = mb_strtolower(trim((string)($departments['name'] ?? '')));
       $director = mb_strtolower(trim((string)($departments['director'] ?? '')));
+      $code = strtoupper(trim((string)($departments['code'] ?? '')));
 
       $hit = $s === '' ||
         str_contains($name, $s) ||
         str_contains($director, $s);
 
-      return $hit;
+      $codeOk = ($activeCode === '') || ($code === $activeCode);
+
+      return $hit && $codeOk;
     })->values();
 
     // Sort only when activated by user click

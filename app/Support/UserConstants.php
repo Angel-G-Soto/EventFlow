@@ -5,12 +5,12 @@ namespace App\Support;
 class UserConstants
 {
     public const ROLES = [
-        'Student Org Rep',
-        'Student Org Advisor',
+        'Advisor',
         'Venue Manager',
-        'DSCA Staff',
-        'Dean of Administration',
-        'Admin',
+        'System Admin',
+        'Department Director',
+        'Deanship of Administration Approver',
+        'Event Approver',
     ];
 
     public const DEPARTMENTS = [
@@ -22,10 +22,11 @@ class UserConstants
     ];
 
     public const ROLES_WITHOUT_DEPARTMENT = [
-        'Student Org Rep',
-        'Student Org Advisor',
-        'DSCA Staff',
-        'Dean of Administration',
-        'Admin',
+        // All roles except 'venue-manager' do not require department
+        'Advisor',
+        'System Admin',
+        'Department Director',
+        'Deanship of Administration Approver',
+        'Event Approver',
     ];
 }

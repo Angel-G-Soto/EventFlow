@@ -53,6 +53,27 @@ class AuditTrailIndex extends Component
     $this->resetPage();
   }
 
+  // Validation rules
+  /**
+   * Validation rules for filter and view state properties.
+   * Keeping this present aligns with other admin views and enables
+   * centralized validation when needed.
+   *
+   * @return array<string, string|array<int,string>>
+   */
+  protected function rules(): array
+  {
+    return [
+      'userId'    => ['nullable', 'integer', 'min:1'],
+      'action'    => ['nullable', 'string', 'max:100'],
+      'from'      => ['nullable', 'date_format:Y-m-d'],
+      'to'        => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+      'adminOnly' => ['boolean'],
+      'perPage'   => ['integer', 'in:10,25,50,100'],
+      'detailsId' => ['nullable', 'integer', 'min:1'],
+    ];
+  }
+
   // Details modal
   /**
    * Populate and show the details modal for the given audit record.

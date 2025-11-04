@@ -3,15 +3,22 @@
     <h1 class="h4 mb-0">Venues</h1>
 
     <div class="d-none d-md-flex gap-2">
-      <button class="btn btn-primary btn-sm" wire:click="openCreate" aria-label="Add venue">
-        <i class="bi bi-house-add me-1"></i> Add Venue
-      </button>
       <button class="btn btn-secondary btn-sm" wire:click="openCsvModal" type="button"
         aria-label="Open CSV upload modal">
         <i class="bi bi-upload me-1"></i> Add Venues by CSV
       </button>
     </div>
   </div>
+
+  {{-- Import status banner (polls until finished) --}}
+  @if($importKey)
+  <div class="alert alert-info d-flex align-items-center gap-2" role="status" wire:poll.2s="checkImportStatus">
+    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+    <div>
+      Import in progress: <strong>{{ $importStatus ?? 'queued' }}</strong>
+    </div>
+  </div>
+  @endif
 
   {{-- Filters --}}
   <div class="card shadow-sm mb-3">
@@ -23,6 +30,9 @@
             <div class="input-group">
               <input id="venue_search" type="text" class="form-control"
                 placeholder="Search by name, code, or manager..." wire:model.defer="search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search">
+                <i class="bi bi-search"></i>
+              </button>
             </div>
           </form>
         </div>
@@ -39,11 +49,13 @@
 
         <div class="col-6 col-md-2">
           <label class="form-label" for="venue_cap_min">Cap. Min</label>
-          <input id="venue_cap_min" type="number" class="form-control" wire:model.live="capMin" min="0">
+          <input id="venue_cap_min" type="number" class="form-control" wire:model.live="capMin" min="0"
+            placeholder="Min capacity">
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label" for="venue_cap_max">Cap. Max</label>
-          <input id="venue_cap_max" type="number" class="form-control" wire:model.live="capMax" min="0">
+          <input id="venue_cap_max" type="number" class="form-control" wire:model.live="capMax" min="0"
+            placeholder="Max capacity">
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
@@ -162,7 +174,7 @@
   {{-- CSV Upload Modal --}}
   <div class="modal fade" id="csvModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
     <div class="modal-dialog modal-dialog-centered">
-      <form class="modal-content" wire:submit.prevent="csvUploadDisabled">
+      <form class="modal-content" wire:submit.prevent="uploadCsv">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Add Venues by CSV</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -170,19 +182,67 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label" for="csv_file">CSV File</label>
-            <input id="csv_file" type="file" class="form-control" accept=".csv" disabled aria-disabled="true"
-              title="CSV upload is disabled">
-            <small class="text-muted">CSV upload is currently disabled. CSV must include columns: name, room, capacity,
-              department,
-              features</small>
+            <input id="csv_file" type="file" class="form-control" accept=".csv,text/csv" wire:model="csvFile">
+            <small class="text-muted d-block mt-1">Required headers: name, room_code, department_name, capacity,
+              final_exams_capacity. Optional flags: allow_teaching_with_multimedia, allow_teaching_with_computers,
+              allow_teaching, allow_teaching_online.</small>
+            <div class="mt-2">
+              <!-- True percent-based upload progress -->
+              <div id="csvProgressContainer" class="progress d-none" aria-hidden="true">
+                <div id="csvProgressBar" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0"
+                  aria-valuemin="0" aria-valuemax="100">0%</div>
+              </div>
+              <!-- Server-side processing indicator (after upload submit) -->
+              <div class="d-flex align-items-center gap-2 mt-2" wire:loading.delay wire:target="uploadCsv">
+                <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                <small class="text-muted">Processing import…</small>
+              </div>
+            </div>
+            <script>
+              document.addEventListener('livewire:load', function () {
+                const input = document.getElementById('csv_file');
+                const container = document.getElementById('csvProgressContainer');
+                const bar = document.getElementById('csvProgressBar');
+                if (!input || !container || !bar) return;
+                if (input.dataset.progressBound === '1') return; // guard against duplicate listeners
+                input.dataset.progressBound = '1';
+
+                const show = () => { container.classList.remove('d-none'); container.removeAttribute('aria-hidden'); };
+                const hide = () => { container.classList.add('d-none'); container.setAttribute('aria-hidden', 'true'); };
+                const setProgress = (p) => {
+                  const pct = Math.max(0, Math.min(100, parseInt(p || 0, 10)));
+                  bar.style.width = pct + '%';
+                  bar.setAttribute('aria-valuenow', pct);
+                  bar.textContent = pct + '%';
+                };
+
+                input.addEventListener('livewire-upload-start', () => {
+                  setProgress(0);
+                  show();
+                });
+                input.addEventListener('livewire-upload-progress', (e) => {
+                  setProgress(e.detail && e.detail.progress);
+                });
+                input.addEventListener('livewire-upload-error', () => {
+                  hide();
+                });
+                input.addEventListener('livewire-upload-finish', () => {
+                  setProgress(100);
+                  // Briefly show 100% then hide
+                  setTimeout(hide, 700);
+                });
+              });
+            </script>
           </div>
           @error('csvFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
             aria-label="Cancel and close">Cancel</button>
-          <button class="btn btn-primary" type="submit" aria-label="Upload CSV"><i
-              class="bi bi-upload me-1"></i>Upload</button>
+          <button class="btn btn-primary" type="submit" aria-label="Upload CSV" @disabled(!$csvFile)
+            wire:loading.attr="disabled" wire:target="csvFile,uploadCsv">
+            <i class="bi bi-upload me-1"></i>Upload
+          </button>
         </div>
       </form>
     </div>
@@ -198,7 +258,8 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label" for="v_name">Name</label>
-              <input id="v_name" class="form-control" required wire:model.live="vName">
+              <input id="v_name" class="form-control" required wire:model.live="vName"
+                placeholder="Venue name (e.g., Main Auditorium)">
             </div>
             <div class="col-md-3">
               <label class="form-label" for="v_department">Department</label>
@@ -211,11 +272,13 @@
             </div>
             <div class="col-md-2">
               <label class="form-label" for="v_room">Venue Code</label>
-              <input id="v_room" class="form-control" required wire:model.live="vRoom">
+              <input id="v_room" class="form-control" required wire:model.live="vRoom"
+                placeholder="Code (e.g., EN-101)">
             </div>
             <div class="col-md-2">
               <label class="form-label" for="v_capacity">Capacity</label>
-              <input id="v_capacity" type="number" min="0" class="form-control" required wire:model.live="vCapacity">
+              <input id="v_capacity" type="number" min="0" class="form-control" required wire:model.live="vCapacity"
+                placeholder="0+">
             </div>
             <div class="col-md-3">
               <label class="form-label" for="v_manager">Manager</label>

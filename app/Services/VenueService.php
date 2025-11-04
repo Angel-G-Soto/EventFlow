@@ -511,8 +511,8 @@ class VenueService {
         //try {
 
         // Validate admin role
-        if (!$admin->getRoleNames()->contains('system-administrator')) {
-            throw new InvalidArgumentException('The manager and the director must be system-administrator.');
+        if (!$admin->getRoleNames()->contains('system-admin')) {
+            throw new InvalidArgumentException('The manager and the director must be system-admin.');
         }
 
         // Check for invalid keys
@@ -661,8 +661,8 @@ class VenueService {
     {
         try {
             // Validate admin role
-            if (!$admin->getRoleNames()->contains('system-administrator')) {
-                throw new InvalidArgumentException('The manager and the director must be system-administrator.');
+            if (!$admin->getRoleNames()->contains('system-admin')) {
+                throw new InvalidArgumentException('The manager and the director must be system-admin.');
             }
 
             foreach ($venues as $venue) {
