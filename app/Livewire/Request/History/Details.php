@@ -19,6 +19,7 @@
 
 namespace App\Livewire\Request\History;
 
+use App\Services\EventService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -66,6 +67,7 @@ class Details extends Component
     public function approve()
     {
         // ... do your action
+        app(EventService::class)->approve($this->event);
         $this->redirectRoute('approver.history.index');
     }
 /**
