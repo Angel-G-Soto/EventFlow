@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Director;
 
+use App\Services\UserService;
 use App\Services\VenueService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -13,10 +14,10 @@ use Illuminate\Support\Collection;
 class VenuesIndex extends Component
 {
   // Mock data until DB arrives
-  protected function allVenues(): Collection
-  {
-    return Auth::user()->department->venues;
-  }
+//  protected function allVenues(): Collection
+//  {
+//    return Auth::user()->department->venues;
+//  }
 
   public string $search = '';
   public string $department = '';
@@ -69,7 +70,7 @@ class VenuesIndex extends Component
   public function openAssign(int $id): void
   {
     $this->assignId = $id;
-    $this->assignManager = '';
+    //this->assignManager = '';
     $this->dispatch('bs:open', id: 'assignManager');
   }
 
@@ -79,24 +80,25 @@ class VenuesIndex extends Component
       'assignManager' => 'required|email', // later: user selector of role "Venue Manager"
     ]);
 
-    app(VenueService::class)->assignManager($this->editId, $this->assignManager, Auth::user());
+    $user = app(UserService::class)->findOrCreateUser($this->assignManager);
+    app(VenueService::class)->assignManager(app(VenueService::class)->findByID($this->assignId), $user, Auth::user());
 
     $this->dispatch('bs:close', id: 'assignManager');
     $this->dispatch('toast', message: 'Venue manager assigned');
     $this->reset(['assignId', 'assignManager']);
   }
-  protected function filtered(): Collection
-  {
-    $s = mb_strtolower(trim($this->search));
-    return $this->allVenues()->filter(function ($v) use ($s) {
-      $hit = $s === '' ||
-        str_contains(mb_strtolower($v['name']), $s) ||
-        str_contains(mb_strtolower($v['room']), $s) ||
-        str_contains(mb_strtolower($v['department']), $s);
-      $deptOk = $this->department === '' || $v['department'] === $this->department;
-      return $hit && $deptOk;
-    })->values();
-  }
+//  protected function filtered(): Collection
+//  {
+//    $s = mb_strtolower(trim($this->search));
+//    return $this->allVenues()->filter(function ($v) use ($s) {
+//      $hit = $s === '' ||
+//        str_contains(mb_strtolower($v['name']), $s) ||
+//        str_contains(mb_strtolower($v['room']), $s) ||
+//        str_contains(mb_strtolower($v['department']), $s);
+//      $deptOk = $this->department === '' || $v['department'] === $this->department;
+//      return $hit && $deptOk;
+//    })->values();
+//  }
 
   protected function paginated(): LengthAwarePaginator
   {

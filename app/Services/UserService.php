@@ -29,12 +29,27 @@ class UserService
      * @param string $name The full name of the user from the SSO provider.
      * @return User The found or newly created Eloquent User object.
      */
-    public function findOrCreateUser(string $email, string $name): User
+    public function findOrCreateUser(string $email, ?string $name = null): User
     {
-        return User::firstOrCreate(
-            ['email' => $email],
-            ['first_name' => $name],
+        $user = User::firstOrCreate(
+            ['email' => $email]
+//            ['first_name' => $name],
+            ,
+            [
+                'first_name' => 'first_name',
+                'last_name' => 'last_name',
+                'email' => $email,
+                'password' => bcrypt('password'),
+                'auth_type' => 'saml2',
+            ]
         );
+
+        $user->roles()->attach(
+            Role::where('name', 'venue-manager')->first()->id
+        );
+
+
+        return $user;
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 namespace App\Services;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Event;
 use App\Models\UseRequirement;
@@ -248,13 +249,24 @@ class VenueService {
 
             // CALL EVENT SERVICE METHOD // MOCK IT // reroutePendingVenueApprovals($venue->venue_id, $oldManagerId, $newManager->user_id);
 
-            // Assign to the manager the venue
-            $venue->manager()->associate($manager);
+            // if prior venue manager has no more venues
+            $old_manager = $venue->manager;
+            if (count($old_manager->manages) == 1)
+            {
+                // remove venue manager ranking
+                $role = Role::where('name', 'venue-manager')->first();
+                $old_manager->roles()->detach($role);
+            }
 
-            $this->auditService->logAction($director->id,
-                '',
-                '',
-                'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'); // MOCK FROM SERVICE
+            // Assign to the manager the venue
+//            $venue->manager()->associate($manager);
+            $venue->manager_id = $manager->id;
+            $venue->save();
+
+//            $this->auditService->logAction($director->id,
+//                '',
+//                '',
+//                'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'); // MOCK FROM SERVICE
 
         }
         catch (InvalidArgumentException $exception) {throw $exception;}
