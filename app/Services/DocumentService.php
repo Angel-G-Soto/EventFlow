@@ -35,6 +35,7 @@ class DocumentService
     {
         // 1) Save to quarantine (uploads_temp)
         $tmpRelativePath = $file->store('', ['disk' => $this->tempDisk()]);
+
         if (!$tmpRelativePath) {
             throw new StorageException(
                 message: 'Failed to write temporary file.',
@@ -52,7 +53,7 @@ class DocumentService
         ]);
 
         // 3) Queue virus scan & move to final storage
-        ProcessFileUpload::dispatch(Document::whereIn('id', [$doc->id])->get());
+        //ProcessFileUpload::dispatch(Document::whereIn('id', [$doc->id])->get());
 
         return $doc;
     }

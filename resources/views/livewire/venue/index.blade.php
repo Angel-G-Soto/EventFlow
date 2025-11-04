@@ -55,7 +55,7 @@
 {{--        </div>--}}
 
 {{--    </div>--}}
-
+<
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
