@@ -59,6 +59,7 @@ class Index extends Component
         'categories' => [],
         'venues'     => [],
         'orgs'       => [],
+        'roles'      => [],
     ];
 
     #[On('filters-changed')]
@@ -71,11 +72,12 @@ class Index extends Component
  * @param array $orgs
  * @return void
  */
-    public function onFiltersChanged(array $categories = [], array $venues = [], array $orgs = []): void
+    public function onFiltersChanged(array $categories = [], array $venues = [], array $orgs = [], array $roles = []): void
     {
         $this->filters['categories'] = array_map('intval', $categories);
         $this->filters['venues']     = array_map('intval', $venues);
-        $this->filters['orgs']       = array_map('intval', $orgs);
+        $this->filters['orgs']       = $orgs;
+        $this->filters['roles']      = $roles;
 
         $this->resetPage(); // go back to page 1 after changing filters
     }
@@ -88,7 +90,7 @@ class Index extends Component
     public function render()
     {
          //$q = Event::query()->with(['venue','categories']);
-        $q = app(EventService::class)->genericApproverRequestHistory(Auth::user());
+        $q = app(EventService::class)->genericApproverRequestHistoryV2(Auth::user());
 
          // If your Event has a SINGLE category_id column, use this:
  //        if (!empty($this->filters['categories'])) {

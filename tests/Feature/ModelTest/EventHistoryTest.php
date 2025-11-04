@@ -29,6 +29,7 @@ it('allows mass assignment of fillable fields', function () {
         'approver_id' => $user->id,
         'action' => 'approved',
         'comment' => 'Approved by admin',
+        'status_when_approved' => 'pending - advisor approval',
     ];
 
     $history = EventHistory::create($data);

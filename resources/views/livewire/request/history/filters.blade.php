@@ -19,6 +19,40 @@
 {{--    - Provide focus styles and keyboard operability for dropdowns/multiselects.--}}
 
 <div class="row container-fluid">
+
+    <div class="accordion my-2 w-25" id="eventFilters">
+        {{-- Categories --}}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingCat">
+                <button class="accordion-button collapsed" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#collapseRole"
+                        aria-expanded="false" aria-controls="collapseRole">
+                    Approval Roles <span class="badge text-bg-secondary ms-2">{{ count($selectedRoles) }}</span>
+                </button>
+            </h2>
+            <div id="collapseRole" class="accordion-collapse collapse">
+                <div class="accordion-body" style="max-height:20rem;overflow:auto;">
+                    <div class="d-flex justify-content-end mb-2 gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" wire:click="selectAll('roles')">All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" wire:click="clear('roles')">Clear</button>
+                    </div>
+                    @foreach ($roles as $r)
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="{{ $r['name'] }}"
+                                   value="{{ $r['name'] }}"
+                                   wire:model.defer="selectedRoles"
+                                   wire:click.stop>
+                            <label class="form-check-label" for="{{ $r['name'] }}">{{ $r['name'] }}</label>
+                        </div>
+                    @endforeach
+                    <button type="button" class="btn btn-primary mt-3" wire:click="apply">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="accordion my-2 w-25" id="eventFilters">
         {{-- Categories --}}
         <div class="accordion-item">

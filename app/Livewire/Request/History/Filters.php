@@ -22,6 +22,7 @@ namespace App\Livewire\Request\History;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\Venue;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -51,6 +52,11 @@ class Filters extends Component
  */
     public array $orgs = []; // keep if you need it
 
+/**
+ * @var array
+ */
+    public array $roles = []; // keep if you need it
+
     // Selections (URL syncing optional)
     #[Url(as: 'categories', history: true)]
 /**
@@ -69,6 +75,12 @@ class Filters extends Component
  * @var array
  */
     public array $selectedOrgs = [];
+
+    #[Url(as: 'roles', history: true)]
+/**
+ * @var array
+ */
+    public array $selectedRoles = [];
 /**
  * Initialize filter state and preload option lists.
  * @return void
@@ -86,6 +98,8 @@ class Filters extends Component
             ->get(['organization_name'])
             ->toArray();
         // $this->orgs = Organization::orderBy('name')->get(['id','name'])->toArray();
+
+        $this->roles = Auth::user()->roles()->get(['name'])->toArray();
     }
 /**
  * SelectAll action.
@@ -98,6 +112,7 @@ class Filters extends Component
         if ($which === 'categories') $this->selectedCategories = array_column($this->categories, 'id');
         if ($which === 'venues')     $this->selectedVenues     = array_column($this->venues, 'id');
         if ($which === 'orgs')       $this->selectedOrgs       = array_column($this->orgs, 'organization_name');
+        if ($which === 'roles')       $this->selectedOrgs       = array_column($this->orgs, 'name');
         $this->apply();
     }
 /**
@@ -111,6 +126,7 @@ class Filters extends Component
         if ($which === 'categories') $this->selectedCategories = [];
         if ($which === 'venues')     $this->selectedVenues     = [];
         if ($which === 'orgs')       $this->selectedOrgs       = [];
+        if ($which === 'roles')       $this->selectedRoles       = [];
         $this->apply();
     }
 /**
@@ -125,7 +141,8 @@ class Filters extends Component
             'filters-changed',
             categories: $this->selectedCategories,
             venues: $this->selectedVenues,
-            orgs: $this->selectedOrgs
+            orgs: $this->selectedOrgs,
+            roles: $this->selectedRoles,
         );
 
         // close UI (caught by JS in the Blade below)
