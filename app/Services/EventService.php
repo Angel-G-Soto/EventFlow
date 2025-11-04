@@ -184,8 +184,9 @@ class EventService {
                 $statusFlow = [
                     'pending - advisor approval' => 'pending - venue manager approval',
                     'pending - venue manager approval' => 'pending - dsca approval',
-                    'pending - dsca approval' => 'pending - deanship of administration approval',
-                    'pending - deanship of administration approval' => 'approved',
+//                    'pending - dsca approval' => 'pending - deanship of administration approval',
+//                    'pending - deanship of administration approval' => 'approved',
+                    'pending - dsca approval' => 'approved',
                 ];
 
                 $currentStatus = $event->status;
@@ -236,7 +237,7 @@ class EventService {
          */
         protected function updateLastHistory(Event $event, User $approver, ?string $comment = null, string $action)
         {
-            $lastHistory = $event->histories()
+            $lastHistory = $event->history()
                 ->where('action', 'pending')
                 ->latest()
                 ->first();
@@ -266,12 +267,24 @@ class EventService {
     // Status related methods
 
         // Request creator withdraws event
-        public function withdrawEvent(Event $event, User $user): Event
+        public function withdrawEvent(Event $event, User $user, $comment): Event
         {
-            return DB::transaction(function () use ($event, $user) {
+            return DB::transaction(function () use ($event, $user, $comment) {
                 Event::where('id', $event->id)
                     ->whereIn('status', 'like', 'pending')
                     ->update(['status' => 'withdrawm']);
+
+                $lastHistory = $event->history()
+                    ->latest()
+                    ->first();
+
+                if ($lastHistory) {
+                    $lastHistory->update([
+                        'approver_id' => $user->id,
+                        'action' => 'withdrawn',
+                        'comment' => $comment ?? 'Event was withdrawn by the user.',
+                    ]);
+                }
 
                 // Run audit trail
 
@@ -281,13 +294,24 @@ class EventService {
         }
 
         // Request creator cancels event
-        public function cancelEvent(Event $event, User $approver): Event
+        public function cancelEvent(Event $event, User $approver, string $comment): Event
         {
-            return DB::transaction(function () use ($event, $approver) {
+            return DB::transaction(function () use ($event, $approver, $comment) {
                 Event::where('id', $event->id)
                     ->where('status', 'approved')
-                    ->update(['status' => 'withdrawn']);
+                    ->update(['status' => 'cancelled']);
 
+                $lastHistory = $event->history()
+                    ->latest()
+                    ->first();
+
+                if ($lastHistory) {
+                    $lastHistory->update([
+                        'approver_id' => $approver->id,
+                        'action' => 'cancelled',
+                        'comment' => $comment ?? 'Event was cancelled.',
+                    ]);
+                }
                 // Run audit trail
 
                 // Send email to the approvers
@@ -311,47 +335,6 @@ class EventService {
         }
 
     // Dashboards
-
-    public function getRequestedEventsDashboard(User $user): LengthAwarePaginator
-        {
-            return Event::where('creator_id', $user->id)
-                ->latest('start_time')
-                ->paginate(15);
-        }
-
-    public function getPendingEventsForAdvisor(User $user): LengthAwarePaginator
-    {
-        return Event::where('organization_advisor_email', $user->email)
-            ->where('status', 'pending - advisor approval')
-            ->with('venue')
-            ->latest('created_at')
-            ->paginate(15);
-    }
-
-    public function getPendingEventsForVenueManager(User $user): LengthAwarePaginator
-    {
-        return Event::whereIn('venue_id', $user->manages()->pluck('id'))
-            ->where('status', 'pending - venue manager approval')
-            ->with('venue')
-            ->latest('created_at')
-            ->paginate(15);
-    }
-
-    public function getPendingEventsForDSCA(User $user): LengthAwarePaginator
-    {
-        return Event::where('status', 'pending - dsca approval')
-            ->with('venue')
-            ->latest('created_at')
-            ->paginate(15);
-    }
-
-    public function getPendingEventsForAdministration(User $user): LengthAwarePaginator
-    {
-        return Event::where('status', 'pending - deanship of administration approval')
-            ->with('venue')
-            ->latest('created_at')
-            ->paginate(15);
-    }
 
     public function getMyRequestedEvents(User $user): \Illuminate\Database\Eloquent\Builder
     {
@@ -432,6 +415,25 @@ class EventService {
                 $query->select('id', 'approver_id', 'event_id')
                     ->where('approver_id', $user->id);
             }]);
+    }
+
+    public function genericApproverRequestHistoryV2(User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        $roleName = 'advisor';
+        $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
+            ->whereHas('history', function ($query) use ($user) {
+                $query->where('approver_id', $user->id);
+            })
+            ->with(['history' => function ($query) use ($user) {
+                $query->select('id', 'approver_id', 'event_id')
+                    ->where('approver_id', $user->id);
+            }]);
+
+        $query->whereHas('history.approver.roles', function ($roleQuery) use ($roleName) {
+            $roleQuery->where('name', $roleName);
+        });
+
+        return $query;
     }
 
     public function getEventDocuments(Event $event): Collection
