@@ -419,24 +419,61 @@ class EventService {
             }]);
     }
 
-    public function genericApproverRequestHistoryV2(User $user): \Illuminate\Database\Eloquent\Builder
+    public function genericApproverRequestHistoryV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
-        $roleName = 'advisor';
-        $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
-            ->whereHas('history', function ($query) use ($user) {
-                $query->where('approver_id', $user->id);
+        $query = Event::select(
+            'id',
+            'title',
+            'description',
+            'start_time',
+            'end_time',
+            'venue_id',
+            'organization_name',
+            'created_at'
+        )
+            ->whereHas('history', function ($q) use ($user) {
+                $q->where('approver_id', $user->id);
             })
-            ->with(['history' => function ($query) use ($user) {
-                $query->select('id', 'approver_id', 'event_id')
+            ->with(['history' => function ($q) use ($user) {
+                $q->select('id', 'approver_id', 'event_id', 'status_when_signed')
                     ->where('approver_id', $user->id);
             }]);
 
-        $query->whereHas('history.approver.roles', function ($roleQuery) use ($roleName) {
-            $roleQuery->where('name', $roleName);
+        $activeRoles = !empty($roles)
+            ? $roles
+            : $user->roles->pluck('name')->toArray();
+
+        // Apply role-based filters inside the history relationship
+        $query->whereHas('history', function ($outer) use ($activeRoles, $user) {
+            $outer->where('approver_id', $user->id)
+                ->where(function ($roleQuery) use ($activeRoles) {
+                    foreach ($activeRoles as $role) {
+                        $roleQuery->orWhere(function ($q) use ($role) {
+                            switch ($role) {
+                                case 'advisor':
+                                    $q->where('status_when_signed', 'pending - advisor approval');
+                                    break;
+
+                                case 'venue-manager':
+                                    $q->where('status_when_signed', 'pending - venue manager approval');
+                                    break;
+
+                                case 'event-approver':
+                                    $q->where('status_when_signed', 'pending - dsca approval');
+                                    break;
+
+                                case 'deanship-of-administration-approver':
+                                    $q->where('status_when_signed', 'pending - deanship of administration approval');
+                                    break;
+                            }
+                        });
+                    }
+                });
         });
 
         return $query;
     }
+
 
     public function getEventDocuments(Event $event): Collection
     {

@@ -90,7 +90,7 @@ class Index extends Component
     public function render()
     {
          //$q = Event::query()->with(['venue','categories']);
-        $q = app(EventService::class)->genericApproverRequestHistoryV2(Auth::user());
+        $q = app(EventService::class)->genericApproverRequestHistoryV2(Auth::user(), $this->filters['roles']);
 
          // If your Event has a SINGLE category_id column, use this:
  //        if (!empty($this->filters['categories'])) {
@@ -108,11 +108,10 @@ class Index extends Component
          }
 
          if (!empty($this->filters['orgs'])) {
-             $q->whereIn('organization_nexo_id', $this->filters['orgs']);
+             $q->whereIn('organization_name', $this->filters['orgs']);
          }
 
          $events = $q->orderByDesc('created_at')->paginate(8);
-
 //        $events = app(EventService::class)->getApproverRequestHistory(Auth::user(),
 //            [
 //                'venue_id' => $this->filters['venues'],
