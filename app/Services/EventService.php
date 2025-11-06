@@ -365,14 +365,29 @@ class EventService {
     {
         $query = Event::query();
 
-        // If no roles were passed, use all roles assigned to the user
+        // Get roles the user actually has
+        $userRoles = $user->roles->pluck('name')->toArray();
+
+        // If the user has no roles, end immediately
+        if (empty($userRoles)) {
+            // Return an empty query (no results)
+            return $query->whereRaw('1 = 0');
+        }
+
+        // If roles were passed, only use ones the user actually has
         $activeRoles = !empty($roles)
-            ? $roles
-            : $user->roles->pluck('name')->toArray();
+            ? array_intersect($roles, $userRoles)
+            : $userRoles;
+
+        // If after filtering there are no valid roles, end the query
+        if (empty($activeRoles)) {
+            return $query->whereRaw('1 = 0');
+        }
 
         // Group all role conditions together
         $query->where(function ($outer) use ($activeRoles, $user) {
             foreach ($activeRoles as $role) {
+                //dd($user->roles->contains('name', $role));
                 $outer->orWhere(function ($q) use ($role, $user) {
                     switch ($role) {
                         case 'advisor':
@@ -392,13 +407,9 @@ class EventService {
                         case 'deanship-of-administration-approver':
                             $q->where('status', 'pending - deanship of administration approval');
                             break;
-
-                        // Optional default: if user has "creator" or other roles
-                        // case 'creator':
-                        //     $q->where('creator_id', $user->id);
-                        //     break;
                     }
                 });
+
             }
         });
 
