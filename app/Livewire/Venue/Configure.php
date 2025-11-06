@@ -67,17 +67,30 @@ class Configure extends Component
         $this->opens_at  = $venue->opening_time ? substr($venue->opening_time, 0, 5) : '';
         $this->closes_at = $venue->closing_time ? substr($venue->closing_time, 0, 5) : '';
 
-
-        $this->rows = $venue->requirements()->get()->map(function (UseRequirement $r) {
+        $req = app(VenueService::class)->getVenueRequirements($venue->id);
+        $this->rows = $req->map(function (UseRequirement $r) {
             return [
                 'id'          => $r->id,
                 'uuid'        => (string) Str::uuid(), // stable wire:key per row
                 'name'        => $r->name,
                 'description' => $r->description,
-                'user.index'     => $r->hyperlink,
+                'hyperlink'     => $r->hyperlink,
                 'position'    => $r->position ?? 0,
             ];
         })->values()->all();
+
+
+
+//        $this->rows = $venue->requirements()->get()->map(function (UseRequirement $r) {
+//            return [
+//                'id'          => $r->id,
+//                'uuid'        => (string) Str::uuid(), // stable wire:key per row
+//                'name'        => $r->name,
+//                'description' => $r->description,
+//                'hyperlink'     => $r->hyperlink,
+//                'position'    => $r->position ?? 0,
+//            ];
+//        })->values()->all();
 
         if (empty($this->rows)) {
             $this->addRow(); // start with one empty row

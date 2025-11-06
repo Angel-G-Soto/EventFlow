@@ -109,6 +109,7 @@
 
             <div class="card-footer d-flex gap-2 align-items-center">
                 <button class="btn btn-primary ms-auto" wire:click="saveAvailability">
+                    <i class="bi bi-save"></i>
                     Save availability
                 </button>
                 <span class="text-muted" role="status" aria-live="polite">
@@ -130,7 +131,7 @@
         <h1 class="h4 mb-0">Requirements for: {{ $venue->name }}</h1>
 
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" type="button" wire:click="addRow">
+            <button class="btn btn-secondary" type="button" wire:click="addRow">
                 <i class="bi bi-plus-lg"></i> Add requirement
             </button>
             <button class="btn btn-primary" type="button" wire:click="save">
@@ -186,7 +187,9 @@
                                 wire:model.lazy="rows.{{ $i }}.hyperlink"
                             >
                             @if (!empty($row['hyperlink']))
-                                <a class="btn btn-outline-secondary" href="{{ $row['hyperlink'] }}" target="_blank" rel="noopener">
+
+                                <a class="btn btn-secondary" href="{{ $row['hyperlink'] }}" target="_blank" rel="noopener noreferrer">
+                                    <i class="bi bi-box-arrow-up-right ms-1" aria-hidden="true"></i>
                                     Open
                                 </a>
                             @endif
@@ -199,7 +202,7 @@
                     <td class="text-end">
                         <button
                             type="button"
-                            class="btn btn-outline-danger btn-sm"
+                            class="btn btn-danger btn-sm"
                             onclick="if(!confirm('Remove this requirement?')) return;"
                             wire:click="removeRow('{{ $row['uuid'] }}')"
                             title="Remove"

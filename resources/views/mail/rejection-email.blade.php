@@ -1,0 +1,9 @@
+@extends('mail.mail-layout')
+
+@section('subject', 'Event Needs Rejected')
+@section('preheader', 'Your event has been approved. Here are the next steps.')
+
+@section('content')
+
+    <div>Content goes here</div>
+@endsection
