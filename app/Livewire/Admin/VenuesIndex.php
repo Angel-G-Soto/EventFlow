@@ -6,6 +6,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Models\Venue as VenueModel;
 use App\Livewire\Traits\VenueFilters;
 use App\Livewire\Traits\VenueEditState;
 use App\Services\VenueService;
@@ -17,7 +18,6 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use App\Jobs\ProcessCsvFileUpload;
 
 #[Layout('layouts.app')]
@@ -30,7 +30,6 @@ class VenuesIndex extends Component
     public $csvFile;
     public ?string $importKey = null;
     public ?string $importStatus = null;
-    public ?string $importErrorMsg = null;
 
     // Sorting
     public string $sortField = '';
@@ -162,7 +161,6 @@ class VenuesIndex extends Component
     public function openCsvModal(): void
     {
         $this->reset('csvFile');
-        $this->importErrorMsg = null; // clear any previous error before a new attempt
         $this->dispatch('bs:open', id: 'csvModal');
     }
 
@@ -184,25 +182,13 @@ class VenuesIndex extends Component
     {
         // Validate only the CSV file; accept common CSV MIME types and extensions
         $this->validate([
-            'csvFile' => 'required|file|max:25600 |mimes:csv,txt', // 25 MB
+            'csvFile' => 'required|file|max:10240|mimes:csv,txt', // 10 MB
         ]);
 
         try {
-            // Clear any prior error message on new upload
-            $this->importErrorMsg = null;
             $original = (string) ($this->csvFile->getClientOriginalName() ?? 'venues.csv');
             $ext = pathinfo($original, PATHINFO_EXTENSION) ?: 'csv';
             $safe = 'venues_' . now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $ext;
-
-            // Ensure the temp uploads root exists (Windows-friendly)
-            try {
-                $rootPath = Storage::disk('uploads_temp')->path('');
-                if (!\is_dir($rootPath)) {
-                    @\mkdir($rootPath, 0775, true);
-                }
-            } catch (\Throwable $e) {
-                // Non-fatal: Storage::path should normally create on put; continue
-            }
 
             // Store on the temporary uploads disk
             $this->csvFile->storeAs('', $safe, 'uploads_temp');
@@ -221,11 +207,7 @@ class VenuesIndex extends Component
             $this->dispatch('toast', message: 'CSV upload started. Venues will appear after processing.');
             $this->reset('csvFile');
         } catch (\Throwable $e) {
-            Log::error('CSV upload failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            $this->addError('csvFile', 'Unable to upload CSV: ' . $e->getMessage());
+            $this->addError('csvFile', 'Unable to upload CSV.');
         }
     }
 
@@ -236,22 +218,16 @@ class VenuesIndex extends Component
     {
         if (!$this->importKey) return;
         try {
-            $cacheBase = 'venues_import:' . $this->importKey;
-            $status = Cache::get($cacheBase);
+            $status = Cache::get('venues_import:' . $this->importKey);
             if ($status) {
                 $this->importStatus = (string) $status;
                 if (in_array($status, ['done', 'failed', 'infected'], true)) {
                     // Notify result and clear tracking
                     if ($status === 'done') {
                         $this->dispatch('toast', message: 'Import complete.');
-                        // Trigger a re-render by nudging pagination back to first page
-                        $this->page = 1;
                     } elseif ($status === 'infected') {
                         $this->dispatch('toast', message: 'File infected. Import aborted.');
-                        $this->importErrorMsg = 'The uploaded file appears to be infected. Import was aborted.';
                     } else {
-                        $err = (string) (Cache::get($cacheBase . ':error') ?? 'Unknown error.');
-                        $this->importErrorMsg = 'Import failed: ' . $err;
                         $this->dispatch('toast', message: 'Import failed.');
                     }
                     $this->importKey = null;
@@ -649,8 +625,8 @@ class VenuesIndex extends Component
         $data = $this->filtered();
         // Apply sorting only after user clicks a sort header
         if ($this->sortField !== '') {
-            // Use numeric sort for numeric fields; natural/case-insensitive otherwise
-            $options = $this->sortField === 'capacity' ? SORT_NUMERIC : (SORT_NATURAL | SORT_FLAG_CASE);
+            // Sort using natural, case-insensitive order by the active field
+            $options = SORT_NATURAL | SORT_FLAG_CASE;
             $data = $data->sortBy(fn($row) => $row[$this->sortField] ?? '', $options, $this->sortDirection === 'desc')->values();
         }
         $items = $data->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values();

@@ -56,29 +56,13 @@ class VenueCsvParser
 
         // Process each data row in the CSV
         while (($row = fgetcsv($handle)) !== false) {
-            // Skip empty lines
-            if ($row === null || $row === false) {
-                continue;
-            }
-            $row = array_map(static fn($v) => is_string($v) ? trim($v) : $v, $row);
-
-            // Detect and skip a second human-readable header row
-            $maybeName = (string) ($row[$headerMap['name']] ?? '');
-            $maybeCode = (string) ($row[$headerMap['room_code']] ?? '');
-            $maybeCap  = (string) ($row[$headerMap['capacity']] ?? '');
-            if (
-                (strcasecmp($maybeName, 'name') === 0 && strcasecmp($maybeCode, 'room code') === 0)
-                || strcasecmp($maybeCap, 'capacity') === 0
-            ) {
-                continue;
-            }
             $mainCapacity = (int) ($row[$headerMap['capacity']] ?? 0);
             $finalExamsCapacity = (int) ($row[$headerMap['final_exams_capacity']] ?? 0);
             $venueData = [
-                'v_name' => $maybeName,
-                'v_code' => $maybeCode,
+                'v_name' => trim($row[$headerMap['name']]),
+                'v_code' => trim($row[$headerMap['room_code']]),
                 // Pass the raw department name for the service to map to a local department ID.
-                'department_name_raw' => (string) ($row[$headerMap['department_name']] ?? ''),
+                'department_name_raw' => trim($row[$headerMap['department_name']]),
                 'v_features' => $this->buildFeaturesString($row, $headerMap),
                 'v_features_code' => $this->buildFeaturesCode($row, $headerMap),
                 'v_capacity' => $mainCapacity,
@@ -148,3 +132,4 @@ class VenueCsvParser
         return $code;
     }
 }
+

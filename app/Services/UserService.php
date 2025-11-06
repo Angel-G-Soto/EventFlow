@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Services;
 
 use App\Models\User;
@@ -46,15 +45,7 @@ class UserService
      */
     public function findUserById(int $userId): ?User
     {
-        return User::findOrFail($userId);
-    }
-
-    /**
-     * Retrieve the first available user in the system, or null if none exist.
-     */
-    public function getFirstUser(): ?User
-    {
-        return User::query()->first();
+       return User::findOrFail($userId);
     }
 
     /**
@@ -68,8 +59,7 @@ class UserService
     public function updateUserRoles(User $user, array $roleCodes, User $admin): User
     {
         // Find the Role model IDs corresponding to the codes
-        // Align with roles schema: use 'code' column and primary key 'id'
-        $roleIds = Role::whereIn('code', $roleCodes)->pluck('id');
+        $roleIds = Role::whereIn('r_code', $roleCodes)->pluck('role_id');
 
         // Sync the roles in the pivot table
         $user->roles()->sync($roleIds);
@@ -164,7 +154,7 @@ class UserService
             "Permanently deleted user '{$deletedUserName}' (Email: {$deletedUserEmail}) (ID: {$deletedUserId})."
         );
     }
-    /**
+     /**
      * Retrieves a collection of all users who have a specific role.
      *
      * @param string $roleCode The machine-readable code for the role (e.g., 'dsca-staff').
@@ -173,8 +163,7 @@ class UserService
     public function getUsersWithRole(string $roleCode): Collection
     {
         return User::whereHas('roles', function ($query) use ($roleCode) {
-            // Align with roles table schema: column is 'code' (not 'r_code')
-            $query->where('code', $roleCode);
+            $query->where('r_code', $roleCode);
         })->get();
     }
 }
