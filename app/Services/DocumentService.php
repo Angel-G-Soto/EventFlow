@@ -54,7 +54,7 @@ class DocumentService
 
         // 3) Queue virus scan & move to final storage
         ProcessFileUpload::dispatch(Document::whereIn('id', [$doc->id])->get());
-
+        //dd($doc->refresh());
         return $doc;
     }
 

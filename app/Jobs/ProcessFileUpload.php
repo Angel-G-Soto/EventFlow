@@ -45,8 +45,12 @@ class ProcessFileUpload implements ShouldQueue
             // Get path to where the document is located.
             $path = Storage::disk('uploads_temp')->path($document->getNameOfFile());
 
+            if (!file_exists(env('CLAMDSCAN_PATH'))) {
+                throw new \Exception("clamdscan executable not found at: ".env('CLAMDSCAN_PATH'));
+            }
+
             // Create scanning process
-            $scan = new Process(['clamdscan', $path]);
+            $scan = new Process([env('CLAMDSCAN_PATH'), $path]);
 
             // Run process
             $scan->run();

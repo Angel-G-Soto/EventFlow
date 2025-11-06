@@ -405,6 +405,7 @@ class Create extends Component
                     userId: auth()->id(),  // or pass the student/submitter id you need
                     eventId:$event->id
                 );
+
                 $this->uploadedDocumentIds[] = $doc->id;
 
             } catch (\App\Exceptions\StorageException $e) {
@@ -414,12 +415,12 @@ class Create extends Component
             }
         }
 
-        $eventService->updateOrCreateFromEventForm(
-            data: $data,
-            creator: $user,
-            action: 'publish',
-            document_ids: $this->uploadedDocumentIds,
-        );
+//        $eventService->updateOrCreateFromEventForm(
+//            data: $data,
+//            creator: $user,
+//            action: 'publish',
+//            document_ids: $this->uploadedDocumentIds,
+//        );
 
 
 
