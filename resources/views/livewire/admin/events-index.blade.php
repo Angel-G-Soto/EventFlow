@@ -29,7 +29,13 @@
           </select>
         </div>
         <div class="col-md-3">
-          <livewire:controls.searchable-venue wire:model.live="venue" :label="'Venue'" />
+          <label class="form-label" for="ev_venue">Venue</label>
+          <select id="ev_venue" class="form-select" wire:model.live="venue">
+            <option value="">All</option>
+            @foreach($venues as $vName)
+            <option value="{{ $vName }}">{{ $vName }}</option>
+            @endforeach
+          </select>
         </div>
         {{-- Category filter removed intentionally --}}
         <div class="col-md-2">

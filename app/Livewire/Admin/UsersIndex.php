@@ -15,6 +15,7 @@ use App\Models\Department;
 use App\Services\UserService;
 use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
@@ -402,8 +403,10 @@ class UsersIndex extends Component
             'name' => $name,
             'email' => (string)($u->email ?? ''),
             'department' => (string)optional($u->department)->name ?? '—',
-            // Track roles internally as CODES for consistency (display handled in the view)
-            'roles' => method_exists($u, 'roles') ? $u->roles->pluck('code')->all() : [],
+            // Track roles internally as CODES; if code missing, fall back to slug(name)
+            'roles' => method_exists($u, 'roles')
+                ? $u->roles->map(fn($r) => $r->code ?? \Illuminate\Support\Str::slug((string)$r->name))->filter()->values()->all()
+                : [],
         ];
     }
 
@@ -414,13 +417,16 @@ class UsersIndex extends Component
     {
         // Department should only be provided when the user has the "Venue Manager" role
         $deptRequired = $this->roleRequiresDepartment($this->editRoles);
+        // Allowed role codes derived from constants
+        $allowedRoleCodes = $this->roleCodes();
+
         return [
             'editName'       => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
             'editEmail'      => 'required|email|regex:/@upr[a-z]*\.edu$/i',
             'editRoles'      => 'array|min:1',
-            'editRoles.*'    => 'string|in:' . implode(',', self::ROLES), // while DB seeding lands later
+            'editRoles.*'    => 'string|in:' . implode(',', $allowedRoleCodes), // validate by ROLE CODE
             'editDepartment' => $deptRequired ? 'required|string' : 'nullable|string',
-            'justification'  => 'nullable|string|max:200',
+            'justification'  => 'nullable|string|min:10|max:200',
         ];
     }
 
@@ -429,7 +435,9 @@ class UsersIndex extends Component
      */
     protected function validateJustification(): void
     {
-        $this->validateOnly('justification');
+        $this->validate([
+            'justification' => ['required', 'string', 'min:10', 'max:200']
+        ]);
     }
 
     // Removed legacy in-memory ID generator; DB auto-increment IDs are used
@@ -508,7 +516,19 @@ class UsersIndex extends Component
      */
     protected function toast(string $message): void
     {
-        $this->dispatch('ui:toast', message: $message);
+        // Normalized toast event name across admin views
+        $this->dispatch('toast', message: $message);
+    }
+
+    /**
+     * Compute the list of role CODES from the UserConstants names by slugging with dashes.
+     * Example: "Venue Manager" => "venue-manager".
+     *
+     * @return array<int,string>
+     */
+    protected function roleCodes(): array
+    {
+        return array_map(fn(string $n) => Str::slug($n), UserConstants::ROLES);
     }
 
     /**
@@ -551,11 +571,14 @@ class UsersIndex extends Component
             $departments = collect();
         }
 
+        // Provide roles as CODES for UI value binding; view will prettify labels
+        $roleCodes = $this->roleCodes();
+
         return view('livewire.admin.users-index', [
             'rows'        => $paginator,
             'visibleIds'  => $paginator->pluck('id')->all(),
             'departments' => $departments,
-            'allRoles'    => self::ROLES, // until DB roles are ready
+            'allRoles'    => $roleCodes, // codes used as values; labels prettified in view
         ]);
     }
 }

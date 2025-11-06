@@ -52,7 +52,7 @@
         <thead class="table-light">
           <tr>
             <th scope="col">
-              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+              <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
                 @if($sortField === 'name')

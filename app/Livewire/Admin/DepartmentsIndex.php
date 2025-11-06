@@ -364,7 +364,7 @@ class DepartmentsIndex extends Component
   protected function rules(): array
   {
     return [
-      'justification' => ['required', 'string', 'min:3'],
+      'justification' => ['required', 'string', 'min:10', 'max:200'],
     ];
   }
 

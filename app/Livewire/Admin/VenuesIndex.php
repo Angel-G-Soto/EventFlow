@@ -318,8 +318,8 @@ class VenuesIndex extends Component
             'vManager'   => 'nullable|string|max:120',
             'vStatus'    => 'required|in:Active,Inactive',
             'vFeatures'  => 'array',
-            // Justification is validated at confirm time, not at form validate/save time
-            'justification' => 'nullable|string|max:200',
+            // Justification validated separately on confirm; keep rule for Livewire error bag consistency
+            'justification' => 'nullable|string|min:10|max:200',
             'timeRanges'            => 'array',
             'timeRanges.*.from'     => 'required|date_format:H:i',
             'timeRanges.*.to'       => 'required|date_format:H:i',
@@ -334,9 +334,9 @@ class VenuesIndex extends Component
      */
     protected function validateJustification(): void
     {
-        // Require a non-trivial justification only when confirming
+        // Enforce normalized justification requirement
         $this->validate([
-            'justification' => ['required', 'string', 'min:3', 'max:200'],
+            'justification' => ['required', 'string', 'min:10', 'max:200'],
         ]);
     }
 

@@ -31,7 +31,8 @@
           <select id="users_role" class="form-select" wire:model.live="role">
             <option value="">All roles</option>
             @foreach(($allRoles ?? []) as $r)
-            <option value="{{ $r }}">{{ $r }}</option>
+            @php $label = \Illuminate\Support\Str::of($r)->replace('-', ' ')->title(); @endphp
+            <option value="{{ $r }}">{{ $label }}</option>
             @endforeach
           </select>
         </div>
@@ -64,7 +65,7 @@
         <thead class="table-light">
           <tr>
             <th scope="col">
-              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+              <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
                 @if($sortField === 'name')
@@ -166,12 +167,12 @@
               <label class="form-label">Roles</label>
               <div class="border rounded p-2" style="max-height:120px;overflow-y:auto;">
                 @foreach(($allRoles ?? []) as $rname)
+                @php $label = \Illuminate\Support\Str::of($rname)->replace('-', ' ')->title(); @endphp
                 <div class="form-check">
-                  <input class="form-check-input" type="checkbox"
-                    id="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}" value="{{ $rname }}"
+                  <input class="form-check-input" type="checkbox" id="role_{{ $rname }}" value="{{ $rname }}"
                     wire:model.live="editRoles">
-                  <label class="form-check-label" for="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}">
-                    {{ $rname }}
+                  <label class="form-check-label" for="role_{{ $rname }}">
+                    {{ $label }}
                   </label>
                 </div>
                 @endforeach
@@ -181,7 +182,7 @@
             <div class="col-12 col-md-6">
               <label class="form-label" for="edit_department">Department</label>
               @php
-              // Roles are kept as codes; venue-manager code enables department selection
+              // Roles now passed as codes; venue-manager triggers department selection
               $isVenueManager = in_array('venue-manager', $editRoles ?? []);
               @endphp
               @if($isVenueManager)
@@ -229,16 +230,31 @@
     </div>
   </div>
   <script>
-    document.addEventListener('ui:toast', (e) => {
-      try {
-        const el = document.getElementById('userToast');
-        const msg = document.getElementById('userToastMsg');
-        if (!el || !msg) return;
-        msg.textContent = e.detail?.message ?? 'Done';
-        // Bootstrap 5 toast
-        const toast = bootstrap.Toast.getOrCreateInstance(el, { delay: 3000 });
-        toast.show();
-      } catch (_) { /* noop */ }
+    document.addEventListener('livewire:init', () => {
+      Livewire.on('toast', ({ message }) => {
+        try {
+          const el = document.getElementById('userToast');
+          const msg = document.getElementById('userToastMsg');
+          if (!el || !msg) return;
+          msg.textContent = message || 'Done';
+          const toast = bootstrap.Toast.getOrCreateInstance(el, { autohide: true, delay: 3000 });
+          toast.show();
+        } catch (_) { /* noop */ }
+      });
+
+      // Bootstrap modal helpers for Livewire components
+      Livewire.on('bs:open', ({ id }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.show();
+      });
+      Livewire.on('bs:close', ({ id }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const m = bootstrap.Modal.getInstance(el);
+        if (m) m.hide();
+      });
     });
   </script>
 </div>
