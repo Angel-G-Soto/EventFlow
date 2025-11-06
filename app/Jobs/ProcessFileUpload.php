@@ -58,7 +58,7 @@ class ProcessFileUpload implements ShouldQueue
                 $contents = Storage::disk('uploads_temp')->get($document->getNameOfFile());
                 Storage::disk('documents')->put($document->getNameOfFile(), $contents);
                 Storage::disk('uploads_temp')->delete($document->getNameOfFile());
-                $document->file_path = 'storage/app/tmp/uploads/'.$document->getNameOfFile();
+                $document->file_path = 'documents/'.$document->getNameOfFile();
                 $document->save();
             }
             elseif(Str::contains($scan->getOutput(), 'FOUND'))

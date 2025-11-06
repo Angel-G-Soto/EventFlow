@@ -88,16 +88,12 @@
 
         {{--Buttons--}}
         <div class="d-flex gap-2 mb-3 container-fluid">
-            <button type="button" wire:click="approve" class="btn btn-outline-success d-flex" wire:target="approve">
-                Approve
-            </button>
-
 
             <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
                 Cancel Request Approval
             </button>
 
-            <button type="button" wire:click="approve" class="btn btn-outline-secondary ms-auto"
+            <button type="button" wire:click="back" class="btn btn-outline-secondary ms-auto"
                     wire:target="back">
                 Back
             </button>

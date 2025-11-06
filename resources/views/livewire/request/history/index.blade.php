@@ -8,12 +8,12 @@
     - Uses Bootstrap 5 for styling and Livewire pagination links.
 
     Variables:
-    @var \Illuminate\Pagination\LengthAwarePaginator<\App\Models\Event> $events
+    @var \Illuminate\Pagination\LengthAwarePaginator<\App\Models\Event> $eventhistories
     @var array{categories:array<int|string>,venues:array<int|string>,orgs:array<int|string>} $filters
 
     Accessibility notes:
     - Table headings should use <th scope="col">.
-    - Pagination controls are generated via $events->links() which include proper ARIA labels.
+    - Pagination controls are generated via $eventhistories->links() which include proper ARIA labels.
     - Action links/buttons must have discernible text for screen readers.
 --}}
 
@@ -53,6 +53,8 @@
                 <tr>
                     <th>Title</th>
                     <th>Organization</th>
+                    <th>Action</th>
+                    <th>Step</th>
                     <th>Date Submitted</th>
 
                     <th class="text-end">Actions</th>
@@ -60,15 +62,17 @@
                 </thead>
 
                 <tbody>
-                @forelse ($events as $event)
+                @forelse ($eventhistories as $history)
                     <tr>
-                        <td class="fw-medium">{{$event->title ?? '—' }}</td>
-                        <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
-                        <td class="fw-medium">{{ $event->created_at}}</td>
+                        <td class="fw-medium">{{$history->event->title ?? '—' }}</td>
+                        <td class="fw-medium">{{$history->event->organization_name  ?? '—' }}</td>
+                        <td class="fw-medium">{{$history->action  ?? '—' }}</td>
+                        <td class="fw-medium">{{$history->status_when_signed  ?? '—' }}</td>
+                        <td class="fw-medium">{{$history->created_at}}</td>
                         <td class="fw-medium text-end">
                             <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
-                                    onclick="window.location='{{ route('approver.history.request',['event'=>$event]) }}'">
+                                    onclick="window.location='{{ route('approver.history.request',['event'=>$history]) }}'">
                                 <i class="bi bi-eye me-1"></i> View details
                             </button>
                         </td>
@@ -82,6 +86,6 @@
     </div>
 
     <div class="mt-3">
-        {{ $events->withQueryString()->onEachSide(1)->links() }}
+        {{ $eventhistories->withQueryString()->onEachSide(1)->links() }}
     </div>
 </div>
