@@ -179,9 +179,9 @@ class EventService {
          *
          * @throws \InvalidArgumentException If the event has an invalid or unexpected status.
          */
-        public function approveEvent(string $justification, Event $event, User $approver): Event
+        public function approveEvent(Event $event, User $approver): Event
         {
-            return DB::transaction(function () use ($justification, $event, $approver) {
+            return DB::transaction(function () use ($event, $approver) {
                 $statusFlow = [
                     'pending - advisor approval' => 'pending - venue manager approval',
                     'pending - venue manager approval' => 'pending - dsca approval',
@@ -350,7 +350,7 @@ class EventService {
                 ->where('organization_advisor_email', $user->email)
                 ->where('status', 'pending - advisor approval'),
             'venue-manager' => Event::query()
-                ->whereIn('venue_id', $user->manages()->pluck('id'))
+                ->whereIn('venue_id', $user->department->venues()->pluck('id'))
                 ->where('status', 'pending - venue manager approval'),
             'event-approver' => Event::query()
                 ->where('status', 'pending - dsca approval'),
@@ -381,7 +381,7 @@ class EventService {
                             break;
 
                         case 'venue-manager':
-                            $q->whereIn('venue_id', $user->manages()->pluck('id'))
+                            $q->whereIn('venue_id', $user->department->venues()->pluck('id'))
                                 ->where('status', 'pending - venue manager approval');
                             break;
 

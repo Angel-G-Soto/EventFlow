@@ -80,14 +80,14 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
-    /**
-     * Relationship between the User and Venue
-     * @return HasMany
-     */
-    public function manages(): HasMany
-    {
-        return $this->hasMany(Venue::class, 'manager_id');
-    }
+//    /**
+//     * Relationship between the User and Venue
+//     * @return HasMany
+//     */
+//    public function manages(): HasMany
+//    {
+//        return $this->hasMany(Venue::class, 'manager_id');
+//    }
 
     /**
      * Relation between User and Event Request History

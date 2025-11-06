@@ -33,7 +33,7 @@ class Venue extends Model
      * @var string[]
      */
     protected $fillable = [
-        'manager_id',
+        //'manager_id',
         'department_id',
         'name',
         'code',
@@ -76,10 +76,10 @@ class Venue extends Model
         return $this->belongsToMany(Category::class);
     }
 
-    public function manager(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'manager_id');
-    }
+//    public function manager(): BelongsTo
+//    {
+//        return $this->belongsTo(User::class, 'manager_id');
+//    }
 
     //////////////////////////////////////////// METHODS //////////////////////////////////////////////////
 

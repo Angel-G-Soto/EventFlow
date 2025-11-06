@@ -56,7 +56,7 @@ return new class extends Migration {
         Schema::create('venues', function (Blueprint $table) {
             $table->id();
             $table->foreignId('department_id')->constrained('departments');
-            $table->foreignId('manager_id')->nullable()->constrained('users');
+            //$table->foreignId('manager_id')->nullable()->constrained('users');
             $table->string('name');
             $table->string('code');
             $table->string('features');

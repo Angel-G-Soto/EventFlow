@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\UseRequirement;
+use Illuminate\Support\Collection;
 
 it('belongs to a department', function () {
     $department = Department::factory()->create();
@@ -16,11 +17,14 @@ it('belongs to a department', function () {
 });
 
 it('has a manager', function () {
-    $manager = User::factory()->create();
-    $venue = Venue::factory()->create(['manager_id' => $manager->id]);
+    $department = Department::factory()->create();
+    $manager = User::factory()->create(['department_id' => $department->id]);
+    $venue = Venue::factory()->create(['department_id' => $department->id]);
 
-    expect($venue->manager)->toBeInstanceOf(User::class)
-        ->and($venue->manager->id)->toBe($manager->id);
+    expect($venue->department->employees)
+        ->toBeInstanceOf(Collection::class)
+        ->and(count($venue->department->employees))->toBeGreaterThanOrEqual(1)
+        ->and($venue->department->employees->first())->toBeInstanceOf(User::class);
 });
 
 it('has many event requests', function () {
@@ -52,7 +56,7 @@ it('allows mass assignment of fillable fields', function () {
         'opening_time' => '09:00',
         'closing_time' => '10:00',
         'department_id' => $department->id,
-        'manager_id' => $manager->id,
+        //'manager_id' => $manager->id,
     ];
 
     $venue = Venue::create($data);

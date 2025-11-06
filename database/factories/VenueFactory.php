@@ -28,7 +28,7 @@ class VenueFactory extends Factory
             'opening_time' => fake()->dateTime(),
             'closing_time' => fake()->dateTime(),
             'department_id' => Department::factory(),
-            'manager_id' => User::factory(),
+            //'manager_id' => User::factory(),
         ];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 use App\Models\Department;
+use App\Models\Role;
 use App\Models\User;
 use Exception;
 use \Illuminate\Database\Eloquent\Collection;
@@ -173,6 +174,79 @@ class DepartmentService {
 
             // Update user department
             $manager->department_id = $department->id;
+            $manager->save();
+
+            return $manager;
+        }
+        catch (ModelNotFoundException $exception) {
+            throw $exception;
+        }
+        catch (Throwable $exception) {
+            throw new \Exception('Failed to update the user(s) department.');
+        }
+    }
+
+
+    /**
+     * Assign a user to a specified department.
+     *
+     * This method updates the given user's associated department by setting their
+     * `department_id` to match the provided Department model. Both the Department
+     * and User records must exist in the database; otherwise, a ModelNotFoundException
+     * will be thrown. Upon successful update, the modified User instance is returned.
+     *
+     * @param Department $department
+     * @param User $manager
+     * @return User
+     * @throws Exception
+     */
+    public function addUserToDepartment(Department $department, User $manager): User
+    {
+        try {
+            // Validate that both models exist in the database
+            if (!Department::find($department->id) || !$this->userService->findUserById($manager->id)) { // IMPORT AND MOCK USER SERVICE
+                throw new ModelNotFoundException('Either the department or the user does not exist in the database.');
+            }
+
+            // Update user department
+            $manager->department_id = $department->id;
+            $manager->roles()->attach(Role::where('name', 'venue-manager')->first()->id);
+            $manager->save();
+
+            // Add venue manager role
+
+            return $manager;
+        }
+        catch (ModelNotFoundException $exception) {
+            throw $exception;
+        }
+        catch (Throwable $exception) {
+            throw new \Exception('Failed to update the user(s) department.');
+        }
+    }
+
+    /**
+     * Remove a user to a specified department.
+     *
+     * Both the Department and User records must exist in the database; otherwise, a ModelNotFoundException
+     * will be thrown. Upon successful update, the modified User instance is returned.
+     *
+     * @param Department $department
+     * @param User $manager
+     * @return User
+     * @throws Exception
+     */
+    public function removeUserFromDepartment(Department $department, User $manager): User
+    {
+        try {
+            // Validate that both models exist in the database
+            if (!$this->userService->findUserById($manager->id)) { // IMPORT AND MOCK USER SERVICE
+                throw new ModelNotFoundException('Either the department or the user does not exist in the database.');
+            }
+
+            // Update user department
+            $manager->department_id = null;
+            $manager->roles()->detach(Role::where('name', 'venue-manager')->first()->id);
             $manager->save();
 
             return $manager;
