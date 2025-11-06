@@ -3,8 +3,7 @@
     <h1 class="h4 mb-0">Venues</h1>
 
     <div class="d-none d-md-flex gap-2">
-      <button class="btn btn-secondary btn-sm" wire:click="openCsvModal" type="button"
-        aria-label="Open CSV upload modal">
+      <button class="btn btn-primary btn-sm" wire:click="openCsvModal" type="button" aria-label="Open CSV upload modal">
         <i class="bi bi-upload me-1"></i> Add Venues by CSV
       </button>
     </div>
@@ -17,6 +16,17 @@
     <div>
       Import in progress: <strong>{{ $importStatus ?? 'queued' }}</strong>
     </div>
+  </div>
+  @endif
+
+  {{-- Import error banner (dismissible) --}}
+  @if(!empty($importErrorMsg))
+  <div class="alert alert-danger d-flex align-items-start justify-content-between" role="alert">
+    <div class="me-3">
+      <strong>Import failed:</strong>
+      <strong><span class="ms-1">{{ $importErrorMsg }}</span></strong>
+    </div>
+    <button type="button" class="btn-close" aria-label="Close" wire:click="$set('importErrorMsg', null)"></button>
   </div>
   @endif
 
@@ -85,7 +95,7 @@
         <thead class="table-light">
           <tr>
             <th scope="col">
-              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+              <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
                 @if($sortField === 'name')
@@ -101,7 +111,23 @@
             </th>
             <th>Department</th>
             <th>Venue Code</th>
-            <th>Capacity</th>
+            <th>
+              <button class="btn btn-link p-0 text-decoration-none text-black text-nowrap fw-bold"
+                wire:click="sortBy('capacity')" aria-label="Sort by capacity">
+                <span class="d-inline-flex align-items-center gap-1">
+                  Capacity
+                  @if($sortField === 'capacity')
+                  @if($sortDirection === 'asc')
+                  <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+                  @else
+                  <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+                  @endif
+                  @else
+                  <i class="bi bi-arrow-down-up text-muted" aria-hidden="true"></i>
+                  @endif
+                </span>
+              </button>
+            </th>
             <th>Manager</th>
             <th>Status</th>
             <th>Availability</th>
@@ -192,46 +218,59 @@
                 <div id="csvProgressBar" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0"
                   aria-valuemin="0" aria-valuemax="100">0%</div>
               </div>
-              <!-- Server-side processing indicator (after upload submit) -->
+              <!-- Server-side processing indicator (after upload submit).
+                   Guarded by $csvFile so it doesn't show unless a file was selected. -->
+              @if($csvFile)
               <div class="d-flex align-items-center gap-2 mt-2" wire:loading.delay wire:target="uploadCsv">
                 <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
                 <small class="text-muted">Processing import…</small>
               </div>
+              @endif
             </div>
             <script>
-              document.addEventListener('livewire:load', function () {
-                const input = document.getElementById('csv_file');
-                const container = document.getElementById('csvProgressContainer');
-                const bar = document.getElementById('csvProgressBar');
-                if (!input || !container || !bar) return;
-                if (input.dataset.progressBound === '1') return; // guard against duplicate listeners
-                input.dataset.progressBound = '1';
+              (function attachCsvProgress() {
+                const bind = () => {
+                  const input = document.getElementById('csv_file');
+                  const container = document.getElementById('csvProgressContainer');
+                  const bar = document.getElementById('csvProgressBar');
+                  if (!input || !container || !bar) return;
+                  if (input.dataset.progressBound === '1') return; // guard against duplicate listeners
+                  input.dataset.progressBound = '1';
 
-                const show = () => { container.classList.remove('d-none'); container.removeAttribute('aria-hidden'); };
-                const hide = () => { container.classList.add('d-none'); container.setAttribute('aria-hidden', 'true'); };
-                const setProgress = (p) => {
-                  const pct = Math.max(0, Math.min(100, parseInt(p || 0, 10)));
-                  bar.style.width = pct + '%';
-                  bar.setAttribute('aria-valuenow', pct);
-                  bar.textContent = pct + '%';
+                  const show = () => { container.classList.remove('d-none'); container.removeAttribute('aria-hidden'); };
+                  const hide = () => { container.classList.add('d-none'); container.setAttribute('aria-hidden', 'true'); };
+                  const setProgress = (p) => {
+                    const pct = Math.max(0, Math.min(100, parseInt(p || 0, 10)));
+                    bar.style.width = pct + '%';
+                    bar.setAttribute('aria-valuenow', pct);
+                    bar.textContent = pct + '%';
+                  };
+
+                  input.addEventListener('livewire-upload-start', () => {
+                    setProgress(0);
+                    show();
+                  });
+                  input.addEventListener('livewire-upload-progress', (e) => {
+                    setProgress(e.detail && e.detail.progress);
+                  });
+                  input.addEventListener('livewire-upload-error', () => {
+                    hide();
+                  });
+                  input.addEventListener('livewire-upload-finish', () => {
+                    setProgress(100);
+                    // Briefly show 100% then hide
+                    setTimeout(hide, 700);
+                  });
                 };
 
-                input.addEventListener('livewire-upload-start', () => {
-                  setProgress(0);
-                  show();
-                });
-                input.addEventListener('livewire-upload-progress', (e) => {
-                  setProgress(e.detail && e.detail.progress);
-                });
-                input.addEventListener('livewire-upload-error', () => {
-                  hide();
-                });
-                input.addEventListener('livewire-upload-finish', () => {
-                  setProgress(100);
-                  // Briefly show 100% then hide
-                  setTimeout(hide, 700);
-                });
-              });
+                // Livewire v3 fires 'livewire:init'; keep v2 fallback for safety
+                document.addEventListener('livewire:init', bind);
+                document.addEventListener('livewire:load', bind);
+                // In case the script runs after init, try immediate bind too
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                  setTimeout(bind, 0);
+                }
+              })();
             </script>
           </div>
           @error('csvFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
