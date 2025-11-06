@@ -243,6 +243,19 @@ class DepartmentsIndex extends Component
     $this->reset(['editId', 'justification', 'actionType']);
   }
 
+  /**
+   * Unified confirmation entrypoint for the justification modal.
+   * Routes to confirmDelete or confirmSave based on current actionType.
+   */
+  public function confirmJustify(): void
+  {
+    if (($this->actionType ?? '') === 'delete') {
+      $this->confirmDelete();
+    } else {
+      $this->confirmSave();
+    }
+  }
+
   // Render
   /**
    * Renders the departments index page.

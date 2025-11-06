@@ -452,6 +452,19 @@ class VenuesIndex extends Component
         $this->reset(['justification', 'actionType', 'editId']);
     }
 
+    /**
+     * Unified confirmation entrypoint for the justification modal.
+     * Routes to confirmDelete or confirmSave based on current actionType.
+     */
+    public function confirmJustify(): void
+    {
+        if (($this->actionType ?? '') === 'delete') {
+            $this->confirmDelete();
+        } else {
+            $this->confirmSave();
+        }
+    }
+
     // Delete workflows
     /**
      * Opens the justification modal for the venue with the given ID.

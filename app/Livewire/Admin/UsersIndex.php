@@ -150,6 +150,7 @@ class UsersIndex extends Component
         $this->editId     = $user['id'];
         $this->editName   = $user['name'];
         $this->editEmail  = $user['email'];
+        // Roles are tracked as role CODES internally (e.g., 'venue-manager')
         $this->editRoles = $user['roles'] ?? [];
         $this->editDepartment = $user['department'] ?? '';
 
@@ -211,15 +212,15 @@ class UsersIndex extends Component
                 'department_id' => $this->resolveDepartmentIdFromName($this->editDepartment),
             ])->save();
 
-            // Ensure roles exist and sync by name
-            $existing = Role::whereIn('name', $this->editRoles)->pluck('id', 'name');
+            // Ensure roles exist and sync by CODE
+            $existing = Role::whereIn('code', $this->editRoles)->pluck('id', 'code');
             $missing  = array_values(array_diff($this->editRoles, $existing->keys()->all()));
-            foreach ($missing as $rname) {
+            foreach ($missing as $rcode) {
                 $created = Role::create([
-                    'name' => $rname,
-                    'code' => \Illuminate\Support\Str::slug($rname),
+                    'code' => $rcode,
+                    'name' => \Illuminate\Support\Str::of($rcode)->replace('-', ' ')->title(),
                 ]);
-                $existing[$rname] = $created->id;
+                $existing[$rcode] = $created->id;
             }
             $user->roles()->sync(array_values($existing->all()));
 
@@ -235,15 +236,15 @@ class UsersIndex extends Component
                 'auth_type' => 'saml',
                 'password' => bcrypt(str()->random(16)), // temp
             ]);
-            // Ensure roles exist and sync by name
-            $existing = Role::whereIn('name', $this->editRoles)->pluck('id', 'name');
+            // Ensure roles exist and sync by CODE
+            $existing = Role::whereIn('code', $this->editRoles)->pluck('id', 'code');
             $missing  = array_values(array_diff($this->editRoles, $existing->keys()->all()));
-            foreach ($missing as $rname) {
+            foreach ($missing as $rcode) {
                 $created = Role::create([
-                    'name' => $rname,
-                    'code' => \Illuminate\Support\Str::slug($rname),
+                    'code' => $rcode,
+                    'name' => \Illuminate\Support\Str::of($rcode)->replace('-', ' ')->title(),
                 ]);
-                $existing[$rname] = $created->id;
+                $existing[$rcode] = $created->id;
             }
             $user->roles()->sync(array_values($existing->all()));
             $this->toast('User created');
@@ -329,6 +330,18 @@ class UsersIndex extends Component
         $this->reset(['editId', 'justification']);
     }
 
+    /**
+     * Unified justification submit handler to route to save/delete.
+     */
+    public function confirmJustify(): void
+    {
+        if (($this->actionType ?? '') === 'delete') {
+            $this->confirmDelete();
+        } else {
+            $this->confirmSave();
+        }
+    }
+
     // Private/Protected Helper Methods
     /**
      * Returns a collection of all users, both seeded and created by users.
@@ -389,7 +402,8 @@ class UsersIndex extends Component
             'name' => $name,
             'email' => (string)($u->email ?? ''),
             'department' => (string)optional($u->department)->name ?? '—',
-            'roles' => method_exists($u, 'roles') ? $u->roles->pluck('name')->all() : [],
+            // Track roles internally as CODES for consistency (display handled in the view)
+            'roles' => method_exists($u, 'roles') ? $u->roles->pluck('code')->all() : [],
         ];
     }
 

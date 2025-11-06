@@ -411,8 +411,7 @@
   </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="venueJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
-    model="justification" />
+  <x-justification id="venueJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm delete --}}
   <x-confirm-delete id="venueConfirm" title="Delete venue" message="Are you sure you want to delete this venue?"

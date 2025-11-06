@@ -413,6 +413,23 @@ class EventsIndex extends Component
     }
 
     /**
+     * Unified justification submit handler routing to the appropriate action.
+     */
+    public function confirmJustify(): void
+    {
+        $type = $this->actionType ?? '';
+        if ($type === 'delete') {
+            $this->confirmDelete();
+            return;
+        }
+        if (in_array($type, ['approve', 'deny', 'advance'], true)) {
+            $this->confirmAction();
+            return;
+        }
+        $this->confirmSave();
+    }
+
+    /**
      * Confirm advance with a target. Updates status and stores the target, with a clear toast.
      */
     public function confirmAdvance(): void

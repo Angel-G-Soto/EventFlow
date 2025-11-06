@@ -148,8 +148,7 @@
     </div>
   </div>
 
-  <x-justification id="deptJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
-    model="justification" />
+  <x-justification id="deptJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm delete --}}
   <x-confirm-delete id="deptConfirm" title="Delete department"

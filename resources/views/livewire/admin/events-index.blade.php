@@ -308,9 +308,7 @@
   </div>
 
   {{-- Justification for save/delete/approve/deny --}}
-  <x-justification id="oversightJustify"
-    submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : (in_array(($actionType ?? ''), ['approve','deny']) ? 'confirmAction' : 'confirmSave') }}"
-    model="justification" />
+  <x-justification id="oversightJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm delete --}}
   <x-confirm-delete id="oversightConfirm" title="Delete request" message="Are you sure you want to delete this request?"

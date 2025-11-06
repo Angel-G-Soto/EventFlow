@@ -96,7 +96,8 @@
               @if(!empty($roles))
               {{-- Chip-style badges for roles for better readability --}}
               @foreach($roles as $r)
-              <span class="badge text-bg-light me-1">{{ $r }}</span>
+              <span class="badge text-bg-light me-1">{{ \Illuminate\Support\Str::of($r)->replace('-', ' ')->title()
+                }}</span>
               @endforeach
               @else
               —
@@ -180,6 +181,7 @@
             <div class="col-12 col-md-6">
               <label class="form-label" for="edit_department">Department</label>
               @php
+              // Roles are kept as codes; venue-manager code enables department selection
               $isVenueManager = in_array('venue-manager', $editRoles ?? []);
               @endphp
               @if($isVenueManager)
@@ -211,8 +213,7 @@
   </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="userJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
-    model="justification" />
+  <x-justification id="userJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm delete --}}
   <x-confirm-delete id="userConfirm" title="Delete user" message="Are you sure you want to delete this user?"
