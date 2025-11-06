@@ -59,6 +59,7 @@
                         <th>Title</th>
                         <th>Organization</th>
                         <th>Date Submitted</th>
+                        <th>Status</th>
 
                         <th class="text-end">Actions</th>
                     </tr>
@@ -70,6 +71,7 @@
                                 <td class="fw-medium">{{$event->title ?? '—' }}</td>
                                 <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
                                 <td class="fw-medium">{{ $event->created_at}}</td>
+                                <td class="fw-medium">{{ $event->status}}</td>
                                 <td class="fw-medium text-end">
                                     <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"

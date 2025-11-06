@@ -210,7 +210,7 @@ class EventService {
 
                 // Create new pending history only if not final approval
                 if ($nextStatus !== 'approved') {
-                    $this->createPendingHistory($event, $nextStatus);
+                    $this->createPendingHistory($event, $nextStatus, $approver);
 
                     // Send notification to next approver
                 }
@@ -255,11 +255,11 @@ class EventService {
         /**
          * Create a new pending history for the next approver
          */
-        protected function createPendingHistory(Event $event, string $nextStatus)
+        protected function createPendingHistory(Event $event, string $nextStatus, User $approver)
         {
-            $event->histories()->create([
+            $event->history()->create([
                 'action' => 'pending',
-                'approver_id' => null,
+                'approver_id' => $approver->id,
                 'comment' => $nextStatus,
                 'status_when_signed' => $nextStatus,
             ]);

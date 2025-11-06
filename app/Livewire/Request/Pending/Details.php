@@ -18,6 +18,8 @@
 namespace App\Livewire\Request\Pending;
 
 use App\Models\Event;
+use App\Services\EventService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -55,7 +57,10 @@ class Details extends Component
     {
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
-        $this->redirectRoute('approver.index');
+
+        app(EventService::class)->denyEvent($this->justification, $this->event, Auth::user());
+
+        $this->redirectRoute('approver.pending.index');
     }
 /**
  * Approve action.
@@ -64,8 +69,9 @@ class Details extends Component
 
     public function approve()
     {
-        // ... do your action
-        $this->redirectRoute('approver.index');
+        app(EventService::class)->approveEvent($this->event, Auth::user());
+
+        $this->redirectRoute('approver.pending.index');
     }
 /**
  * Back action.
