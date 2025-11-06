@@ -37,9 +37,9 @@
     </ul>
 </x-slot:pageActions>
 
-<div class="row container-fluid">
+<div class="row container-fluid justify-content-evenly">
 
-    <div class="accordion my-2 w-25" id="roleFilters">
+    <div class="accordion my-2 w-auto" id="roleFilters">
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingRole">
                 <button class="accordion-button collapsed" type="button"
@@ -71,7 +71,7 @@
         </div>
     </div>
 
-    <div class="accordion my-2 w-25" id="eventFilters">
+    <div class="accordion my-2 w-auto" id="eventFilters">
         {{-- Categories --}}
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingCat">
@@ -104,7 +104,7 @@
         </div>
     </div>
 
-    <div class="accordion my-2 w-25" id="eventFilters">
+    <div class="accordion my-2 w-auto" id="eventFilters">
 
         {{-- Venues (copy of Categories, bound to selectedVenues) --}}
         <div class="accordion-item">
@@ -138,7 +138,7 @@
         </div>
     </div>
 
-    <div class="accordion my-2 w-25" id="orgFilters">
+    <div class="accordion my-2 w-auto" id="orgFilters">
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingOrg">
                 <button class="accordion-button collapsed" type="button"

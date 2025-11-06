@@ -18,9 +18,9 @@
 {{--    - Group checkbox lists inside <fieldset> with a <legend> to convey context.--}}
 {{--    - Provide focus styles and keyboard operability for dropdowns/multiselects.--}}
 
-<div class="row container-fluid">
+<div class="row container-fluid justify-content-evenly">
 
-    <div class="accordion my-2 w-25" id="eventFilters">
+    <div class="accordion my-2 w-auto" id="eventFilters">
         {{-- Categories --}}
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingCat">
@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    <div class="accordion my-2 w-25" id="eventFilters">
+    <div class="accordion my-2 w-auto" id="eventFilters">
         {{-- Categories --}}
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingCat">
@@ -86,7 +86,7 @@
         </div>
     </div>
 
-    <div class="accordion my-2 w-25" id="eventFilters">
+    <div class="accordion my-2 w-auto" id="eventFilters">
 
         {{-- Venues (copy of Categories, bound to selectedVenues) --}}
         <div class="accordion-item">
@@ -120,7 +120,7 @@
         </div>
     </div>
 
-    <div class="accordion my-2 w-25" id="orgFilters">
+    <div class="accordion my-2 w-auto" id="orgFilters">
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingOrg">
                 <button class="accordion-button collapsed" type="button"
