@@ -26,8 +26,8 @@
               aria-label="Open event {{ $e['title'] }} details">
               <div class="fw-semibold">{{ $e['title'] }}</div>
               <div class="text-muted">
-                {{ \Carbon\Carbon::parse($e['starts_at'])->format('g:ia') }}
-                • {{ $e['venue'] }}
+                {{ \Carbon\Carbon::parse($e['start_time'])->format('g:ia') }}
+                - {{ \Carbon\Carbon::parse($e['end_time'])->format('g:ia') }}
               </div>
             </button>
           </li>
@@ -40,25 +40,29 @@
     @endforeach
   </div>
 
-  {{-- Event details modal --}}
-  <div class="modal fade" id="eventDetails" tabindex="-1" wire:ignore.self>
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-calendar-event me-2"></i>{{ $modal['title'] ?? 'Event' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    {{-- Event details modal --}}
+    <div class="modal fade" id="eventDetails" tabindex="-1" wire:ignore.self>
+        <div class="modal-dialog d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-calendar-event me-2"></i>{{ $modal['title'] ?? 'Event' }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><i class="bi bi-geo-alt me-2"></i>{{ $modal['venue'] ?? '' }}</div>
+                    <div class="mb-3"><i class="bi bi-clock me-2"></i>{{ $modal['time'] ?? '' }}</div>
+                    <div class="mb-3"><i class="bi bi-person-workspace me-2"></i>Organized by: {{ $modal['organization_name'] ?? '' }}</div>
+                    <label class="mb-2 fw-semibold">Event Description:</label>
+                    <p class="mb-0">{{ $modal['description'] ?? '' }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">Close</button>
+                </div>
+            </div>
         </div>
-        <div class="modal-body">
-          <div class="mb-2"><i class="bi bi-geo-alt me-2"></i>{{ $modal['venue'] ?? '' }}</div>
-          <div class="mb-3"><i class="bi bi-clock me-2"></i>{{ $modal['time'] ?? '' }}</div>
-          <p class="mb-0">{{ $modal['summary'] ?? '' }}</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="Close details">Close</button>
-        </div>
-      </div>
     </div>
-  </div>
+
+</div>
 
   <script>
     document.addEventListener('livewire:init', () => {

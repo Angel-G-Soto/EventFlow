@@ -2,6 +2,9 @@
 
 namespace App\Livewire;
 
+use App\Models\Event;
+use App\Services\EventService;
+use App\Services\VenueService;
 use Carbon\CarbonImmutable;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -15,12 +18,14 @@ class PublicCalendar extends Component
   // Read-only public, approved events (mocked for now)
   protected function allApprovedPublic(): array
   {
-    return [
-      // id, title, venue, starts_at, ends_at, summary
-      ['id' => 451, 'title' => 'Faculty Town Hall', 'venue' => 'Auditorium A', 'starts_at' => '2025-11-03 10:00', 'ends_at' => '2025-11-03 11:30', 'summary' => 'Campus-wide update & Q&A'],
-      ['id' => 460, 'title' => 'Night Music Fest', 'venue' => 'Courtyard', 'starts_at' => '2025-11-06 19:30', 'ends_at' => '2025-11-06 22:00', 'summary' => 'Student bands & food trucks'],
-      ['id' => 472, 'title' => 'Chem Outreach', 'venue' => 'Lab West', 'starts_at' => '2025-11-05 14:00', 'ends_at' => '2025-11-05 16:00', 'summary' => 'Hands-on demos for visitors'],
-    ];
+//    return [
+//      // id, title, venue, starts_at, ends_at, summary
+//      ['id' => 451, 'title' => 'Faculty Town Hall', 'venue' => 'Auditorium A', 'starts_at' => '2025-11-03 10:00', 'ends_at' => '2025-11-03 11:30', 'summary' => 'Campus-wide update & Q&A'],
+//      ['id' => 460, 'title' => 'Night Music Fest', 'venue' => 'Courtyard', 'starts_at' => '2025-11-06 19:30', 'ends_at' => '2025-11-06 22:00', 'summary' => 'Student bands & food trucks'],
+//      ['id' => 472, 'title' => 'Chem Outreach', 'venue' => 'Lab West', 'starts_at' => '2025-11-05 14:00', 'ends_at' => '2025-11-05 16:00', 'summary' => 'Hands-on demos for visitors'],
+//    ];
+
+      return Event::where('status', 'approved')->get()->toArray();
   }
 
   public ?array $modal = null; // {title, venue, time, summary}
@@ -43,7 +48,7 @@ class PublicCalendar extends Component
     $end   = $start->addDays(7);
 
     return array_values(array_filter($this->allApprovedPublic(), function ($e) use ($start, $end) {
-      $s = CarbonImmutable::parse($e['starts_at']);
+      $s = CarbonImmutable::parse($e['start_time']);
       return $s->betweenIncluded($start, $end);
     }));
   }
@@ -54,14 +59,16 @@ class PublicCalendar extends Component
     if (!$e) return;
     $this->modal = [
       'title'   => $e['title'],
-      'venue'   => $e['venue'],
+      'venue'   => app(VenueService::class)->findById($e['venue_id'])->code,
       'time'    => sprintf(
         '%s — %s',
-        CarbonImmutable::parse($e['starts_at'])->format('D, M j • g:ia'),
-        CarbonImmutable::parse($e['ends_at'])->format('g:ia')
+        CarbonImmutable::parse($e['start_time'])->format('D, M j • g:ia'),
+        CarbonImmutable::parse($e['end_time'])->format('g:ia')
       ),
-      'summary' => $e['summary'] ?? '',
+      'description' => $e['description'] ?? '',
+        'organization_name' => $e['organization_name'] ?? '',
     ];
+//    dd($this->modal);
     $this->dispatch('bs:open', id: 'eventDetails');
   }
 
@@ -75,7 +82,7 @@ class PublicCalendar extends Component
       $eventsByDay[$d->toDateString()] = [];
     }
     foreach ($this->weekEvents() as $e) {
-      $key = CarbonImmutable::parse($e['starts_at'])->toDateString();
+      $key = CarbonImmutable::parse($e['start_time'])->toDateString();
       if (isset($eventsByDay[$key])) $eventsByDay[$key][] = $e;
     }
 
