@@ -19,113 +19,77 @@
 
 namespace App\Livewire\Request\History;
 
+use App\Models\Event;
 use App\Models\EventHistory;
+use App\Services\EventHistoryService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
-use Livewire\Attributes\On;
 use Livewire\WithPagination;
-use App\Models\Event;
-use App\Services\EventService;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Layout;
+
 #[Layout('layouts.user')]
-/**
- * Class Index
- *
- * Livewire component responsible for displaying a user's request history.
- * It supports filtering by categories, venues, and organizations and paginates
- * the results using Bootstrap 5 pagination styles.
- *
- * @package App\Livewire\Request\History
- */
 class Index extends Component
 {
     use WithPagination;
-    /**
-     * Pagination theme used by Livewire paginator.
-     *
-     * @var string
-     */
+
     public string $paginationTheme = 'bootstrap';
-    /**
-     * Filter state for the list.
-     *
-     * Structure:
-     *  - categories: int[]|string[] Selected category IDs
-     *  - venues: int[]|string[]     Selected venue IDs
-     *  - orgs: int[]|string[]       Selected organization IDs
-     *
-     * @var array{categories:array<int|string>,venues:array<int|string>,orgs:array<int|string>}
-     */
+
+    // Track selected filters
     public array $filters = [
-        'categories' => [],
-        'venues'     => [],
-        'orgs'       => [],
-        'roles'      => [],
+        'role'      => '',
+        'searchTitle'=> '',
+        'sortDirection' => 'desc',
     ];
 
     #[On('filters-changed')]
-/**
- * OnFiltersChanged.
- *
- * Listens for Livewire events: 'filters-changed'.
- * @param array $categories
- * @param array $venues
- * @param array $orgs
- * @return void
- */
-    public function onFiltersChanged(array $categories = [], array $venues = [], array $orgs = [], array $roles = []): void
+    public function onFiltersChanged(string $role = '', string $searchTitle = '', string $sortDirection = 'desc'): void
     {
-        $this->filters['categories'] = array_map('intval', $categories);
-        $this->filters['venues']     = array_map('intval', $venues);
-        $this->filters['orgs']       = $orgs;
-        $this->filters['roles']      = $roles;
 
-        $this->resetPage(); // go back to page 1 after changing filters
+//        dd($role, $searchTitle, $sortDirection);
+
+        $this->filters['role'] = $role;
+        $this->filters['searchTitle'] = $searchTitle;
+        $this->filters['sortDirection'] = $sortDirection;
+        $this->resetPage(); // reset pagination when filters change
     }
 
-    /**
-     * Build the events query based on current filters and return the view.
-     *
-     * @return \Illuminate\Contracts\View\View
-     */
     public function render()
     {
-//         //$q = Event::query()->with(['venue','categories']);
-//        $q = app(EventService::class)->genericApproverRequestHistoryV2(Auth::user(), $this->filters['roles']);
-//
-//         // If your Event has a SINGLE category_id column, use this:
-// //        if (!empty($this->filters['categories'])) {
-// //            $q->whereIn('category_id', $this->filters['categories']);
-// //        }
-//
-//         // If your Event has MANY categories (pivot), replace the block above with:
-//         if (!empty($this->filters['categories'])) {
-//             $ids = $this->filters['categories'];
-//             $q->whereHas('categories', fn($qq) => $qq->whereIn('categories.id', $ids));
-//         }
-//
-//         if (!empty($this->filters['venues'])) {
-//             $q->whereIn('venue_id', $this->filters['venues']);
-//         }
-//
-//         if (!empty($this->filters['orgs'])) {
-//             $q->whereIn('organization_name', $this->filters['orgs']);
-//         }
-//
-//         $events = $q->orderByDesc('created_at')->paginate(8);
-////        $events = app(EventService::class)->getApproverRequestHistory(Auth::user(),
-////            [
-////                'venue_id' => $this->filters['venues'],
-////                'category_id' => $this->filters['categories'],
-////                'organization_name' => $this->filters['orgs']
-////            ]
-////        );
-//        //dd($events);
+        $user = Auth::user();
 
-        $q = EventHistory::query();
+        // Get the roles filter (from Filters component)
+        $role = $this->filters['role'] ?? [];
 
-        $eventhistories = $q->orderByDesc('created_at')->paginate(8);
+        // Start query using the service method
+
+        if (!empty($role)) {
+//            dd(true);
+            $query = app(EventHistoryService::class)->genericApproverRequestHistoryV2($user, [$role]);
+        } else {
+            // no role filter
+            $query = app(EventHistoryService::class)->genericApproverRequestHistoryV2($user);
+        }
+
+        // Apply search by title if provided
+        if (!empty($this->filters['searchTitle'])) {
+            $search = $this->filters['searchTitle'];
+            $query->whereHas('event', function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Apply sorting
+        $query->orderBy('created_at', $this->filters['sortDirection'] ?? 'desc');
+
+        // Paginate results
+        $eventhistories = $query->paginate(8);
+
+//        dd($eventhistories);
 
         return view('livewire.request.history.index', compact('eventhistories'));
     }
+
+
 }
+
