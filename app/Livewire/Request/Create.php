@@ -76,6 +76,10 @@ class Create extends Component
 /**
  * @var string
  */
+    public string $guest_size = '';
+/**
+ * @var string
+ */
     public string $start_time = ''; // datetime-local string
 /**
  * @var string
@@ -198,6 +202,7 @@ class Create extends Component
                 'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10'],
+                'guest_size' => ['required','integer','min:1'],
                 'start_time' => ['required','date'],
                 'end_time' => ['required','date','after:start_time'],
                 'category_ids' => ['array','min:0'],
@@ -274,7 +279,7 @@ class Create extends Component
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-        //$this->validate($this->rulesForStep($this->step));
+        $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
@@ -343,7 +348,8 @@ class Create extends Component
 //        $data['creator_institutional_number']
 //        $data['creator_phone_number']
 //        $data['title']
-//        $data['description']
+//        $data['description'
+//        $data['guest_size']
 //        $data['start_time']
 //        $data['end_time']
 //        $data['guests']
@@ -368,6 +374,7 @@ class Create extends Component
             'creator_institutional_number' => $this->creator_institutional_number,
             'title' => $this->title,
             'description' => $this->description,
+            'guest_size' => $this->guest_size,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
             'organization_advisor_name' => $this->organization_advisor_name,

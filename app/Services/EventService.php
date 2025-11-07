@@ -81,7 +81,7 @@ class EventService {
                         'end_time' => $data['end_time'],
 
                         'status' => $status,
-                        'guest_size' => $data['guests'] ?? null,
+                        'guest_size' => $data['guest_size'] ?? null,
                         'handles_food' => $data['handles_food'] ?? false,
                         'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
                         'external_guest' => $data['external_guests'] ?? false,

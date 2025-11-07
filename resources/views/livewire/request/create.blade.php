@@ -63,7 +63,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label required">Student ID / Number</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number" placeholder="802200000">
+                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number" placeholder="802201234">
                     @error('creator_institutional_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
@@ -75,6 +75,12 @@
                     <label class="form-label required">Event description</label>
                     <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="Enter a brief description of the event"></textarea>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label required">Number of Guests</label>
+                    <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
+                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
@@ -98,6 +104,7 @@
                     </select>
                 </div>
 
+                <label class="form-label">General Requirements</label>
                 {{-- Check box for food handling --}}
                 <div class="form-check">
                     <input
