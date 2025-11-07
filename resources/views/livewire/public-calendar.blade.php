@@ -3,7 +3,7 @@
     <div class="alert alert-transparent text-center py-4 mb-4" style="background-color: rgba(255, 255, 255, 0.85); border: none;">
         <h4 class="alert-heading text-dark fw-semibold">Welcome to the Eventflow!</h4>
         <p class="lead text-dark">Stay updated with all the exciting events this week. If you want to request participation or learn more, click the button below to initiate the request on the Nexo platform.</p>
-        <a href="https://www.example.com" target="_blank" class="btn btn-primary mt-3" role="button" aria-label="Initiate your request on the Nexo platform">Initiate Request</a>
+        <a href="https://www.example.com" target="_blank" class="btn btn-success mt-3" role="button" aria-label="Initiate your request on the Nexo platform">Initiate Request</a> <!-- Dark Green Button -->
         <hr class="my-4" style="border-top: 1px solid #ccc;">
         <p class="mb-0 text-dark">We hope you have an amazing time at the events!</p>
     </div>
@@ -11,9 +11,9 @@
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h1 class="h4 mb-0">Events This Week</h1>
         <div class="btn-group">
-            <button class="btn btn-outline-secondary btn-sm" wire:click="goWeek('prev')" aria-label="Previous week">&laquo; Previous</button>
-            <span class="btn btn-outline-secondary btn-sm disabled">{{ $weekLabel }}</span>
-            <button class="btn btn-outline-secondary btn-sm" wire:click="goWeek('next')" aria-label="Next week">Next &raquo;</button>
+            <button class="btn btn-outline-success btn-sm" wire:click="goWeek('prev')" aria-label="Previous week">&laquo; Previous</button> <!-- Dark Green Outline -->
+            <span class="btn btn-outline-success btn-sm disabled">{{ $weekLabel }}</span> <!-- Dark Green Outline -->
+            <button class="btn btn-outline-success btn-sm" wire:click="goWeek('next')" aria-label="Next week">Next &raquo;</button> <!-- Dark Green Outline -->
         </div>
     </div>
 
@@ -29,13 +29,13 @@
                     <ul class="list-group list-group-flush">
                         @forelse($eventsByDay[$day->toDateString()] ?? [] as $e)
                             <li class="list-group-item small">
-                                <button class="btn btn-link p-0 text-start" wire:click="openEvent({{ $e['id'] }})" aria-label="Open event {{ $e['title'] }} details">
+                                <button class="btn btn-link p-0 text-start text-success" wire:click="openEvent({{ $e['id'] }})" aria-label="Open event {{ $e['title'] }} details">
                                     <div class="fw-semibold">{{ $e['title'] }}</div>
-                                    <div class="text-muted">
+                                </button>
+                                <div class="text-muted">
                                         {{ \Carbon\Carbon::parse($e['start_time'])->format('g:ia') }}
                                         - {{ \Carbon\Carbon::parse($e['end_time'])->format('g:ia') }}
                                     </div>
-                                </button>
                             </li>
                         @empty
                             <li class="list-group-item text-muted small">No events</li>
@@ -69,7 +69,6 @@
     </div>
 </div>
 
-
 <script>
     (function () {
         function ensureBodyScrollable() {
@@ -101,4 +100,5 @@
                 setTimeout(ensureBodyScrollable, 0);
             });
         });
-    })();  </script>
+    })();
+</script>
