@@ -18,25 +18,18 @@
 {{--    - Announce validation errors near inputs with role="alert" and aria-describedby.--}}
 {{--    - Ensure the primary submit <button> has type="submit" and discernible text.--}}
 
+
+
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">
             <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
         </li>
-        {{--        <li class="nav-item">--}}
-        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>--}}
-        {{--        </li>--}}
 
         <li class="nav-item">
             <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.history.index') }}">Request History</a>
         </li>
-
-        {{--        <li class="nav-item">--}}
-        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
-        {{--        </li>--}}
-
     </ul>
-
 </x-slot:pageActions>
 
 <div>
@@ -55,44 +48,44 @@
     {{-- STEP 1 --}}
     @if ($step === 1)
 
-            <p class="text-muted small">
-                <span class="text-danger" aria-hidden="true">*</span>
-                <span class="visually-hidden">required</span>
-                Fields marked with an asterisk are required.
-            </p>
+        <p class="text-muted small">
+            <span class="text-danger" aria-hidden="true">*</span>
+            <span class="visually-hidden">required</span>
+            Fields marked with an asterisk are required.
+        </p>
         <form wire:submit.prevent="next">
 
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label required">Student phone</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_phone_number">
+                    <label class="form-label required">Student Phone</label>
+                    <input type="text" class="form-control" wire:model.defer="creator_phone_number" placeholder="787-777-7777">
                     @error('creator_phone_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
                     <label class="form-label required">Student ID / Number</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number">
+                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number" placeholder="802200000">
                     @error('creator_institutional_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event Title</label>
-                    <input type="text" class="form-control" wire:model.defer="title">
+                    <input type="text" class="form-control" wire:model.defer="title" placeholder="Enter event title">
                     @error('title') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="4" wire:model.defer="description"></textarea>
+                    <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="Enter a brief description of the event"></textarea>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Start time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="start_time">
+                    <input type="datetime-local" class="form-control" wire:model.live="start_time" placeholder="Select start time">
                     @error('start_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">End time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="end_time">
+                    <input type="datetime-local" class="form-control" wire:model.live="end_time" placeholder="Select end time">
                     @error('end_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -105,7 +98,7 @@
                     </select>
                 </div>
 
-                {{--Check box for food handling --}}
+                {{-- Check box for food handling --}}
                 <div class="form-check">
                     <input
                         id="handles_food"
@@ -118,7 +111,7 @@
                     <div id="handles_food" class="form-text"></div>
                 </div>
 
-                {{--Check box for institutional funds --}}
+                {{-- Check box for institutional funds --}}
                 <div class="form-check">
                     <input
                         id="has_funds"
@@ -131,7 +124,7 @@
                     <div id="hasFunds" class="form-text"></div>
                 </div>
 
-                {{--Check box for external guest--}}
+                {{-- Check box for external guest --}}
                 <div class="form-check">
                     <input
                         id="external_guest"
@@ -140,30 +133,23 @@
                         wire:model.live="external_guest"
                         aria-describedby="externalGuest"
                     >
-                    <label class="form-check-label" for="external_guest">This event has an external guess</label>
-c
+                    <label class="form-check-label" for="external_guest">This event has an external guest</label>
                 </div>
-
 
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
-                    <input type="text" class="form-control" value="{{ $organization_name }}" disabled>
+                    <input type="text" class="form-control" value="{{ $organization_name }}" disabled placeholder="Organization name">
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" class="form-control" wire:model.defer="organization_advisor_name">
+                    <input type="text" class="form-control" wire:model.defer="organization_advisor_name" placeholder="Enter advisor's name">
                     @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
-{{--                <div class="col-md-6">--}}
-{{--                    <label class="form-label required">Advisor phone</label>--}}
-{{--                    <input type="text" class="form-control" wire:model.defer="advisor_phone">--}}
-{{--                    @error('advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror--}}
-{{--                </div>--}}
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" class="form-control" wire:model.defer="organization_advisor_email">
+                    <input type="email" class="form-control" wire:model.defer="organization_advisor_email" placeholder="Enter advisor's email">
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -172,7 +158,6 @@ c
             </div>
         </form>
     @endif
-
     {{-- STEP 2 --}}
 
     @if ($step === 2)
@@ -254,5 +239,29 @@ c
             </div>
         </form>
     @endif
-
 </div>
+
+<script>
+    // Flag to prevent 'beforeunload' on form submit
+    let isSubmitting = false;
+
+    // Add event listener for the form submit action
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            isSubmitting = true;
+        });
+    });
+
+    // Trigger beforeunload when the user tries to leave the page (except on form submit)
+    window.addEventListener('beforeunload', function (event) {
+        if (!isSubmitting) { // Only show the warning if it's not a form submission
+            const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
+            event.returnValue = confirmationMessage;  // For most modern browsers
+            return confirmationMessage;              // For older browsers
+        }
+    });
+</script>
+
+
+
+
