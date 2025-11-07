@@ -48,7 +48,7 @@
 
     {{-- Event details modal --}}
     <div class="modal fade" id="eventDetails" tabindex="-1" wire:ignore.self>
-        <div class="modal-dialog d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-calendar-event me-2"></i>{{ $modal['title'] ?? 'Event' }}</h5>
