@@ -28,14 +28,16 @@
                     </div>
                     <ul class="list-group list-group-flush">
                         @forelse($eventsByDay[$day->toDateString()] ?? [] as $e)
-                            <li class="list-group-item small">
-                                <button class="btn btn-link p-0 text-start text-success" wire:click="openEvent({{ $e['id'] }})" aria-label="Open event {{ $e['title'] }} details">
+                            <li class="list-group-item small d-flex justify-content-between align-items-center">
+                                <button class="btn btn-link p-0 text-start text-success flex-grow-1 text-truncate"
+                                        wire:click="openEvent({{ $e['id'] }})"
+                                        aria-label="Open event {{ $e['title'] }} details">
                                     <div class="fw-semibold">{{ $e['title'] }}</div>
                                 </button>
-                                <div class="text-muted">
-                                        {{ \Carbon\Carbon::parse($e['start_time'])->format('g:ia') }}
-                                        - {{ \Carbon\Carbon::parse($e['end_time'])->format('g:ia') }}
-                                    </div>
+                                <div class="text-muted ms-3">
+                                    {{ \Carbon\Carbon::parse($e['start_time'])->format('g:ia') }}
+                                    - {{ \Carbon\Carbon::parse($e['end_time'])->format('g:ia') }}
+                                </div>
                             </li>
                         @empty
                             <li class="list-group-item text-muted small">No events</li>
