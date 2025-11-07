@@ -88,10 +88,10 @@
             <td>{{ trim($d['director'] ?? '') }}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
+                {{--<button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
                   aria-label="Edit department {{ $d['name'] }}" title="Edit department {{ $d['name'] }}">
                   <i class="bi bi-pencil"></i>
-                </button>
+                </button>--}}
                 <button class="btn btn-outline-danger" wire:click="delete({{ $d['id'] }})"
                   aria-label="Delete department {{ $d['name'] }}" title="Delete department {{ $d['name'] }}">
                   <i class="bi bi-trash3"></i>
@@ -127,11 +127,11 @@
         </div>
         <div class="modal-body">
           <div class="row g-3">
-            <div class="col-md-6"><label class="form-label" for="dept_name">Name</label><input id="dept_name"
+            <div class="col-md-6"><label class="form-label required" for="dept_name">Name</label><input id="dept_name"
                 class="form-control" wire:model.live="dName" required placeholder="Department name (e.g., Engineering)">
             </div>
-            <div class="col-md-3"><label class="form-label" for="dept_code_edit">Code</label><input id="dept_code_edit"
-                class="form-control" wire:model.live="dCode" required placeholder="ENG"></div>
+            <div class="col-md-3"><label class="form-label required" for="dept_code_edit">Code</label><input
+                id="dept_code_edit" class="form-control" wire:model.live="dCode" required placeholder="ENG"></div>
             <div class="col-md-3"><label class="form-label" for="dept_director">Director</label><input
                 id="dept_director" class="form-control" wire:model.live="dDirector"
                 placeholder="Director name or email"></div>

@@ -535,12 +535,12 @@ class VenueService
      * @return Venue
      * @throws Exception
      */
-    public function updateVenue(Venue $venue, array $data, User $admin): Venue
+    public function updateVenue(Venue $venue, array $data, ?User $admin = null): Venue
     {
         //try {
 
         // Validate admin role
-        if (!$admin->getRoleNames()->contains('system-admin')) {
+        if ($admin && !$admin->getRoleNames()->contains('system-admin')) {
             throw new InvalidArgumentException('The manager and the director must be system-admin.');
         }
 
@@ -562,12 +562,15 @@ class VenueService
             );
         }
 
-        $this->auditService->logAdminAction(
-            $admin->id,
-            '',
-            '',
-            'Updated venue #' . $venue->id
-        ); // MOCK FROM SERVICE
+        if ($admin) {
+            $this->auditService->logAdminAction(
+                $admin->id,
+                'VENUE_UPDATED',
+                'venue',
+                (string)$venue->id,
+                ['meta' => ['fields' => array_keys($data)]]
+            );
+        }
 
         // Update the venue with the filtered data
         return Venue::updateOrCreate(
@@ -607,7 +610,7 @@ class VenueService
      * @return Collection
      * @throws Exception
      */
-    public function updateOrCreateFromImportData(array $venueData, User $admin): Collection
+    public function updateOrCreateFromImportData(array $venueData, ?User $admin = null): Collection
     {
         try {
             // Iterate through the array
@@ -686,20 +689,23 @@ class VenueService
                 ));
             }
 
-            // Audit import action with valid parameters
-            $this->auditService->logAdminAction(
-                $admin->id,
-                'VENUES_IMPORTED',
-                'system',
-                'venues_import'
-            );
+            // Audit import action when admin context is available (auth-less supported)
+            if ($admin) {
+                $this->auditService->logAdminAction(
+                    $admin->id,
+                    'VENUES_IMPORTED',
+                    'system',
+                    'venues_import'
+                );
+            }
 
             // Return collection of updated values
             return $updatedVenues;
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
-            throw new Exception('Unable to synchronize venue data.');
+            // Preserve root cause message to aid debugging while keeping a consistent error label
+            throw new Exception('Unable to synchronize venue data: ' . $exception->getMessage(), previous: $exception);
         }
     }
 
@@ -716,11 +722,11 @@ class VenueService
      * @return void
      * @throws Exception
      */
-    public function deactivateVenues(array $venues, User $admin): void
+    public function deactivateVenues(array $venues, ?User $admin = null): void
     {
         try {
             // Validate admin role
-            if (!$admin->getRoleNames()->contains('system-admin')) {
+            if ($admin && !$admin->getRoleNames()->contains('system-admin')) {
                 throw new InvalidArgumentException('The manager and the director must be system-admin.');
             }
 
@@ -732,12 +738,14 @@ class VenueService
 
             foreach ($venues as $venue) {
                 $venue->delete();
-                $this->auditService->logAdminAction(
-                    $admin->id,
-                    'VENUE_DEACTIVATED',
-                    'venue',
-                    (string) $venue->id
-                );
+                if ($admin) {
+                    $this->auditService->logAdminAction(
+                        $admin->id,
+                        'VENUE_DEACTIVATED',
+                        'venue',
+                        (string) $venue->id
+                    );
+                }
             };
         } catch (\InvalidArgumentException $exception) {
             throw $exception;

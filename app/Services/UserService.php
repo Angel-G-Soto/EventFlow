@@ -65,22 +65,32 @@ class UserService
      * @param int $admin_id The id of the administrator performing the action.
      * @return User The updated User object.
      */
-    public function updateUserRoles(User $user, array $roleCodes, User $admin): User
+    public function updateUserRoles(User $user, array $roleCodes, ?User $admin = null): User
     {
-        // Find the Role model IDs corresponding to the codes
-        // Align with roles schema: use 'code' column and primary key 'id'
-        $roleIds = Role::whereIn('code', $roleCodes)->pluck('id');
+        // Ensure roles exist for provided codes, creating any missing
+        $existing = Role::whereIn('code', $roleCodes)->pluck('id', 'code');
+        $missing  = array_values(array_diff($roleCodes, $existing->keys()->all()));
+        foreach ($missing as $rcode) {
+            $created = Role::firstOrCreate(
+                ['code' => $rcode],
+                ['name' => \Illuminate\Support\Str::of($rcode)->replace('-', ' ')->title()]
+            );
+            $existing[$rcode] = $created->id;
+        }
 
         // Sync the roles in the pivot table
-        $user->roles()->sync($roleIds);
+        $user->roles()->sync(array_values($existing->all()));
 
-        // Audit the action
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->name,
-            'USER_ROLES_UPDATED',
-            "Updated roles for user '{$user->name}' (ID: {$user->user_id}) to: " . implode(', ', $roleCodes)
-        );
+        // Audit the action (guard admin optionality and align params)
+        if ($admin && $admin->id) {
+            $this->auditService->logAdminAction(
+                (int) $admin->id,
+                'USER_ROLES_UPDATED',
+                'user',
+                (string) ($user->id ?? 0),
+                ['meta' => ['roles' => array_values($roleCodes)]]
+            );
+        }
 
         // Return the user with the fresh roles loaded
         return $user->load('roles');
@@ -94,7 +104,7 @@ class UserService
      * @param int $admin_id The id of the administrator performing the action.
      * @return User The updated User object.
      */
-    public function assignUserToDepartment(User $user, int $departmentId, User $admin): User
+    public function assignUserToDepartment(User $user, int $departmentId, ?User $admin = null): User
     {
         // Ensure the department exists before assigning
         $department = Department::findOrFail($departmentId);
@@ -122,20 +132,51 @@ class UserService
      * @param string $adminName The name of the administrator performing the action.
      * @return User The updated User object.
      */
-    public function updateUserProfile(User $user, array $data, User $admin): User
+    public function updateUserProfile(User $user, array $data, ?User $admin = null): User
     {
         // Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
-        $fillableData = Arr::only($data, ['first_name', 'email']);
+        $fillableData = Arr::only($data, ['first_name', 'last_name', 'email']);
 
         $user->fill($fillableData);
         $user->save();
 
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->name,
-            'USER_PROFILE_UPDATED',
-            "Updated profile for user '{$user->name}' (ID: {$user->user_id})."
-        );
+        if ($admin && $admin->id) {
+            $this->auditService->logAdminAction(
+                (int) $admin->id,
+                'USER_PROFILE_UPDATED',
+                'user',
+                (string) ($user->id ?? 0)
+            );
+        }
+
+        return $user;
+    }
+
+    /**
+     * Create a new user with the provided data.
+     * Expected keys: first_name, last_name, email, auth_type, password (optional)
+     */
+    public function createUser(array $data, ?User $admin = null): User
+    {
+        $payload = [
+            'first_name' => $data['first_name'] ?? '',
+            'last_name'  => $data['last_name']  ?? '',
+            'email'      => $data['email'],
+            'auth_type'  => $data['auth_type'] ?? 'saml',
+        ];
+        if (!empty($data['password'])) {
+            $payload['password'] = $data['password'];
+        }
+        $user = User::create($payload);
+
+        if ($admin && $admin->id) {
+            $this->auditService->logAdminAction(
+                (int) $admin->id,
+                'USER_CREATED',
+                'user',
+                (string) ($user->id ?? 0)
+            );
+        }
 
         return $user;
     }
@@ -148,7 +189,7 @@ class UserService
      * @param string $adminName The name of the administrator performing the action.
      * @return void
      */
-    public function deleteUser(User $user, User $admin): void
+    public function deleteUser(User $user, ?User $admin = null): void
     {
         // It's important to get the user's name *before* deleting them for the audit log.
         $deletedUserName = $user->name;
@@ -157,12 +198,15 @@ class UserService
 
         $user->delete();
 
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->name,
-            'USER_DELETED',
-            "Permanently deleted user '{$deletedUserName}' (Email: {$deletedUserEmail}) (ID: {$deletedUserId})."
-        );
+        if ($admin && $admin->id) {
+            $this->auditService->logAdminAction(
+                (int) $admin->id,
+                'USER_DELETED',
+                'user',
+                (string) $deletedUserId,
+                ['meta' => ['email' => $deletedUserEmail, 'name' => $deletedUserName]]
+            );
+        }
     }
     /**
      * Retrieves a collection of all users who have a specific role.

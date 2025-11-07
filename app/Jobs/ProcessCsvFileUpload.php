@@ -122,14 +122,14 @@ class ProcessCsvFileUpload implements ShouldQueue
 
             Cache::put($cacheKey, 'importing', 600);
 
-            // Resolve admin strictly via service; fallback to a system-admin if needed
+            // Try to resolve an admin via service; proceed without one if not available (auth-less mode)
             $adminUser = null;
             try {
                 if ($this->admin_id > 0) {
                     $adminUser = app(UserService::class)->findUserById($this->admin_id);
                 }
             } catch (\Throwable $e) {
-                // Will attempt fallback below
+                // Non-fatal; continue attempting fallbacks
             }
             if (!$adminUser) {
                 $svc = app(UserService::class);
@@ -138,15 +138,12 @@ class ProcessCsvFileUpload implements ShouldQueue
                     ?: $svc->getUsersWithRole('system-administrator')->first();
             }
             if (!$adminUser) {
-                // Last-chance fallback: any user
-                $adminUser = app(UserService::class)->getFirstUser();
-            }
-            if (!$adminUser) {
-                Log::error('CSV import job failed - no admin user available');
-                Cache::put($cacheKey, 'failed', 600);
-                Cache::put($cacheKey . ':error', 'No admin user available for import.', 600);
-                Storage::disk('uploads_temp')->delete($this->file_name);
-                return;
+                // Last-chance fallback: any user; if still none, proceed with null (auth disabled)
+                try {
+                    $adminUser = app(UserService::class)->getFirstUser();
+                } catch (\Throwable $e) {
+                    $adminUser = null;
+                }
             }
 
             // Import via service

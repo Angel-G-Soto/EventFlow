@@ -148,7 +148,7 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-12 col-md-6">
-              <label class="form-label" for="edit_name">Name</label>
+              <label class="form-label required" for="edit_name">Name</label>
               <input id="edit_name" type="text" class="form-control @error('editName') is-invalid @enderror" required
                 wire:model.live="editName" placeholder="Full Name">
               @error('editName')
@@ -156,7 +156,7 @@
               @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="edit_email">Email</label>
+              <label class="form-label required" for="edit_email">Email</label>
               <input id="edit_email" type="email" class="form-control @error('editEmail') is-invalid @enderror" required
                 wire:model.live="editEmail" placeholder="username@upr.edu">
               @error('editEmail')
@@ -164,7 +164,7 @@
               @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label">Roles</label>
+              <label class="form-label required">Roles</label>
               <div class="border rounded p-2" style="max-height:120px;overflow-y:auto;">
                 @foreach(($allRoles ?? []) as $rname)
                 @php $label = \Illuminate\Support\Str::of($rname)->replace('-', ' ')->title(); @endphp
@@ -180,7 +180,8 @@
               @error('editRoles') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="edit_department">Department</label>
+              <label class="form-label {{ in_array('venue-manager', $editRoles ?? []) ? 'required' : '' }}"
+                for="edit_department">Department</label>
               @php
               // Roles now passed as codes; venue-manager triggers department selection
               $isVenueManager = in_array('venue-manager', $editRoles ?? []);
@@ -240,20 +241,6 @@
           const toast = bootstrap.Toast.getOrCreateInstance(el, { autohide: true, delay: 3000 });
           toast.show();
         } catch (_) { /* noop */ }
-      });
-
-      // Bootstrap modal helpers for Livewire components
-      Livewire.on('bs:open', ({ id }) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const modal = bootstrap.Modal.getOrCreateInstance(el);
-        modal.show();
-      });
-      Livewire.on('bs:close', ({ id }) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const m = bootstrap.Modal.getInstance(el);
-        if (m) m.hide();
       });
     });
   </script>

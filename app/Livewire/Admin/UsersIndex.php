@@ -9,9 +9,6 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
 use App\Livewire\Traits\UserEditState;
-use App\Models\User;
-use App\Models\Role;
-use App\Models\Department;
 use App\Services\UserService;
 use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
@@ -203,69 +200,60 @@ class UsersIndex extends Component
     {
         $this->validate();
 
+        $svc = app(UserService::class);
         if ($this->editId) {
-            $user = User::findOrFail($this->editId);
-            [$first, $last] = $this->splitName($this->editName);
-            $user->fill([
-                'first_name' => $first,
-                'last_name' => $last,
-                'email' => $this->editEmail,
-                'department_id' => $this->resolveDepartmentIdFromName($this->editDepartment),
-            ])->save();
-
-            // Ensure roles exist and sync by CODE
-            $existing = Role::whereIn('code', $this->editRoles)->pluck('id', 'code');
-            $missing  = array_values(array_diff($this->editRoles, $existing->keys()->all()));
-            foreach ($missing as $rcode) {
-                $created = Role::create([
-                    'code' => $rcode,
-                    'name' => \Illuminate\Support\Str::of($rcode)->replace('-', ' ')->title(),
-                ]);
-                $existing[$rcode] = $created->id;
+            try {
+                $user = $svc->findUserById((int)$this->editId);
+                [$first, $last] = $this->splitName($this->editName);
+                // Auth disabled: skip audit by passing a null admin or lightweight stub
+                $svc->updateUserProfile($user, [
+                    'first_name' => $first,
+                    'last_name'  => $last,
+                    'email'      => $this->editEmail,
+                ], $this->fakeAdminUser());
+                $svc->updateUserRoles($user, $this->editRoles, $this->fakeAdminUser());
+                // Department resolution
+                $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
+                if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
+                    $deptSvc = app(DepartmentService::class);
+                    $dept = $deptSvc->getDepartmentByID($deptId);
+                    if ($dept) {
+                        $deptSvc->updateUserDepartment($dept, $user);
+                    }
+                }
+                $this->toast('User updated');
+            } catch (\Throwable $e) {
+                $this->addError('editEmail', 'Unable to update user.');
+                return;
             }
-            $user->roles()->sync(array_values($existing->all()));
-
-            // log audit later with justification
-            $this->toast('User updated');
         } else {
-            [$first, $last] = $this->splitName($this->editName);
-            $user = User::create([
-                'first_name' => $first,
-                'last_name' => $last,
-                'email' => $this->editEmail,
-                'department_id' => $this->resolveDepartmentIdFromName($this->editDepartment),
-                'auth_type' => 'saml',
-                'password' => bcrypt(str()->random(16)), // temp
-            ]);
-            // Ensure roles exist and sync by CODE
-            $existing = Role::whereIn('code', $this->editRoles)->pluck('id', 'code');
-            $missing  = array_values(array_diff($this->editRoles, $existing->keys()->all()));
-            foreach ($missing as $rcode) {
-                $created = Role::create([
-                    'code' => $rcode,
-                    'name' => \Illuminate\Support\Str::of($rcode)->replace('-', ' ')->title(),
-                ]);
-                $existing[$rcode] = $created->id;
+            try {
+                [$first, $last] = $this->splitName($this->editName);
+                $user = $svc->createUser([
+                    'first_name' => $first,
+                    'last_name'  => $last,
+                    'email'      => $this->editEmail,
+                    'auth_type'  => 'saml',
+                    'password'   => bcrypt(str()->random(16)),
+                ], $this->fakeAdminUser());
+                $svc->updateUserRoles($user, $this->editRoles, $this->fakeAdminUser());
+                $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
+                if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
+                    $deptSvc = app(DepartmentService::class);
+                    $dept = $deptSvc->getDepartmentByID($deptId);
+                    if ($dept) {
+                        $deptSvc->updateUserDepartment($dept, $user);
+                    }
+                }
+                $this->toast('User created');
+            } catch (\Throwable $e) {
+                $this->addError('editEmail', 'Unable to create user.');
+                return;
             }
-            $user->roles()->sync(array_values($existing->all()));
-            $this->toast('User created');
         }
 
         // Assign department via DepartmentService if required and provided
-        try {
-            if ($this->roleRequiresDepartment($this->editRoles)) {
-                $deptName = trim((string)$this->editDepartment);
-                if ($deptName !== '' && $deptName !== '—') {
-                    $dept = Department::firstOrCreate(
-                        ['name' => $deptName],
-                        ['code' => \Illuminate\Support\Str::slug($deptName)]
-                    );
-                    app(DepartmentService::class)->updateUserDepartment($dept, $user);
-                }
-            }
-        } catch (\Throwable $e) {
-            // Do not fallback to direct Eloquent writes
-        }
+        // Department assignment handled above; no direct model fallback here.
 
         $this->dispatch('bs:close', id: 'userJustify');
         $this->dispatch('bs:close', id: 'editUserModal');
@@ -312,13 +300,9 @@ class UsersIndex extends Component
                 $user = app(UserService::class)->findUserById((int)$this->editId);
                 if ($user) {
                     // Delete via service; if no admin available, surface an error
-                    $admin = Auth::user();
-                    if ($admin && is_object($admin)) {
-                        app(UserService::class)->deleteUser($user, $admin);
-                    } else {
-                        $this->addError('justification', 'Unable to delete user without an admin context.');
-                        return;
-                    }
+                    // Auth disabled: use fake admin for audit or skip if null
+                    $admin = $this->fakeAdminUser();
+                    app(UserService::class)->deleteUser($user, $admin);
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to delete user.');
@@ -364,7 +348,8 @@ class UsersIndex extends Component
                 $users = collect();
             }
         } else {
-            foreach (UserConstants::ROLES as $code) {
+            // Iterate over ROLE CODES, not display names
+            foreach ($this->roleCodes() as $code) {
                 try {
                     $users = $users->merge($svc->getUsersWithRole($code));
                 } catch (\Throwable $e) {
@@ -398,15 +383,23 @@ class UsersIndex extends Component
     protected function mapUserToRow($u): array
     {
         $name = trim(trim((string)($u->first_name ?? '')) . ' ' . trim((string)($u->last_name ?? '')));
+        // Ensure unique role codes for display
+        $roles = method_exists($u, 'roles')
+            ? $u->roles
+                ->map(fn($r) => $r->code ?? \Illuminate\Support\Str::slug((string)$r->name))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all()
+            : [];
+
         return [
             'id' => (int)($u->id ?? $u->user_id),
             'name' => $name,
             'email' => (string)($u->email ?? ''),
             'department' => (string)optional($u->department)->name ?? '—',
-            // Track roles internally as CODES; if code missing, fall back to slug(name)
-            'roles' => method_exists($u, 'roles')
-                ? $u->roles->map(fn($r) => $r->code ?? \Illuminate\Support\Str::slug((string)$r->name))->filter()->values()->all()
-                : [],
+            // Track roles internally as unique CODES; if code missing, fall back to slug(name)
+            'roles' => $roles,
         ];
     }
 
@@ -521,6 +514,26 @@ class UsersIndex extends Component
     }
 
     /**
+     * Provide a minimal fake admin user when auth is disabled.
+     * Returns an existing first user or a transient in-memory User model.
+     */
+    protected function fakeAdminUser(): ?\App\Models\User
+    {
+        try {
+            $u = app(\App\Services\UserService::class)->getFirstUser();
+            if ($u) return $u; // reuse real user to keep audit foreign key valid
+            // Build an unsaved transient user object for downstream type expectations
+            return new \App\Models\User([
+                'first_name' => 'System',
+                'last_name'  => 'Admin',
+                'email'      => 'system@localhost',
+            ]);
+        } catch (\Throwable $e) {
+            return null; // downstream service methods should guard null admin
+        }
+    }
+
+    /**
      * Compute the list of role CODES from the UserConstants names by slugging with dashes.
      * Example: "Venue Manager" => "venue-manager".
      *
@@ -546,11 +559,12 @@ class UsersIndex extends Component
             return null;
         }
         // Ensure the department exists; create it on-the-fly if missing so it appears in the table
-        $dept = Department::firstOrCreate(
-            ['name' => $name],
-            ['code' => \Illuminate\Support\Str::slug($name)]
-        );
-        return (int) $dept->id;
+        try {
+            $dept = app(DepartmentService::class)->findByName($name);
+            return (int)$dept->id;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
 

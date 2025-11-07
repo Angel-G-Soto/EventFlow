@@ -434,7 +434,8 @@ class VenuesIndex extends Component
         ];
 
         $venue = null;
-        $admin = Auth::user();
+    // Auth disabled: obtain a fallback admin user for auditing or null
+    $admin = $this->fakeAdminUser();
         try {
             if ($this->editId) {
                 $existing = app(VenueService::class)->getVenueById((int)$this->editId);
@@ -508,8 +509,9 @@ class VenuesIndex extends Component
             try {
                 $venue = app(VenueService::class)->getVenueById((int)$this->editId);
                 if ($venue) {
-                    $admin = Auth::user();
-                    app(VenueService::class)->deactivateVenues([$venue], $admin);
+                    // Auth disabled: use fake admin (may be null) for deactivation
+                    $admin = $this->fakeAdminUser();
+                    app(VenueService::class)->deactivateVenues([$venue], $admin ?? new \App\Models\User(['first_name'=>'System','last_name'=>'Admin','email'=>'system@localhost']));
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to delete venue.');
@@ -721,5 +723,24 @@ class VenuesIndex extends Component
             if ($outIdx === '1') $out[] = $lab;
         }
         return $out;
+    }
+
+    /**
+     * Provide a minimal fake admin user when auth is disabled.
+     * Attempts to reuse the first persisted user; otherwise returns a transient model.
+     */
+    protected function fakeAdminUser(): ?\App\Models\User
+    {
+        try {
+            $u = app(\App\Services\UserService::class)->getFirstUser();
+            if ($u) return $u;
+            return new \App\Models\User([
+                'first_name' => 'System',
+                'last_name'  => 'Admin',
+                'email'      => 'system@localhost',
+            ]);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }
