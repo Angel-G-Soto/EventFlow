@@ -16,8 +16,6 @@
 {{--    - Ensure interactive elements have discernible text; use aria-labels as needed.--}}
 {{--    - Pagination via $items->links() includes ARIA attributes; place it within <nav>.--}}
 
-
-
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">

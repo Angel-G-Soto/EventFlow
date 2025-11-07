@@ -18,15 +18,6 @@
 {{--    - Group checkbox lists inside <fieldset> with a <legend> to convey context.--}}
 {{--    - Provide focus styles and keyboard operability for dropdowns/multiselects.--}}
 
-<style>
-    .card-body .form-label,
-    .card-body .form-control,
-    .card-body .form-select,
-    .card-body .btn {
-        font-size: 1.05rem; /* or 1rem */
-    }
-</style>
-
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">
@@ -35,30 +26,25 @@
         <li class="nav-item">
             <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>
         </li>
-
         <li class="nav-item">
             <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.history.index') }}">Request History</a>
         </li>
-
-        {{--        <li class="nav-item">--}}
-        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
-        {{--        </li>--}}
-
     </ul>
 </x-slot:pageActions>
 
-<div class="card-body py-2">
+<div class="card-body py-2" style="font-size: 1.05rem;">
     <div class="row align-items-end g-2">
 
         {{-- Search by Title --}}
         <div class="col-md-4 col-sm-12">
-            <label for="searchTitle" class="form-label mb-0 small text-muted">Search</label>
+            <label for="searchTitle" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Search</label>
             <div class="input-group input-group-sm">
                 <input id="searchTitle" type="text" class="form-control"
                        placeholder="Search by title..."
                        wire:model.defer="searchTitle"
-                       wire:keydown.enter="apply">
-                <button class="btn btn-secondary" wire:click="apply">
+                       wire:keydown.enter="apply"
+                       style="font-size: 1.05rem;">
+                <button class="btn btn-secondary" wire:click="apply" style="font-size: 1.05rem;">
                     <i class="bi bi-search"></i>
                 </button>
             </div>
@@ -66,24 +52,20 @@
 
         {{-- Role / Status --}}
         <div class="col-md-3 col-sm-6">
-            <label for="status" class="form-label mb-0 small text-muted">Role / Status</label>
-            <select id="status" class="form-select form-select-sm" wire:model.defer="selectedRole">
+            <label for="status" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Role / Status</label>
+            <select id="status" class="form-select form-select-sm" wire:model.defer="selectedRole" style="font-size: 1.05rem;">
                 <option value="">All Roles</option>
                 @foreach($roles as $role)
                     @php
                         $roleName = strtolower($role['name']);
                         if (str_contains($roleName, 'advisor')) {
-                            $display = 'Advisor';
-                            $value = 'advisor';
+                            $display = 'Advisor'; $value = 'advisor';
                         } elseif (str_contains($roleName, 'venue-manager')) {
-                            $display = 'Venue Manager';
-                            $value = 'venue-manager';
+                            $display = 'Venue Manager'; $value = 'venue-manager';
                         } elseif (str_contains($roleName, 'event-approver') || str_contains($roleName, 'dsca')) {
-                            $display = 'Event Approver';
-                            $value = 'event-approver';
+                            $display = 'Event Approver'; $value = 'event-approver';
                         } else {
-                            $display = $roleName;
-                            $value = $roleName;
+                            $display = $roleName; $value = $roleName;
                         }
                     @endphp
                     <option value="{{ $value }}">{{ $display }}</option>
@@ -93,8 +75,8 @@
 
         {{-- Sort by Date --}}
         <div class="col-md-3 col-sm-6">
-            <label for="sort" class="form-label mb-0 small text-muted">Sort by Date</label>
-            <select id="sort" class="form-select form-select-sm" wire:model.defer="sortDirection">
+            <label for="sort" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Sort by Date</label>
+            <select id="sort" class="form-select form-select-sm" wire:model.defer="sortDirection" style="font-size: 1.05rem;">
                 <option value="desc">Newest First</option>
                 <option value="asc">Oldest First</option>
             </select>
@@ -103,14 +85,15 @@
         {{-- Clear Button --}}
         <div class="col-md-1 col-sm-6">
             <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
-            <button type="button" class="btn btn-secondary btn-sm w-100" wire:click="resetFilters">
+            <button type="button" class="btn btn-secondary btn-sm w-100" wire:click="resetFilters" style="font-size: 1.05rem;">
                 <i class="bi bi-x-circle me-1"></i> Clear
             </button>
         </div>
 
+        {{-- Apply Button --}}
         <div class="col-md-1 col-sm-6">
             <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
-            <button type="button" class="btn btn-success btn-sm w-100" wire:click="apply">
+            <button type="button" class="btn btn-success btn-sm w-100" wire:click="apply" style="font-size: 1.05rem;">
                 <i class="bi bi-arrow-right-circle me-1"></i> Apply
             </button>
         </div>
@@ -131,3 +114,4 @@
     });
 </script>
 @endscript
+
