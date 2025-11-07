@@ -10,7 +10,7 @@
 
       <div class="modal-body">
         <div class="mb-3">
-          <label class="form-label">Reason</label>
+          <label class="form-label required">Reason</label>
           <textarea class="form-control" rows="4" required wire:model.live="{{ $model ?? 'justification' }}"
             placeholder="Enter your justification here..."></textarea>
           @error($model ?? 'justification')

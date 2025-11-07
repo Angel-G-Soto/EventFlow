@@ -167,10 +167,10 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
+                {{--<button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
                   aria-label="Edit venue {{ $v['name'] }}" title="Edit venue {{ $v['name'] }}">
                   <i class="bi bi-pencil"></i>
-                </button>
+                </button>--}}
                 <button class="btn btn-outline-danger" wire:click="delete({{ $v['id'] }})"
                   aria-label="Delete venue {{ $v['name'] }}" title="Delete venue {{ $v['name'] }}">
                   <i class="bi bi-trash3"></i>
@@ -207,7 +207,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="csv_file">CSV File</label>
+            <label class="form-label required" for="csv_file">CSV File</label>
             <input id="csv_file" type="file" class="form-control" accept=".csv,text/csv" wire:model="csvFile">
             <small class="text-muted d-block mt-1">Required headers: name, room_code, department_name, capacity,
               final_exams_capacity. Optional flags: allow_teaching_with_multimedia, allow_teaching_with_computers,
@@ -296,12 +296,12 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label" for="v_name">Name</label>
+              <label class="form-label required" for="v_name">Name</label>
               <input id="v_name" class="form-control" required wire:model.live="vName"
                 placeholder="Venue name (e.g., Main Auditorium)">
             </div>
             <div class="col-md-3">
-              <label class="form-label" for="v_department">Department</label>
+              <label class="form-label required" for="v_department">Department</label>
               <select id="v_department" class="form-select" wire:model.live="vDepartment" required>
                 <option value="">Select department</option>
                 @foreach($departments as $dept)
@@ -310,12 +310,12 @@
               </select>
             </div>
             <div class="col-md-2">
-              <label class="form-label" for="v_room">Venue Code</label>
+              <label class="form-label required" for="v_room">Venue Code</label>
               <input id="v_room" class="form-control" required wire:model.live="vRoom"
                 placeholder="Code (e.g., EN-101)">
             </div>
             <div class="col-md-2">
-              <label class="form-label" for="v_capacity">Capacity</label>
+              <label class="form-label required" for="v_capacity">Capacity</label>
               <input id="v_capacity" type="number" min="0" class="form-control" required wire:model.live="vCapacity"
                 placeholder="0+">
             </div>
