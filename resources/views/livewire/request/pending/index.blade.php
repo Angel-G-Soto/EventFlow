@@ -42,7 +42,7 @@
         <h1 class="h4 mb-3">Pending Requests</h1>
 
 
-        <div class="card shadow-sm mb-3 pb-1">
+        <div wire:ignore class="card shadow-sm mb-3 pb-1">
             <livewire:request.pending.filters/>
         </div>
 
