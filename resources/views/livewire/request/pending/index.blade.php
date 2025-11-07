@@ -42,13 +42,8 @@
         <h1 class="h4 mb-3">Pending Requests</h1>
 
 
-
-
-        <div class="card shadow-sm mb-3">
+        <div class="card shadow-sm mb-3 pb-1">
             <livewire:request.pending.filters/>
-
-            <div class="card-body">
-            </div>
         </div>
 
         <div class="card shadow-sm">
@@ -70,8 +65,23 @@
                             <tr>
                                 <td class="fw-medium">{{$event->title ?? '—' }}</td>
                                 <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
-                                <td class="fw-medium">{{ $event->created_at}}</td>
-                                <td class="fw-medium">{{ $event->status}}</td>
+                                <td class="fw-medium">{{\Carbon\Carbon::parse($event->created_at)->toDayDateTimeString()}}</td>
+                                <td class="fw-medium">
+                                    @php
+                                        $statusLower = strtolower($event->status);
+
+                                        if (str_contains($statusLower, 'advisor')) {
+                                            $display = 'Advisor Approval';
+                                        } elseif (str_contains($statusLower, 'venue')) {
+                                            $display = 'Venue Approval';
+                                        } elseif (str_contains($statusLower, 'dsca')) {
+                                            $display = 'Event Approval';
+                                        } else {
+                                            $display = $event->status;
+                                        }
+                                    @endphp
+                                    <span class="badge rounded-pill text-bg-secondary">{{ $display }}</span>
+                                </td>
                                 <td class="fw-medium text-end">
                                     <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"

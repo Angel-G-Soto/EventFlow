@@ -1,111 +1,62 @@
 <?php
 
-/**
- * Livewire Component: Index
- *
- * EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5).
- * Displays a paginated, filterable list (e.g., events/requests) for users.
- *
- * Responsibilities:
- * - Hold UI state (filters, pagination) and synchronize with URL if needed.
- * - Build Eloquent queries based on selected filters and search terms.
- * - Render the Blade view with the resulting dataset.
- *
- * @since   2025-11-01
- */
-
 namespace App\Livewire\Request\Pending;
 
 use App\Services\EventService;
-use App\Services\VenueService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
-use Livewire\Component;
 use Livewire\Attributes\On;
+use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Event;
 
-/**
- * Class Index
- *
- * Livewire index/list component with optional multi-filters and pagination.
- * Suitable for listing Events or Requests and reacting to filter changes.
- */
-#[layout('layouts.user')]
+#[Layout('layouts.user')]
 class Index extends Component
 {
     use WithPagination;
-/**
- * @var string
- */
+
     public string $paginationTheme = 'bootstrap';
-/**
- * @var array{categories:array<int|string>,venues:array<int|string>,orgs:array<int|string>}
- */
+
+    // Filters applied from the Filters component
     public array $filters = [
-        'categories' => [],
-        'venues'     => [],
-        'orgs'       => [],
-        'roles'      => [],
+        'role' => '',
+        'searchTitle' => '',
+        'sortDirection' => 'desc',
     ];
 
     #[On('filters-changed')]
-/**
- * OnFiltersChanged action.
- *
- * Listens for Livewire events: 'filters-changed'.
- * @param array $categories
- * @param array $venues
- * @param array $orgs
- * @return void
- */
-    public function onFiltersChanged(array $categories = [], array $venues = [], array $orgs = [], array $roles = []): void
+    public function onFiltersChanged(array $filters): void
     {
-        $this->filters['categories'] = array_map('intval', $categories);
-        $this->filters['venues']     = array_map('intval', $venues);
-        $this->filters['orgs']       = $orgs;//array_map('intval', $orgs);
-        $this->filters['roles']      = $roles;//array_map('intval', $roles);
+        // Map dispatched keys to local filters
+        $this->filters['role'] = $filters['role'] ?? '';
+        $this->filters['searchTitle'] = $filters['searchTitle'] ?? '';
+        $this->filters['sortDirection'] = $filters['sortDirection'] ?? 'desc';
 
-        //dd($this->filters['roles']);
-        $this->resetPage(); // go back to page 1 after changing filters
+        $this->resetPage(); // reset pagination
     }
-/**
- * Build the query, paginate results, and render the view.
- *
- * Listens for Livewire events: 'filters-changed'.
- * @return \Illuminate\Contracts\View\View
- */
 
     public function render()
     {
-//        dd(Auth::user()->roles()->first());
-//        dd(app(EventService::class)->genericGetPendingRequestsV2(Auth::user(), ['venue-manager'])->get());
+        $query = app(EventService::class);
 
-        $q = app(EventService::class)->genericGetPendingRequestsV2(Auth::user(), $this->filters['roles']); // Replace the second parameter with the role selected by the user
-        $q->with(['venue','categories']);
+        $roles = $this->filters['role'] ? [$this->filters['role']] : []; // if empty, send empty array
 
-        // If your Event has MANY categories (pivot), replace the block above with:
-         if (!empty($this->filters['categories'])) {
-             $ids = $this->filters['categories'];
-             $q->whereHas('categories', fn($qq) => $qq->whereIn('categories.id', $ids));
-         }
-
-        if (!empty($this->filters['venues'])) {
-            $q->whereIn('venue_id', $this->filters['venues']);
+        if (!empty($roles)) {
+            $query = $query->genericGetPendingRequestsV2(Auth::user(), $roles);
+        } else {
+            // no role filter
+            $query = $query->genericGetPendingRequestsV2(Auth::user());
         }
 
-        if (!empty($this->filters['orgs'])) {
-            $q->whereIn('organization_name', $this->filters['orgs']);
+        // Apply search filter
+        if (!empty($this->filters['searchTitle'])) {
+            $query->where('title', 'like', '%'.$this->filters['searchTitle'].'%');
         }
 
-        $events = $q->orderByDesc('created_at')->paginate(8);
+        // Apply sort direction
+        $sortDir = in_array($this->filters['sortDirection'], ['asc','desc']) ? $this->filters['sortDirection'] : 'desc';
+        $query->orderBy('created_at', $sortDir);
 
-
-        // Determine role of the user;
-
-        // Select function in accordance to the role. Save result on variable
-
-        // Return view with result
+        $events = $query->paginate(8);
 
         return view('livewire.request.pending.index', compact('events'));
     }
