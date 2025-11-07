@@ -90,10 +90,9 @@ class Details extends Component
 
     public function render()
     {
-        $docs = [
-            ['title' => 'Syllabus', 'url' => asset('23382.pdf'), 'description' => 'Fall 2025'],
-            ['title' => 'Reglamento interno', 'url' => asset('REGLAMENTO-INTERNO.pdf'), 'description' => 'Fall 2025']
-        ];
+
+        $eventService = app(EventService::class);
+        $docs = $eventService->getEventDocuments($this->event)->toArray();
         return view('livewire.request.pending.details', compact('docs'));
     }
 }

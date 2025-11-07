@@ -18,6 +18,7 @@
 namespace App\Livewire\Request\Org;
 
 use App\Models\Event;
+use App\Services\EventService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -55,18 +56,16 @@ class Details extends Component
     {
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
+        $eventService = app(EventService::class);
+        if ($this->event->status === 'approved'){
+            $eventService->cancelEvent($this->event,Auth::user(),$this->justification);
+        }
+        else{
+            $eventService->withdrawEvent($this->event,Auth::user(), $this->justification);
+        }
         $this->redirectRoute('user.index');
     }
-/**
- * Approve action.
- * @return mixed
- */
 
-    public function approve()
-    {
-        // ... do your action
-        $this->redirectRoute('user.index');
-    }
 /**
  * Back action.
  * @return mixed
@@ -84,10 +83,8 @@ class Details extends Component
 
     public function render()
     {
-        $docs = [
-            ['title' => 'Syllabus', 'url' => asset('23382.pdf'), 'description' => 'Fall 2025'],
-            ['title' => 'Reglamento interno', 'url' => asset('REGLAMENTO-INTERNO.pdf'), 'description' => 'Fall 2025']
-        ];
+        $eventService = app(EventService::class);
+        $docs = $eventService->getEventDocuments($this->event);
         return view('livewire.request.org.details', compact('docs'));
     }
 }

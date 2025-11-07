@@ -20,6 +20,7 @@
 namespace App\Livewire\Request\History;
 
 use App\Services\EventService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -57,6 +58,8 @@ class Details extends Component
     {
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
+        $eventService = app(EventService::class);
+        $eventService->cancelEvent($this->justification,$this->event,Auth::user());
         $this->redirectRoute('approver.history.index');
     }
 /**
@@ -87,10 +90,7 @@ class Details extends Component
 
     public function render()
     {
-        $docs = [
-            ['title' => 'Syllabus', 'url' => asset('23382.pdf'), 'description' => 'Fall 2025'],
-            ['title' => 'Reglamento interno', 'url' => asset('REGLAMENTO-INTERNO.pdf'), 'description' => 'Fall 2025']
-        ];
+        $docs = app(EventService::class)->getEventDocuments($this->event);
 
         // Use document service method that accepts event_id and return the array of docs.
 

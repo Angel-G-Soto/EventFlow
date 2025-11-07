@@ -24,12 +24,22 @@
     @foreach ($docs as $doc)
         <li class="list-group-item d-flex justify-content-between align-items-center">
             <div>
-                <h6 class="mb-1">{{ $doc['title'] }}</h6>
-                @if(!empty($doc['description'])) <small class="text-muted">{{ $doc['description'] }}</small> @endif
+                <h6 class="mb-1">{{ $doc['name'] }}</h6>
             </div>
-            <div class="btn-group" role="group" aria-label="Actions for {{ $doc['title'] }}">
-                <a class="btn btn-outline-primary" href="{{ $doc['url'] }}" target="_blank" rel="noopener">Open</a>
-                <a class="btn btn-outline-secondary" href="{{ $doc['url'] }}" download>Download</a>
+            <div class="btn-group" role="group" aria-label="Actions for {{ $doc['name'] }}">
+
+{{--                <a class="btn btn-outline-primary" href="{{ $doc['file_path'] }}" target="_blank" rel="noopener">Open</a>--}}
+                <a
+                    class="btn btn-primary"
+                    href="{{ route('documents.show', trim($doc['name'])) }}"  {{-- or route('pdfs.show','sample.pdf') --}}
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Open PDF
+                </a>
+
+
+                {{--                <a class="btn btn-outline-secondary" href="{{ $doc['file_path'] }}" download>Download</a>--}}
             </div>
         </li>
     @endforeach

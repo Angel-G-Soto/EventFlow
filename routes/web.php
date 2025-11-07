@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAuthentication;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
 use App\Livewire\PublicCalendar;
@@ -15,6 +16,10 @@ use App\Livewire\Admin\AuditTrailIndex;
 Route::get('/', PublicCalendar::class)->name('public.calendar');
 Route::get('/choose-role', ChooseRole::class)->name('choose.role');
 //Route::get('/director/venues', DirectorVenuesIndex::class)->name('director.venues');
+
+Route::get('/mail/test',function (){
+   return view('mail.approval-required-email');
+});
 
 Route::middleware([EnsureAuthentication::class])->group(function () {
     //Admin---------------------------------------------------------------------------------------------
@@ -58,12 +63,31 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
         })->name('events.create');
 
         Route::get('director/test', \App\Livewire\Director\VenuesIndex::class)->name('director.venues.index');
+
+        //Documents
+        Route::get('/documents/{name}', function (string $name) {
+//            $path = storage_path('app/documents'.$name);
+            $path = \Illuminate\Support\Facades\Storage::disk('documents')->path($name);
+            abort_unless(file_exists($path), 404);
+
+            return Response::file($path, [
+            'Content-Type'        => 'application/pdf',
+//            'Content-Disposition' => 'inline; filename="'.basename($path).'"',
+            ' Content-Disposition' => $path,
+            'Cache-Control'       => 'private, max-age=3600',
+            ]);
+        })->name('documents.show');
+
+
+
+
     //Route::get('/approver/requests/history/{id}',function (){
     ////    $event = Event::query()->findOrFail(request()->id);
     //
     //    return view('requests.history.details', compact('event'));
     //
     //})->name('approver.history.request');
+
 });
 
 require __DIR__ . '/saml2.php';
