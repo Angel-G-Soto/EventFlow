@@ -17,6 +17,16 @@
 {{--    - Associate <label for="..."> with inputs; ensure each control has an accessible name.--}}
 {{--    - Group checkbox lists inside <fieldset> with a <legend> to convey context.--}}
 {{--    - Provide focus styles and keyboard operability for dropdowns/multiselects.--}}
+
+<style>
+    .card-body .form-label,
+    .card-body .form-control,
+    .card-body .form-select,
+    .card-body .btn {
+        font-size: 1.05rem; /* or 1rem */
+    }
+</style>
+
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">
