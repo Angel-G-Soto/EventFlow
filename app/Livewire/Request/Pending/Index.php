@@ -80,8 +80,7 @@ class Index extends Component
     {
 //        dd(Auth::user()->roles()->first());
 //        dd(app(EventService::class)->genericGetPendingRequestsV2(Auth::user(), ['venue-manager'])->get());
-        $this->filters = [
-            'roles'=>['advisor']];
+
         $q = app(EventService::class)->genericGetPendingRequestsV2(Auth::user(), $this->filters['roles']); // Replace the second parameter with the role selected by the user
         $q->with(['venue','categories']);
 
