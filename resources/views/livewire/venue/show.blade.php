@@ -71,17 +71,35 @@
             <dt class="col-sm-4">Department:</dt>
             <dd class="col-sm-8">{{ $venue->department->name ?? '—' }}</dd>
 
-            <dt class="col-sm-4">Current Manager:</dt>
-            <dd class="col-sm-8">{{ trim(($venue->manager->first_name ?? '').' '.($venue->manager->last_name ?? '')) ?: '—' }}</dd>
+{{--            <dt class="col-sm-4">Current Manager:</dt>--}}
+{{--            <dd class="col-sm-8">{{ trim(($venue->manager->first_name ?? '').' '.($venue->manager->last_name ?? '')) ?: '—' }}</dd>--}}
 
             <dt class="col-sm-4">Capacity:</dt>
             <dd class="col-sm-8">{{ $venue->capacity ? number_format($venue->capacity) : '—' }}</dd>
 
             <dt class="col-sm-4">Opening Time:</dt>
-            <dd class="col-sm-8">{{ $open ?? '—' }}</dd>
+            <dd class="col-sm-8">
+                {{ $open ? \Carbon\Carbon::parse($open)->format('g:i A') : '—' }}
+            </dd>
 
             <dt class="col-sm-4">Closing Time:</dt>
-            <dd class="col-sm-8">{{ $close ?? '—' }}</dd>
+            <dd class="col-sm-8">
+                {{ $close ? \Carbon\Carbon::parse($close)->format('g:i A') : '—' }}
+            </dd>
+
+            <dt class="col-sm-4">Features:</dt>
+            <dd class="col-sm-8">
+                @if($venue->getFeatures() && count($venue->getFeatures()) > 0)
+                    <ul class="list-unstyled">
+                        @foreach($venue->getFeatures() as $feature)
+                            <li>{{ $feature }}</li>
+                        @endforeach
+                    </ul>
+                @else
+                    <span>—</span>
+                @endif
+            </dd>
+
         </dl>
     </div>
 </div>

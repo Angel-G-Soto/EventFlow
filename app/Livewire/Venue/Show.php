@@ -51,7 +51,7 @@ class Show extends Component
     public function mount(Venue $venue): void
     {
         $this->venue = $venue->load([
-            'manager' => fn ($q) => $q->select('id', 'first_name', 'last_name'),
+//            'manager' => fn ($q) => $q->select('id', 'first_name', 'last_name'),
             'department' => fn ($q) => $q->select('id', 'name'), // adjust if your departments table differs
         ]);
     }

@@ -18,6 +18,7 @@
 namespace App\Livewire\Venue;
 
 use App\Models\Venue;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -58,9 +59,10 @@ class Index extends Component
  */
     public function render()
     {
-        $venues = Venue::query()
+        $venues = Venue::query()->where('department_id', Auth::user()->department_id)
             ->latest()
-            ->paginate(5);
+            ->paginate(8);
+//        dd($venues);
         return view('livewire.venue.index', compact('venues'));
     }
 }

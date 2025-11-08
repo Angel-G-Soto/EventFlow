@@ -36,8 +36,10 @@
     </ul>
 
 </x-slot:pageActions>
+
 <div class="container">
-{{--<div class="container">--}}
+    <h1 class="h4 mb-3">My Venues</h1>
+    {{--<div class="container">--}}
 {{--    <h1 class="h4 mb-3">Manage Venues</h1>--}}
 {{--    <div class="card shadow-sm mb-3">--}}
 {{--        <div class="card-body">--}}
@@ -55,7 +57,7 @@
 {{--        </div>--}}
 
 {{--    </div>--}}
-<
+
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
