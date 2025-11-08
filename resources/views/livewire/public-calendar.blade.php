@@ -9,11 +9,28 @@
     </div>
 
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="h4 mb-0">Events This Week</h1>
-        <div class="btn-group">
-            <button class="btn btn-outline-success btn-sm" wire:click="goWeek('prev')" aria-label="Previous week">&laquo; Previous</button> <!-- Dark Green Outline -->
-            <span class="btn btn-outline-success btn-sm disabled">{{ $weekLabel }}</span> <!-- Dark Green Outline -->
-            <button class="btn btn-outline-success btn-sm" wire:click="goWeek('next')" aria-label="Next week">Next &raquo;</button> <!-- Dark Green Outline -->
+        <div>
+            <h1 class="h4 mb-0">Events This Week</h1>
+            @if(Auth::check() && Auth::user()->roles()->where('name', 'venue-manager')->exists())
+                <style>
+                    /* Green switch toggle */
+                    #filterMyVenues:checked {
+                        background-color: #28a745;
+                        border-color: #28a745;
+                    }
+                </style>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="filterMyVenues" wire:click="toggleFilterMyVenues">
+                    <label class="form-check-label" for="filterMyVenues">Filter By My Venues</label>
+                </div>
+            @endif
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="btn-group">
+                <button class="btn btn-success btn-sm" wire:click="goWeek('prev')" aria-label="Previous week">&laquo; Previous</button>
+                <span class="btn btn-success btn-sm disabled">{{ $weekLabel }}</span>
+                <button class="btn btn-success btn-sm" wire:click="goWeek('next')" aria-label="Next week">Next &raquo;</button>
+            </div>
         </div>
     </div>
 
@@ -75,7 +92,6 @@
     (function () {
         function ensureBodyScrollable() {
             try {
-                // If no modal remains visible, restore scrolling and remove stray backdrops
                 const anyVisible = document.querySelector('.modal.show');
                 if (!anyVisible) {
                     document.body.classList.remove('modal-open');
@@ -98,7 +114,6 @@
                 if (!el) return;
                 const inst = bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
                 inst.hide();
-                // Safety: ensure scrolling restored after hide
                 setTimeout(ensureBodyScrollable, 0);
             });
         });
