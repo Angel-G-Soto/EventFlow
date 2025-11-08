@@ -6,6 +6,9 @@ use App\Models\Event;
 use App\Services\EventService;
 use App\Services\VenueService;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 

@@ -80,7 +80,8 @@
                     <label class="mb-2 fw-semibold">Event Description:</label>
                     <p class="mb-0">{{ $modal['description'] ?? '' }}</p>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer d-flex justify-content-between">
+                    <button class="btn btn-success" aria-label="View more details">View More Details</button>
                     <button class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">Close</button>
                 </div>
             </div>
