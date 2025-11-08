@@ -18,6 +18,7 @@ return new class extends Migration
             ['name' => 'venue-manager', 'code' => 3],
             ['name' => 'event-approver', 'code' => 4],
             ['name' => 'system-admin', 'code' => 5],
+            ['name' => 'event-manager', 'code' => 6],
         ];
 
         foreach ($roles as $role) {
