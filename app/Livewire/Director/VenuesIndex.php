@@ -2,78 +2,59 @@
 
 namespace App\Livewire\Director;
 
+use App\Models\Department;
+use App\Models\User;
+use App\Services\DepartmentService;
 use App\Services\UserService;
 use App\Services\VenueService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use Livewire\Attributes\Validate;
 
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
-  // Mock data until DB arrives
-//  protected function allVenues(): Collection
-//  {
-//    return Auth::user()->department->venues;
-//  }
 
-  public string $search = '';
-  public string $department = '';
-  public int $page = 1;
-  public int $pageSize = 10;
+  public ?User $selectedEmployee= null;
+  public ?int $depID = null;
+  public Department $department;
 
-  // Sorting
-  public string $sortField = '';
-  public string $sortDirection = 'asc';
+  #[Validate('required|email:rfc,dns|max:255')]
+  public string $email = '';
 
-  // Edit modal
-  public ?int $editId = null;
-  public string $vName = '';
-  public string $vRoom = '';
-  public int $vCapacity = 0;
-  public string $vStatus = 'Active';
+  public function boot(){
+        $this->depID = Auth::user()->department_id;
+        $this->department = app(DepartmentService::class)->getDepartmentByID($this->depID);
 
-  // Assign manager modal
-  public ?int $assignId = null;
-  public string $assignManager = '';
+    }
 
-//  public function openEdit(int $id): void
-//  {
-//    $v = $this->allVenues()->firstWhere('id', $id);
-//    if (!$v) return;
-//    $this->editId    = $v['id'];
-//    $this->vName     = $v['name'];
-//    $this->vRoom     = $v['code'];
-//    $this->vCapacity = (int) $v['capacity'];
-//    $this->vStatus   = 'X';//$v['status'];
-//    $this->resetErrorBag();
-//    $this->resetValidation();
-//    $this->dispatch('bs:open', id: 'editVenue');
-//  }
-
-//  public function saveEdit(): void
-//  {
-//    $this->validate([
-//      'vName'     => 'required|string|max:120',
-//      'vRoom'     => 'required|string|max:60',
-//      'vCapacity' => 'required|integer|min:1|max:99999',
-//      'vStatus'   => 'required|in:Active,Suspended,Inactive',
-//    ]);
-//    // persist later
-//    $this->dispatch('bs:close', id: 'editVenue');
-//    $this->dispatch('toast', message: 'Venue updated');
-//    $this->reset(['editId']);
-//  }
-
-  public function openAssign(int $id): void
+  public function openModal(User $employee): void
   {
-    $this->assignId = $id;
-    //this->assignManager = '';
-    $this->dispatch('bs:open', id: 'assignManager');
+        $this->selectedEmployee = $employee;
+        // tell the browser to show the modal
+        $this->dispatch('open-modal', id: 'actionModal');
+  }
+  public function removeManager()
+  {
+
+      app(DepartmentService::class)->removeUserFromDepartment($this->department, $this->selectedEmployee);
+      $this->email = '';
+      $this->selectedEmployee = null;
+      return $this->redirect(route('director.venues.index'), navigate: false);
   }
 
+  public function addManager()
+  {
+
+      $this->validate();
+      $user = app(UserService::class)->findOrCreateUser(email: $this->email);
+      app(DepartmentService::class)->addUserToDepartment($this->department, $user);
+      $this->email = '';
+      $this->selectedEmployee = null;
+      return $this->redirect(route('director.venues.index'), navigate: false);
+
+  }
   public function saveAssign(): void
   {
     $this->validate([
@@ -87,90 +68,13 @@ class VenuesIndex extends Component
     $this->dispatch('toast', message: 'Venue manager assigned');
     $this->reset(['assignId', 'assignManager']);
   }
-//  protected function filtered(): Collection
-//  {
-//    $s = mb_strtolower(trim($this->search));
-//    return $this->allVenues()->filter(function ($v) use ($s) {
-//      $hit = $s === '' ||
-//        str_contains(mb_strtolower($v['name']), $s) ||
-//        str_contains(mb_strtolower($v['room']), $s) ||
-//        str_contains(mb_strtolower($v['department']), $s);
-//      $deptOk = $this->department === '' || $v['department'] === $this->department;
-//      return $hit && $deptOk;
-//    })->values();
-//  }
-
-  protected function paginated(): LengthAwarePaginator
-  {
-    $data  = $this->filtered();
-    // Apply sorting only when activated by user click
-    if ($this->sortField !== '') {
-      $options = SORT_NATURAL | SORT_FLAG_CASE;
-      $data = $data->sortBy(fn($row) => $row[$this->sortField] ?? '', $options, $this->sortDirection === 'desc')->values();
-    }
-    $total = $data->count();
-    $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
-    if ($this->page > $last) $this->page = $last;
-    if ($this->page < 1)     $this->page = 1;
-
-    $items = $data->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values();
-
-    return new LengthAwarePaginator(
-      items: $items,
-      total: $total,
-      perPage: $this->pageSize,
-      currentPage: $this->page,
-      options: ['path' => request()->url(), 'query' => request()->query()]
-    );
-  }
-
-  public function updatedSearch()
-  {
-    $this->page = 1;
-  }
-  public function updatedDepartment()
-  {
-    $this->page = 1;
-  }
-  public function updatedPageSize()
-  {
-    $this->page = 1;
-  }
-
-  /**
-   * Toggle or set the active sort column and direction.
-   */
-  public function sortBy(string $field): void
-  {
-    if ($field === $this->sortField) {
-      $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-      $this->sortField = $field;
-      $this->sortDirection = 'asc';
-    }
-    $this->page = 1;
-  }
-
-  /**
-   * Clear all filters and reset pagination.
-   */
-  public function clearFilters(): void
-  {
-    $this->search = '';
-    $this->department = '';
-    $this->page = 1;
-  }
 
   public function render()
   {
 
-//    $rows = $this->paginated();
-//    $departments = $this->allVenues()->pluck('department')->unique()->values()->all();
+      $venues = app(DepartmentService::class)->getDepartmentVenues($this->department);
+      $employees = app(DepartmentService::class)->getVenueManagers(Auth::id());
 
-      $rows = Auth::user()->department->venues()->orderBy('name', $this->sortDirection)->paginate(15);
-      //$departments = new Collection();
-      $employees = Auth::user()->department->employees;
-
-    return view('livewire.director.venues-index', compact('rows', 'employees'));
+    return view('livewire.director.venues-index', compact('venues', 'employees'));
   }
 }

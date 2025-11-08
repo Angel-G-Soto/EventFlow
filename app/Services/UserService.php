@@ -44,9 +44,9 @@ class UserService
             ]
         );
 
-        $user->roles()->attach(
-            Role::where('name', 'venue-manager')->first()->id
-        );
+//        $user->roles()->attach(
+//            Role::where('name', 'venue-manager')->first()->id
+//        );
 
 
         return $user;

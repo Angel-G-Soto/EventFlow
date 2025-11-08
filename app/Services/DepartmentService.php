@@ -6,6 +6,7 @@ use App\Models\User;
 use Exception;
 use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
 use Throwable;
 
@@ -245,7 +246,12 @@ class DepartmentService {
             }
 
             // Update user department
-            $manager->department_id = null;
+
+
+            if(!$manager->getRoleNames()->contains('department-director')){
+                $manager->department_id = null;
+            }
+
             $manager->roles()->detach(Role::where('name', 'venue-manager')->first()->id);
             $manager->save();
 
@@ -269,11 +275,11 @@ class DepartmentService {
      * @param Department $department
      * @return Collection
      */
-    public function getDepartmentVenues(Department $department): Collection
+    public function getDepartmentVenues(Department $department): LengthAwarePaginator
     {
         $department = Department::findOrFail($department->id);
 
-        return $department->venues;
+        return $department->venues()->paginate(15);
     }
 
     /**
@@ -302,7 +308,7 @@ class DepartmentService {
      * @param int $director_id
      * @return Collection
      */
-    public function getEmployees(int $director_id): Collection
+    public function getEmployees(int $director_id): LengthAwarePaginator
     {
         if ($director_id < 0) {
             throw new InvalidArgumentException('Id must be greater than zero.');
@@ -314,6 +320,30 @@ class DepartmentService {
             throw new InvalidArgumentException('Director is not part of any department.');
         }
 
-        return Department::findOrFail($director->department_id)->employees()->where('id', '<>', $director_id)->get();
+//        return Department::findOrFail($director->department_id)->employees()->where('id', '<>', $director_id)->paginate(15);
+        return Department::findOrFail($director->department_id)->employees()->paginate(15);
     }
+
+    public function getVenueManagers(int $director_id): LengthAwarePaginator
+    {
+        if ($director_id < 0) {
+            throw new InvalidArgumentException('Id must be greater than zero.');
+        }
+
+        $director = $this->userService->findUserById($director_id);
+
+        if (!$director || !$director->department_id) {
+            throw new InvalidArgumentException('Director is not part of any department.');
+        }
+
+//        return Department::findOrFail($director->department_id)->employees()->where('id', '<>', $director_id)->paginate(15);
+        $dept = Department::findOrFail($director->department_id);
+
+        return $dept->employees()
+            ->with('roles')
+            ->whereHas('roles', fn ($q) => $q->where('name', 'venue-manager'))
+            ->paginate(15); // or ->paginate(15)
+    }
+
+
 }
