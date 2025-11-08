@@ -146,10 +146,10 @@ describe('AuditService', function () {
     it('fails when required fields are missing (typed params)', function () {
         $service = new AuditService();
 
-        expect(fn() => $service->logAction(null, 'User', 'CODE', 'desc'))->toThrow(TypeError::class);
-        expect(fn() => $service->logAction(1, null, 'CODE', 'desc'))->toThrow(TypeError::class);
-        expect(fn() => $service->logAction(1, 'User', null, 'desc'))->toThrow(TypeError::class);
-        expect(fn() => $service->logAction(1, 'User', 'CODE', null))->toThrow(TypeError::class);
+        expect(fn() => call_user_func_array([$service, 'logAction'], [null, 'User', 'CODE', 'desc']))->toThrow(TypeError::class);
+        expect(fn() => call_user_func_array([$service, 'logAction'], [1, null, 'CODE', 'desc']))->toThrow(TypeError::class);
+        expect(fn() => call_user_func_array([$service, 'logAction'], [1, 'User', null, 'desc']))->toThrow(TypeError::class);
+        expect(fn() => call_user_func_array([$service, 'logAction'], [1, 'User', 'CODE', null]))->toThrow(TypeError::class);
     });
 
     it('truncates action, user name, and description to 255 chars', function () {
