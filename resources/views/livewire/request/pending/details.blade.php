@@ -1,140 +1,169 @@
+{{-- View: Event Details --}}
+{{-- Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5) --}}
+{{-- Date: 2025-11-08 --}}
 
-{{--    View: Venue Details--}}
-{{--    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5)--}}
-{{--    Date: 2025-11-01--}}
-
-{{--    Description:--}}
-{{--    - Presents an individual venue with fields: Name, Department, Current Manager,--}}
-{{--      Capacity, Opening Time, and Closing Time.--}}
-{{--    - Receives a typed $venue model from the Livewire component.--}}
-
-{{--    Variables:--}}
-{{--    @var \App\Models\Venue $venue--}}
-
-{{--    Accessibility notes:--}}
-{{--    - Use a semantic definition list (<dl>) or table with <th scope> for label/value pairs.--}}
-{{--    - Ensure time values are localized and have clear labels (e.g., aria-label).--}}
-{{--    - Buttons/links must include discernible text for screen readers.--}}
 <x-slot:pageActions>
     <ul class="navbar-nav mx-auto">
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
+            <a class="fw-bold nav-link {{ request()->routeIs('public.calendar') ? 'active' : '' }}"
+               href="{{ route('public.calendar') }}">Home</a>
         </li>
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>
+            <a class="fw-bold nav-link {{ request()->routeIs('approver.pending.index') ? 'active' : '' }}"
+               href="{{ route('approver.pending.index') }}">Pending Request</a>
         </li>
-
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.history.index') }}">Request History</a>
+            <a class="fw-bold nav-link {{ request()->routeIs('approver.history.index') ? 'active' : '' }}"
+               href="{{ route('approver.history.index') }}">Request History</a>
         </li>
-
-        {{--        <li class="nav-item">--}}
-        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
-        {{--        </li>--}}
-
     </ul>
-
 </x-slot:pageActions>
 
-<div>
-    <h1>Event Details</h1>
+@php
+    $start = \Carbon\Carbon::parse($event->start_time);
+    $end = \Carbon\Carbon::parse($event->end_time);
+@endphp
 
-    <div class="card container">
-        <div class="card-body" style="text-align: justify">
-            <h3>Event Name: {{$event->title}}</h3>
-            <h5>Student Organization: {{$event->organization_nexo_name}}</h5>
-            Description: {{$event->description}}
-            <br>
-            <br>
-            Day Submitted: {{$event->created_at}}
-            <br>
-            Event Start Time : {{$event->start_time}}
-            <br>
-            Event End Time : {{$event->end_time}}
-            <br>
-            Event handles food:
-            @if ($event->handles_food === 0)
-                No
-            @else
-                Yes
-            @endif
-            <br>
-            Uses institutional funds:
-            @if ($event->use_institutional_funds === 0)
-                No
-            @else
-                Yes
-            @endif
-            <br>
-            Invites external guests:
-            @if ($event->external_guests === 0)
-                No
-            @else
-                Yes
-            @endif
+<div class="container my-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <h1 class="fw-bold">Event Details</h1>
+        <button type="button"
+                wire:click="back"
+                class="btn btn-secondary ms-auto"
+                wire:target="back"
+                aria-label="Go Back">
+            Back
+        </button>
+    </div>
 
-
+    {{-- Event Header --}}
+    <section class="card shadow-sm mb-4" aria-labelledby="event-header">
+        <div class="card-body">
+            <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
+            <p class="text-muted mb-1">
+                {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
+            </p>
         </div>
-        <br>
+    </section>
 
-        {{--Documents--}}
-        <div class="container-fluid">
-            <h5>Documents</h5>
-            <livewire:documents.list-with-preview :docs="$docs" />
-            <br>
+    {{-- Description & Guest Size --}}
+    <section class="card shadow-sm mb-4" aria-labelledby="event-description">
+        <div class="card-body">
+            <h3 id="event-description" class="fw-semibold mb-2">Description</h3>
+            <p class="mb-1"><strong>Guest Volume:</strong> {{ $event->guest_size ?? 'N/A' }}</p>
+            <p class="mb-0">{{ $event->description }}</p>
         </div>
+    </section>
 
-        {{--Buttons--}}
-        <div class="d-flex gap-2 mb-3 container-fluid">
-            <button type="button" wire:click="approve" class="btn btn-outline-success d-flex" wire:target="approve">
-                Approve
-            </button>
+    {{-- Organization & Requester Info --}}
+    <section class="card shadow-sm mb-4" aria-labelledby="organization-info">
+        <div class="card-body">
+            <h3 id="organization-info" class="fw-semibold border-bottom pb-2 mb-3">Organization & Requester</h3>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Requester</dt>
+                <dd class="col-sm-8">
+                    <a href="mailto:{{ $event->requester->email }}">
+                        {{ $event->requester->first_name }} {{ $event->requester->last_name }}
+                    </a>
+                </dd>
 
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
-                Reject
-            </button>
+                <dt class="col-sm-4">Organization</dt>
+                <dd class="col-sm-8">{{ $event->organization_nexo_name }}</dd>
 
-            <button type="button" wire:click="back" class="btn btn-outline-secondary ms-auto"
-                    wire:target="back">
-                Back
-            </button>
+                <dt class="col-sm-4">Advisor</dt>
+                <dd class="col-sm-8">
+                    <a href="mailto:{{ $event->organization_advisor_email }}">
+                        {{ $event->organization_advisor_name }}
+                    </a>
+                </dd>
 
+                <dt class="col-sm-4">Date Submitted</dt>
+                <dd class="col-sm-8">{{ $event->created_at->format('M j, Y g:i A') }}</dd>
+            </dl>
         </div>
+    </section>
 
-
-        <div class="modal fade"
-             id="denyModal"
-             tabindex="-1" aria-hidden="true"
-             wire:ignore.self
-             wire:key="deny-modal-{{ $event->id ?? 'single' }}"
-             x-data="{ justification: @entangle('justification') }">
-
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Write a message</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-
-                    <div class="modal-body">
-        <textarea class="form-control"
-                  x-model="justification"
-                  rows="4" required minlength="10"
-                  placeholder="Type at least 10 characters..."></textarea>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button class="btn btn-outline-danger"
-                                wire:click="save"
-                                :disabled="justification.trim().length < 10"
-                                wire:loading.attr="disabled" wire:target="save">
-                            Reject Request
-                        </button>
-                    </div>
+    {{-- Event Attributes --}}
+    <section class="card shadow-sm mb-4" aria-labelledby="event-attributes">
+        <div class="card-body">
+            <h3 id="event-attributes" class="fw-semibold border-bottom pb-2 mb-3">Event Attributes</h3>
+            <div class="d-flex flex-column gap-2">
+                <div>
+                    <span class="fw-semibold me-2">Handles Food:</span>
+                    <span class="badge bg-{{ $event->handles_food ? 'success' : 'secondary' }}">
+                        {{ $event->handles_food ? 'Yes' : 'No' }}
+                    </span>
+                </div>
+                <div>
+                    <span class="fw-semibold me-2">Uses Institutional Funds:</span>
+                    <span class="badge bg-{{ $event->use_institutional_funds ? 'success' : 'secondary' }}">
+                        {{ $event->use_institutional_funds ? 'Yes' : 'No' }}
+                    </span>
+                </div>
+                <div>
+                    <span class="fw-semibold me-2">Invites External Guests:</span>
+                    <span class="badge bg-{{ $event->external_guests ? 'success' : 'secondary' }}">
+                        {{ $event->external_guests ? 'Yes' : 'No' }}
+                    </span>
                 </div>
             </div>
         </div>
+    </section>
 
+    {{-- Documents --}}
+    <section class="card shadow-sm mb-4" aria-labelledby="event-documents">
+        <div class="card-body">
+            <h3 id="event-documents" class="fw-semibold border-bottom pb-2 mb-3">Documents</h3>
+            <livewire:documents.list-with-preview :docs="$docs" />
+        </div>
+    </section>
 
-       </div>
+    {{-- Action Buttons --}}
+    <div class="d-flex gap-2 mb-5">
+        <button type="button" wire:click="approve" class="btn btn-success" wire:target="approve">
+            Approve
+        </button>
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#denyModal">
+            Reject
+        </button>
+    </div>
+
+    {{-- Deny Modal --}}
+    <div class="modal fade"
+         id="denyModal"
+         tabindex="-1"
+         aria-labelledby="denyModalLabel"
+         aria-hidden="true"
+         wire:ignore.self
+         wire:key="deny-modal-{{ $event->id ?? 'single' }}"
+         x-data="{ justification: @entangle('justification') }">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 id="denyModalLabel" class="modal-title">Write a message</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <textarea class="form-control"
+                              x-model="justification"
+                              rows="4"
+                              required minlength="10"
+                              aria-label="Justification message"
+                              placeholder="Type at least 10 characters..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-danger"
+                            wire:click="save"
+                            :disabled="justification.trim().length < 10"
+                            wire:loading.attr="disabled"
+                            wire:target="save"
+                            aria-label="Submit Reject Request">
+                        Reject Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
