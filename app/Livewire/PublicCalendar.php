@@ -70,18 +70,12 @@ class PublicCalendar extends Component
 
     public function openEvent(int $id): void
     {
-        $e = collect($this->weekEvents())->firstWhere('id', $id);
-        if (!$e) return;
+        $event = Event::find($id); // Fetch the event by ID (this returns an instance of the Event model)
+        if (!$event) return;
+
+        // Pass the event model directly to the modal
         $this->modal = [
-            'title'   => $e['title'],
-            'venue'   => app(VenueService::class)->findById($e['venue_id'])->code,
-            'time'    => sprintf(
-                '%s — %s',
-                CarbonImmutable::parse($e['start_time'])->format('D, M j • g:ia'),
-                CarbonImmutable::parse($e['end_time'])->format('g:ia')
-            ),
-            'description' => $e['description'] ?? '',
-            'organization_name' => $e['organization_name'] ?? '',
+            'event' => $event
         ];
 
         $this->dispatch('bs:open', id: 'eventDetails');

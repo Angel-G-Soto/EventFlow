@@ -65,20 +65,43 @@
         @endforeach
     </div>
 
-    {{-- Event details modal --}}
+    <!-- Event details modal -->
     <div class="modal fade" id="eventDetails" tabindex="-1" wire:ignore.self>
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-calendar-event me-2"></i>{{ $modal['title'] ?? 'Event' }}</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar-event me-2"></i>{{ $modal['event']->title ?? 'Event' }}
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-2"><i class="bi bi-geo-alt me-2"></i>{{ $modal['venue'] ?? '' }}</div>
-                    <div class="mb-3"><i class="bi bi-clock me-2"></i>{{ $modal['time'] ?? '' }}</div>
-                    <div class="mb-3"><i class="bi bi-person-workspace me-2"></i>Organized by: {{ $modal['organization_name'] ?? '' }}</div>
+                    <!-- Venue Information (assuming you have venue relationship set up) -->
+                    <div class="mb-2">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        {{ $modal['event']->venue->code ?? 'No venue' }} <!-- If you have a venue relation -->
+                    </div>
+
+                    <!-- Event Time -->
+                    <div class="mb-3">
+                        <i class="bi bi-clock me-2"></i>
+                        @if(isset($modal['event']) && $modal['event']->start_time && $modal['event']->end_time)
+                            {{ \Carbon\Carbon::parse($modal['event']->start_time)->format('D, M j • g:ia') }} —
+                            {{ \Carbon\Carbon::parse($modal['event']->end_time)->format('g:ia') }}
+                        @else
+                            <span class="text-muted">Time not available</span>
+                        @endif
+                    </div>
+
+                    <!-- Organization Name -->
+                    <div class="mb-3">
+                        <i class="bi bi-person-workspace me-2"></i>
+                        Organized by: {{ $modal['event']->organization_name ?? 'N/A' }}
+                    </div>
+
+                    <!-- Event Description -->
                     <label class="mb-2 fw-semibold">Event Description:</label>
-                    <p class="mb-0">{{ $modal['description'] ?? '' }}</p>
+                    <p class="mb-0">{{ $modal['event']->description ?? 'No description provided' }}</p>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
                     <button class="btn btn-success" aria-label="View more details">View More Details</button>
@@ -87,6 +110,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <script>
