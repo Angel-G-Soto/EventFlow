@@ -30,28 +30,7 @@ class ListWithPreview extends Component
  * @var array
  */
     public array $docs = []; // each: ['title' => '', 'url' => '', 'description' => '']
-/**
- * @var string|null
- */
 
-    public ?string $previewUrl = null;
-/**
- * @var ?string
- */
-    public ?string $previewTitle = null;
-/**
- * Preview action.
- * @param string $url
- * @param string $title
- * @return void
- */
-
-    public function preview(string $url, string $title): void
-    {
-        $this->previewUrl = $url;
-        $this->previewTitle = $title;
-        $this->dispatch('open-modal', id: 'pdfModal');
-    }
 /**
  * Render the list with preview view, including pagination and filters.
  * @return \Illuminate\Contracts\View\View

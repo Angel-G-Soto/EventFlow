@@ -66,14 +66,13 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
 
         //Documents
         Route::get('/documents/{name}', function (string $name) {
-//            $path = storage_path('app/documents'.$name);
             $path = \Illuminate\Support\Facades\Storage::disk('documents')->path($name);
+
             abort_unless(file_exists($path), 404);
 
             return Response::file($path, [
             'Content-Type'        => 'application/pdf',
-//            'Content-Disposition' => 'inline; filename="'.basename($path).'"',
-            ' Content-Disposition' => $path,
+            'Content-Disposition' => 'inline; filename="'.basename($path),
             'Cache-Control'       => 'private, max-age=3600',
             ]);
         })->name('documents.show');
