@@ -21,6 +21,7 @@ namespace App\Livewire\Request\History;
 
 use App\Models\Category;
 use App\Models\Event;
+use App\Models\Role;
 use App\Models\Venue;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,8 @@ class Filters extends Component
     public function mount(): void
     {
         // Load roles for current user
-        $this->roles = Auth::user()->roles()->where('name', '<>', 'user')->get(['name'])->toArray();
+//        $this->roles = Auth::user()->roles()->where('name', '<>', 'user')->get(['name'])->toArray();
+            $this->roles = Role::whereNotIn('name', ['user', 'system-admin', 'department-director'])->get(['name'])->toArray();
     }
 
     public function apply(): void

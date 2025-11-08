@@ -40,7 +40,7 @@ class EventHistoryService
     {
         $activeRoles = !empty($roles)
             ? $roles
-            : $user->roles->pluck('name')->toArray();
+            : Role::all()->pluck('name')->toArray();
 
         $query = EventHistory::where('approver_id', $user->id)
             ->whereIn('action', ['approved', 'rejected', 'cancelled'])

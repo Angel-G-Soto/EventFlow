@@ -318,6 +318,7 @@ class EventService {
 
                 // Send email to the approvers
 
+                return $event->refresh();
             });
         }
 
