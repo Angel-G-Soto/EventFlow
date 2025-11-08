@@ -91,30 +91,27 @@ class ProcessCsvFileUpload implements ShouldQueue
                 ->filter();
 
             // Ensure departments exist locally (auto-create if missing during import)
-            // Ensure departments exist locally and update their code by NAME using bldg_code
             $deptSvc = app(DepartmentService::class);
-            foreach ($deptMap as $deptName => $deptCode) {
+            // Build unique department name/code pairs from normalized data
+            $uniqueDepts = collect($normalized)
+                ->map(fn($row) => [
+                    'name' => $row['department_name'] ?? $row['department'] ?? '',
+                    'code' => $row['department_code'] ?? $row['department_code_raw'] ?? '',
+                ])
+                ->filter(fn($d) => $d['name'] && $d['code'])
+                ->unique(fn($d) => $d['name'] . '|' . $d['code']);
+
+            foreach ($uniqueDepts as $dept) {
                 try {
-                    $existing = $deptSvc->findByName($deptName);
-                    if ($existing) {
-                        // Update code if different
-                        if (is_string($deptCode) && $deptCode !== '' && $existing->code !== $deptCode) {
-                            $existing->code = $deptCode;
-                            $existing->save();
-                        }
-                    } else {
-                        // Create department with provided name and code; require CSV bldg_code
-                        if (!is_string($deptCode) || $deptCode === '') {
-                            throw new \RuntimeException("Missing bldg_code for department '{$deptName}'.");
-                        }
+                    if (!$deptSvc->findByName($dept['name'])) {
                         $deptSvc->updateOrCreateDepartment([
-                            ['name' => $deptName, 'code' => $deptCode],
+                            ['name' => $dept['name'], 'code' => $dept['code']],
                         ]);
                     }
                 } catch (\Throwable $e) {
                     Log::warning('Unable to ensure/update department during CSV import', [
-                        'department_name' => $deptName,
-                        'department_code' => $deptCode,
+                        'department' => $dept['name'],
+                        'code' => $dept['code'],
                         'error' => $e->getMessage(),
                     ]);
                 }
@@ -193,8 +190,8 @@ class ProcessCsvFileUpload implements ShouldQueue
             $out[] = [
                 'name' => $name,
                 'code' => $code,
-                // Only pass department NAME through to the service
-                'department' => (string)($r['department_name_raw'] ?? ''),
+                // Use department code for lookups/assignment only
+                'department' => (string)($r['department_code_raw'] ?? ''),
                 'features' => $ordered,
                 'capacity' => (int)($r['v_capacity'] ?? 0),
                 'test_capacity' => (int)($r['v_test_capacity'] ?? ($r['v_capacity'] ?? 0)),

@@ -22,10 +22,10 @@ class UserConstants
     ];
 
     public const ROLES_WITHOUT_DEPARTMENT = [
-        // All roles except 'venue-manager' do not require department
+        // All roles except 'department-director' do not require department
         'Advisor',
         'System Admin',
-        'Department Director',
+        'Venue Manager',
         'Deanship of Administration Approver',
         'Event Approver',
     ];

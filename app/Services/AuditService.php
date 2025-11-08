@@ -33,17 +33,17 @@ class AuditService
      * Log a regular user action (non-admin).
      *
      * @param int    $userId
-     * @param string $actionCode
-     * @param string $targetType
-     * @param string $targetId
+     * @param string $targetType  Display label (e.g., user's display name)
+     * @param string $actionCode  Action code (e.g., EVENT_CREATED)
+     * @param string $targetId    Target identifier/description
      * @param array<string,mixed> $context Optional: ['ip','method','path','ua','meta'=>array]
      *
      * @return AuditTrail
      */
     public function logAction(
         int $userId,
-        string $actionCode,
         string $targetType,
+        string $actionCode,
         string $targetId,
         array $context = []
     ): AuditTrail {
@@ -54,17 +54,17 @@ class AuditService
      * Log a high-privilege admin action (same schema, different intent).
      *
      * @param int    $adminId
-     * @param string $actionCode
-     * @param string $targetType
-     * @param string $targetId
+     * @param string $targetType  Display label (e.g., admin's display name)
+     * @param string $actionCode  Action code
+     * @param string $targetId    Target identifier/description
      * @param array<string,mixed> $context Optional: ['ip','method','path','ua','meta'=>array]
      *
      * @return AuditTrail
      */
     public function logAdminAction(
         int $adminId,
-        string $actionCode,
         string $targetType,
+        string $actionCode,
         string $targetId,
         array $context = []
     ): AuditTrail {
@@ -76,23 +76,23 @@ class AuditService
      *
      * @param Request $request
      * @param int     $userId
-     * @param string  $actionCode
-     * @param string  $targetType
-     * @param string  $targetId
+     * @param string  $targetType Display label
+     * @param string  $actionCode Action code
+     * @param string  $targetId   Target identifier/description
      * @param array<string,mixed> $extraMeta Extra meta merged into context['meta']
      */
     public function logActionFromRequest(
         Request $request,
         int $userId,
-        string $actionCode,
         string $targetType,
+        string $actionCode,
         string $targetId,
         array $extraMeta = []
     ): AuditTrail {
         return $this->logAction(
             $userId,
-            $actionCode,
             $targetType,
+            $actionCode,
             $targetId,
             $this->buildContextFromRequest($request, $extraMeta)
         );
@@ -104,15 +104,15 @@ class AuditService
     public function logAdminActionFromRequest(
         Request $request,
         int $adminId,
-        string $actionCode,
         string $targetType,
+        string $actionCode,
         string $targetId,
         array $extraMeta = []
     ): AuditTrail {
         return $this->logAdminAction(
             $adminId,
-            $actionCode,
             $targetType,
+            $actionCode,
             $targetId,
             $this->buildContextFromRequest($request, $extraMeta)
         );
@@ -132,12 +132,13 @@ class AuditService
         string $targetId,
         array $context = []
     ): AuditTrail {
-        if ($userId <= 0 || $actionCode === '' || $targetType === '' || $targetId === '') {
+        // Only enforce valid user and non-empty action code. Allow empty targetType/targetId per tests.
+        if ($userId <= 0 || $actionCode === '') {
             throw new \InvalidArgumentException('Invalid audit log parameters.');
         }
 
         // Allow only known contextual keys; coerce meta to array if provided.
-        $allowed = array_intersect_key($context, array_flip(['ip','method','path','ua','meta']));
+        $allowed = array_intersect_key($context, array_flip(['ip', 'method', 'path', 'ua', 'meta']));
         if (isset($allowed['meta']) && !is_array($allowed['meta'])) {
             $allowed['meta'] = ['raw' => (string) $allowed['meta']];
         }
@@ -182,21 +183,8 @@ class AuditService
      */
     public function getPaginatedLogs(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
-        $q = AuditTrail::query()
-            ->select([
-                'id',
-                'user_id',
-                'action',
-                'target_type',
-                'target_id',
-                'ip',
-                'method',
-                'path',
-                'ua',
-                'meta',
-                'created_at',
-            ])
-            ->orderByDesc('created_at');
+        // Select all columns to avoid referencing optional columns that may not exist
+        $q = AuditTrail::query()->orderByDesc('created_at');
 
         if (!empty($filters['user_id'])) {
             $q->where('user_id', (int) $filters['user_id']);
@@ -246,5 +234,16 @@ class AuditService
             ->get()
             ->pluck('target_type', 'user_id')
             ->toArray();
+    }
+
+    /**
+     * Retrieve a single audit log by its primary key.
+     */
+    public function getLogById(int $id): ?AuditTrail
+    {
+        if ($id <= 0) {
+            return null;
+        }
+        return AuditTrail::find($id);
     }
 }

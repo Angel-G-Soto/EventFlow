@@ -32,6 +32,10 @@ class VenuesIndex extends Component
     public ?string $importStatus = null;
     public ?string $importErrorMsg = null;
 
+    // Details modal state
+    public ?int $detailsId = null;
+    public array $details = [];
+
     // Sorting
     public string $sortField = '';
     public string $sortDirection = 'asc';
@@ -65,17 +69,6 @@ class VenuesIndex extends Component
         $values = array_values($map);
         usort($values, fn($a, $b) => strnatcasecmp($a, $b));
         return $values;
-    }
-
-    /**
-     * Initializes the component by retrieving all the venues from the database.
-     *
-     * This function is called when the component is mounted.
-     */
-    // Lifecycle
-    public function mount()
-    {
-        // No preload required; queries read directly from DB
     }
 
 
@@ -302,6 +295,37 @@ class VenuesIndex extends Component
         $this->dispatch('bs:open', id: 'venueModal');
     }
 
+    /**
+     * Populate and show the details modal for a venue using the service layer only.
+     */
+    public function showDetails(int $id): void
+    {
+        try {
+            $venue = app(VenueService::class)->getVenueById($id);
+            if (!$venue) {
+                $this->addError('detailsId', 'Venue not found.');
+                return;
+            }
+            // Normalize details payload for the view
+            $features = $this->mapFeaturesStringToLabels((string)($venue->features ?? ''));
+            $this->detailsId = (int) $venue->id;
+            $this->details = [
+                'id'         => (int) $venue->id,
+                'name'       => (string) $venue->name,
+                'department' => (string) (optional($venue->department)->name ?? ''),
+                'code'       => (string) ($venue->code ?? ''),
+                'capacity'   => (int) ($venue->capacity ?? 0),
+                'manager'    => (string) (optional($venue->manager)->email ?? ''),
+                'features'   => $features,
+                'opening'    => $venue->opening_time ? substr((string)$venue->opening_time, 0, 5) : null,
+                'closing'    => $venue->closing_time ? substr((string)$venue->closing_time, 0, 5) : null,
+            ];
+            $this->dispatch('bs:open', id: 'venueDetails');
+        } catch (\Throwable $e) {
+            $this->addError('detailsId', 'Unable to load venue.');
+        }
+    }
+
     // Validation / rules
     /**
      * Returns an array of rules for the edit venue form.
@@ -385,15 +409,8 @@ class VenuesIndex extends Component
             if ($deptName !== '') {
                 $dept = app(DepartmentService::class)->findByName($deptName);
                 if (!$dept) {
-                    // Create department via service if missing; derive building code from room code prefix
-                    $bldgCode = null;
-                    if (is_string($this->vRoom) && $this->vRoom !== '') {
-                        if (preg_match('/^([A-Za-z]+)-/', $this->vRoom, $m)) {
-                            $bldgCode = strtoupper($m[1]);
-                        }
-                    }
                     $created = app(DepartmentService::class)->updateOrCreateDepartment([
-                        ['name' => $deptName, 'code' => $bldgCode ?: strtoupper(\Illuminate\Support\Str::substr(preg_replace('/[^A-Za-z]/', '', (string)$deptName), 0, 4))]
+                        ['name' => $deptName, 'code' => \Illuminate\Support\Str::slug($deptName)]
                     ]);
                     $dept = $created->first();
                 }
@@ -434,8 +451,8 @@ class VenuesIndex extends Component
         ];
 
         $venue = null;
-    // Auth disabled: obtain a fallback admin user for auditing or null
-    $admin = $this->fakeAdminUser();
+        // Auth disabled: obtain a fallback admin user for auditing or null
+        $admin = $this->fakeAdminUser();
         try {
             if ($this->editId) {
                 $existing = app(VenueService::class)->getVenueById((int)$this->editId);
@@ -511,7 +528,7 @@ class VenuesIndex extends Component
                 if ($venue) {
                     // Auth disabled: use fake admin (may be null) for deactivation
                     $admin = $this->fakeAdminUser();
-                    app(VenueService::class)->deactivateVenues([$venue], $admin ?? new \App\Models\User(['first_name'=>'System','last_name'=>'Admin','email'=>'system@localhost']));
+                    app(VenueService::class)->deactivateVenues([$venue], $admin ?? new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']));
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to delete venue.');
@@ -578,7 +595,7 @@ class VenuesIndex extends Component
 
     // Private/Protected Helper Methods
     /**
-     * Returns a collection of all the venues, excluding any soft-deleted venues.
+     * Returns a collection of all the venues.
      */
     protected function allVenues(): Collection
     {

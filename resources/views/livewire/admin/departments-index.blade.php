@@ -24,7 +24,7 @@
             </div>
           </form>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-3">
           <label class="form-label" for="dept_code">Department Code</label>
           <select id="dept_code" class="form-select" wire:model.live="code">
             <option value="">All</option>

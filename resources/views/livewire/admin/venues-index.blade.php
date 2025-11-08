@@ -1,4 +1,15 @@
 <div>
+  {{-- Local helper for 12-hour time formatting (display only) --}}
+  @php
+  $fmtTime = function($t) {
+  if(!is_string($t) || trim($t) === '') return '';
+  try {
+  return \Carbon\Carbon::createFromFormat('H:i', $t)->format('g:i A');
+  } catch (\Exception $e) {
+  return $t; // fallback if parse fails
+  }
+  };
+  @endphp
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0">Venues</h1>
 
@@ -128,7 +139,7 @@
                 </span>
               </button>
             </th>
-            <th>Manager</th>
+            {{--<th>Manager</th>--}}
             <th>Status</th>
             <th>Availability</th>
             <th class="text-end" style="width:140px;">Actions</th>
@@ -142,7 +153,7 @@
             <td>{{ $v['department'] }}</td>
             <td>{{ $v['room'] }}</td>
             <td>{{ $v['capacity'] }}</td>
-            <td>{{ $v['manager'] }}</td>
+            {{--<td>{{ $v['manager'] }}</td>--}}
             <td>
               <span class="badge {{ $v['status']==='Active' ? 'text-bg-success' : 'text-bg-secondary' }}">
                 {{ $v['status'] }}
@@ -151,11 +162,11 @@
             <td class="text-truncate" style="max-width:220px;">
               @php $hasOC = !empty($v['opening'] ?? '') || !empty($v['closing'] ?? ''); @endphp
               @if ($hasOC)
-              <div class="small">{{ $v['opening'] ?? '' }} – {{ $v['closing'] ?? '' }}</div>
+              <div class="small">{{ $fmtTime($v['opening'] ?? '') }} – {{ $fmtTime($v['closing'] ?? '') }}</div>
               @elseif (isset($v['timeRanges']) && is_array($v['timeRanges']) && count($v['timeRanges']) > 0)
               @foreach ($v['timeRanges'] as $tr)
               <div class="small">
-                {{ $tr['from'] ?? '' }} – {{ $tr['to'] ?? '' }}
+                {{ $fmtTime($tr['from'] ?? '') }} – {{ $fmtTime($tr['to'] ?? '') }}
                 @if (!empty($tr['reason']))
                 ({{ $tr['reason'] }})
                 @endif
@@ -167,6 +178,10 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" wire:click="showDetails({{ $v['id'] }})"
+                  aria-label="Show details for venue {{ $v['name'] }}" title="Show details">
+                  <i class="bi bi-info-circle"></i>
+                </button>
                 {{--<button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
                   aria-label="Edit venue {{ $v['name'] }}" title="Edit venue {{ $v['name'] }}">
                   <i class="bi bi-pencil"></i>
@@ -426,4 +441,99 @@
       </div>
     </div>
   </div>
+
+  {{-- Venue Details Modal --}}
+  <div class="modal fade" id="venueDetails" tabindex="-1" wire:ignore.self>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Venue Details @if(!empty($details['id']))#{{ $details['id'] }}@endif</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          @if(!empty($details))
+          <dl class="row">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{ $details['name'] ?? '—' }}</dd>
+
+            <dt class="col-sm-3">Department</dt>
+            <dd class="col-sm-9">{{ $details['department'] ?? '—' }}</dd>
+
+            <dt class="col-sm-3">Venue Code</dt>
+            <dd class="col-sm-9">{{ $details['code'] ?? '—' }}</dd>
+
+            <dt class="col-sm-3">Capacity</dt>
+            <dd class="col-sm-9">{{ $details['capacity'] ?? '—' }}</dd>
+
+            <dt class="col-sm-3">Manager</dt>
+            <dd class="col-sm-9">{{ $details['manager'] ?? '—' }}</dd>
+
+            <dt class="col-sm-3">Features</dt>
+            <dd class="col-sm-9">
+              @php($fs = $details['features'] ?? [])
+              @if(is_array($fs) && count($fs))
+              <ul class="mb-0 ps-3">
+                @foreach($fs as $f)
+                <li>{{ $f }}</li>
+                @endforeach
+              </ul>
+              @else
+              <span class="text-muted">None</span>
+              @endif
+            </dd>
+
+            <dt class="col-sm-3">Availability</dt>
+            <dd class="col-sm-9">
+              @php($open = $details['opening'] ?? null)
+              @php($close = $details['closing'] ?? null)
+              @if($open || $close)
+              <span>{{ $fmtTime($open ?? '') }} – {{ $fmtTime($close ?? '') }}</span>
+              @else
+              <span class="text-muted">No availability</span>
+              @endif
+            </dd>
+          </dl>
+          @endif
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{-- JS hook for Livewire modal open --}}
+  <script>
+    (function () {
+      function ensureBodyScrollable() {
+        try {
+          // If no modal remains visible, restore scrolling and remove stray backdrops
+          const anyVisible = document.querySelector('.modal.show');
+          if (!anyVisible) {
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+          }
+        } catch (_) { /* noop */ }
+      }
+
+      document.addEventListener('hidden.bs.modal', ensureBodyScrollable);
+
+      document.addEventListener('livewire:init', () => {
+        Livewire.on('bs:open', ({ id }) => {
+          const el = document.getElementById(id);
+          if (el) bootstrap.Modal.getOrCreateInstance(el).show();
+        });
+        Livewire.on('bs:close', ({ id }) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const inst = bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
+          inst.hide();
+          // Safety: ensure scrolling restored after hide
+          setTimeout(ensureBodyScrollable, 0);
+        });
+      });
+    })();
+  </script>
 </div>

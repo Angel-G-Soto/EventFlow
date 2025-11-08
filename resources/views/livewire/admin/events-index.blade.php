@@ -1,8 +1,6 @@
 <div>
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0">Event Oversight</h1>
-
-    <div class="d-none d-md-flex gap-2"></div>
   </div>
 
   <div class="card shadow-sm mb-3">

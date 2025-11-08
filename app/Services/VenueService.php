@@ -263,13 +263,17 @@ class VenueService
             // Assign to the manager the venue
             $venue->manager()->associate($manager);
 
+            // Audit: director assigns manager to venue
+            $directorLabel = $director->name ?? trim(((string)($director->first_name ?? '')) . ' ' . ((string)($director->last_name ?? '')));
+            if ($directorLabel === '') {
+                $directorLabel = (string)($director->email ?? '');
+            }
             $this->auditService->logAction(
                 $director->id,
-                '',
-                '',
+                $directorLabel,
+                'ASSIGN_MANAGER',
                 'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'
-            ); // MOCK FROM SERVICE
-
+            );
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -311,12 +315,17 @@ class VenueService
                 throw new InvalidArgumentException('The user must be venue-manager.');
             }
 
+            // Audit: operating hours update
+            $managerLabel = $manager->name ?? trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
+            if ($managerLabel === '') {
+                $managerLabel = (string)($manager->email ?? '');
+            }
             $this->auditService->logAction(
                 $manager->id,
-                '',
-                '',
+                $managerLabel,
+                'UPDATE_OPERATING_HOURS',
                 'Updated operating hours for venue #' . $venue->id
-            ); // MOCK FROM SERVICE
+            );
 
             // Update the venue with the filtered data
             return Venue::updateOrCreate(
@@ -403,12 +412,16 @@ class VenueService
                 $requirement->hyperlink = $r['hyperlink'];
                 $requirement->description = $r['description'];
                 $requirement->save();
+                $managerLabel = $manager->name ?? trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
+                if ($managerLabel === '') {
+                    $managerLabel = (string)($manager->email ?? '');
+                }
                 $this->auditService->logAction(
                     $manager->id,
-                    '',
-                    '',
+                    $managerLabel,
+                    'CREATE_REQUIREMENT',
                     'Create requirement for venue #' . $venue->id
-                ); // MOCK FROM SERVICE
+                );
             }
         } catch (InvalidArgumentException $exception) {
             throw $exception;
@@ -639,40 +652,23 @@ class VenueService
             }
 
             foreach ($venueData as $venue) {
-
-                // Find the department with its name. EX. Mechanical Engineering
-                $department = $this->departmentService->findByName($venue['department']);     // MOCK IT FROM DEPARTMENT SERVICE
-
-                // If not found, derive building code from venue code and try again; as last resort, create department
-                if ($department == null) {
-                    $derivedCode = null;
-                    if (isset($venue['code']) && is_string($venue['code'])) {
-                        if (preg_match('/^([A-Za-z]+)-/', $venue['code'], $m)) {
-                            $derivedCode = strtoupper($m[1]);
-                        }
-                    }
-                    if ($derivedCode) {
-                        $department = $this->departmentService->findByCode($derivedCode);
-                    }
-                    if (!$department && $derivedCode) {
-                        // Create department with provided name (if available) and derived building code
-                        try {
-                            $created = $this->departmentService->updateOrCreateDepartment([
-                                ['name' => $venue['department'] !== '' ? $venue['department'] : $derivedCode, 'code' => $derivedCode],
-                            ]);
-                            $department = $created->first();
-                        } catch (\Throwable $e) {
-                            $department = null;
-                        }
-                    }
+                // Try to resolve department by code first, then by name
+                $deptCode = $venue['department_code'] ?? $venue['department_code_raw'] ?? null;
+                $deptNameOrCode = $venue['department'] ?? null;
+                $department = null;
+                if ($deptCode) {
+                    $department = $this->departmentService->findByCode($deptCode);
                 }
-
-                // Model Not Found Error if all attempts failed
-                if ($department == null) {
-                    throw new ModelNotFoundException('Department [' . $venue['department'] . '] does not exist.');
+                // If department field is present, try as code first, then as name
+                if (!$department && $deptNameOrCode) {
+                    $department = $this->departmentService->findByCode($deptNameOrCode);
                 }
-
-                // Find value based on the name and code. Update its fields
+                if (!$department && $deptNameOrCode) {
+                    $department = $this->departmentService->findByName($deptNameOrCode);
+                }
+                if ($department == null) {
+                    throw new ModelNotFoundException('Department [' . ($deptCode ?: $deptNameOrCode) . '] does not exist.');
+                }
                 $updatedVenues->add(Venue::updateOrCreate(
                     [
                         'name' => $venue['name'],
@@ -693,8 +689,8 @@ class VenueService
             if ($admin) {
                 $this->auditService->logAdminAction(
                     $admin->id,
+                    'system-admin',
                     'VENUES_IMPORTED',
-                    'system',
                     'venues_import'
                 );
             }

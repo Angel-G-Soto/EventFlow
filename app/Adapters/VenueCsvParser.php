@@ -46,7 +46,8 @@ class VenueCsvParser
         $headerMap = array_flip(array_map('trim', $header));
 
         // Verify that all essential columns exist
-        $requiredColumns = ['name', 'room_code', 'department_name', 'capacity', 'final_exams_capacity'];
+        // Note: department code comes from 'department' in the CSV, while department name is 'department_name'.
+        $requiredColumns = ['name', 'room_code', 'department_name', 'department', 'capacity', 'final_exams_capacity'];
         foreach ($requiredColumns as $column) {
             if (!isset($headerMap[$column])) {
                 fclose($handle);
@@ -79,6 +80,8 @@ class VenueCsvParser
                 'v_code' => $maybeCode,
                 // Pass the raw department name for the service to map to a local department ID.
                 'department_name_raw' => (string) ($row[$headerMap['department_name']] ?? ''),
+                // Capture the department code from the 'department' column
+                'department_code_raw' => (string) ($row[$headerMap['department']] ?? ''),
                 'v_features' => $this->buildFeaturesString($row, $headerMap),
                 'v_features_code' => $this->buildFeaturesCode($row, $headerMap),
                 'v_capacity' => $mainCapacity,

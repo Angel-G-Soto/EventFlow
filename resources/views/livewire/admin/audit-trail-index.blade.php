@@ -1,4 +1,18 @@
 {{-- resources/views/livewire/admin/audit-trail-index.blade.php --}}
+{{-- Local helper for 12-hour time formatting (display only) --}}
+@php
+$fmtAudit = function ($dt) {
+if (empty($dt)) return '—';
+try {
+return \Carbon\Carbon::parse($dt)
+->timezone(config('app.timezone'))
+->format('M j, Y • g:i A T');
+} catch (\Exception $e) {
+return $dt;
+}
+};
+@endphp
+
 <div>
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0">Audit Trail</h1>
@@ -30,12 +44,12 @@
           <input id="audit_to" type="date" class="form-control" wire:model.live="to">
         </div>
 
-        <div class="col-12 col-md-2 d-flex align-items-end">
+        {{--<div class="col-12 col-md-2 d-flex align-items-end">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="adminOnly" wire:model.live="adminOnly">
             <label class="form-check-label" for="adminOnly">Admin only</label>
           </div>
-        </div>
+        </div>--}}
 
         <div class="col-6 col-md-1 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
@@ -67,34 +81,28 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th style="width: 110px;">When</th>
-            <th style="width: 90px;">User</th>
+            <th>When</th>
+            <th>User</th>
             <th>Action</th>
             <th>Target</th>
-            <th>Method</th>
-            <th>Path</th>
-            <th class="text-end" style="width: 80px;">Details</th>
+            <th class="text-end">Details</th>
           </tr>
         </thead>
         <tbody>
           @forelse($rows as $r)
           <tr>
             <td class="text-nowrap">
-              @php($__dt = $r->a_created_at ?? null)
-              {{ $__dt ? \Illuminate\Support\Carbon::parse($__dt)->format('Y-m-d H:i') : '—' }}
+              {{ $fmtAudit($r->created_at ?? null) }}
             </td>
             <td>{{ $r->user_id ?? '—' }}</td>
-            <td><span class="badge text-bg-light">{{ $r->a_action }}</span></td>
+            <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
             <td class="text-truncate" style="max-width:220px;">
-              {{ $r->a_target_type ? class_basename($r->a_target_type) : '—' }}
-              @if($r->a_target_id)#{{ $r->a_target_id }}@endif
+              {{ $r->target_type ? class_basename($r->target_type) : '—' }}
+              @if($r->target_id)#{{ $r->target_id }}@endif
             </td>
-            <td>{{ $r->method }}</td>
-            <td class="text-truncate" style="max-width:260px;" title="{{ $r->path }}">{{ $r->path }}</td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->audit_id }})"
-                aria-label="Show details for audit #{{ $r->audit_id }}"
-                title="Show details for audit #{{ $r->audit_id }}">
+              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->id }})"
+                aria-label="Show details for audit #{{ $r->id }}" title="Show details for audit #{{ $r->id }}">
                 <i class="bi bi-info-circle"></i>
               </button>
             </td>
@@ -118,7 +126,7 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Audit Details #{{ $details['audit_id'] ?? '' }}</h5>
+          <h5 class="modal-title">Audit Details #{{ $details['id'] ?? '' }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -127,17 +135,13 @@
             <dt class="col-sm-3">User</dt>
             <dd class="col-sm-9">{{ $details['user_id'] ?? '—' }}</dd>
             <dt class="col-sm-3">Action</dt>
-            <dd class="col-sm-9">{{ $details['a_action'] ?? '' }}</dd>
+            <dd class="col-sm-9">{{ $details['action'] ?? '' }}</dd>
             <dt class="col-sm-3">Target</dt>
-            <dd class="col-sm-9">{{ $details['a_target'] ?? '—' }}</dd>
-            <dt class="col-sm-3">Method</dt>
-            <dd class="col-sm-9">{{ $details['method'] ?? '—' }}</dd>
-            <dt class="col-sm-3">Path</dt>
-            <dd class="col-sm-9">{{ $details['path'] ?? '—' }}</dd>
+            <dd class="col-sm-9">{{ $details['target'] ?? '—' }}</dd>
             <dt class="col-sm-3">User Agent</dt>
             <dd class="col-sm-9"><small class="text-break">{{ $details['ua'] ?? '—' }}</small></dd>
             <dt class="col-sm-3">Created</dt>
-            <dd class="col-sm-9">{{ $details['created_at'] ?? '' }}</dd>
+            <dd class="col-sm-9">{{ $fmtAudit($details['created_at']) }}</dd>
           </dl>
 
           @if(!empty($details['meta']) && is_array($details['meta']))
@@ -157,11 +161,32 @@
 
   {{-- JS hook for Livewire modal open --}}
   <script>
-    document.addEventListener('livewire:init', () => {
-      Livewire.on('bs:open', ({ id }) => {
-        const el = document.getElementById(id);
-        if (el) new bootstrap.Modal(el).show();
+    (function(){
+      function ensureBodyScrollable(){
+        try {
+          const anyVisible = document.querySelector('.modal.show');
+          if(!anyVisible){
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
+          }
+        } catch(_) { /* noop */ }
+      }
+      document.addEventListener('hidden.bs.modal', ensureBodyScrollable);
+      document.addEventListener('livewire:init', () => {
+        Livewire.on('bs:open', ({ id }) => {
+          const el = document.getElementById(id);
+          if (el) bootstrap.Modal.getOrCreateInstance(el).show();
+        });
+        Livewire.on('bs:close', ({ id }) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const inst = bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
+          inst.hide();
+          setTimeout(ensureBodyScrollable, 0);
+        });
       });
-    });
+    })();
   </script>
 </div>

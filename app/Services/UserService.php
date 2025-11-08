@@ -81,14 +81,30 @@ class UserService
         // Sync the roles in the pivot table
         $user->roles()->sync(array_values($existing->all()));
 
-        // Audit the action (guard admin optionality and align params)
-        if ($admin && $admin->id) {
+        // After $user->roles()->sync(...);
+
+        $actor = $admin ?: $this->getFirstUser();
+        if ($actor && $actor->id) {
+            $actorName = trim(((string)($actor->first_name ?? '')) . ' ' . ((string)($actor->last_name ?? '')));
+            if ($actorName === '') {
+                $actorName = (string)($actor->email ?? '');
+            }
+
+            $ctx = ['meta' => ['roles' => array_values($roleCodes), 'source' => 'user_roles_update']];
+            try {
+                if (request()) {
+                    $ctx = app(\App\Services\AuditService::class)
+                        ->buildContextFromRequest(request(), ['roles' => array_values($roleCodes), 'source' => 'user_roles_update']);
+                }
+            } catch (\Throwable) { /* queue/no-http */
+            }
+
             $this->auditService->logAdminAction(
-                (int) $admin->id,
+                (int) $actor->id,
+                $actorName,
                 'USER_ROLES_UPDATED',
-                'user',
                 (string) ($user->id ?? 0),
-                ['meta' => ['roles' => array_values($roleCodes)]]
+                $ctx
             );
         }
 
@@ -113,13 +129,39 @@ class UserService
         $user->save();
 
         // Audit the action
-        $this->auditService->logAdminAction(
-            $admin->user_id,
-            $admin->name,
-            'USER_DEPT_ASSIGNED',
-            "Assigned user '{$user->name}' to department '{$department->d_name}'."
-        );
+        $actor = $admin ?: $this->getFirstUser();
+        if ($actor && $actor->id) {
+            $actorName = trim(((string)($actor->first_name ?? '')) . ' ' . ((string)($actor->last_name ?? '')));
+            if ($actorName === '') {
+                $actorName = (string)($actor->email ?? '');
+            }
 
+            $deptName = (string) ($department->d_name ?? $department->name ?? '');
+            $targetId = $deptName !== '' ? $deptName : (string)($department->id ?? 'department');
+
+            $ctx = ['meta' => [
+                'user_id'        => (int) ($user->id ?? 0),
+                'user_email'     => (string) ($user->email ?? ''),
+                'department_id'  => (int) ($department->id ?? 0),
+                'department_name' => $deptName,
+                'source'         => 'user_dept_assign',
+            ]];
+            try {
+                if (request()) {
+                    $ctx = app(\App\Services\AuditService::class)
+                        ->buildContextFromRequest(request(), $ctx['meta']);
+                }
+            } catch (\Throwable) { /* queue/no-http */
+            }
+
+            $this->auditService->logAdminAction(
+                (int) $actor->id,
+                $actorName,
+                'USER_DEPT_ASSIGNED',
+                $targetId,
+                $ctx
+            );
+        }
         return $user;
     }
 
@@ -141,10 +183,14 @@ class UserService
         $user->save();
 
         if ($admin && $admin->id) {
+            $adminName = trim(((string)($admin->first_name ?? '')) . ' ' . ((string)($admin->last_name ?? '')));
+            if ($adminName === '') {
+                $adminName = (string)($admin->email ?? '');
+            }
             $this->auditService->logAdminAction(
                 (int) $admin->id,
+                $adminName,
                 'USER_PROFILE_UPDATED',
-                'user',
                 (string) ($user->id ?? 0)
             );
         }
@@ -167,14 +213,43 @@ class UserService
         if (!empty($data['password'])) {
             $payload['password'] = $data['password'];
         }
+        // In UserService::createUser(array $data, ?User $admin = null)
+
         $user = User::create($payload);
 
-        if ($admin && $admin->id) {
+        // Always attempt to log (fallback to a safe actor if $admin is null)
+        $actor = $admin;
+        if (!$actor) {
+            try {
+                $actor = $this->getFirstUser(); // returns first user or null
+            } catch (\Throwable) {
+                $actor = null;
+            }
+        }
+
+        if ($actor && $actor->id) {
+            $actorName = trim(((string)($actor->first_name ?? '')) . ' ' . ((string)($actor->last_name ?? '')));
+            if ($actorName === '') {
+                $actorName = (string)($actor->email ?? '');
+            }
+
+            // Optional HTTP context (falls back to meta-only if no request)
+            $ctx = ['meta' => ['source' => 'user_create']];
+            try {
+                if (request()) {
+                    $ctx = app(\App\Services\AuditService::class)
+                        ->buildContextFromRequest(request(), ['source' => 'user_create']);
+                }
+            } catch (\Throwable) {
+                // keep $ctx as-is
+            }
+
             $this->auditService->logAdminAction(
-                (int) $admin->id,
-                'USER_CREATED',
-                'user',
-                (string) ($user->id ?? 0)
+                (int) $actor->id,
+                $actorName,                 // target_type (keeps your existing pattern)
+                'USER_CREATED',             // action
+                (string) ($user->id ?? 0),  // target_id
+                $ctx
             );
         }
 
@@ -191,18 +266,22 @@ class UserService
      */
     public function deleteUser(User $user, ?User $admin = null): void
     {
-        // It's important to get the user's name *before* deleting them for the audit log.
-        $deletedUserName = $user->name;
-        $deletedUserEmail = $user->email;
-        $deletedUserId = $user->user_id;
+        // Capture details before delete for auditing
+        $deletedUserName = trim((string)($user->first_name ?? '') . ' ' . (string)($user->last_name ?? ''));
+        $deletedUserEmail = (string) $user->email;
+        $deletedUserId = (int) ($user->id ?? 0);
 
         $user->delete();
 
         if ($admin && $admin->id) {
+            $adminName = trim(((string)($admin->first_name ?? '')) . ' ' . ((string)($admin->last_name ?? '')));
+            if ($adminName === '') {
+                $adminName = (string)($admin->email ?? '');
+            }
             $this->auditService->logAdminAction(
                 (int) $admin->id,
+                $adminName,
                 'USER_DELETED',
-                'user',
                 (string) $deletedUserId,
                 ['meta' => ['email' => $deletedUserEmail, 'name' => $deletedUserName]]
             );

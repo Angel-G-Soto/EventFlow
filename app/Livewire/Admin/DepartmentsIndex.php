@@ -47,14 +47,6 @@ class DepartmentsIndex extends Component
     return $values;
   }
 
-  // Lifecycle
-  /**
-   * Initialize component; no in-memory preload when using DB.
-   */
-  public function mount(): void
-  {
-    // No preload required; queries read directly from DB
-  }
 
   // Pagination & filter reactions
   /**
