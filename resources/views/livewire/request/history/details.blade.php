@@ -43,33 +43,33 @@
 
     <div class="card container">
         <div class="card-body" style="text-align: justify">
-            <h3>Event Name: {{$event->title}}</h3>
-            <h5>Student Organization: {{$event->organization_nexo_name}}</h5>
-            Description: {{$event->description}}
+            <h3>Event Name: {{$eventHistory->event->title}}</h3>
+            <h5>Student Organization: {{$eventHistory->event->organization_nexo_name}}</h5>
+            Description: {{$eventHistory->event->description}}
             <br>
             <br>
-            Day Submitted: {{$event->created_at}}
+            Day Submitted: {{$eventHistory->event->created_at}}
             <br>
-            Event Start Time : {{$event->start_time}}
+            Event Start Time : {{$eventHistory->event->start_time}}
             <br>
-            Event End Time : {{$event->end_time}}
+            Event End Time : {{$eventHistory->event->end_time}}
             <br>
             Event handles food:
-            @if ($event->handles_food === 0)
+            @if ($eventHistory->event->handles_food === 0)
                 No
             @else
                 Yes
             @endif
             <br>
             Uses institutional funds:
-            @if ($event->use_institutional_funds === 0)
+            @if ($eventHistory->event->use_institutional_funds === 0)
                 No
             @else
                 Yes
             @endif
             <br>
             Invites external guests:
-            @if ($event->external_guests === 0)
+            @if ($eventHistory->event->external_guests === 0)
                 No
             @else
                 Yes
@@ -105,7 +105,7 @@
              id="denyModal"
              tabindex="-1" aria-hidden="true"
              wire:ignore.self
-             wire:key="deny-modal-{{ $event->id ?? 'single' }}"
+             wire:key="deny-modal-{{ $eventHistory->event->id ?? 'single' }}"
              x-data="{ justification: @entangle('justification') }">
 
             <div class="modal-dialog">

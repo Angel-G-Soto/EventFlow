@@ -80,7 +80,7 @@ class Index extends Component
         }
 
         // Apply sorting
-        $query->orderBy('created_at', $this->filters['sortDirection'] ?? 'desc');
+        $query->orderBy('updated_at', $this->filters['sortDirection'] ?? 'desc');
 
         // Paginate results
         $eventhistories = $query->paginate(8);

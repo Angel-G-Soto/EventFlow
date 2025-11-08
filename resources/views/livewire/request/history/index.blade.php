@@ -39,7 +39,7 @@
 </x-slot:pageActions>
 
 <div>
-    <h1 class="h4 mb-3">Request History</h1>
+    <h1 class="h4 mb-3">Approval History</h1>
 
 
     <div class="card shadow-sm mb-3">
@@ -72,7 +72,7 @@
                         <td class="fw-medium text-end">
                             <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
-                                    onclick="window.location='{{ route('approver.history.request',['event'=>$history]) }}'">
+                                    onclick="window.location='{{ route('approver.history.request',['eventHistory'=>$history]) }}'">
                                 <i class="bi bi-eye me-1"></i> View details
                             </button>
                         </td>

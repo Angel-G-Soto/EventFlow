@@ -19,6 +19,7 @@
 
 namespace App\Livewire\Request\History;
 
+use App\Models\EventHistory;
 use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -38,7 +39,7 @@ use App\Models\Event;
 #[Layout('layouts.user')]
 class Details extends Component
 {
-    public Event $event;
+    public EventHistory $eventHistory;
     public string $justification = '';
 /**
  * GetIsReadyProperty action.
@@ -54,12 +55,12 @@ class Details extends Component
  * @return mixed
  */
 
-    public function save()
+    public function save(): void
     {
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
-        $eventService = app(EventService::class);
-        $eventService->cancelEvent($this->justification,$this->event,Auth::user());
+        $eventHistoryService = app(EventService::class);
+        $eventHistoryService->cancelEvent($this->justification,$this->eventHistory->event,Auth::user());
         $this->redirectRoute('approver.history.index');
     }
 /**
@@ -67,10 +68,10 @@ class Details extends Component
  * @return mixed
  */
 
-    public function approve()
+    public function approve(): void
     {
         // ... do your action
-        app(EventService::class)->approve($this->event);
+        app(EventService::class)->approve($this->eventHistory->event);
         $this->redirectRoute('approver.history.index');
     }
 /**
@@ -78,7 +79,7 @@ class Details extends Component
  * @return mixed
  */
 
-    public function back()
+    public function back():void
     {
         $this->redirectRoute('approver.history.index');
     }
@@ -90,7 +91,8 @@ class Details extends Component
 
     public function render()
     {
-        $docs = app(EventService::class)->getEventDocuments($this->event);
+//        dd($this->eventHistory);
+        $docs = app(EventService::class)->getEventDocuments($this->eventHistory->event)->toArray();
 
         // Use document service method that accepts event_id and return the array of docs.
 

@@ -38,36 +38,38 @@ class EventHistoryService
 
     public function genericApproverRequestHistoryV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
-        //$query = EventHistory::where('approver_id', $user->id);
         $activeRoles = !empty($roles)
             ? $roles
             : $user->roles->pluck('name')->toArray();
 
-        // Apply role-based filters inside the history relationship
         $query = EventHistory::where('approver_id', $user->id)
-            ->where(function ($q) use ($activeRoles) {
+            ->whereIn('action', ['approved', 'rejected', 'cancelled'])
+            ->where(function ($q) use ($activeRoles, $user) {
                 foreach ($activeRoles as $role) {
-                    $q->orWhere(function ($sub) use ($role) {
+                    $q->orWhere(function ($sub) use ($role, $user) {
                         switch ($role) {
                             case 'advisor':
-                                $sub->where('status_when_signed', 'pending - advisor approval');
+                                    $sub->where('status_when_signed', 'pending - advisor approval');
                                 break;
+
                             case 'venue-manager':
-                                $sub->where('status_when_signed', 'pending - venue manager approval');
+                                    $sub->where('status_when_signed', 'pending - venue manager approval');
                                 break;
+
                             case 'event-approver':
                                 $sub->where('status_when_signed', 'pending - dsca approval');
                                 break;
-                            case 'deanship-of-administration-approver':
-                                $sub->where('status_when_signed', 'pending - deanship of administration approval');
-                                break;
+
+//                            case 'deanship-of-administration-approver':
+//                                $sub->where('status_when_signed', 'pending - deanship of administration approval');
+//                                break;
                         }
                     });
                 }
             });
 
-
         return $query;
     }
+
 
 }

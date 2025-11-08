@@ -32,7 +32,7 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
 
     //Approver Request History-----------------------------------------------------------
         Route::get('/approver/requests/history',\App\Livewire\Request\History\Index::class)->name('approver.history.index');
-        Route::get('/approver/requests/history/{event}',\App\Livewire\Request\History\Details::class)->name('approver.history.request');
+        Route::get('/approver/requests/history/{eventHistory}',\App\Livewire\Request\History\Details::class)->name('approver.history.request');
 
     //Approver Request Pending---------------------------------------------------------------------------
         Route::get('/approver/requests/pending',\App\Livewire\Request\Pending\Index::class)->name('approver.pending.index');
