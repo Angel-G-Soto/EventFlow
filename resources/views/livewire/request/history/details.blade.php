@@ -27,7 +27,7 @@
 <div>
     <div class="container my-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-            <h1 class="fw-bold mb-4">Event Details</h1>
+            <h1 class="fw-bold mb-4">Approval Details</h1>
             <button type="button"
                     wire:click="back"
                     class="btn btn-secondary ms-auto"
@@ -54,6 +54,8 @@
 {{--        @endif--}}
 
         {{-- Event Header --}}
+        <h1 class="fw-bold mb-4">Event Details</h1>
+
         <section class="card shadow-sm mb-4" aria-labelledby="event-header">
             <div class="card-body">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
@@ -159,15 +161,17 @@
         </section>
 
         {{-- Action Buttons --}}
-        <div class="d-flex gap-2 mb-5">
-            <button type="button"
-                    class="btn btn-danger"
-                    data-bs-toggle="modal"
-                    data-bs-target="#denyModal"
-                    aria-label="Cancel Request Approval">
-                Cancel Request Approval
-            </button>
-        </div>
+        @if(strtolower($eventHistory->action)==='approved')
+            <div class="d-flex gap-2 mb-5">
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#denyModal"
+                        aria-label="Cancel Request Approval">
+                    Cancel Request Approval
+                </button>
+            </div>
+        @endif
     </div>
 
     {{-- Deny Modal --}}
