@@ -68,7 +68,7 @@
                 </dd>
 
                 <dt class="col-sm-4">Organization</dt>
-                <dd class="col-sm-8">{{ $event->organization_nexo_name }}</dd>
+                <dd class="col-sm-8">{{ $event->organization_name }}</dd>
 
                 <dt class="col-sm-4">Advisor</dt>
                 <dd class="col-sm-8">
