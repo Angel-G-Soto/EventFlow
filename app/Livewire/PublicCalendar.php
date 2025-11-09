@@ -20,6 +20,7 @@ class PublicCalendar extends Component
     // Week anchor (Monday)
     public string $weekStart; // ISO date (YYYY-MM-DD)
     public bool $filterMyVenues = false;
+    public array $docs = [];
 
     // Read-only public, approved events (mocked for now)
     protected function allApprovedPublic(): array
@@ -83,13 +84,16 @@ class PublicCalendar extends Component
         if (!$event) return;
 
         if(Auth::check()) {
-//            $roles = Auth::user()->getRoleNames();
-            $roles = collect(['user','event-approver']);
-            $histories = app(EventHistoryService::class)->genericApproverRequestHistoryV2(Auth::user())->pluck('event_id');
+            $roles = Auth::user()->getRoleNames();
+//            $roles = collect(['user','event-approver']);
             $hasRoles = $roles->intersect(['venue-manager','event-approver']);
+            $histories = app(EventHistoryService::class)->genericApproverRequestHistoryV2(Auth::user())->pluck('event_id');
+
+
 
             if($hasRoles->count() >=1 &&  $histories->contains($id)) {
                 $this->dispatch('bs:open', id: 'publicEventDetails');
+                $this->docs = app(EventService::class)->getEventDocuments($event)->toArray();
             }
             else{
                 $this->dispatch('bs:open', id: 'eventDetails');

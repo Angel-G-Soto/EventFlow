@@ -218,6 +218,21 @@
                         <div class="alert alert-warning">No event details available.</div>
                     @endif
                 </div>
+
+                {{-- Documents --}}
+                <div class="container">
+                <section class="card shadow-sm mb-4" aria-labelledby="event-documents">
+                    <div class="card-body">
+                        <h3 id="event-documents" class="fw-semibold border-bottom pb-2 mb-3">Documents</h3>
+
+                            <livewire:documents.list-with-preview     :docs="$docs"
+                                                                  :key="'docs-'.($modal['event']->id ?? '0')" />
+                        </div>
+
+
+                </section>
+                </div>
+
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
                             aria-label="Close details">Close</button>
