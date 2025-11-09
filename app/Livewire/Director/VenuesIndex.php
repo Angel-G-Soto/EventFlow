@@ -11,10 +11,14 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\Attributes\Validate;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
+    use WithPagination;
+
+    public string $paginationTheme = 'bootstrap';
 
   public ?User $selectedEmployee= null;
   public ?int $depID = null;
