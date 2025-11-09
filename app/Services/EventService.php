@@ -486,6 +486,26 @@ class EventService {
         return $query;
     }
 
+    public function conflictingEvents(Event $event)
+    {
+        return Event::where(function ($query) {
+                $query->where('status', 'like', '%venue manager%')
+                    ->orWhere('status', 'like', '%dsca%')
+                    ->orWhere('status', 'like', '%approved%');
+            })
+            ->where('venue_id', $event->venue_id)
+            ->where('id', '!=', $event->id)
+            ->where(function ($query) use ($event) {
+                $query
+                    ->whereBetween('start_time', [$event->start_time, $event->end_time])        // Event starts within window
+                    ->orWhereBetween('end_time', [$event->start_time, $event->end_time])        // Event ends within window
+                    ->orWhere(function ($query) use ($event) {    // Event fully covers window
+                        $query->where('start_time', '<=', $event->start_time)
+                            ->where('end_time', '>=', $event->end_time);
+                    });
+            });
+    }
+
 
     public function getEventDocuments(Event $event): Collection
     {

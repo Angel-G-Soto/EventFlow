@@ -25,6 +25,55 @@
 @endphp
 
 <div class="container my-4">
+    {{-- Conflicting Events Alert --}}
+    @if($conflicts->count() > 0)
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <h4 class="alert-heading">Conflict(s) Detected!</h4>
+            <p>There are conflicts with this event. Please review the following conflicting events:</p>
+            <ul class="list-group">
+                @foreach($conflicts as $conflict)
+                    <li class="list-group-item">
+                        @php
+                            $statuses = ['pending', 'venue manager', 'dsca'];
+                            $isPendingStatus = false;
+
+                            foreach ($statuses as $status) {
+                                if (str_contains($conflict['status'], $status)) {
+                                    $isPendingStatus = true;
+                                    break;
+                                }
+                            }
+                        @endphp
+
+                        @if($isPendingStatus)
+                            {{-- For Pending, Venue Manager, or DSCA events --}}
+                            <a target="_blank" href="{{ route('approver.pending.request', $conflict['id']) }}" class="fw-semibold">
+                                {{ $conflict['title'] }}  | Status: {{$conflict['status']}}
+                            </a>
+                        @else
+                            {{-- For Approved Events --}}
+                            <a target="_blank" href="{{ route('approver.approved.request', $conflict['id']) }}" class="fw-semibold">
+                                {{ $conflict['title'] }}  | Status: {{$conflict['status']}}
+                            </a>
+                        @endif
+                        <br>
+                        <small>
+                            Conflicts from {{ \Carbon\Carbon::parse($conflict['start_time'])->format('M j, Y g:i A') }} to {{ \Carbon\Carbon::parse($conflict['end_time'])->format('g:i A') }}
+                        </small>
+                    </li>
+                @endforeach
+            </ul>
+
+            {{-- Pagination Links with Red Background --}}
+            <div class="d-flex justify-content-end mt-3">
+                {{ $conflicts->links('pagination::bootstrap-5') }}
+            </div>
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h1 class="fw-bold">Event Details</h1>
         <button type="button"
