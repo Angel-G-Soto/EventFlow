@@ -48,6 +48,19 @@
 
                         <dt class="col-sm-4">Approver Comment</dt>
                         <dd class="col-sm-8">{{ $eventHistory->comment ?? 'No comment provided.' }}</dd>
+
+                        <dt class="col-sm-4">Approval Type</dt>
+                        <dd class="col-sm-8">
+                            @if(str_contains($eventHistory->status_when_signed, 'venue manager'))
+                                Venue Manager
+                            @elseif(str_contains($eventHistory->status_when_signed, 'dsca'))
+                                Event Approver (DSCA)
+                            @elseif(str_contains($eventHistory->status_when_signed, 'advisor'))
+                                Advisor
+                            @else
+                                {{ $eventHistory->status_when_signed ?? 'No comment provided.' }}
+                            @endif
+                        </dd>
                     </dl>
                 </div>
             </section>
