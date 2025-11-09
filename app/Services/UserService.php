@@ -181,4 +181,9 @@ class UserService
             $query->where('r_code', $roleCode);
         })->get();
     }
+
+//    public function getUserRoles(int $id): Collection
+//    {
+//        return new Collection();
+//    }
 }
