@@ -3,7 +3,7 @@
 	to avoid Sass deprecation warnings emitted by Bootstrap's SCSS @import usage.
 	Add any project-specific SCSS below as needed.
 */
-//@use "bootstrap/scss/bootstrap";
+@use "bootstrap/scss/bootstrap";
 
 /* Admin forms: show red asterisk on required labels */
 .form-label.required::after,
