@@ -50,6 +50,16 @@ class UserService
     }
 
     /**
+     * Retrieves a collection of all users who have no roles assigned.
+     *
+     * @return Collection An Eloquent Collection of User objects.
+     */
+    public function getUsersWithNoRoles(): Collection
+    {
+        return User::whereDoesntHave('roles')->get();
+    }
+
+    /**
      * Retrieve the first available user in the system, or null if none exist.
      */
     public function getFirstUser(): ?User

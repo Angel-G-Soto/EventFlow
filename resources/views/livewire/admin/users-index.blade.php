@@ -29,7 +29,8 @@
         <div class="col-6 col-md-3">
           <label class="form-label" for="users_role">Role</label>
           <select id="users_role" class="form-select" wire:model.live="role">
-            <option value="">All roles</option>
+            <option value="">All</option>
+            <option value="__none__">No roles</option>
             @foreach(($allRoles ?? []) as $r)
             @php $label = \Illuminate\Support\Str::of($r)->replace('-', ' ')->title(); @endphp
             <option value="{{ $r }}">{{ $label }}</option>

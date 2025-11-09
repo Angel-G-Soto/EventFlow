@@ -8,11 +8,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\EventFilters;
 use App\Livewire\Traits\EventEditState;
-use App\Models\Event as EventModel;
-use App\Models\Category as CategoryModel;
 use App\Services\CategoryService;
-use App\Models\Venue as VenueModel;
-use App\Models\User as UserModel;
+use App\Services\EventService;
+// Note: Admin views must use services only (no direct models). Venue lookups are avoided here.
 use DateTimeInterface;
 use Illuminate\Validation\Rule;
 
@@ -101,8 +99,7 @@ class EventsIndex extends Component
             $categories = app(CategoryService::class)->getAllCategories();
             $this->categoryPool = $categories->pluck('name')->sort()->values()->all();
         } catch (\Throwable $e) {
-            // Fallback to direct model if service fails
-            $this->categoryPool = CategoryModel::query()->orderBy('name')->pluck('name')->all();
+            $this->categoryPool = [];
         }
     }
 
@@ -235,39 +232,32 @@ class EventsIndex extends Component
         $this->dispatch('bs:close', id: 'oversightEdit');
         // Persist edits to DB when applicable
         if (!empty($this->editId)) {
-            $event = EventModel::find($this->editId);
-            if ($event) {
-                // Resolve venue id by name or code
-                $venueId = $event->venue_id;
-                if (!empty($this->eVenue)) {
-                    $venue = VenueModel::query()
-                        ->where('name', $this->eVenue)
-                        ->orWhere('code', $this->eVenue)
-                        ->first();
-                    if ($venue) $venueId = $venue->id;
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    $venueId = (int)($event->venue_id ?? 0);
+                    // Build full payload for performManualOverride
+                    $payload = [
+                        'venue_id'     => $venueId,
+                        'title'        => (string)$this->eTitle,
+                        'description'  => (string)$this->ePurpose,
+                        'start_time'   => str_replace('T', ' ', (string)$this->eFrom),
+                        'end_time'     => str_replace('T', ' ', (string)$this->eTo),
+                        'status'       => (string)($event->status ?? 'approved'),
+                        'guests'       => (int)$this->eAttendees,
+                        'organization_name' => (string)$this->eOrganization,
+                        'organization_advisor_name'  => (string)$this->eAdvisorName,
+                        'organization_advisor_email' => (string)$this->eAdvisorEmail,
+                        'handles_food' => (bool)$this->eHandlesFood,
+                        'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
+                        'external_guests' => (bool)$this->eExternalGuest,
+                    ];
+                    // Route edits through performManualOverride (service-only, no model access here)
+                    $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), 'save');
                 }
-
-                $event->fill([
-                    'title'        => $this->eTitle,
-                    'description'  => $this->ePurpose,
-                    'venue_id'     => $venueId,
-                    'start_time'   => str_replace('T', ' ', (string)$this->eFrom),
-                    'end_time'     => str_replace('T', ' ', (string)$this->eTo),
-                    'guest_size'   => (int)$this->eAttendees,
-                    'organization_name' => $this->eOrganization,
-                    'organization_advisor_name'  => $this->eAdvisorName,
-                    'organization_advisor_email' => $this->eAdvisorEmail,
-                    //'organization_advisor_phone' => $this->eAdvisorPhone, // column currently commented in model
-                    'handles_food' => (bool)$this->eHandlesFood,
-                    'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
-                    'external_guest' => (bool)$this->eExternalGuest,
-                ])->save();
-
-                // Sync primary category by name if provided
-                if (!empty($this->eCategory)) {
-                    $cat = CategoryModel::firstOrCreate(['name' => (string)$this->eCategory]);
-                    $event->categories()->sync([$cat->id]);
-                }
+            } catch (\Throwable $e) {
+                // swallow update errors
             }
         }
 
@@ -309,9 +299,33 @@ class EventsIndex extends Component
     {
         if ($this->editId) {
             $this->validateJustification();
-            $event = EventModel::find($this->editId);
-            if ($event) {
-                $event->delete();
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    // Replace delete with a cancel via performManualOverride
+                    $venueId = (int)($event->venue_id ?? 0);
+                    $payload = [
+                        'venue_id'     => $venueId,
+                        'title'        => (string)($event->title ?? 'Untitled'),
+                        'description'  => (string)($event->description ?? ''),
+                        'start_time'   => (string)($event->start_time),
+                        'end_time'     => (string)($event->end_time),
+                        'status'       => 'cancelled',
+                        'guests'       => (int)($event->guest_size ?? 0),
+                        'organization_name' => (string)($event->organization_name ?? ''),
+                        'organization_advisor_name'  => (string)($event->organization_advisor_name ?? ''),
+                        'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
+                        'handles_food' => (bool)($event->handles_food ?? false),
+                        'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
+                        'external_guests' => (bool)($event->external_guest ?? false),
+                    ];
+                    $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), 'cancel');
+                }
+            } catch (\Throwable $e) {
+                // Surface a validation error instead of falling back
+                $this->addError('justification', 'Unable to delete event.');
+                return;
             }
         }
         $this->dispatch('bs:close', id: 'oversightJustify');
@@ -391,10 +405,30 @@ class EventsIndex extends Component
                 default   => null,
             };
             if ($newStatus !== null) {
-                $event = EventModel::find($this->editId);
-                if ($event) {
-                    $event->status = $newStatus;
-                    $event->save();
+                try {
+                    $svc = app(EventService::class);
+                    $event = $this->getEventFromServiceById((int)$this->editId);
+                    if ($event) {
+                        $venueId = (int)($event->venue_id ?? 0);
+                        $payload = [
+                            'venue_id'     => $venueId,
+                            'title'        => (string)($event->title ?? 'Untitled'),
+                            'description'  => (string)($event->description ?? ''),
+                            'start_time'   => (string)($event->start_time),
+                            'end_time'     => (string)($event->end_time),
+                            'status'       => mb_strtolower($newStatus) === 'denied' ? 'rejected' : strtolower($newStatus),
+                            'guests'       => (int)($event->guest_size ?? 0),
+                            'organization_name' => (string)($event->organization_name ?? ''),
+                            'organization_advisor_name'  => (string)($event->organization_advisor_name ?? ''),
+                            'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
+                            'handles_food' => (bool)($event->handles_food ?? false),
+                            'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
+                            'external_guests' => (bool)($event->external_guest ?? false),
+                        ];
+                        $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), $this->actionType);
+                    }
+                } catch (\Throwable $e) {
+                    // ignore status update errors
                 }
             }
 
@@ -509,12 +543,23 @@ class EventsIndex extends Component
             $paginator = $this->paginated();
         }
         $visibleIds = $paginator->pluck('id')->all();
+        // Build unique venue names for dropdown (case-insensitive, preserve first casing)
+        $venueMap = [];
+        foreach ($this->allRequests() as $req) {
+            $vn = trim((string)($req['venue'] ?? ''));
+            if ($vn === '') continue;
+            $k = mb_strtolower($vn);
+            if (!isset($venueMap[$k])) $venueMap[$k] = $vn;
+        }
+        $venues = array_values($venueMap);
+        usort($venues, fn($a, $b) => strnatcasecmp($a, $b));
         return view('livewire.admin.events-index', [
             'rows' => $paginator,
             'visibleIds' => $visibleIds,
             'organizations' => $this->organizations,
             'statuses' => $this->statuses,
             'categories' => $this->categoryPool,
+            'venues' => $venues,
         ]);
     }
 
@@ -540,16 +585,14 @@ class EventsIndex extends Component
     protected function allRequests(): Collection
     {
         // Query live data from DB and normalize for the view
-        $rows = EventModel::query()
-            ->with(['requester:id,first_name,last_name,email', 'venue:id,name,code', 'categories:id,name'])
-            ->select(['id', 'creator_id', 'venue_id', 'title', 'description', 'start_time', 'end_time', 'status', 'guest_size', 'organization_name', 'organization_advisor_name', 'organization_advisor_email'])
-            ->get()
+        $raw = $this->fetchEventsCollection();
+        $rows = $raw
             ->map(function ($e) {
                 $from = $e->start_time instanceof DateTimeInterface ? $e->start_time->format('Y-m-d H:i') : (string)$e->start_time;
                 $to   = $e->end_time   instanceof DateTimeInterface ? $e->end_time->format('Y-m-d H:i')   : (string)$e->end_time;
-                $requestor = $e->requester ? trim($e->requester->first_name . ' ' . $e->requester->last_name) : ('User ' . (string)($e->creator_id ?? ''));
-                $venueName = $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
-                $category  = $e->categories?->first()?->name ?? '';
+                $requestor = method_exists($e, 'requester') && $e->requester ? trim(($e->requester->first_name ?? '') . ' ' . ($e->requester->last_name ?? '')) : ('User ' . (string)($e->creator_id ?? ''));
+                $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
+                $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
                 return [
                     'id' => (int)$e->id,
                     'title' => (string)($e->title ?? 'Untitled'),
@@ -671,7 +714,7 @@ class EventsIndex extends Component
     protected function rules(): array
     {
         return [
-            'justification' => ['required', 'string', 'min:3']
+            'justification' => ['required', 'string', 'min:10', 'max:200']
         ];
     }
 
@@ -681,5 +724,45 @@ class EventsIndex extends Component
     protected function validateJustification(): void
     {
         $this->validateOnly('justification');
+    }
+
+    /**
+     * Fetch events via EventService without relying on undefined methods.
+     */
+    protected function fetchEventsCollection(): Collection
+    {
+        try {
+            $res = app(EventService::class)->getAllEvents([]);
+            if ($res instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+                return collect($res->items());
+            }
+            if (is_iterable($res)) return collect($res);
+        } catch (\Throwable $e) { /* ignore */
+        }
+        return collect();
+    }
+
+    /**
+     * Resolve a single event by id using the service response only.
+     */
+    protected function getEventFromServiceById(int $id)
+    {
+        if ($id <= 0) return null;
+        $list = $this->fetchEventsCollection();
+        return $list->firstWhere('id', $id) ?? null;
+    }
+
+    /**
+     * Provide a minimal admin user object for service calls that require one.
+     */
+    protected function fakeAdminUser(): ?\App\Models\User
+    {
+        try {
+            $u = app(\App\Services\UserService::class)->getFirstUser();
+            if ($u) return $u;
+            return new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']);
+        } catch (\Throwable $e) {
+            return new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']);
+        }
     }
 }

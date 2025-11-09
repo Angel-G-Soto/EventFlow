@@ -268,17 +268,17 @@ class UsersIndex extends Component
      * It sets the currently edited user ID and sets actionType to 'delete', then opens the justification modal.
      * @param int $id The ID of the user to delete
      */
-    public function delete(int $id): void
+    public function clearRoles(int $id): void
     {
         $this->editId = $id;
-        $this->actionType = 'delete';
+        $this->actionType = 'clear-roles';
         $this->dispatch('bs:open', id: 'userConfirm');
     }
 
     /**
      * Proceeds from the delete confirmation to the justification modal.
      */
-    public function proceedDelete(): void
+    public function proceedClearRoles(): void
     {
         $this->dispatch('bs:close', id: 'userConfirm');
         $this->dispatch('bs:open', id: 'userJustify');
@@ -291,7 +291,7 @@ class UsersIndex extends Component
      * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
      * Finally, it shows a toast message indicating the user was deleted.
      */
-    public function confirmDelete(): void
+    public function confirmClearRoles(): void
     {
         $this->validateOnly('justification');
 
@@ -299,19 +299,17 @@ class UsersIndex extends Component
             try {
                 $user = app(UserService::class)->findUserById((int)$this->editId);
                 if ($user) {
-                    // Delete via service; if no admin available, surface an error
-                    // Auth disabled: use fake admin for audit or skip if null
-                    $admin = $this->fakeAdminUser();
-                    app(UserService::class)->deleteUser($user, $admin);
+                    // Clear roles instead of deleting the user record
+                    app(UserService::class)->updateUserRoles($user, [], $this->fakeAdminUser());
                 }
             } catch (\Throwable $e) {
-                $this->addError('justification', 'Unable to delete user.');
+                $this->addError('justification', 'Unable to clear user roles.');
                 return;
             }
         }
 
         $this->dispatch('bs:close', id: 'userJustify');
-        $this->toast('User deleted');
+        $this->toast('User roles cleared');
         $this->reset(['editId', 'justification']);
     }
 
@@ -320,8 +318,8 @@ class UsersIndex extends Component
      */
     public function confirmJustify(): void
     {
-        if (($this->actionType ?? '') === 'delete') {
-            $this->confirmDelete();
+        if (($this->actionType ?? '') === 'clear-roles') {
+            $this->confirmClearRoles();
         } else {
             $this->confirmSave();
         }
@@ -341,20 +339,33 @@ class UsersIndex extends Component
         $svc = app(UserService::class);
         $users = collect();
 
-        if (!empty($this->role)) {
+        if ($this->role === '__none__') {
+            // Show users with no roles
+            try {
+                $users = $svc->getUsersWithNoRoles();
+            } catch (\Throwable $e) {
+                $users = collect();
+            }
+        } elseif (!empty($this->role)) {
             try {
                 $users = $svc->getUsersWithRole($this->role);
             } catch (\Throwable $e) {
                 $users = collect();
             }
         } else {
-            // Iterate over ROLE CODES, not display names
+            // Get all users with any role
             foreach ($this->roleCodes() as $code) {
                 try {
                     $users = $users->merge($svc->getUsersWithRole($code));
                 } catch (\Throwable $e) {
                     // ignore service errors for individual role fetches
                 }
+            }
+            // Add users with no roles
+            try {
+                $users = $users->merge($svc->getUsersWithNoRoles());
+            } catch (\Throwable $e) {
+                // ignore service errors
             }
             // De-duplicate by primary key (id or user_id depending on schema)
             $users = $users->unique(function ($u) {
@@ -386,11 +397,11 @@ class UsersIndex extends Component
         // Ensure unique role codes for display
         $roles = method_exists($u, 'roles')
             ? $u->roles
-                ->map(fn($r) => $r->code ?? \Illuminate\Support\Str::slug((string)$r->name))
-                ->filter()
-                ->unique()
-                ->values()
-                ->all()
+            ->map(fn($r) => $r->code ?? \Illuminate\Support\Str::slug((string)$r->name))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all()
             : [];
 
         return [
@@ -408,7 +419,7 @@ class UsersIndex extends Component
      */
     protected function rules(): array
     {
-        // Department should only be provided when the user has the "Venue Manager" role
+        // Department should only be provided when the user has the "Department Director" role
         $deptRequired = $this->roleRequiresDepartment($this->editRoles);
         // Allowed role codes derived from constants
         $allowedRoleCodes = $this->roleCodes();
@@ -450,7 +461,11 @@ class UsersIndex extends Component
                     str_contains(mb_strtolower($user['email']), $s);
 
                 $roles = $user['roles'] ?? [];
-                $roleOk = $selectedRole === '' || in_array($selectedRole, $roles, true);
+                if ($selectedRole === '__none__') {
+                    $roleOk = empty($roles);
+                } else {
+                    $roleOk = $selectedRole === '' || in_array($selectedRole, $roles, true);
+                }
                 return $hit && $roleOk;
             })
             ->values();
@@ -494,14 +509,14 @@ class UsersIndex extends Component
 
     /**
      * Determine if any of the given roles explicitly require a department.
-     * Only the "Venue Manager" role requires a department.
+     * Only the "Department Director" role requires a department.
      *
      * @param array<int,string> $roles
      */
     protected function roleRequiresDepartment(array $roles): bool
     {
-        // Only the 'venue-manager' role requires a department
-        return in_array('venue-manager', $roles, true);
+        // Only the 'department-director' role requires a department
+        return in_array('department-director', $roles, true);
     }
 
     /**
@@ -550,7 +565,7 @@ class UsersIndex extends Component
      */
     protected function resolveDepartmentIdFromName(?string $name): ?int
     {
-        // Only set department when the role requires it (Venue Manager)
+        // Only set department when the role requires it (Department Director)
         if (!$this->roleRequiresDepartment($this->editRoles)) {
             return null;
         }
