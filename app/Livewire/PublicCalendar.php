@@ -3,7 +3,9 @@
 namespace App\Livewire;
 
 use App\Models\Event;
+use App\Services\EventHistoryService;
 use App\Services\EventService;
+use App\Services\UserService;
 use App\Services\VenueService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -71,14 +73,37 @@ class PublicCalendar extends Component
     public function openEvent(int $id): void
     {
         $event = Event::find($id); // Fetch the event by ID (this returns an instance of the Event model)
-        if (!$event) return;
-
-        // Pass the event model directly to the modal
         $this->modal = [
             'event' => $event
         ];
 
-        $this->dispatch('bs:open', id: 'eventDetails');
+
+//        dd(app(EventHistoryService::class)->genericApproverRequestHistoryV2(Auth::user())->pluck('id'));
+
+        if (!$event) return;
+
+        if(Auth::check()) {
+//            $roles = Auth::user()->getRoleNames();
+            $roles = collect(['user','event-approver']);
+            $histories = app(EventHistoryService::class)->genericApproverRequestHistoryV2(Auth::user())->pluck('event_id');
+            $hasRoles = $roles->intersect(['venue-manager','event-approver']);
+
+            if($hasRoles->count() >=1 &&  $histories->contains($id)) {
+                $this->dispatch('bs:open', id: 'publicEventDetails');
+            }
+            else{
+                $this->dispatch('bs:open', id: 'eventDetails');
+            }
+        }
+        else{
+            $this->dispatch('bs:open', id: 'eventDetails');
+        }
+
+        // Pass the event model directly to the modal
+//        $user_roles = app(UserService::class)->getUserRoles();
+
+
+//        $this->dispatch('bs:open', id: 'eventDetails');
     }
 
     public function render()
