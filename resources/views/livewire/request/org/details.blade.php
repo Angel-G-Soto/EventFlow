@@ -97,7 +97,7 @@
                 </button>
             @endif
 
-            <button type="button" wire:click="approve" class="btn btn-outline-secondary ms-auto"
+            <button type="button" wire:click="back" class="btn btn-outline-secondary ms-auto"
                     wire:target="back">
                 Back
             </button>

@@ -78,12 +78,12 @@
                             {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
                         </p>
                         @php
-                            $statusLower = strtolower($eventHistory->status_when_signed);
+                            $statusLower = strtolower($eventHistory->event->status);
 
                             if (str_contains($statusLower, 'pending')) {
                                 $display = 'Pending Approval';
                             } else {
-                                $display = $eventHistory->status_when_signed;
+                                $display = ucfirst($eventHistory->event->status);
                             }
                         @endphp
                         <span class="badge rounded-pill text-bg-secondary">Current Status: {{ $display }}</span>

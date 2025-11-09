@@ -184,7 +184,7 @@
                 <select class="form-select" wire:model="venue_id">
                     <option value="">— Select venue —</option>
                     @foreach ($availableVenues as $v)
-                        <option value="{{ $v['id'] }}">{{ $v['name'] }}</option>
+                        <option value="{{ $v['id'] }}">{{ $v['code'] }}</option>
                     @endforeach
                 </select>
                 @error('venue_id') <div class="text-danger small">{{ $message }}</div> @enderror
