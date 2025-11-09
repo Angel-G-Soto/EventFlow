@@ -94,6 +94,7 @@ class Details extends Component
         $eventService = app(EventService::class);
         $docs = $eventService->getEventDocuments($this->event)->toArray();
         $conflicts = $eventService->conflictingEvents($this->event)->paginate(4);
-        return view('livewire.request.pending.details', compact('docs', 'conflicts'));
+//        dd($conflicts);
+        return view('livewire.request.pending.details', compact( 'docs', 'conflicts'));
     }
 }

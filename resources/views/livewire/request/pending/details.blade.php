@@ -26,7 +26,7 @@
 
 <div class="container my-4">
     {{-- Conflicting Events Alert --}}
-    @if($conflicts->count() > 0)
+    @if($conflicts->count() > 0 && in_array('venue-manager', \Illuminate\Support\Facades\Auth::user()->roles->pluck('name')->toArray()) && str_contains($event->status, 'venue manager'))
         <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
             <h4 class="alert-heading">Conflict(s) Detected!</h4>
             <p>There are conflicts with this event. Please review the following conflicting events:</p>
@@ -52,7 +52,7 @@
                             </a>
                         @else
                             {{-- For Approved Events --}}
-                            <a target="_blank" href="{{ route('approver.approved.request', $conflict['id']) }}" class="fw-semibold">
+                            <a target="_blank" href="{{ route('approver.history.request', $conflict['id']) }}" class="fw-semibold">
                                 {{ $conflict['title'] }}  | Status: {{$conflict['status']}}
                             </a>
                         @endif
