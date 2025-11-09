@@ -33,33 +33,29 @@
             <ul class="list-group">
                 @foreach($conflicts as $conflict)
                     <li class="list-group-item">
-                        @php
-                            $statuses = ['pending', 'venue manager', 'dsca'];
-                            $isPendingStatus = false;
-
-                            foreach ($statuses as $status) {
-                                if (str_contains($conflict['status'], $status)) {
-                                    $isPendingStatus = true;
-                                    break;
-                                }
-                            }
-                        @endphp
-
-                        @if($isPendingStatus)
+                        @if(str_contains($conflict['status'], 'venue manager'))
                             {{-- For Pending, Venue Manager, or DSCA events --}}
                             <a target="_blank" href="{{ route('approver.pending.request', $conflict['id']) }}" class="fw-semibold">
                                 {{ $conflict['title'] }}  | Status: {{$conflict['status']}}
                             </a>
                         @else
                             {{-- For Approved Events --}}
-                            <a target="_blank" href="{{ route('approver.history.request', $conflict['id']) }}" class="fw-semibold">
+                            @php
+                                // Get the latest event history where the current user is the approver
+                                $lastApproval = $conflict->history()
+                                    ->where('approver_id', Auth::id()) // assuming the approver is linked to 'approver_id'
+                                    ->where('event_id', $conflict['id'])
+                                    ->latest() // Get the most recent history
+                                    ->first();
+                            @endphp
+                            <a target="_blank" href="{{ route('approver.history.request', $lastApproval->id) }}" class="fw-semibold">
                                 {{ $conflict['title'] }}  | Status: {{$conflict['status']}}
                             </a>
-                        @endif
                         <br>
                         <small>
                             Conflicts from {{ \Carbon\Carbon::parse($conflict['start_time'])->format('M j, Y g:i A') }} to {{ \Carbon\Carbon::parse($conflict['end_time'])->format('g:i A') }}
                         </small>
+                        @endif
                     </li>
                 @endforeach
             </ul>
