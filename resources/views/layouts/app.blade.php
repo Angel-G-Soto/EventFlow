@@ -21,21 +21,42 @@
   @livewireScripts
 
   <script>
-    // Optional: close the collapse after clicking a nav link (mobile UX)
     document.addEventListener('DOMContentLoaded', function() {
-      const navCollapse = document.getElementById('navMain');
-      const navToggler = document.querySelector('.navbar-toggler');
-      document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-          if (navCollapse.classList.contains('show')) {
-            const collapse = bootstrap.Collapse.getOrCreateInstance(navCollapse);
-            collapse.hide();
-            navToggler?.setAttribute('aria-expanded', 'false');
-          }
-        });
+    const navCollapse = document.getElementById('navMain');
+    const navToggler = document.querySelector('.navbar-toggler');
+
+    // Toggle menu when hamburger is clicked
+    navToggler.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = navCollapse.classList.contains('show');
+      if (isOpen) {
+        navCollapse.classList.remove('show');
+        navToggler.setAttribute('aria-expanded', 'false');
+      } else {
+        navCollapse.classList.add('show');
+        navToggler.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    // Close menu when nav links are clicked
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        navCollapse.classList.remove('show');
+        navToggler.setAttribute('aria-expanded', 'false');
       });
     });
+
+    // Close menu when scrolling
+    window.addEventListener('scroll', () => {
+      if (navCollapse.classList.contains('show')) {
+        navCollapse.classList.remove('show');
+        navToggler.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
   </script>
+  <x-bs-bridge />
 </body>
 
 </html>

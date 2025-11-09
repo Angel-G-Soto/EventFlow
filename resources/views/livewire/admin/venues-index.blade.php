@@ -235,12 +235,12 @@
               </div>
               <!-- Server-side processing indicator (after upload submit).
                    Guarded by $csvFile so it doesn't show unless a file was selected. -->
-              @if($csvFile)
+              {{-- @if($csvFile)
               <div class="d-flex align-items-center gap-2 mt-2" wire:loading.delay wire:target="uploadCsv">
                 <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
                 <small class="text-muted">Processing import…</small>
               </div>
-              @endif
+              @endif --}}
             </div>
             <script>
               (function attachCsvProgress() {

@@ -43,24 +43,25 @@ $isDirector = $roleNames->contains('department-director');
         @if($user)
 
         <li class="nav-item">
-          <a class="fw-bold nav-link {{ Route::is('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}">
+          <a class="fw-bold nav-link {{ Route::is('user.index') ? 'active' : '' }}" href="{{ route('user.index') }}">
             My Requests
           </a>
         </li>
+        @endif
 
         @if($isAdvisor || $isApprover)
         <li class="nav-item dropdown">
-          <a class="fw-bold nav-link dropdown-toggle {{ Route::is('approver.history.*') || Route::is('approver.pending.*') ? 'active' : '' }}"
+          <a class="fw-bold nav-link dropdown-toggle {{ Route::is('approver.history.index') || Route::is('approver.pending.index') ? 'active' : '' }}"
             href="#" id="requestsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Requests
           </a>
           <ul class="dropdown-menu" aria-labelledby="requestsDropdown">
             <li>
-              <a class="dropdown-item {{ Route::is('approver.pending.*') ? 'active fw-bold bg-success' : '' }}"
+              <a class="dropdown-item {{ Route::is('approver.pending.index') ? 'active fw-bold bg-success' : '' }}"
                 href="{{ route('approver.pending.index') }}">Pending Requests</a>
             </li>
             <li>
-              <a class="dropdown-item {{ Route::is('approver.history.*') ? 'active fw-bold bg-success' : '' }}"
+              <a class="dropdown-item {{ Route::is('approver.history.index') ? 'active fw-bold bg-success' : '' }}"
                 href="{{ route('approver.history.index') }}">Approval History</a>
             </li>
           </ul>
@@ -69,7 +70,7 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isVenueManager)
         <li class="nav-item">
-          <a class="fw-bold nav-link {{ (Route::is('venues.manage') || Route::is('venue.*')) ? 'active' : '' }}"
+          <a class="fw-bold nav-link {{ (Route::is('venues.manage') || Route::is('venue.index')) ? 'active' : '' }}"
             href="{{ route('venues.manage') }}">
             My Venues
           </a>
@@ -78,7 +79,7 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isDirector)
         <li class="nav-item">
-          <a class="fw-bold nav-link {{ Route::is('director.venues.*') ? 'active' : '' }}"
+          <a class="fw-bold nav-link {{ Route::is('director.venues.index') ? 'active' : '' }}"
             href="{{ route('director.venues.index') }}">
             My Departments
           </a>
@@ -104,7 +105,6 @@ $isDirector = $roleNames->contains('department-director');
                 href="{{ route('admin.audit') }}">Audit Log</a></li>
           </ul>
         </li>
-        @endif
         @endif
       </ul>
 

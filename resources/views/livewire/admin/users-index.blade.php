@@ -31,7 +31,7 @@
           <select id="users_role" class="form-select" wire:model.live="role">
             <option value="">All</option>
             <option value="__none__">No roles</option>
-            @foreach(($allRoles ?? []) as $r)
+            @foreach($allRoles as $r)
             @php $label = \Illuminate\Support\Str::of($r)->replace('-', ' ')->title(); @endphp
             <option value="{{ $r }}">{{ $label }}</option>
             @endforeach
@@ -92,9 +92,9 @@
           <tr>
             <td class="fw-medium">{{ $user['name'] }}</td>
             <td>{{ $user['email'] }}</td>
-            <td>{{ $user['department'] ?? '—' }}</td>
+            <td>{{ $user['department'] }}</td>
             <td>
-              @php $roles = $user['roles'] ?? []; @endphp
+              @php $roles = $user['roles']; @endphp
               @if(!empty($roles))
               {{-- Chip-style badges for roles for better readability --}}
               @foreach($roles as $r)
@@ -102,7 +102,7 @@
                 }}</span>
               @endforeach
               @else
-              —
+              <span class="text-muted">No roles</span>
               @endif
             </td>
             <td class="text-end">
@@ -186,7 +186,7 @@
                 for="edit_department">Department</label>
               @php
               // Roles now passed as codes; venue-manager triggers department selection
-              $isDeptDirector = in_array('department-director', $editRoles ?? []);
+              $isDeptDirector = in_array('department-director', $editRoles);
               @endphp
               @if($isDeptDirector)
               <select id="edit_department" class="form-select @error('editDepartment') is-invalid @enderror"

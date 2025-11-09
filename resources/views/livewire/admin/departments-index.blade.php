@@ -2,11 +2,11 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0">Departments</h1>
 
-    <div class="d-none d-md-flex gap-2">
+    {{-- <div class="d-none d-md-flex gap-2">
       <button class="btn btn-primary btn-sm" wire:click="openCreate" aria-label="Add department">
         <i class="bi bi-building-add me-1"></i> Add Department
       </button>
-    </div>
+    </div> --}}
   </div>
 
   <div class="card shadow-sm mb-3">
