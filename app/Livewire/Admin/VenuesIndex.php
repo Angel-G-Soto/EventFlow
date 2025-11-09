@@ -451,8 +451,7 @@ class VenuesIndex extends Component
         ];
 
         $venue = null;
-        // Auth disabled: obtain a fallback admin user for auditing or null
-        $admin = $this->fakeAdminUser();
+        $admin = \Illuminate\Support\Facades\Auth::user();
         try {
             if ($this->editId) {
                 $existing = app(VenueService::class)->getVenueById((int)$this->editId);
@@ -464,7 +463,7 @@ class VenuesIndex extends Component
                 $venue = app(VenueService::class)->createVenue(array_filter($data, fn($v) => $v !== null), $admin);
             }
         } catch (\Throwable $e) {
-            // Do not fallback to direct Eloquent writes; surface validation error
+            // Surface validation error
             $this->addError('vName', 'Unable to save venue.');
             return;
         }
@@ -526,9 +525,7 @@ class VenuesIndex extends Component
             try {
                 $venue = app(VenueService::class)->getVenueById((int)$this->editId);
                 if ($venue) {
-                    // Auth disabled: use fake admin (may be null) for deactivation
-                    $admin = $this->fakeAdminUser();
-                    app(VenueService::class)->deactivateVenues([$venue], $admin ?? new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']));
+                    app(VenueService::class)->deactivateVenues([$venue], \Illuminate\Support\Facades\Auth::user());
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to delete venue.');
@@ -742,22 +739,5 @@ class VenuesIndex extends Component
         return $out;
     }
 
-    /**
-     * Provide a minimal fake admin user when auth is disabled.
-     * Attempts to reuse the first persisted user; otherwise returns a transient model.
-     */
-    protected function fakeAdminUser(): ?\App\Models\User
-    {
-        try {
-            $u = app(\App\Services\UserService::class)->getFirstUser();
-            if ($u) return $u;
-            return new \App\Models\User([
-                'first_name' => 'System',
-                'last_name'  => 'Admin',
-                'email'      => 'system@localhost',
-            ]);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
+    
 }

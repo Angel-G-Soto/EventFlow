@@ -92,18 +92,16 @@ class ProcessCsvFileUpload implements ShouldQueue
 
             // Ensure departments exist locally (auto-create if missing during import)
             $deptSvc = app(DepartmentService::class);
-            // Build unique department name/code pairs from normalized data
-            $uniqueDepts = collect($normalized)
-                ->map(fn($row) => [
-                    'name' => $row['department_name'] ?? $row['department'] ?? '',
-                    'code' => $row['department_code'] ?? $row['department_code_raw'] ?? '',
-                ])
-                ->filter(fn($d) => $d['name'] && $d['code'])
+            $uniqueDepts = collect($deptMap)
+                ->map(fn($code, $name) => ['name' => $name, 'code' => $code])
+                ->filter(fn($d) => ($d['name'] ?? '') !== '' && ($d['code'] ?? '') !== '')
                 ->unique(fn($d) => $d['name'] . '|' . $d['code']);
 
             foreach ($uniqueDepts as $dept) {
                 try {
-                    if (!$deptSvc->findByName($dept['name'])) {
+                    $byName = $deptSvc->findByName($dept['name']);
+                    $byCode = $deptSvc->findByCode($dept['code']);
+                    if (!$byName && !$byCode) {
                         $deptSvc->updateOrCreateDepartment([
                             ['name' => $dept['name'], 'code' => $dept['code']],
                         ]);
@@ -119,28 +117,21 @@ class ProcessCsvFileUpload implements ShouldQueue
 
             Cache::put($cacheKey, 'importing', 600);
 
-            // Try to resolve an admin via service; proceed without one if not available (auth-less mode)
-            $adminUser = null;
-            try {
-                if ($this->admin_id > 0) {
-                    $adminUser = app(UserService::class)->findUserById($this->admin_id);
-                }
-            } catch (\Throwable $e) {
-                // Non-fatal; continue attempting fallbacks
-            }
-            if (!$adminUser) {
-                $svc = app(UserService::class);
-                // Try common admin role codes
-                $adminUser = $svc->getUsersWithRole('system-admin')->first()
-                    ?: $svc->getUsersWithRole('system-administrator')->first();
-            }
-            if (!$adminUser) {
-                // Last-chance fallback: any user; if still none, proceed with null (auth disabled)
+            // Strictly resolve an admin via provided ID; fail if not found
+            if ($this->admin_id > 0) {
                 try {
-                    $adminUser = app(UserService::class)->getFirstUser();
+                    $adminUser = app(UserService::class)->findUserById($this->admin_id);
                 } catch (\Throwable $e) {
-                    $adminUser = null;
+                    Cache::put($cacheKey, 'failed', 600);
+                    Cache::put($cacheKey . ':error', 'Admin user required for import', 600);
+                    Storage::disk('uploads_temp')->delete($this->file_name);
+                    return;
                 }
+            } else {
+                Cache::put($cacheKey, 'failed', 600);
+                Cache::put($cacheKey . ':error', 'Admin user required for import', 600);
+                Storage::disk('uploads_temp')->delete($this->file_name);
+                return;
             }
 
             // Import via service
@@ -190,7 +181,7 @@ class ProcessCsvFileUpload implements ShouldQueue
             $out[] = [
                 'name' => $name,
                 'code' => $code,
-                // Use department code for lookups/assignment only
+                // Only pass department as code for lookup
                 'department' => (string)($r['department_code_raw'] ?? ''),
                 'features' => $ordered,
                 'capacity' => (int)($r['v_capacity'] ?? 0),

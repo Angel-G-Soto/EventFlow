@@ -13,6 +13,7 @@ use App\Services\EventService;
 // Note: Admin views must use services only (no direct models). Venue lookups are avoided here.
 use DateTimeInterface;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 #[Layout('layouts.app')]
 class EventsIndex extends Component
@@ -254,7 +255,7 @@ class EventsIndex extends Component
                         'external_guests' => (bool)$this->eExternalGuest,
                     ];
                     // Route edits through performManualOverride (service-only, no model access here)
-                    $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), 'save');
+                    $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
                 }
             } catch (\Throwable $e) {
                 // swallow update errors
@@ -320,7 +321,7 @@ class EventsIndex extends Component
                         'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
                         'external_guests' => (bool)($event->external_guest ?? false),
                     ];
-                    $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), 'cancel');
+                    $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'cancel');
                 }
             } catch (\Throwable $e) {
                 // Surface a validation error instead of falling back
@@ -425,7 +426,7 @@ class EventsIndex extends Component
                             'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
                             'external_guests' => (bool)($event->external_guest ?? false),
                         ];
-                        $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), $this->actionType);
+                    $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), $this->actionType);
                     }
                 } catch (\Throwable $e) {
                     // ignore status update errors
@@ -752,17 +753,5 @@ class EventsIndex extends Component
         return $list->firstWhere('id', $id) ?? null;
     }
 
-    /**
-     * Provide a minimal admin user object for service calls that require one.
-     */
-    protected function fakeAdminUser(): ?\App\Models\User
-    {
-        try {
-            $u = app(\App\Services\UserService::class)->getFirstUser();
-            if ($u) return $u;
-            return new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']);
-        } catch (\Throwable $e) {
-            return new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']);
-        }
-    }
+    
 }

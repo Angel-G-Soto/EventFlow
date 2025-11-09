@@ -205,13 +205,12 @@ class UsersIndex extends Component
             try {
                 $user = $svc->findUserById((int)$this->editId);
                 [$first, $last] = $this->splitName($this->editName);
-                // Auth disabled: skip audit by passing a null admin or lightweight stub
                 $svc->updateUserProfile($user, [
                     'first_name' => $first,
                     'last_name'  => $last,
                     'email'      => $this->editEmail,
-                ], $this->fakeAdminUser());
-                $svc->updateUserRoles($user, $this->editRoles, $this->fakeAdminUser());
+                ], \Illuminate\Support\Facades\Auth::user());
+                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user());
                 // Department resolution
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
                 if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
@@ -235,8 +234,8 @@ class UsersIndex extends Component
                     'email'      => $this->editEmail,
                     'auth_type'  => 'saml',
                     'password'   => bcrypt(str()->random(16)),
-                ], $this->fakeAdminUser());
-                $svc->updateUserRoles($user, $this->editRoles, $this->fakeAdminUser());
+                ], \Illuminate\Support\Facades\Auth::user());
+                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user());
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
                 if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
                     $deptSvc = app(DepartmentService::class);
@@ -300,7 +299,7 @@ class UsersIndex extends Component
                 $user = app(UserService::class)->findUserById((int)$this->editId);
                 if ($user) {
                     // Clear roles instead of deleting the user record
-                    app(UserService::class)->updateUserRoles($user, [], $this->fakeAdminUser());
+                    app(UserService::class)->updateUserRoles($user, [], \Illuminate\Support\Facades\Auth::user());
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to clear user roles.');
@@ -528,25 +527,7 @@ class UsersIndex extends Component
         $this->dispatch('toast', message: $message);
     }
 
-    /**
-     * Provide a minimal fake admin user when auth is disabled.
-     * Returns an existing first user or a transient in-memory User model.
-     */
-    protected function fakeAdminUser(): ?\App\Models\User
-    {
-        try {
-            $u = app(\App\Services\UserService::class)->getFirstUser();
-            if ($u) return $u; // reuse real user to keep audit foreign key valid
-            // Build an unsaved transient user object for downstream type expectations
-            return new \App\Models\User([
-                'first_name' => 'System',
-                'last_name'  => 'Admin',
-                'email'      => 'system@localhost',
-            ]);
-        } catch (\Throwable $e) {
-            return null; // downstream service methods should guard null admin
-        }
-    }
+    
 
     /**
      * Compute the list of role CODES from the UserConstants names by slugging with dashes.
