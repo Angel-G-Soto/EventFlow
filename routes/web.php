@@ -5,16 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Livewire\PublicCalendar;
 use App\Livewire\Auth\ChooseRole;
 //use App\Livewire\Director\VenuesIndex as DirectorVenuesIndex;
-use App\Livewire\Admin\{UsersIndex, VenuesIndex, EventsIndex, AuditTrailIndex, DepartmentsIndex};
-use App\Http\Controllers\AdminController;
 
 Route::get('/', PublicCalendar::class)->name('public.calendar');
-Route::middleware('web')->group(function () {
-  // after SSO callbacks we redirect here (see §2)
-  Route::get('/choose-role', ChooseRole::class)
-    ->name('choose.role')
-    ->middleware('auth'); // NEW
-}); //Route::get('/director/venues', DirectorVenuesIndex::class)->name('director.venues');
+// after SSO callbacks we redirect here (see §2)
+Route::get('/choose-role', ChooseRole::class)
+  ->name('choose.role');
+//Route::get('/director/venues', DirectorVenuesIndex::class)->name('director.venues');
 
 
 //Admin---------------------------------------------------------------------------------------------
