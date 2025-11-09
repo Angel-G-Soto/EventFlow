@@ -273,8 +273,8 @@ class EventService {
         {
             return DB::transaction(function () use ($event, $user, $comment) {
                 Event::where('id', $event->id)
-                    ->whereIn('status', 'like', 'pending')
-                    ->update(['status' => 'withdrawm']);
+                    ->where('status', 'like', '%pending%')
+                    ->update(['status' => 'withdrawn']);
 
                 $lastHistory = $event->history()
                     ->latest()
@@ -292,6 +292,7 @@ class EventService {
 
                 // Send email to the approvers
 
+                return $event->refresh();
             });
         }
 
@@ -323,7 +324,7 @@ class EventService {
         }
 
         // Mark event as completed
-        public function markEventAsCompleted()
+        public function markEventAsCompleted(): void
         {
             DB::transaction(function () {
                 // Get the start and end of yesterday

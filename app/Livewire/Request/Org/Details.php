@@ -19,6 +19,7 @@ namespace App\Livewire\Request\Org;
 
 use App\Models\Event;
 use App\Services\EventService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -84,7 +85,7 @@ class Details extends Component
     public function render()
     {
         $eventService = app(EventService::class);
-        $docs = $eventService->getEventDocuments($this->event);
+        $docs = $eventService->getEventDocuments($this->event)->toArray();
         return view('livewire.request.org.details', compact('docs'));
     }
 }
