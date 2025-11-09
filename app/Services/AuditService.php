@@ -4,99 +4,206 @@ namespace App\Services;
 
 use App\Models\AuditTrail;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Request;
 
 /**
- * NOTE: THIS IS NELSON'S IMPLEMENTATION
+ * Service responsible for writing and reading audit log entries.
  *
- * AuditService
+ * Columns written (from migration + extension):
+ *  - user_id (int, FK users.id)
+ *  - action (string[255])         e.g. "EVENT_CREATED", "ADMIN_OVERRIDE"
+ *  - target_type (string[255])    e.g. "event", "user", "system"
+ *  - target_id (string[255])      e.g. "42", "ORG-abc123"
+ *  - ip (string[45]|nullable)     request IP (IPv4/IPv6)
+ *  - method (string[10]|nullable) HTTP method
+ *  - path (string[2048]|nullable) request path
+ *  - ua (text|nullable)           user agent
+ *  - meta (json|nullable)         extra context (associative array -> JSON)
  *
- * This service is a critical component responsible for creating an immutable, chronological log
- * of all significant actions performed within EventFlow. It is designed to be a lightweight,
- * decoupled utility that receives all necessary data as simple parameters.
+ * @psalm-type AuditFilters=array{
+ *     user_id?: int|null,
+ *     action?: string|null,
+ *     date_from?: string|null,  // 'Y-m-d'
+ *     date_to?: string|null     // 'Y-m-d' (>= date_from)
+ * }
  */
 class AuditService
 {
     /**
-     * This is the primary method used to log a standard action performed by any authenticated user.
+     * Log a regular user action (non-admin).
      *
-     * @param int    $userId The ID of the authenticated user performing the action.
-     * @param string $actionCode A machine-readable string identifying the action (e.g., EVENT_CREATED).
-     * @param string $description A human-readable sentence describing the action.
-     * @return AuditTrail The newly created AuditTrail Eloquent model instance.
-     */
-    public function logAction(?int $userId, ?string $userName, ?string $actionCode, ?string $description): AuditTrail
-    {
-        return $this->write($userId, $userName, $actionCode, $description);
-    }
-
-    /**
-     * Logs a high-privilege action performed by a System Administrator.
+     * @param int    $userId
+     * @param string $targetType  Display label (e.g., user's display name)
+     * @param string $actionCode  Action code (e.g., EVENT_CREATED)
+     * @param string $targetId    Target identifier/description
+     * @param array<string,mixed> $context Optional: ['ip','method','path','ua','meta'=>array]
      *
-     * @param int    $adminId The ID of the authenticated admin performing the action.
-     * @param string $actionCode A concise, machine-readable action code (e.g., ADMIN_OVERRIDE).
-     * @param string $description A human-readable description of what happened.
-     * @param string|null $ipAddress Optional. The IP address from which the request originated.
-     * @return AuditTrail The newly created AuditTrail Eloquent model instance.
-     */
-    public function logAdminAction(?int $adminId, ?string $userName, ?string $actionCode, ?string $description): AuditTrail
-    {
-        return $this->write($adminId, $userName, $actionCode, $description);
-    }
-
-    /**
-     * Core writer method that creates the audit trail record in the database.
-     *
-     * @param int $userId
-     * @param string $actionCode
-     * @param string $description
      * @return AuditTrail
      */
-    protected function write(?int $userId, ?string $userName, ?string $actionCode, ?string $description): AuditTrail
-    {
-        if (is_null($userId) || is_null($userName) || is_null($actionCode) || is_null($description)) {
-            throw new \TypeError('Required argument was null.');
-        }
-
-        // Create the record using the fields defined in the ERD.
-        return AuditTrail::create([
-            'user_id'       => $userId,
-            'at_action'     => mb_substr($actionCode, 0, 255),
-            'at_description' => mb_substr($description, 0, 255),
-            'at_user'       => mb_substr($userName, 0, 255),
-        ]);
+    public function logAction(
+        int $userId,
+        string $targetType,
+        string $actionCode,
+        string $targetId,
+        array $context = []
+    ): AuditTrail {
+        return $this->write($userId, $actionCode, $targetType, $targetId, $context);
     }
 
     /**
-     * Returns paginated audit logs applying optional filters.
+     * Log a high-privilege admin action (same schema, different intent).
      *
-     * @param array{user_id?:int|null, action?:string|null, date_from?:string|null, date_to?:string|null} $filters
-     * @param int $perPage
-     * @return LengthAwarePaginator
+     * @param int    $adminId
+     * @param string $targetType  Display label (e.g., admin's display name)
+     * @param string $actionCode  Action code
+     * @param string $targetId    Target identifier/description
+     * @param array<string,mixed> $context Optional: ['ip','method','path','ua','meta'=>array]
+     *
+     * @return AuditTrail
+     */
+    public function logAdminAction(
+        int $adminId,
+        string $targetType,
+        string $actionCode,
+        string $targetId,
+        array $context = []
+    ): AuditTrail {
+        return $this->write($adminId, $actionCode, $targetType, $targetId, $context);
+    }
+
+    /**
+     * Convenience: log a user action capturing request context automatically.
+     *
+     * @param Request $request
+     * @param int     $userId
+     * @param string  $targetType Display label
+     * @param string  $actionCode Action code
+     * @param string  $targetId   Target identifier/description
+     * @param array<string,mixed> $extraMeta Extra meta merged into context['meta']
+     */
+    public function logActionFromRequest(
+        Request $request,
+        int $userId,
+        string $targetType,
+        string $actionCode,
+        string $targetId,
+        array $extraMeta = []
+    ): AuditTrail {
+        return $this->logAction(
+            $userId,
+            $targetType,
+            $actionCode,
+            $targetId,
+            $this->buildContextFromRequest($request, $extraMeta)
+        );
+    }
+
+    /**
+     * Convenience: log an admin action capturing request context automatically.
+     */
+    public function logAdminActionFromRequest(
+        Request $request,
+        int $adminId,
+        string $targetType,
+        string $actionCode,
+        string $targetId,
+        array $extraMeta = []
+    ): AuditTrail {
+        return $this->logAdminAction(
+            $adminId,
+            $targetType,
+            $actionCode,
+            $targetId,
+            $this->buildContextFromRequest($request, $extraMeta)
+        );
+    }
+
+    /**
+     * Core writer that enforces basic validation and truncation to column limits.
+     *
+     * @param array<string,mixed> $context Optional: ['ip','method','path','ua','meta'=>array]
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function write(
+        int $userId,
+        string $actionCode,
+        string $targetType,
+        string $targetId,
+        array $context = []
+    ): AuditTrail {
+        // Only enforce valid user and non-empty action code. Allow empty targetType/targetId per tests.
+        if ($userId <= 0 || $actionCode === '') {
+            throw new \InvalidArgumentException('Invalid audit log parameters.');
+        }
+
+        // Allow only known contextual keys; coerce meta to array if provided.
+        $allowed = array_intersect_key($context, array_flip(['ip', 'method', 'path', 'ua', 'meta']));
+        if (isset($allowed['meta']) && !is_array($allowed['meta'])) {
+            $allowed['meta'] = ['raw' => (string) $allowed['meta']];
+        }
+
+        return AuditTrail::create(array_merge([
+            'user_id'     => $userId,
+            'action'      => mb_substr($actionCode, 0, 255),
+            'target_type' => mb_substr($targetType, 0, 255),
+            'target_id'   => mb_substr($targetId, 0, 255),
+        ], $allowed));
+    }
+
+    /**
+     * Build a whitelisted context array from the current Request.
+     *
+     * @param Request $request
+     * @param array<string,mixed> $extraMeta Extra meta merged into 'meta'
+     * @return array{ip?:string|null,method?:string|null,path?:string|null,ua?:string|null,meta?:array<string,mixed>}
+     */
+    public function buildContextFromRequest(Request $request, array $extraMeta = []): array
+    {
+        $ctx = [
+            'ip'     => $request->ip(),
+            'method' => $request->method(),
+            'path'   => $request->path(),
+            'ua'     => $request->userAgent(),
+        ];
+
+        if (!empty($extraMeta)) {
+            $ctx['meta'] = $extraMeta;
+        }
+
+        return $ctx;
+    }
+
+    /**
+     * Retrieve paginated audit logs with optional filters.
+     *
+     * @param array<string,mixed> $filters
+     * @param int                 $perPage
+     * @return LengthAwarePaginator<AuditTrail>
      */
     public function getPaginatedLogs(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
-        $query = AuditTrail::query()
-            ->select(['id', 'user_id', 'at_user', 'at_action', 'at_description', 'created_at'])
-            ->orderByDesc('created_at');
+        // Select all columns to avoid referencing optional columns that may not exist
+        $q = AuditTrail::query()->orderByDesc('created_at');
 
         if (!empty($filters['user_id'])) {
-            $query->where('user_id', (int)$filters['user_id']);
+            $q->where('user_id', (int) $filters['user_id']);
         }
 
         if (!empty($filters['action'])) {
-            $query->where('at_action', 'like', '%' . trim($filters['action']) . '%');
+            $q->where('action', 'like', '%' . trim((string) $filters['action']) . '%');
         }
 
         if (!empty($filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $filters['date_from']);
+            $q->whereDate('created_at', '>=', (string) $filters['date_from']);
         }
 
         if (!empty($filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $filters['date_to']);
+            $q->whereDate('created_at', '<=', (string) $filters['date_to']);
         }
 
-        $paginator = $query->paginate($perPage);
-        // Preserve query string for pagination links in the view
+        $paginator = $q->paginate($perPage);
+
         $paginator->appends(array_filter([
             'user_id'   => $filters['user_id']   ?? null,
             'action'    => $filters['action']    ?? null,
@@ -109,22 +216,34 @@ class AuditService
     }
 
     /**
-     * Returns distinct audited users seen in the audit trail,
-     * useful for a dropdown without depending on the User model.
+     * Distinct audited users (id => label).
      *
-     * @return array<int, string> key=id, value=display name
+     * NOTE: This reads labels from target_type per your earlier pattern.
+     * If you later want the real user name, switch to a join on users.
+     *
+     * @return array<int,string>
      */
     public function getAuditedUsers(): array
     {
         return AuditTrail::query()
-            ->select('user_id', 'at_user')
+            ->select('user_id', 'target_type')
             ->whereNotNull('user_id')
-            ->whereNotNull('at_user')
+            ->whereNotNull('target_type')
             ->distinct()
-            ->orderBy('at_user')
+            ->orderBy('target_type')
             ->get()
-            ->pluck('at_user', 'user_id')
+            ->pluck('target_type', 'user_id')
             ->toArray();
     }
 
+    /**
+     * Retrieve a single audit log by its primary key.
+     */
+    public function getLogById(int $id): ?AuditTrail
+    {
+        if ($id <= 0) {
+            return null;
+        }
+        return AuditTrail::find($id);
+    }
 }

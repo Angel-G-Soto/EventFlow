@@ -58,9 +58,9 @@ class EventCompletionService
         if ($systemUserId = (int) config('eventflow.system_user_id', 0)) {
             $this->audit->logAdminAction(
                 $systemUserId,
+                'System',
                 'EVENT_COMPLETED_AUTO',
-                'Event',
-                $eventId
+                (string) $eventId
             );
         }
 

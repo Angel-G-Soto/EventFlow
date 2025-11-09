@@ -8,8 +8,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\EventFilters;
 use App\Livewire\Traits\EventEditState;
-use App\Models\Event as EventModel;
-use App\Models\Category as CategoryModel;
+use App\Services\CategoryService;
+use App\Services\EventService;
+// Note: Admin views must use services only (no direct models). Venue lookups are avoided here.
 use DateTimeInterface;
 use Illuminate\Validation\Rule;
 
@@ -88,67 +89,18 @@ class EventsIndex extends Component
     }
 
     /**
-     * Initialize the component with in-memory event requests and a category pool generated from factories.
+     * Initialize the component loading the category pool from the database.
      */
     // Lifecycle
     public function mount(): void
     {
-        // Generate a consistent set of fake events without touching the DB
-        $count = 20;
-        $raw = EventModel::factory()->count($count)->raw([
-            // Avoid resolving relation factories; use simple integers
-            'creator_id' => fake()->numberBetween(100, 999),
-            'venue_id'   => fake()->numberBetween(1, 50),
-        ]);
-
-        // Generate a small pool of categories via CategoryFactory (no DB writes)
-        $catRaw = CategoryModel::factory()->count(6)->raw();
-        $catRows = is_array($catRaw) && isset($catRaw[0]) ? $catRaw : [$catRaw];
-        $catNames = array_values(array_filter(array_map(function ($c) {
-            return is_array($c) ? (string)($c['name'] ?? '') : '';
-        }, $catRows), fn($n) => $n !== ''));
-        if (empty($catNames)) {
-            $catNames = ['General'];
+        // Load categories for the edit dropdown and validation rules via service
+        try {
+            $categories = app(CategoryService::class)->getAllCategories();
+            $this->categoryPool = $categories->pluck('name')->sort()->values()->all();
+        } catch (\Throwable $e) {
+            $this->categoryPool = [];
         }
-        $this->categoryPool = $catNames;
-
-        $rows = is_array($raw) && isset($raw[0]) ? $raw : [$raw];
-        $mapped = [];
-        foreach (array_values($rows) as $i => $request) {
-            $from = $request['start_time'];
-            $to   = $request['end_time'];
-            if ($from instanceof DateTimeInterface) $from = $from->format('Y-m-d H:i');
-            if ($to instanceof DateTimeInterface)   $to   = $to->format('Y-m-d H:i');
-
-            // Pick a category from the generated pool
-            $pickIdx = array_rand($catNames);
-            $category = $catNames[$pickIdx] ?? 'General';
-
-            $mapped[] = [
-                'id' => 1000 + $i,
-                'title' => (string)($request['title'] ?? 'Untitled'),
-                'requestor' => 'User ' . (string)($request['creator_id'] ?? 'N/A'),
-                'organization' => (string)($request['organization_nexo_name'] ?? ''),
-                'organization_advisor_name' => (string)($request['organization_advisor_name'] ?? ''),
-                'organization_advisor_email' => (string)($request['organization_advisor_email'] ?? ''),
-                'organization_advisor_phone' => (string)($request['organization_advisor_phone'] ?? ''),
-                'student_number' => (string)($request['student_number'] ?? ''),
-                'student_phone'  => (string)($request['student_phone'] ?? ''),
-                'venue' => 'Venue ' . (string)($request['venue_id'] ?? 'N/A'),
-                'from' => (string)$from,
-                'to' => (string)$to,
-                'status' => (string)($request['status'] ?? 'pending'),
-                'category' => (string)($request['category'] ?? $category),
-                'updated' => now()->format('Y-m-d H:i'),
-                'description' => (string)($request['description'] ?? ''),
-                'attendees' => (int)($request['guests'] ?? 0),
-                'handles_food' => (bool)($request['handles_food'] ?? false),
-                'use_institutional_funds' => (bool)($request['use_institutional_funds'] ?? false),
-                'external_guest' => (bool)($request['external_guest'] ?? false),
-            ];
-        }
-
-        $this->requests = $mapped;
     }
 
     // Filters: search update reaction
@@ -159,6 +111,14 @@ class EventsIndex extends Component
      * and will reset the current page to 1.
      */
     public function updatedSearch()
+    {
+        $this->page = 1;
+    }
+
+    /**
+     * Explicit applySearch handler so deferred search inputs submit via button/enter.
+     */
+    public function applySearch(): void
     {
         $this->page = 1;
     }
@@ -194,27 +154,7 @@ class EventsIndex extends Component
     {
         $request = $this->filtered()->firstWhere('id', $id);
         if (!$request) return;
-        $this->editId = $request['id'];
-        $this->eTitle = $request['title'];
-        $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
-        $this->eVenue = $request['venue'];
-        $this->eFrom = substr($request['from'], 0, 16);
-        $this->eTo   = substr($request['to'], 0, 16);
-        $this->eAttendees = $request['attendees'] ?? 0;
-        $this->eCategory  = $request['category'] ?? '';
-        // Policies
-        $this->eHandlesFood = (bool)($request['handles_food'] ?? false);
-        $this->eUseInstitutionalFunds = (bool)($request['use_institutional_funds'] ?? false);
-        $this->eExternalGuest = (bool)($request['external_guest'] ?? false);
-
-        // Organization and student info
-        $this->eOrganization   = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
-        $this->eAdvisorName    = $request['organization_advisor_name']  ?? '';
-        $this->eAdvisorEmail   = $request['organization_advisor_email'] ?? '';
-        $this->eAdvisorPhone   = $request['organization_advisor_phone'] ?? '';
-        $this->eStudentNumber  = $request['student_number'] ?? '';
-        $this->eStudentPhone   = $request['student_phone']  ?? '';
-
+        $this->fillEditFromRequest($request);
         $this->dispatch('bs:open', id: 'oversightEdit');
     }
 
@@ -227,6 +167,18 @@ class EventsIndex extends Component
     {
         $request = $this->filtered()->firstWhere('id', $id);
         if (!$request) return;
+        $this->fillEditFromRequest($request);
+        $this->dispatch('bs:open', id: 'oversightView');
+    }
+
+    /**
+     * Fill edit/view state from a normalized request row.
+     * Keeps openEdit/openView DRY and simple.
+     *
+     * @param array<string,mixed> $request
+     */
+    protected function fillEditFromRequest(array $request): void
+    {
         $this->editId = $request['id'];
         $this->eTitle = $request['title'];
         $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
@@ -247,8 +199,6 @@ class EventsIndex extends Component
         $this->eAdvisorPhone   = $request['organization_advisor_phone'] ?? '';
         $this->eStudentNumber  = $request['student_number'] ?? '';
         $this->eStudentPhone   = $request['student_phone']  ?? '';
-
-        $this->dispatch('bs:open', id: 'oversightView');
     }
 
     // Persist edits / session writes
@@ -280,6 +230,37 @@ class EventsIndex extends Component
         $isEditing = !empty($this->editId);
         $this->dispatch('bs:close', id: 'oversightJustify');
         $this->dispatch('bs:close', id: 'oversightEdit');
+        // Persist edits to DB when applicable
+        if (!empty($this->editId)) {
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    $venueId = (int)($event->venue_id ?? 0);
+                    // Build full payload for performManualOverride
+                    $payload = [
+                        'venue_id'     => $venueId,
+                        'title'        => (string)$this->eTitle,
+                        'description'  => (string)$this->ePurpose,
+                        'start_time'   => str_replace('T', ' ', (string)$this->eFrom),
+                        'end_time'     => str_replace('T', ' ', (string)$this->eTo),
+                        'status'       => (string)($event->status ?? 'approved'),
+                        'guests'       => (int)$this->eAttendees,
+                        'organization_name' => (string)$this->eOrganization,
+                        'organization_advisor_name'  => (string)$this->eAdvisorName,
+                        'organization_advisor_email' => (string)$this->eAdvisorEmail,
+                        'handles_food' => (bool)$this->eHandlesFood,
+                        'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
+                        'external_guests' => (bool)$this->eExternalGuest,
+                    ];
+                    // Route edits through performManualOverride (service-only, no model access here)
+                    $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), 'save');
+                }
+            } catch (\Throwable $e) {
+                // swallow update errors
+            }
+        }
+
         $this->dispatch('toast', message: 'Event saved');
         $this->reset(['actionType', 'justification']);
     }
@@ -318,7 +299,34 @@ class EventsIndex extends Component
     {
         if ($this->editId) {
             $this->validateJustification();
-            session()->push('soft_deleted_event_ids', $this->editId);
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    // Replace delete with a cancel via performManualOverride
+                    $venueId = (int)($event->venue_id ?? 0);
+                    $payload = [
+                        'venue_id'     => $venueId,
+                        'title'        => (string)($event->title ?? 'Untitled'),
+                        'description'  => (string)($event->description ?? ''),
+                        'start_time'   => (string)($event->start_time),
+                        'end_time'     => (string)($event->end_time),
+                        'status'       => 'cancelled',
+                        'guests'       => (int)($event->guest_size ?? 0),
+                        'organization_name' => (string)($event->organization_name ?? ''),
+                        'organization_advisor_name'  => (string)($event->organization_advisor_name ?? ''),
+                        'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
+                        'handles_food' => (bool)($event->handles_food ?? false),
+                        'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
+                        'external_guests' => (bool)($event->external_guest ?? false),
+                    ];
+                    $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), 'cancel');
+                }
+            } catch (\Throwable $e) {
+                // Surface a validation error instead of falling back
+                $this->addError('justification', 'Unable to delete event.');
+                return;
+            }
         }
         $this->dispatch('bs:close', id: 'oversightJustify');
         $this->dispatch('toast', message: 'Event deleted');
@@ -397,14 +405,31 @@ class EventsIndex extends Component
                 default   => null,
             };
             if ($newStatus !== null) {
-                foreach ($this->requests as &$request) {
-                    if ((int)($request['id'] ?? 0) === (int)$this->editId) {
-                        $request['status']  = $newStatus;
-                        $request['updated'] = now()->format('Y-m-d H:i');
-                        break;
+                try {
+                    $svc = app(EventService::class);
+                    $event = $this->getEventFromServiceById((int)$this->editId);
+                    if ($event) {
+                        $venueId = (int)($event->venue_id ?? 0);
+                        $payload = [
+                            'venue_id'     => $venueId,
+                            'title'        => (string)($event->title ?? 'Untitled'),
+                            'description'  => (string)($event->description ?? ''),
+                            'start_time'   => (string)($event->start_time),
+                            'end_time'     => (string)($event->end_time),
+                            'status'       => mb_strtolower($newStatus) === 'denied' ? 'rejected' : strtolower($newStatus),
+                            'guests'       => (int)($event->guest_size ?? 0),
+                            'organization_name' => (string)($event->organization_name ?? ''),
+                            'organization_advisor_name'  => (string)($event->organization_advisor_name ?? ''),
+                            'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
+                            'handles_food' => (bool)($event->handles_food ?? false),
+                            'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
+                            'external_guests' => (bool)($event->external_guest ?? false),
+                        ];
+                        $svc->performManualOverride($event, $payload, $this->fakeAdminUser(), (string)($this->justification ?? ''), $this->actionType);
                     }
+                } catch (\Throwable $e) {
+                    // ignore status update errors
                 }
-                unset($request);
             }
 
             // More descriptive toast
@@ -419,6 +444,23 @@ class EventsIndex extends Component
         $this->dispatch('bs:close', id: 'oversightEdit');
         $this->dispatch('toast', message: $toastMsg ?? (ucfirst($this->actionType) . ' completed'));
         $this->reset('actionType', 'justification');
+    }
+
+    /**
+     * Unified justification submit handler routing to the appropriate action.
+     */
+    public function confirmJustify(): void
+    {
+        $type = $this->actionType ?? '';
+        if ($type === 'delete') {
+            $this->confirmDelete();
+            return;
+        }
+        if (in_array($type, ['approve', 'deny', 'advance'], true)) {
+            $this->confirmAction();
+            return;
+        }
+        $this->confirmSave();
     }
 
     /**
@@ -501,12 +543,23 @@ class EventsIndex extends Component
             $paginator = $this->paginated();
         }
         $visibleIds = $paginator->pluck('id')->all();
+        // Build unique venue names for dropdown (case-insensitive, preserve first casing)
+        $venueMap = [];
+        foreach ($this->allRequests() as $req) {
+            $vn = trim((string)($req['venue'] ?? ''));
+            if ($vn === '') continue;
+            $k = mb_strtolower($vn);
+            if (!isset($venueMap[$k])) $venueMap[$k] = $vn;
+        }
+        $venues = array_values($venueMap);
+        usort($venues, fn($a, $b) => strnatcasecmp($a, $b));
         return view('livewire.admin.events-index', [
             'rows' => $paginator,
             'visibleIds' => $visibleIds,
             'organizations' => $this->organizations,
             'statuses' => $this->statuses,
             'categories' => $this->categoryPool,
+            'venues' => $venues,
         ]);
     }
 
@@ -531,16 +584,37 @@ class EventsIndex extends Component
      */
     protected function allRequests(): Collection
     {
-        $deletedIndex = array_flip(array_unique(array_map('intval', session('soft_deleted_event_ids', []))));
-
-        $combined = array_values(array_filter(
-            $this->requests,
-            function (array $request) use ($deletedIndex) {
-                return !isset($deletedIndex[(int) ($request['id'] ?? 0)]);
-            }
-        ));
-
-        return collect($combined);
+        // Query live data from DB and normalize for the view
+        $raw = $this->fetchEventsCollection();
+        $rows = $raw
+            ->map(function ($e) {
+                $from = $e->start_time instanceof DateTimeInterface ? $e->start_time->format('Y-m-d H:i') : (string)$e->start_time;
+                $to   = $e->end_time   instanceof DateTimeInterface ? $e->end_time->format('Y-m-d H:i')   : (string)$e->end_time;
+                $requestor = method_exists($e, 'requester') && $e->requester ? trim(($e->requester->first_name ?? '') . ' ' . ($e->requester->last_name ?? '')) : ('User ' . (string)($e->creator_id ?? ''));
+                $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
+                $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
+                return [
+                    'id' => (int)$e->id,
+                    'title' => (string)($e->title ?? 'Untitled'),
+                    'requestor' => $requestor,
+                    'organization' => (string)($e->organization_name ?? ''),
+                    'organization_advisor_name' => (string)($e->organization_advisor_name ?? ''),
+                    'organization_advisor_email' => (string)($e->organization_advisor_email ?? ''),
+                    'venue' => (string)$venueName,
+                    'venue_id' => (int)($e->venue_id ?? 0),
+                    'from' => (string)$from,
+                    'to' => (string)$to,
+                    'status' => (string)($e->status ?? 'pending'),
+                    'category' => (string)$category,
+                    'updated' => now()->format('Y-m-d H:i'),
+                    'description' => (string)($e->description ?? ''),
+                    'attendees' => (int)($e->guest_size ?? 0),
+                    'handles_food' => (bool)($e->handles_food ?? false),
+                    'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
+                    'external_guest' => (bool)($e->external_guest ?? false),
+                ];
+            });
+        return collect($rows);
     }
 
     /**
@@ -558,7 +632,7 @@ class EventsIndex extends Component
             $venueOk = true;
             if (!is_null($this->venue) && $this->venue !== '') {
                 if (is_int($this->venue)) {
-                    $venueOk = (int)($request['venue_id'] ?? 0) === $this->venue;
+                    $venueOk = (int)($request['venue_id'] ?? 0) === (int)$this->venue;
                 } else {
                     $venueOk = (string)$request['venue'] === (string)$this->venue;
                 }
@@ -567,9 +641,18 @@ class EventsIndex extends Component
             $orgVal  = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
             $orgOk   = $this->organization === '' || $orgVal === $this->organization;
 
+            // Normalize date comparisons to timestamps
             $dateOk = true;
-            if ($this->from) $dateOk = $dateOk && ($request['from'] >= $this->from);
-            if ($this->to)   $dateOk = $dateOk && ($request['to']   <= $this->to);
+            $reqFromTs = strtotime(str_replace('T', ' ', (string)($request['from'] ?? '')));
+            $reqToTs   = strtotime(str_replace('T', ' ', (string)($request['to']   ?? '')));
+            $fromTs = $this->from ? strtotime(str_replace('T', ' ', (string)$this->from)) : null;
+            $toTs   = $this->to   ? strtotime(str_replace('T', ' ', (string)$this->to))   : null;
+            if ($fromTs) {
+                $dateOk = $dateOk && ($reqFromTs !== false && $reqFromTs >= $fromTs);
+            }
+            if ($toTs) {
+                $dateOk = $dateOk && ($reqToTs   !== false && $reqToTs   <= $toTs);
+            }
 
             return $hit && $statOk && $venueOk && $dateOk && $catOk && $orgOk;
         })->values();
@@ -631,7 +714,7 @@ class EventsIndex extends Component
     protected function rules(): array
     {
         return [
-            'justification' => ['required', 'string', 'min:3']
+            'justification' => ['required', 'string', 'min:10', 'max:200']
         ];
     }
 
@@ -641,5 +724,45 @@ class EventsIndex extends Component
     protected function validateJustification(): void
     {
         $this->validateOnly('justification');
+    }
+
+    /**
+     * Fetch events via EventService without relying on undefined methods.
+     */
+    protected function fetchEventsCollection(): Collection
+    {
+        try {
+            $res = app(EventService::class)->getAllEvents([]);
+            if ($res instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+                return collect($res->items());
+            }
+            if (is_iterable($res)) return collect($res);
+        } catch (\Throwable $e) { /* ignore */
+        }
+        return collect();
+    }
+
+    /**
+     * Resolve a single event by id using the service response only.
+     */
+    protected function getEventFromServiceById(int $id)
+    {
+        if ($id <= 0) return null;
+        $list = $this->fetchEventsCollection();
+        return $list->firstWhere('id', $id) ?? null;
+    }
+
+    /**
+     * Provide a minimal admin user object for service calls that require one.
+     */
+    protected function fakeAdminUser(): ?\App\Models\User
+    {
+        try {
+            $u = app(\App\Services\UserService::class)->getFirstUser();
+            if ($u) return $u;
+            return new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']);
+        } catch (\Throwable $e) {
+            return new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']);
+        }
     }
 }

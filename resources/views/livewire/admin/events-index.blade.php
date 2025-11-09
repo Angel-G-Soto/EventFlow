@@ -1,8 +1,6 @@
 <div>
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0">Event Oversight</h1>
-
-    <div class="d-none d-md-flex gap-2"></div>
   </div>
 
   <div class="card shadow-sm mb-3">
@@ -10,8 +8,14 @@
       <div class="row g-2">
         <div class="col-md-4">
           <label class="form-label" for="ev_search">Search</label>
-          <input id="ev_search" class="form-control" placeholder="title, requestor"
-            wire:model.live.debounce.300ms="search">
+          <form wire:submit.prevent="applySearch">
+            <div class="input-group">
+              <input id="ev_search" class="form-control" placeholder="title, requestor" wire:model.defer="search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
         </div>
         <div class="col-md-2">
           <label class="form-label" for="ev_status">Status</label>
@@ -23,7 +27,13 @@
           </select>
         </div>
         <div class="col-md-3">
-          <livewire:controls.searchable-venue wire:model.live="venue" :label="'Venue'" />
+          <label class="form-label" for="ev_venue">Venue</label>
+          <select id="ev_venue" class="form-select" wire:model.live="venue">
+            <option value="">All</option>
+            @foreach($venues as $vName)
+            <option value="{{ $vName }}">{{ $vName }}</option>
+            @endforeach
+          </select>
         </div>
         {{-- Category filter removed intentionally --}}
         <div class="col-md-2">
@@ -210,27 +220,33 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-6"><label class="form-label" for="ev_e_title">Title</label><input id="ev_e_title"
-                class="form-control" wire:model.live="eTitle"></div>
+                class="form-control" wire:model.live="eTitle" placeholder="Event title"></div>
             <div class="col-md-3"><label class="form-label" for="ev_e_org">Organization</label><input id="ev_e_org"
-                class="form-control" wire:model.live="eOrganization"></div>
+                class="form-control" wire:model.live="eOrganization" placeholder="Organization name"></div>
             <div class="col-md-3"><label class="form-label" for="ev_e_venue">Venue</label><input id="ev_e_venue"
-                class="form-control" wire:model.live="eVenue"></div>
+                class="form-control" wire:model.live="eVenue" placeholder="Venue name"></div>
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor">Advisor Name</label><input
-                id="ev_e_advisor" class="form-control" wire:model.live="eAdvisorName"></div>
+                id="ev_e_advisor" class="form-control" wire:model.live="eAdvisorName" placeholder="Advisor's full name">
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor_email">Advisor Email</label><input
-                id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"></div>
+                id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"
+                placeholder="advisor@example.edu"></div>
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label><input
-                id="ev_e_advisor_phone" class="form-control" wire:model.live="eAdvisorPhone"></div>
+                id="ev_e_advisor_phone" class="form-control" wire:model.live="eAdvisorPhone" placeholder="###-###-####">
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
-                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber"></div>
+                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber" placeholder="Student ID">
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_phone">Student Phone</label><input
-                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone"></div>
+                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####">
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_from">From</label><input id="ev_e_from"
                 type="datetime-local" class="form-control" wire:model.live="eFrom"></div>
             <div class="col-md-3"><label class="form-label" for="ev_e_to">To</label><input id="ev_e_to"
                 type="datetime-local" class="form-control" wire:model.live="eTo"></div>
             <div class="col-md-3"><label class="form-label" for="ev_e_attendees">Attendees</label><input
-                id="ev_e_attendees" type="number" class="form-control" min="0" wire:model.live="eAttendees"></div>
+                id="ev_e_attendees" type="number" class="form-control" min="0" wire:model.live="eAttendees"
+                placeholder="0+"></div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_category">Category</label>
               <select id="ev_e_category" class="form-select" wire:model.live="eCategory">
@@ -240,7 +256,8 @@
               </select>
             </div>
             <div class="col-12"><label class="form-label" for="ev_e_purpose">Description</label><textarea
-                id="ev_e_purpose" class="form-control" rows="3" wire:model.live="ePurpose"></textarea></div>
+                id="ev_e_purpose" class="form-control" rows="3" wire:model.live="ePurpose"
+                placeholder="What is this event about?"></textarea></div>
 
             <div class="col-12">
               <label class="form-label">Policies</label>
@@ -295,9 +312,7 @@
   </div>
 
   {{-- Justification for save/delete/approve/deny --}}
-  <x-justification id="oversightJustify"
-    submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : (in_array(($actionType ?? ''), ['approve','deny']) ? 'confirmAction' : 'confirmSave') }}"
-    model="justification" />
+  <x-justification id="oversightJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm delete --}}
   <x-confirm-delete id="oversightConfirm" title="Delete request" message="Are you sure you want to delete this request?"

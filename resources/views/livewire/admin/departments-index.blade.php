@@ -14,12 +14,17 @@
       <div class="row g-2">
         <div class="col-12 col-md-4">
           <label class="form-label" for="dept_search">Search</label>
-          <div class="input-group">
-            <input id="dept_search" type="text" class="form-control" placeholder="Search by name or director"
-              wire:model.defer="search">
-          </div>
+          <form wire:submit.prevent="applySearch">
+            <div class="input-group">
+              <input id="dept_search" type="text" class="form-control" placeholder="Search by name or director"
+                wire:model.defer="search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-3">
           <label class="form-label" for="dept_code">Department Code</label>
           <select id="dept_code" class="form-select" wire:model.live="code">
             <option value="">All</option>
@@ -55,7 +60,7 @@
         <thead class="table-light">
           <tr>
             <th scope="col">
-              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+              <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
                 @if($sortField === 'name')
@@ -83,10 +88,10 @@
             <td>{{ trim($d['director'] ?? '') }}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
+                {{--<button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
                   aria-label="Edit department {{ $d['name'] }}" title="Edit department {{ $d['name'] }}">
                   <i class="bi bi-pencil"></i>
-                </button>
+                </button>--}}
                 <button class="btn btn-outline-danger" wire:click="delete({{ $d['id'] }})"
                   aria-label="Delete department {{ $d['name'] }}" title="Delete department {{ $d['name'] }}">
                   <i class="bi bi-trash3"></i>
@@ -122,12 +127,14 @@
         </div>
         <div class="modal-body">
           <div class="row g-3">
-            <div class="col-md-6"><label class="form-label" for="dept_name">Name</label><input id="dept_name"
-                class="form-control" wire:model.live="dName" required></div>
-            <div class="col-md-3"><label class="form-label" for="dept_code_edit">Code</label><input id="dept_code_edit"
-                class="form-control" wire:model.live="dCode" required></div>
+            <div class="col-md-6"><label class="form-label required" for="dept_name">Name</label><input id="dept_name"
+                class="form-control" wire:model.live="dName" required placeholder="Department name (e.g., Engineering)">
+            </div>
+            <div class="col-md-3"><label class="form-label required" for="dept_code_edit">Code</label><input
+                id="dept_code_edit" class="form-control" wire:model.live="dCode" required placeholder="ENG"></div>
             <div class="col-md-3"><label class="form-label" for="dept_director">Director</label><input
-                id="dept_director" class="form-control" wire:model.live="dDirector"></div>
+                id="dept_director" class="form-control" wire:model.live="dDirector"
+                placeholder="Director name or email"></div>
 
           </div>
         </div>
@@ -141,8 +148,7 @@
     </div>
   </div>
 
-  <x-justification id="deptJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
-    model="justification" />
+  <x-justification id="deptJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm delete --}}
   <x-confirm-delete id="deptConfirm" title="Delete department"

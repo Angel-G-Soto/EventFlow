@@ -6,19 +6,35 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use App\Repositories\VenueRepository;
 use App\Livewire\Traits\VenueFilters;
 use App\Livewire\Traits\VenueEditState;
+use App\Services\VenueService;
+use App\Services\DepartmentService;
+use App\Services\UserService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Pagination\Paginator;
+use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use App\Jobs\ProcessCsvFileUpload;
 
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
     // Traits / shared state
-    use VenueFilters, VenueEditState;
+    use VenueFilters, VenueEditState, WithFileUploads;
 
     // Properties / backing stores
-    public array $venues = [];
     public $csvFile;
+    public ?string $importKey = null;
+    public ?string $importStatus = null;
+    public ?string $importErrorMsg = null;
+
+    // Details modal state
+    public ?int $detailsId = null;
+    public array $details = [];
 
     // Sorting
     public string $sortField = '';
@@ -53,17 +69,6 @@ class VenuesIndex extends Component
         $values = array_values($map);
         usort($values, fn($a, $b) => strnatcasecmp($a, $b));
         return $values;
-    }
-
-    /**
-     * Initializes the component by retrieving all the venues from the database.
-     *
-     * This function is called when the component is mounted.
-     */
-    // Lifecycle
-    public function mount()
-    {
-        $this->venues = VenueRepository::all();
     }
 
 
@@ -150,6 +155,7 @@ class VenuesIndex extends Component
     public function openCsvModal(): void
     {
         $this->reset('csvFile');
+        $this->importErrorMsg = null; // clear any previous error before a new attempt
         $this->dispatch('bs:open', id: 'csvModal');
     }
 
@@ -161,61 +167,93 @@ class VenuesIndex extends Component
         $this->dispatch('toast', message: 'CSV upload is disabled');
     }
 
-    // CSV import
     /**
-     * Validates the CSV file, and then imports the venues from the CSV file.
-     *
-     * The CSV file is expected to have the following columns:
-     * - room code
-     * - department name
-     * - name
-     * - capacity
-     * - email
-     * - allow teaching online
-     * - allow teaching with multimedia
-     * - allow teaching with computer
-     * - allow teaching
-     * - features (| separated string)
-     * - timeRanges (| separated string)
-     *
-     * If a column is not found, it will be skipped.
-     * The "name" column is used as the name of the venue.
-     * If the "name" column is not found, the "room code" column is used as the name of the venue.
-     * The "manager" column is used as the email of the venue.
-     * If the "manager" column is not found, an empty string is used as the email.
-     * The "features" column is an array of strings containing the features of the venue.
-     * The "timeRanges" column is an array of time ranges in the format of [[int, int], ...].
-     * After importing the venues, the CSV modal is closed and a toast is dispatched with the message "Venues imported from CSV".
+     * Handle CSV upload to add venues in bulk.
+     * - Validates file type and size
+     * - Stores temporarily on uploads_temp disk
+     * - Dispatches background job to virus-scan, parse, and import via VenueService
      */
-    public function uploadCsv()
+    public function uploadCsv(): void
     {
+        // Validate only the CSV file; accept common CSV MIME types and extensions
         $this->validate([
-            'csvFile' => 'required|file|mimes:csv,txt',
+            'csvFile' => 'required|file|max:25600 |mimes:csv,txt', // 25 MB
         ]);
 
-        $path = $this->csvFile->getRealPath();
-        $rows = array_map('str_getcsv', file($path));
-        $header = array_map('trim', array_shift($rows));
+        try {
+            // Clear any prior error message on new upload
+            $this->importErrorMsg = null;
+            $original = (string) ($this->csvFile->getClientOriginalName() ?? 'venues.csv');
+            $ext = pathinfo($original, PATHINFO_EXTENSION) ?: 'csv';
+            $safe = 'venues_' . now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $ext;
 
-        foreach ($rows as $row) {
-            $data = array_combine($header, $row);
-            if (!$data) continue;
-            $venue = [
-                'id'         => (int) now()->format('Uu') + rand(1, 9999),
-                'name'       => $data['name'] ?? '',
-                'room'       => $data['room'] ?? '',
-                'capacity'   => (int)($data['capacity'] ?? 0),
-                'department' => $data['department'] ?? '',
-                //'manager'    => $data['manager'] ?? '',
-                //'status'     => $data['status'] ?? 'Active',
-                'features'   => isset($data['features']) ? explode('|', $data['features']) : [],
-                //'timeRanges' => isset($data['timeRanges']) ? json_decode($data['timeRanges'], true) : [],
-            ];
-            $this->venues[] = $venue;
+            // Ensure the temp uploads root exists (Windows-friendly)
+            try {
+                $rootPath = Storage::disk('uploads_temp')->path('');
+                if (!\is_dir($rootPath)) {
+                    @\mkdir($rootPath, 0775, true);
+                }
+            } catch (\Throwable $e) {
+                // Non-fatal: Storage::path should normally create on put; continue
+            }
+
+            // Store on the temporary uploads disk
+            $this->csvFile->storeAs('', $safe, 'uploads_temp');
+
+            // Dispatch async processing job (scan + parse + import)
+            $admin = Auth::user();
+            $adminId = is_object($admin) ? (int) $admin->id : 0;
+            ProcessCsvFileUpload::dispatch($safe, $adminId);
+
+            // Track status key for polling in the UI
+            $this->importKey = $safe;
+            $this->importStatus = 'queued';
+
+            // Close modal and toast
+            $this->dispatch('bs:close', id: 'csvModal');
+            $this->dispatch('toast', message: 'CSV upload started. Venues will appear after processing.');
+            $this->reset('csvFile');
+        } catch (\Throwable $e) {
+            Log::error('CSV upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $this->addError('csvFile', 'Unable to upload CSV: ' . $e->getMessage());
         }
+    }
 
-        $this->dispatch('bs:close', id: 'csvModal');
-        $this->dispatch('toast', message: 'Venues imported from CSV');
+    /**
+     * Poll for background CSV import status via cache
+     */
+    public function checkImportStatus(): void
+    {
+        if (!$this->importKey) return;
+        try {
+            $cacheBase = 'venues_import:' . $this->importKey;
+            $status = Cache::get($cacheBase);
+            if ($status) {
+                $this->importStatus = (string) $status;
+                if (in_array($status, ['done', 'failed', 'infected'], true)) {
+                    // Notify result and clear tracking
+                    if ($status === 'done') {
+                        $this->dispatch('toast', message: 'Import complete.');
+                        // Trigger a re-render by nudging pagination back to first page
+                        $this->page = 1;
+                    } elseif ($status === 'infected') {
+                        $this->dispatch('toast', message: 'File infected. Import aborted.');
+                        $this->importErrorMsg = 'The uploaded file appears to be infected. Import was aborted.';
+                    } else {
+                        $err = (string) (Cache::get($cacheBase . ':error') ?? 'Unknown error.');
+                        $this->importErrorMsg = 'Import failed: ' . $err;
+                        $this->dispatch('toast', message: 'Import failed.');
+                    }
+                    $this->importKey = null;
+                    $this->importStatus = null;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Swallow polling errors
+        }
     }
 
     // Edit workflow
@@ -227,19 +265,65 @@ class VenuesIndex extends Component
      */
     public function openEdit(int $id): void
     {
-        $venue = $this->filtered()->firstWhere('id', $id);
+        // Fetch venue via service only (no direct model queries here)
+        $venue = null;
+        try {
+            $venue = app(VenueService::class)->getVenueById($id);
+        } catch (\Throwable $e) {
+            $venue = null;
+        }
         if (!$venue) return;
-        $this->editId    = $venue['id'];
-        $this->vName     = $venue['name'];
-        $this->vRoom     = $venue['room'];
-        $this->vCapacity = $venue['capacity'];
-        $this->vDepartment = $venue['department'];
-        $this->vManager  = $venue['manager'];
-        $this->vStatus   = $venue['status'];
-        $this->vFeatures = $venue['features'];
-        $this->timeRanges = $venue['timeRanges'] ?? [];
+        $this->editId    = (int)$venue->id;
+        $this->vName     = (string)$venue->name;
+        $this->vRoom     = (string)($venue->code ?? '');
+        $this->vCapacity = (int)($venue->capacity ?? 0);
+        // Accessing relations may lazy-load as needed; still avoids static model usage in this view
+        $this->vDepartment = (string)optional($venue->department)->name;
+        $this->vManager  = (string)optional($venue->manager)->email;
+        $this->vStatus   = 'Active'; // Model uses SoftDeletes; absence implies active
+        // Map features string like '1101' to labels
+        $this->vFeatures = $this->mapFeaturesStringToLabels((string)($venue->features ?? ''));
+        // Map opening/closing to a single time range entry for edit convenience
+        $this->timeRanges = [];
+        if (!empty($venue->opening_time) || !empty($venue->closing_time)) {
+            $this->timeRanges[] = [
+                'from' => substr((string)$venue->opening_time, 0, 5),
+                'to'   => substr((string)$venue->closing_time, 0, 5),
+            ];
+        }
 
         $this->dispatch('bs:open', id: 'venueModal');
+    }
+
+    /**
+     * Populate and show the details modal for a venue using the service layer only.
+     */
+    public function showDetails(int $id): void
+    {
+        try {
+            $venue = app(VenueService::class)->getVenueById($id);
+            if (!$venue) {
+                $this->addError('detailsId', 'Venue not found.');
+                return;
+            }
+            // Normalize details payload for the view
+            $features = $this->mapFeaturesStringToLabels((string)($venue->features ?? ''));
+            $this->detailsId = (int) $venue->id;
+            $this->details = [
+                'id'         => (int) $venue->id,
+                'name'       => (string) $venue->name,
+                'department' => (string) (optional($venue->department)->name ?? ''),
+                'code'       => (string) ($venue->code ?? ''),
+                'capacity'   => (int) ($venue->capacity ?? 0),
+                'manager'    => (string) (optional($venue->manager)->email ?? ''),
+                'features'   => $features,
+                'opening'    => $venue->opening_time ? substr((string)$venue->opening_time, 0, 5) : null,
+                'closing'    => $venue->closing_time ? substr((string)$venue->closing_time, 0, 5) : null,
+            ];
+            $this->dispatch('bs:open', id: 'venueDetails');
+        } catch (\Throwable $e) {
+            $this->addError('detailsId', 'Unable to load venue.');
+        }
     }
 
     // Validation / rules
@@ -258,8 +342,8 @@ class VenuesIndex extends Component
             'vManager'   => 'nullable|string|max:120',
             'vStatus'    => 'required|in:Active,Inactive',
             'vFeatures'  => 'array',
-            // Justification is validated at confirm time, not at form validate/save time
-            'justification' => 'nullable|string|max:200',
+            // Justification validated separately on confirm; keep rule for Livewire error bag consistency
+            'justification' => 'nullable|string|min:10|max:200',
             'timeRanges'            => 'array',
             'timeRanges.*.from'     => 'required|date_format:H:i',
             'timeRanges.*.to'       => 'required|date_format:H:i',
@@ -274,9 +358,9 @@ class VenuesIndex extends Component
      */
     protected function validateJustification(): void
     {
-        // Require a non-trivial justification only when confirming
+        // Enforce normalized justification requirement
         $this->validate([
-            'justification' => ['required', 'string', 'min:3', 'max:200'],
+            'justification' => ['required', 'string', 'min:10', 'max:200'],
         ]);
     }
 
@@ -318,30 +402,71 @@ class VenuesIndex extends Component
     {
         $this->validateJustification();
 
-        $venue = [
-            'id'         => $this->editId ?? (int) now()->format('Uu'),
-            'name'       => $this->vName,
-            'room'       => $this->vRoom,
-            'capacity'   => $this->vCapacity,
-            'department' => $this->vDepartment,
-            'manager'    => $this->vManager,
-            'status'     => $this->vStatus,
-            'features'   => $this->vFeatures,
-            'timeRanges' => $this->timeRanges,
+        // Resolve relations via services
+        $deptId = null;
+        try {
+            $deptName = trim((string)$this->vDepartment);
+            if ($deptName !== '') {
+                $dept = app(DepartmentService::class)->findByName($deptName);
+                if (!$dept) {
+                    $created = app(DepartmentService::class)->updateOrCreateDepartment([
+                        ['name' => $deptName, 'code' => \Illuminate\Support\Str::slug($deptName)]
+                    ]);
+                    $dept = $created->first();
+                }
+                $deptId = $dept?->id;
+            }
+        } catch (\Throwable $e) {
+            $deptId = null;
+        }
+
+        $managerId = null;
+        try {
+            $managerEmail = trim((string)$this->vManager);
+            if ($managerEmail !== '') {
+                $mgrs = app(UserService::class)->getUsersWithRole('venue-manager');
+                $mgr = collect($mgrs)->firstWhere('email', $managerEmail);
+                $managerId = $mgr?->id;
+            }
+        } catch (\Throwable $e) {
+            $managerId = null;
+        }
+
+        // Encode features array to compact string '1010'
+        $featuresStr = $this->mapFeatureLabelsToString($this->vFeatures);
+
+        // Prepare data payload for service
+        $from = $this->timeRanges[0]['from'] ?? null;
+        $to   = $this->timeRanges[0]['to'] ?? null;
+        $data = [
+            'name' => $this->vName,
+            'code' => $this->vRoom,
+            'capacity' => (int)$this->vCapacity,
+            'test_capacity' => (int)$this->vCapacity,
+            'department_id' => $deptId,
+            'manager_id' => $managerId,
+            'features' => $featuresStr,
+            'opening_time' => $from,
+            'closing_time' => $to,
         ];
 
-        $isCreating = !$this->editId;
-
-        if ($isCreating) {
-            $this->venues[] = $venue;
-        } else {
-            foreach ($this->venues as &$v) {
-                if ($venue['id'] === $this->editId) {
-                    $v = $venue;
-                    break;
+        $venue = null;
+        // Auth disabled: obtain a fallback admin user for auditing or null
+        $admin = $this->fakeAdminUser();
+        try {
+            if ($this->editId) {
+                $existing = app(VenueService::class)->getVenueById((int)$this->editId);
+                if ($existing) {
+                    $venue = app(VenueService::class)->updateVenue($existing, array_filter($data, fn($v) => $v !== null), $admin);
                 }
+            } else {
+                // create via service
+                $venue = app(VenueService::class)->createVenue(array_filter($data, fn($v) => $v !== null), $admin);
             }
-            unset($v);
+        } catch (\Throwable $e) {
+            // Do not fallback to direct Eloquent writes; surface validation error
+            $this->addError('vName', 'Unable to save venue.');
+            return;
         }
 
         $this->dispatch('bs:close', id: 'venueJustify');
@@ -349,6 +474,19 @@ class VenuesIndex extends Component
         $this->dispatch('toast', message: 'Venue saved');
 
         $this->reset(['justification', 'actionType', 'editId']);
+    }
+
+    /**
+     * Unified confirmation entrypoint for the justification modal.
+     * Routes to confirmDelete or confirmSave based on current actionType.
+     */
+    public function confirmJustify(): void
+    {
+        if (($this->actionType ?? '') === 'delete') {
+            $this->confirmDelete();
+        } else {
+            $this->confirmSave();
+        }
     }
 
     // Delete workflows
@@ -385,7 +523,17 @@ class VenuesIndex extends Component
     {
         if ($this->editId) {
             $this->validateJustification();
-            session()->push('soft_deleted_venue_ids', $this->editId);
+            try {
+                $venue = app(VenueService::class)->getVenueById((int)$this->editId);
+                if ($venue) {
+                    // Auth disabled: use fake admin (may be null) for deactivation
+                    $admin = $this->fakeAdminUser();
+                    app(VenueService::class)->deactivateVenues([$venue], $admin ?? new \App\Models\User(['first_name' => 'System', 'last_name' => 'Admin', 'email' => 'system@localhost']));
+                }
+            } catch (\Throwable $e) {
+                $this->addError('justification', 'Unable to delete venue.');
+                return;
+            }
         }
         $this->dispatch('bs:close', id: 'venueJustify');
         $this->dispatch('toast', message: 'Venue deleted');
@@ -447,26 +595,53 @@ class VenuesIndex extends Component
 
     // Private/Protected Helper Methods
     /**
-     * Returns a collection of all the venues, excluding any soft-deleted venues.
+     * Returns a collection of all the venues.
      */
     protected function allVenues(): Collection
     {
-        // Exclude soft-deleted IDs for this session
-        $deletedIds   = array_map('intval', session('soft_deleted_venue_ids', []));
-        $deletedIndex = array_flip(array_unique($deletedIds));
+        // Source data via VenueService (aggregate all pages)
+        $svc = app(VenueService::class);
+        $page = 1;
+        $all = collect();
+        $last = 1;
+        do {
+            Paginator::currentPageResolver(fn() => $page);
+            try {
+                $p = $svc->getAllVenues();
+                $last = max(1, (int)$p->lastPage());
+                foreach ($p->items() as $v) {
+                    $all->push($v);
+                }
+            } catch (\Throwable $e) {
+                break;
+            }
+            $page++;
+        } while ($page <= $last);
+        // Restore resolver to default behavior (request page)
+        Paginator::currentPageResolver(fn() => (int) request()->input('page', 1));
 
-        $combined = array_values(array_filter($this->venues, fn(array $venue) => !isset($deletedIndex[(int) ($venue['id'] ?? 0)])));
+        return $all->map(fn($v) => $this->mapVenueToRow($v));
+    }
 
-        // Normalize minimal shape to avoid undefined index notices in views/filters
-        $combined = array_map(function (array $venue) {
-            $venue['manager']   = $venue['manager']   ?? '';
-            $venue['status']    = $venue['status']    ?? 'Active';
-            $venue['features']  = isset($venue['features']) && is_array($venue['features']) ? array_values(array_unique($venue['features'])) : [];
-            $venue['timeRanges'] = isset($venue['timeRanges']) && is_array($venue['timeRanges']) ? array_values($venue['timeRanges']) : [];
-            return $venue;
-        }, $combined);
-
-        return collect($combined);
+    /**
+     * Normalize a Venue model into the row shape used by the UI.
+     * @param object $v
+     * @return array{id:int,name:string,room:string,capacity:int,department:string,manager:string,status:string,features:array,opening:?string,closing:?string}
+     */
+    protected function mapVenueToRow($v): array
+    {
+        return [
+            'id' => (int)$v->id,
+            'name' => (string)$v->name,
+            'room' => (string)($v->code ?? ''),
+            'capacity' => (int)($v->capacity ?? 0),
+            'department' => (string)(optional($v->department)->name ?? ''),
+            'manager' => (string)(optional($v->manager)->email ?? ''),
+            'status' => 'Active',
+            'features' => $this->mapFeaturesStringToLabels((string)($v->features ?? '')),
+            'opening' => $v->opening_time ? substr((string)$v->opening_time, 0, 5) : null,
+            'closing' => $v->closing_time ? substr((string)$v->closing_time, 0, 5) : null,
+        ];
     }
 
     /**
@@ -499,8 +674,8 @@ class VenuesIndex extends Component
         $data = $this->filtered();
         // Apply sorting only after user clicks a sort header
         if ($this->sortField !== '') {
-            // Sort using natural, case-insensitive order by the active field
-            $options = SORT_NATURAL | SORT_FLAG_CASE;
+            // Use numeric sort for numeric fields; natural/case-insensitive otherwise
+            $options = $this->sortField === 'capacity' ? SORT_NUMERIC : (SORT_NATURAL | SORT_FLAG_CASE);
             $data = $data->sortBy(fn($row) => $row[$this->sortField] ?? '', $options, $this->sortDirection === 'desc')->values();
         }
         $items = $data->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values();
@@ -530,5 +705,59 @@ class VenuesIndex extends Component
         $this->vStatus   = 'Active';
         $this->vFeatures = [];
         $this->timeRanges = [];
+    }
+
+    /**
+     * Map a list of feature labels to storage string like "1010" in order [online, multimedia, computers, teaching].
+     */
+    protected function mapFeatureLabelsToString(array $labels): string
+    {
+        $order = [
+            'Allow Teaching Online' => 0,
+            'Allow Teaching With Multimedia' => 1,
+            'Allow Teaching with computer' => 2,
+            'Allow Teaching' => 3,
+        ];
+        $bits = ['0', '0', '0', '0'];
+        foreach ($labels as $lab) {
+            if (isset($order[$lab])) {
+                $bits[$order[$lab]] = '1';
+            }
+        }
+        return implode('', $bits);
+    }
+
+    /**
+     * Map a features storage string like "1010" to human labels expected by the UI.
+     */
+    protected function mapFeaturesStringToLabels(string $features): array
+    {
+        $labels = ['Allow Teaching Online', 'Allow Teaching With Multimedia', 'Allow Teaching with computer', 'Allow Teaching'];
+        $out = [];
+        $chars = str_split($features);
+        foreach ($labels as $i => $lab) {
+            $outIdx = $chars[$i] ?? '0';
+            if ($outIdx === '1') $out[] = $lab;
+        }
+        return $out;
+    }
+
+    /**
+     * Provide a minimal fake admin user when auth is disabled.
+     * Attempts to reuse the first persisted user; otherwise returns a transient model.
+     */
+    protected function fakeAdminUser(): ?\App\Models\User
+    {
+        try {
+            $u = app(\App\Services\UserService::class)->getFirstUser();
+            if ($u) return $u;
+            return new \App\Models\User([
+                'first_name' => 'System',
+                'last_name'  => 'Admin',
+                'email'      => 'system@localhost',
+            ]);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

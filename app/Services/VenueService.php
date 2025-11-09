@@ -13,17 +13,21 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
 
-class VenueService {
+class VenueService
+{
 
     protected DepartmentService $departmentService;
     protected UseRequirementService $useRequirementService;
     protected AuditService $auditService;
+    protected UserService $userService;
 
-    public function __construct(DepartmentService $departmentService, UseRequirementService $useRequirementService, AuditService $auditService)
+    public function __construct(DepartmentService $departmentService, UseRequirementService $useRequirementService, AuditService $auditService, UserService $userService)
     {
         $this->departmentService =  $departmentService;
         $this->useRequirementService = $useRequirementService;
         $this->auditService = $auditService;
+        $this->userService = $userService;
+        //$this->EventService = $eventService
     }
 
     /*
@@ -233,58 +237,55 @@ class VenueService {
 
      */
 
-//    /**
-//     * Assign a manager to a venue.
-//     *
-//     * This method assigns a given manager to the specified venue. If the venue
-//     * already has a manager from another department, their privileges are removed.
-//     * Both the manager and director must have the appropriate roles and belong
-//     * to the same department as the venue.
-//     *
-//     * @param Venue $venue
-//     * @param User $manager
-//     * @param User $director
-//     * @return void
-//     * @throws Exception
-//     */
-//    public function assignManager(Venue $venue, User $manager, User $director): void
-//    {
-//        try {
-//            // Validate director and manager have the appropriate roles
-//            if (!$manager->getRoleNames()->contains('venue-manager') || !$director->getRoleNames()->contains('department-director')) {
-//                throw new InvalidArgumentException('The manager and the director must be venue-manager or department-director respectively.');
-//            }
-//
-//            // Validate both are in the same department
-//            if ($venue->getDepartmentID() != $manager->department_id || $venue->getDepartmentID() != $director->department_id) {
-//                throw new InvalidArgumentException('The manager and the director must be part of the venue\'s department.');
-//            }
-//
-//            // CALL EVENT SERVICE METHOD // MOCK IT // reroutePendingVenueApprovals($venue->venue_id, $oldManagerId, $newManager->user_id);
-//
-//            // if prior venue manager has no more venues
-//            $old_manager = $venue->manager;
-//            if (count($old_manager->manages) == 1)
-//            {
-//                // remove venue manager ranking
-//                $role = Role::where('name', 'venue-manager')->first();
-//                $old_manager->roles()->detach($role);
-//            }
-//
-//            // Assign to the manager the venue
-////            $venue->manager()->associate($manager);
-//            $venue->manager_id = $manager->id;
-//            $venue->save();
-//
-////            $this->auditService->logAction($director->id,
-////                '',
-////                '',
-////                'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'); // MOCK FROM SERVICE
-//
-//        }
-//        catch (InvalidArgumentException $exception) {throw $exception;}
-//        catch (\Throwable $exception) {throw new Exception('Unable to assign the manager to its venue.');}
-//    }
+    /**
+     * Assign a manager to a venue.
+     *
+     * This method assigns a given manager to the specified venue. If the venue
+     * already has a manager from another department, their privileges are removed.
+     * Both the manager and director must have the appropriate roles and belong
+     * to the same department as the venue.
+     *
+     * @param Venue $venue
+     * @param User $manager
+     * @param User $director
+     * @return void
+     * @throws Exception
+     */
+    public function assignManager(Venue $venue, User $manager, User $director): void
+    {
+        try {
+            // Validate director and manager have the appropriate roles
+            if (!$manager->getRoleNames()->contains('venue-manager') || !$director->getRoleNames()->contains('department-director')) {
+                throw new InvalidArgumentException('The manager and the director must be venue-manager or department-director respectively.');
+            }
+
+            // Validate both are in the same department
+            if ($venue->getDepartmentID() != $manager->department_id || $venue->getDepartmentID() != $director->department_id) {
+                throw new InvalidArgumentException('The manager and the director must be part of the venue\'s department.');
+            }
+
+            // CALL EVENT SERVICE METHOD // MOCK IT // reroutePendingVenueApprovals($venue->venue_id, $oldManagerId, $newManager->user_id);
+
+            // Assign to the manager the venue
+            $venue->manager()->associate($manager);
+
+            // Audit: director assigns manager to venue
+            $directorLabel = $director->name ?? trim(((string)($director->first_name ?? '')) . ' ' . ((string)($director->last_name ?? '')));
+            if ($directorLabel === '') {
+                $directorLabel = (string)($director->email ?? '');
+            }
+            $this->auditService->logAction(
+                $director->id,
+                $directorLabel,
+                'ASSIGN_MANAGER',
+                'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new Exception('Unable to assign the manager to its venue.');
+        }
+    }
 
     /*
 
@@ -320,10 +321,17 @@ class VenueService {
                 throw new InvalidArgumentException('The user must be venue-manager and belong to the department of the venue.');
             }
 
-//            $this->auditService->logAction($manager->id,
-//                '',
-//                '',
-//                'Updated operating hours for venue #'.$venue->id); // MOCK FROM SERVICE
+            // Audit: operating hours update
+            $managerLabel = $manager->name ?? trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
+            if ($managerLabel === '') {
+                $managerLabel = (string)($manager->email ?? '');
+            }
+            $this->auditService->logAction(
+                $manager->id,
+                $managerLabel,
+                'UPDATE_OPERATING_HOURS',
+                'Updated operating hours for venue #' . $venue->id
+            );
 
             // Update the venue with the filtered data
             return Venue::updateOrCreate(
@@ -369,8 +377,10 @@ class VenueService {
     {
         try {
             // Validate manager role to be 'venue-manager' and to belong to the departments of the venues
-            if (!$manager->getRoleNames()->contains('venue-manager') && !($manager->department_id === $venue->department_id)) {
-                throw new InvalidArgumentException('The user must be venue-manager and belong to the department of the venue.');
+            if (!$manager->getRoleNames()->contains('venue-manager')) {
+                throw new \InvalidArgumentException('Manager does not have the required role.');
+            } elseif (!$manager->department()->where('id', $venue->department_id)->first() != null) {
+                throw new \InvalidArgumentException('Manager does not belong to the venue department.');
             }
 
             // Verify that the requirementsData structure is met
@@ -402,7 +412,7 @@ class VenueService {
 
             // Remove all requirements
             $this->useRequirementService->deleteVenueUseRequirements($venue->id); // MOCK FROM SERVICE
-//            dd($requirementsData);
+
             // Place requirements
             foreach ($trimmedData as $r) {
                 $requirement = new UseRequirement();
@@ -411,10 +421,16 @@ class VenueService {
                 $requirement->hyperlink = $r['hyperlink'];
                 $requirement->description = $r['description'];
                 $requirement->save();
-//                $this->auditService->logAction($manager->id,
-//                    '',
-//                    '',
-//                    'Create requirement for venue #'.$venue->id); // MOCK FROM SERVICE
+                $managerLabel = $manager->name ?? trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
+                if ($managerLabel === '') {
+                    $managerLabel = (string)($manager->email ?? '');
+                }
+                $this->auditService->logAction(
+                    $manager->id,
+                    $managerLabel,
+                    'CREATE_REQUIREMENT',
+                    'Create requirement for venue #' . $venue->id
+                );
             }
 
 
@@ -467,8 +483,12 @@ class VenueService {
 
         // Validate mandatory fields exist
         $requiredKeys = [
-            'department_id', 'name', 'code',
-            'features', 'capacity', 'test_capacity'
+            'department_id',
+            'name',
+            'code',
+            'features',
+            'capacity',
+            'test_capacity'
         ];
 
         foreach ($requiredKeys as $key) {
@@ -525,8 +545,8 @@ class VenueService {
         //try {
 
         // Validate admin role
-        if (!$admin->getRoleNames()->contains('system-administrator')) {
-            throw new InvalidArgumentException('The manager and the director must be system-administrator.');
+        if ($admin && !$admin->getRoleNames()->contains('system-admin')) {
+            throw new InvalidArgumentException('The manager and the director must be system-admin.');
         }
 
         // Check for invalid keys
@@ -547,10 +567,15 @@ class VenueService {
             );
         }
 
-        $this->auditService->logAdminAction($admin->id,
-            '',
-            '',
-            'Updated venue #'.$venue->id); // MOCK FROM SERVICE
+        if ($admin) {
+            $this->auditService->logAdminAction(
+                $admin->id,
+                'VENUE_UPDATED',
+                'venue',
+                (string)$venue->id,
+                ['meta' => ['fields' => array_keys($data)]]
+            );
+        }
 
         // Update the venue with the filtered data
         return Venue::updateOrCreate(
@@ -620,16 +645,23 @@ class VenueService {
             }
 
             foreach ($venueData as $venue) {
-
-                // Find the department with its name. EX. Mechanical Engineering
-                $department = $this->departmentService->findByName($venue['department']);     // MOCK IT FROM DEPARTMENT SERVICE
-
-                // Model Not Found Error
-                If($department == null) {
-                    throw new ModelNotFoundException('Department ['.$venue['department'].'] does not exist.');
+                // Try to resolve department by code first, then by name
+                $deptCode = $venue['department_code'] ?? $venue['department_code_raw'] ?? null;
+                $deptNameOrCode = $venue['department'] ?? null;
+                $department = null;
+                if ($deptCode) {
+                    $department = $this->departmentService->findByCode($deptCode);
                 }
-
-                // Find value based on the name and code. Update its fields
+                // If department field is present, try as code first, then as name
+                if (!$department && $deptNameOrCode) {
+                    $department = $this->departmentService->findByCode($deptNameOrCode);
+                }
+                if (!$department && $deptNameOrCode) {
+                    $department = $this->departmentService->findByName($deptNameOrCode);
+                }
+                if ($department == null) {
+                    throw new ModelNotFoundException('Department [' . ($deptCode ?: $deptNameOrCode) . '] does not exist.');
+                }
                 $updatedVenues->add(Venue::updateOrCreate(
                     [
                         'name' => $venue['name'],
@@ -646,10 +678,15 @@ class VenueService {
                 ));
             }
 
-            $this->auditService->logAdminAction($admin->id,
-                '',
-                '',
-                'Updated venues from import data.'); // MOCK FROM SERVICE
+            // Audit import action when admin context is available (auth-less supported)
+            if ($admin) {
+                $this->auditService->logAdminAction(
+                    $admin->id,
+                    'system-admin',
+                    'VENUES_IMPORTED',
+                    'venues_import'
+                );
+            }
 
             // Return collection of updated values
             return $updatedVenues;
@@ -675,8 +712,8 @@ class VenueService {
     {
         try {
             // Validate admin role
-            if (!$admin->getRoleNames()->contains('system-administrator')) {
-                throw new InvalidArgumentException('The manager and the director must be system-administrator.');
+            if ($admin && !$admin->getRoleNames()->contains('system-admin')) {
+                throw new InvalidArgumentException('The manager and the director must be system-admin.');
             }
 
             foreach ($venues as $venue) {
@@ -685,10 +722,14 @@ class VenueService {
 
             foreach ($venues as $venue) {
                 $venue->delete();
-                $this->auditService->logAdminAction($admin->id,
-                    '',
-                    '',
-                    'Deactivated venue #'.$venue->id);  // MOCK FROM SERVICE
+                if ($admin) {
+                    $this->auditService->logAdminAction(
+                        $admin->id,
+                        'VENUE_DEACTIVATED',
+                        'venue',
+                        (string) $venue->id
+                    );
+                }
             };
         }
         catch (\InvalidArgumentException $exception) {throw $exception;}

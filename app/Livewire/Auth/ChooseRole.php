@@ -4,6 +4,7 @@ namespace App\Livewire\Auth;
 
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Illuminate\Support\Facades\Auth;
 
 #[Layout('layouts.app')]
 class ChooseRole extends Component
@@ -15,29 +16,32 @@ class ChooseRole extends Component
 
   public function mount(): void
   {
-    // Mock user roles for now; replace with $request->user()->roles()->pluck('name')->all() later
-    $this->roles = session('mock_user_roles', ['Department Director', 'Administrator']); // change as needed
+    $user = Auth::user();
+    $this->roles = method_exists($user, 'roles')
+      ? $user->roles->pluck('name')->all()
+      : (array) ($user->roles ?? []);
 
-    if (count($this->roles) === 1) {
-      $this->selected = $this->roles[0];
-      $this->continue();
+    // safety: if only one, bounce (defense in depth; controller should've done this already)
+    if (count($this->roles) <= 1) {
+      redirect()->route('choose-role'); // no-op, controller already handled
     }
   }
-
-  public function continue()
+  public function select(string $role): void // NEW 
   {
-    $map = [
-      'Department Director' => route('director.venues'),
-      //'Venue Manager'       => route('manager.venues', [], false) ?: url('/manager/venues'),
-      'DSCA Staff'          => url('/dsca'),
-      'Administrator'       => url('/admin/events'),
-      'Student Org Rep'     => url('/org'),
-      'Student Org Advisor' => url('/advisor'),
-      'Dean of Administration' => url('/dean'),
-    ];
+    if (!in_array($role, $this->roles, true)) return;
 
-    $dest = $map[$this->selected] ?? url('/');
-    return redirect()->to($dest);
+    session(['active_role' => $role]);
+
+    // centralized role-home mapping
+    $route = match ($role) {
+      'System Admin'          => 'admin.events',
+      'Department Director'   => 'admin.departments',
+      'Venue Manager'         => 'admin.venues',
+      'DSCA Staff'            => 'admin.events',
+      default                 => 'calendar.public',
+    };
+
+    $this->redirectRoute($route);
   }
 
   public function render()

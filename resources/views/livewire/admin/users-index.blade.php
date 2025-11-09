@@ -19,6 +19,9 @@
             <div class="input-group">
               <input id="users_search" type="text" class="form-control" placeholder="Search by name or email…"
                 wire:model.defer="search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search">
+                <i class="bi bi-search"></i>
+              </button>
             </div>
           </form>
         </div>
@@ -26,9 +29,11 @@
         <div class="col-6 col-md-3">
           <label class="form-label" for="users_role">Role</label>
           <select id="users_role" class="form-select" wire:model.live="role">
-            <option value="">All roles</option>
-            @foreach(\App\Support\UserConstants::ROLES as $rname)
-            <option value="{{ $rname }}">{{ $rname }}</option>
+            <option value="">All</option>
+            <option value="__none__">No roles</option>
+            @foreach(($allRoles ?? []) as $r)
+            @php $label = \Illuminate\Support\Str::of($r)->replace('-', ' ')->title(); @endphp
+            <option value="{{ $r }}">{{ $label }}</option>
             @endforeach
           </select>
         </div>
@@ -61,7 +66,7 @@
         <thead class="table-light">
           <tr>
             <th scope="col">
-              <button class="btn btn-link p-0 text-decoration-none" wire:click="sortBy('name')"
+              <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
                 @if($sortField === 'name')
@@ -93,7 +98,8 @@
               @if(!empty($roles))
               {{-- Chip-style badges for roles for better readability --}}
               @foreach($roles as $r)
-              <span class="badge text-bg-light me-1">{{ $r }}</span>
+              <span class="badge text-bg-light me-1">{{ \Illuminate\Support\Str::of($r)->replace('-', ' ')->title()
+                }}</span>
               @endforeach
               @else
               —
@@ -105,9 +111,10 @@
                   aria-label="Edit user {{ $user['name'] }}" title="Edit user {{ $user['name'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="delete({{ $user['id'] }})" type="button"
-                  aria-label="Delete user {{ $user['name'] }}" title="Delete user {{ $user['name'] }}">
-                  <i class="bi bi-trash3"></i>
+                <button class="btn btn-outline-danger" wire:click="clearRoles({{ $user['id'] }})" type="button"
+                  aria-label="Clear roles for user {{ $user['name'] }}"
+                  title="Clear roles for user {{ $user['name'] }}">
+                  <i class="bi bi-arrow-clockwise"></i>
                 </button>
               </div>
             </td>
@@ -143,7 +150,7 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-12 col-md-6">
-              <label class="form-label" for="edit_name">Name</label>
+              <label class="form-label required" for="edit_name">Name</label>
               <input id="edit_name" type="text" class="form-control @error('editName') is-invalid @enderror" required
                 wire:model.live="editName" placeholder="Full Name">
               @error('editName')
@@ -151,7 +158,7 @@
               @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="edit_email">Email</label>
+              <label class="form-label required" for="edit_email">Email</label>
               <input id="edit_email" type="email" class="form-control @error('editEmail') is-invalid @enderror" required
                 wire:model.live="editEmail" placeholder="username@upr.edu">
               @error('editEmail')
@@ -159,15 +166,15 @@
               @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label">Roles</label>
+              <label class="form-label required">Roles</label>
               <div class="border rounded p-2" style="max-height:120px;overflow-y:auto;">
-                @foreach(\App\Support\UserConstants::ROLES as $rname)
+                @foreach(($allRoles ?? []) as $rname)
+                @php $label = \Illuminate\Support\Str::of($rname)->replace('-', ' ')->title(); @endphp
                 <div class="form-check">
-                  <input class="form-check-input" type="checkbox"
-                    id="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}" value="{{ $rname }}"
+                  <input class="form-check-input" type="checkbox" id="role_{{ $rname }}" value="{{ $rname }}"
                     wire:model.live="editRoles">
-                  <label class="form-check-label" for="role_{{ \Illuminate\Support\Str::slug($rname,'_') }}">
-                    {{ $rname }}
+                  <label class="form-check-label" for="role_{{ $rname }}">
+                    {{ $label }}
                   </label>
                 </div>
                 @endforeach
@@ -175,25 +182,26 @@
               @error('editRoles') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label" for="edit_department">Department</label>
+              <label class="form-label {{ in_array('venue-manager', $editRoles ?? []) ? 'required' : '' }}"
+                for="edit_department">Department</label>
               @php
-              $hasRoleWithoutDepartment = !empty(array_intersect($editRoles ?? [],
-              \App\Support\UserConstants::ROLES_WITHOUT_DEPARTMENT));
+              // Roles now passed as codes; venue-manager triggers department selection
+              $isDeptDirector = in_array('department-director', $editRoles ?? []);
               @endphp
-              @if($hasRoleWithoutDepartment)
-              <input type="text" class="form-control" value="—" disabled>
-              <small class="text-muted">Only Venue Managers have departments</small>
-              @else
+              @if($isDeptDirector)
               <select id="edit_department" class="form-select @error('editDepartment') is-invalid @enderror"
                 wire:model.live="editDepartment">
                 <option value="">Select Department</option>
-                @foreach(\App\Support\UserConstants::DEPARTMENTS as $dept)
-                <option value="{{ $dept }}">{{ $dept }}</option>
+                @foreach(($departments ?? []) as $dept)
+                <option value="{{ $dept->name }}">{{ $dept->name }}</option>
                 @endforeach
               </select>
               @error('editDepartment')
               <div class="invalid-feedback">{{ $message }}</div>
               @enderror
+              @else
+              <input type="text" class="form-control" value="—" disabled>
+              <small class="text-muted">Only Dept Directors have departments</small>
               @endif
             </div>
           </div>
@@ -209,12 +217,12 @@
   </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="userJustify" submit="{{ ($actionType ?? '') === 'delete' ? 'confirmDelete' : 'confirmSave' }}"
-    model="justification" />
+  <x-justification id="userJustify" submit="confirmJustify" model="justification" />
 
-  {{-- Confirm delete --}}
-  <x-confirm-delete id="userConfirm" title="Delete user" message="Are you sure you want to delete this user?"
-    confirm="proceedDelete" />
+  {{-- Confirm role clear (custom modal) --}}
+  <x-confirm-clear-roles id="userConfirm" title="Clear user roles"
+    message="Are you sure you want to remove all roles for this user? The account will remain but lose all assigned permissions."
+    confirm="proceedClearRoles" confirmLabel="Clear roles" />
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
@@ -225,4 +233,18 @@
       </div>
     </div>
   </div>
+  <script>
+    document.addEventListener('livewire:init', () => {
+      Livewire.on('toast', ({ message }) => {
+        try {
+          const el = document.getElementById('userToast');
+          const msg = document.getElementById('userToastMsg');
+          if (!el || !msg) return;
+          msg.textContent = message || 'Done';
+          const toast = bootstrap.Toast.getOrCreateInstance(el, { autohide: true, delay: 3000 });
+          toast.show();
+        } catch (_) { /* noop */ }
+      });
+    });
+  </script>
 </div>

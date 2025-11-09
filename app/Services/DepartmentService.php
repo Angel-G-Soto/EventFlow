@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services;
+
 use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
@@ -10,7 +12,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
 use Throwable;
 
-class DepartmentService {
+class DepartmentService
+{
 
     protected UserService $userService;
 
@@ -52,8 +55,9 @@ class DepartmentService {
     {
         try {
             return Department::all();
+        } catch (Throwable $exception) {
+            throw new Exception('Unable to retrieve departments.');
         }
-        catch (Throwable $exception) {throw new Exception('Unable to retrieve departments.');}
     }
 
     /**
@@ -118,9 +122,11 @@ class DepartmentService {
 
             // Return collection of updated values
             return $updatedDepartments;
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new Exception('Unable to synchronize department data.');
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (Throwable $exception) {throw new Exception('Unable to synchronize department data.');}
     }
 
     /**
@@ -140,17 +146,20 @@ class DepartmentService {
             if ($id < 0) throw new InvalidArgumentException('Department ID must be a positive integer.');
 
             return Department::findOrFail($id)->delete();
+        } catch (InvalidArgumentException | ModelNotFoundException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new Exception('Unable to delete the specified department.');
         }
-        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified department.');}
     }
 
     /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
 
-//    public function updateDepartmentAssignment(Department $department, Venue $venue): void
-//    {
-//        $venue->department_id = $department->id;
-//        $venue->save();
-//    }
+    //    public function updateDepartmentAssignment(Department $department, Venue $venue): void
+    //    {
+    //        $venue->department_id = $department->id;
+    //        $venue->save();
+    //    }
 
     /**
      * Assign a user to a specified department.
@@ -178,11 +187,9 @@ class DepartmentService {
             $manager->save();
 
             return $manager;
-        }
-        catch (ModelNotFoundException $exception) {
+        } catch (ModelNotFoundException $exception) {
             throw $exception;
-        }
-        catch (Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new \Exception('Failed to update the user(s) department.');
         }
     }
@@ -295,6 +302,17 @@ class DepartmentService {
     public function findByName(string $name): Department|null
     {
         return Department::where('name', $name)->first();
+    }
+
+    /**
+     * Retrieve a department by its unique code.
+     *
+     * @param string $code
+     * @return Department|null
+     */
+    public function findByCode(string $code): Department|null
+    {
+        return Department::where('code', $code)->first();
     }
 
     /**

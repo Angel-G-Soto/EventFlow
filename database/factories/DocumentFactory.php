@@ -24,4 +24,17 @@ class DocumentFactory extends Factory
             'event_id' => Event::factory(),
         ];
     }
+
+    /**
+     * State: no file_path assigned (e.g., before processing or for missing file tests)
+     */
+    public function withoutFilePath(): static
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                // Use empty string to satisfy non-null DB constraints while indicating no stored file
+                'file_path' => '',
+            ];
+        });
+    }
 }

@@ -8,7 +8,8 @@ use App\Models\Event;
 use App\Models\EventHistory;
 use App\Models\Role;
 use App\Models\User;
-Use App\Models\Venue;
+use App\Models\Venue;
+use Illuminate\Support\Collection as SupportCollection;
 use Carbon\Carbon;
 use DateTime;
 use Doctrine\DBAL\Query;
@@ -19,18 +20,21 @@ use PHPUnit\Event\EventCollection;
 use Illuminate\Database\Eloquent\Collection;
 use function PHPUnit\Framework\isEmpty;
 
-class EventService {
+class EventService
+{
 
     // Injected services
     //protected $eventHistoryService;
     protected $venueService;
     protected $categoryService;
+    protected $auditService;
 
     // Construct
-    public function __construct(VenueService $venueService, CategoryService $categoryService)
+    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService)
     {
         $this->venueService = $venueService;
         $this->categoryService = $categoryService;
+        $this->auditService = $auditService;
     }
 
     // Methods
@@ -544,44 +548,42 @@ class EventService {
 //        }
 
 
-        public function performManualOverride(Event $event, array $data, User $user, string $justification, string $action): Event
-        {
-            return DB::transaction(function () use ($event, $data, $user, $justification) {
-                // Make changes
-                $event = Event::update(
-                    [
-                        'id' => $data['id']
-                    ],
-                    [
-                        'venue_id' => $data['venue_id'],
+    public function performManualOverride(Event $event, array $data, User $user, string $justification, string $action): Event
+    {
+        return DB::transaction(function () use ($event, $data, $user, $justification) {
+            // Make changes
+            $event->update([
+                'venue_id' => $data['venue_id'],
 
-                        'organization_name' => $data['organization_name'] ?? null,
-                        'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
-                        'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
-                        //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+                'organization_name' => $data['organization_name'] ?? null,
+                'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
+                'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
+                //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
 
-                        'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
-                        'creator_phone_number' => $data['creator_phone_number'] ?? null,
+                'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
+                'creator_phone_number' => $data['creator_phone_number'] ?? null,
 
-                        'title' => $data['title'],
-                        'description' => $data['description'] ?? null,
-                        'start_time' => $data['start_time'],
-                        'end_time' => $data['end_time'],
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'start_time' => $data['start_time'],
+                'end_time' => $data['end_time'],
 
-                        'status' => $data['end_time'],
-                        'guest_size' => $data['guests'] ?? null,
-                        'handles_food' => $data['handles_food'] ?? false,
-                        'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
-                        'external_guest' => $data['external_guests'] ?? false,
-                    ]
-                );
-                // Run audit trail
-                AuditService::logAdminAction($user->id, $user->name, 'ADMIN_OVERRIDE', $justification);
+                'status' => $data['status'] ?? 'approved',
+                'guest_size' => $data['guests'] ?? null,
+                'handles_food' => $data['handles_food'] ?? false,
+                'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
+                'external_guest' => $data['external_guests'] ?? false,
+            ]);
 
-                // Add to event history
-                EventHistory::create(['id' => $user->id, 'action' => 'manual override', 'comment' => $justification]);
-            });
-        }
+            // Run audit trail
+            $this->auditService->logAdminAction($user->id, $user->name, 'ADMIN_OVERRIDE', $justification);
+
+            // Add to event history
+            EventHistory::create(['event_id' => $event->id, 'action' => 'manual override', 'comment' => $justification]);
+
+            return $event;
+        });
+    }
 
 
     // GET
@@ -593,7 +595,7 @@ class EventService {
                 $query->where('start_time', '<', $endTime)
                     ->where('end_time', '>', $startTime);
             })->get();
-        }
+    }
 
         public function getAllEvents(array $filters = []): LengthAwarePaginator
         {

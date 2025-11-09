@@ -46,7 +46,8 @@ class VenueCsvParser
         $headerMap = array_flip(array_map('trim', $header));
 
         // Verify that all essential columns exist
-        $requiredColumns = ['name', 'room_code', 'department_name', 'capacity', 'final_exams_capacity'];
+        // Note: department code comes from 'department' in the CSV, while department name is 'department_name'.
+        $requiredColumns = ['name', 'room_code', 'department_name', 'department', 'capacity', 'final_exams_capacity'];
         foreach ($requiredColumns as $column) {
             if (!isset($headerMap[$column])) {
                 fclose($handle);
@@ -56,13 +57,31 @@ class VenueCsvParser
 
         // Process each data row in the CSV
         while (($row = fgetcsv($handle)) !== false) {
+            // Skip empty lines
+            if ($row === null || $row === false) {
+                continue;
+            }
+            $row = array_map(static fn($v) => is_string($v) ? trim($v) : $v, $row);
+
+            // Detect and skip a second human-readable header row
+            $maybeName = (string) ($row[$headerMap['name']] ?? '');
+            $maybeCode = (string) ($row[$headerMap['room_code']] ?? '');
+            $maybeCap  = (string) ($row[$headerMap['capacity']] ?? '');
+            if (
+                (strcasecmp($maybeName, 'name') === 0 && strcasecmp($maybeCode, 'room code') === 0)
+                || strcasecmp($maybeCap, 'capacity') === 0
+            ) {
+                continue;
+            }
             $mainCapacity = (int) ($row[$headerMap['capacity']] ?? 0);
             $finalExamsCapacity = (int) ($row[$headerMap['final_exams_capacity']] ?? 0);
             $venueData = [
-                'v_name' => trim($row[$headerMap['name']]),
-                'v_code' => trim($row[$headerMap['room_code']]),
+                'v_name' => $maybeName,
+                'v_code' => $maybeCode,
                 // Pass the raw department name for the service to map to a local department ID.
-                'department_name_raw' => trim($row[$headerMap['department_name']]),
+                'department_name_raw' => (string) ($row[$headerMap['department_name']] ?? ''),
+                // Capture the department code from the 'department' column
+                'department_code_raw' => (string) ($row[$headerMap['department']] ?? ''),
                 'v_features' => $this->buildFeaturesString($row, $headerMap),
                 'v_features_code' => $this->buildFeaturesCode($row, $headerMap),
                 'v_capacity' => $mainCapacity,
@@ -132,4 +151,3 @@ class VenueCsvParser
         return $code;
     }
 }
-
