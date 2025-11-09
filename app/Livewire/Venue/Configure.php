@@ -29,7 +29,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 /**
  * Class Configure
  *

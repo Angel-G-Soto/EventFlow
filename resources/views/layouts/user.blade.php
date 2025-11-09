@@ -1,3 +1,4 @@
+{{--
 <!doctype html>
 <html lang="en" data-bs-theme="light">
 
@@ -87,4 +88,4 @@
   <x-bs-bridge />
 </body>
 
-</html>
+</html> --}}

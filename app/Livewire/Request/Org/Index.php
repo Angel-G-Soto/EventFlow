@@ -30,7 +30,7 @@ use Livewire\WithPagination;
  * Livewire index/list component with optional multi-filters and pagination.
  * Suitable for listing Events or Requests and reacting to filter changes.
  */
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 
 class Index extends Component
 {

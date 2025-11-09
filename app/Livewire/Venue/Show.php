@@ -27,7 +27,7 @@ use Livewire\Component;
  *
  * @property Venue $venue The venue being displayed.
  */
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 /**
  * Class Show
  *

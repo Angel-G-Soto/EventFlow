@@ -23,7 +23,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 /**
  * Class Index
  *

@@ -29,7 +29,7 @@ use Livewire\Component;
  * Presents a single Venue's details.
  * Accepts a Venue or ID in mount() and renders the details Blade view.
  */
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Details extends Component
 {
 /**

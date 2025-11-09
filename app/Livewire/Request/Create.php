@@ -42,7 +42,7 @@ use Livewire\WithFileUploads;
  * Provides reactive form state, validation, and persistence.
  */
 
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Create extends Component
 {
     use WithFileUploads;
