@@ -34,38 +34,26 @@ use Livewire\WithPagination;
 
 class Index extends Component
 {
-
     use WithPagination;
-/**
- * @var string
- */
+
     public string $paginationTheme = 'bootstrap';
-/**
- * @var array{categories:array<int|string>,venues:array<int|string>,orgs:array<int|string>}
- */
+
+    // Filters applied from the Filters component
     public array $filters = [
-        'categories' => [],
-        'venues'     => [],
-        'orgs'       => []
+        'role' => '',
+        'searchTitle' => '',
+        'sortDirection' => 'desc',
     ];
 
     #[On('filters-changed')]
-/**
- * OnFiltersChanged action.
- *
- * Listens for Livewire events: 'filters-changed'.
- * @param array $categories
- * @param array $venues
- * @param array $orgs
- * @param array $statuses
- * @return void
- */
-    public function onFiltersChanged(array $categories = [], array $venues = [], array $orgs = [], array $statuses = []): void
+    public function onFiltersChanged(array $filters): void
     {
-        $this->filters['categories'] = array_map('intval', $categories);
-        $this->filters['venues']     = array_map('intval', $venues);
-        $this->filters['orgs']       = array_map('intval', $orgs);
-        $this->resetPage(); // go back to page 1 after changing filters
+        // Map dispatched keys to local filters
+        $this->filters['role'] = $filters['role'] ?? '';
+        $this->filters['searchTitle'] = $filters['searchTitle'] ?? '';
+        $this->filters['sortDirection'] = $filters['sortDirection'] ?? 'desc';
+
+        $this->resetPage(); // reset pagination
     }
 /**
  * Build the query, paginate results, and render the view.
@@ -76,30 +64,23 @@ class Index extends Component
 
     public function render()
     {
-//        $q = Event::query()->with(['venue','categories'])->where('creator_id', auth()->id());
         $q = app(EventService::class)->getMyRequestedEvents(Auth::user());
         $q->with(['venue','categories']);
 
-        // If your Event has a SINGLE category_id column, use this:
-//        if (!empty($this->filters['categories'])) {
-//            $q->whereIn('category_id', $this->filters['categories']);
-//        }
-
-        // If your Event has MANY categories (pivot), replace the block above with:
-        if (!empty($this->filters['categories'])) {
-            $ids = $this->filters['categories'];
-            $q->whereHas('categories', fn($qq) => $qq->whereIn('categories.id', $ids));
+        // Apply search filter
+        if (!empty($this->filters['searchTitle'])) {
+            $q->where(function($query) {
+                $query->where('title', 'like', '%'.$this->filters['searchTitle'].'%')
+                    ->orWhere('organization_name', 'like', '%'.$this->filters['searchTitle'].'%');
+            });
         }
 
-        if (!empty($this->filters['venues'])) {
-            $q->whereIn('venue_id', $this->filters['venues']);
-        }
 
-        if (!empty($this->filters['orgs'])) {
-            $q->whereIn('organization_name', $this->filters['orgs']);
-        }
+        // Apply sort direction
+        $sortDir = in_array($this->filters['sortDirection'], ['asc','desc']) ? $this->filters['sortDirection'] : 'desc';
+        $q->orderBy('updated_at', $sortDir);
 
-        $events = $q->orderByDesc('created_at')->paginate(8);
+        $events = $q->paginate(8);
 
         return view('livewire.request.org.index', compact('events'));
     }
