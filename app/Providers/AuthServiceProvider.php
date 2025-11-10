@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventHistory;
 use App\Policies\EventHistoryPolicy;
 use App\Policies\EventPolicy;
+use App\Policies\VenuePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -40,5 +41,10 @@ class AuthServiceProvider extends ServiceProvider
         // History of Approval
         Gate::define('viewMyApprovalHistory', [EventHistoryPolicy::class, 'viewMyApprovalHistory']);
         Gate::define('manageMyApprovalHistory', [EventHistoryPolicy::class, 'manageMyApprovalHistory']);
+
+        // Venue Management
+        Gate::define('view-venue', [VenuePolicy::class, 'view']);
+        Gate::define('update-requirements', [VenuePolicy::class, 'updateRequirements']);
+        Gate::define('update-availability', [VenuePolicy::class, 'updateAvailability']);
     }
 }
