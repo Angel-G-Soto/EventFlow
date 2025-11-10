@@ -3,64 +3,76 @@
 namespace App\Policies;
 
 use App\Models\Event;
+use App\Models\EventHistory;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Auth;
 
 class EventPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can view and edit the model.
      */
-    public function viewAny(User $user): bool
+    public function viewAndEditMyRequest(User $user, Event $event): bool
     {
-        return false;
+        return $user->id = $event->creator_id;
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Check if the user has permission to view their pending requests.
+     *
+     * This method checks if the user has any of the roles:
+     * 'advisor', 'venue-manager', or 'event-approver'. If the user has
+     * any of these roles, they are allowed to view their pending requests.
+     *
+     * @param User $user The user requesting the access.
+     * @return bool Returns true if the user has any of the allowed roles, false otherwise.
      */
-    public function view(User $user, Event $event): bool
+    public function viewMyPendingRequests(): bool
     {
-        return false;
+        $user = Auth::user();
+        // Ensure the roles relationship is loaded
+        $user->load('roles');
+
+        // Check if the user's roles contain any of the roles: 'advisor', 'venue-manager', or 'event-approver'
+        return $user->roles->pluck('name')->intersect(['advisor', 'venue-manager', 'event-approver'])->isNotEmpty();
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
-    {
-        return false;
-    }
 
     /**
-     * Determine whether the user can update the model.
+     * Check if the user has permission to manage their pending requests.
+     *
+     * This method checks if the user has the necessary role to manage an event based on its status.
+     * The allowed roles and conditions are:
+     * - 'advisor': Can manage events with status 'pending - advisor approval' if their email matches the event's advisor email.
+     * - 'venue-manager': Can manage events with status 'pending - venue manager approval' if they are associated with the venue.
+     * - 'event-approver': Can manage events with status 'pending - dsca approval'.
+     * The method returns false if none of the conditions match.
+     *
+     * @param User $user The user requesting the management permission.
+     * @param Event $event The event to check.
+     * @return bool Returns true if the user has the appropriate role and meets the conditions, false otherwise.
      */
-    public function update(User $user, Event $event): bool
+    public function manageMyPendingRequests(User $user, Event $event): bool
     {
-        return false;
-    }
+        // Extract the status of the event
+        $eventStatus = $event->status;
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Event $event): bool
-    {
-        return false;
-    }
+        // Check the user's roles based on the event status
+        return match ($eventStatus) {
+            // 'advisor' role can manage events pending advisor approval if the user's email matches the event's advisor email
+            'pending - advisor approval' => $user->roles->contains('name', 'advisor')
+                && $event->organization_advisor_email === $user->email,
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Event $event): bool
-    {
-        return false;
-    }
+            // 'venue-manager' role can manage events pending venue manager approval if they are associated with the venue
+            'pending - venue manager approval' => $user->roles->contains('name', 'venue-manager')
+                && in_array($event->venue_id, $user->department->venues()->pluck('id')->toArray()),
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Event $event): bool
-    {
-        return false;
+            // 'event-approver' role can manage events pending DSCA approval
+            'pending - dsca approval' => $user->roles->contains('name', 'event-approver'),
+
+            // Default case: returns false if the event status does not match any of the above conditions
+            default => false,
+        };
     }
 }

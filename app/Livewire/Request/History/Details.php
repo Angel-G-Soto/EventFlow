@@ -36,7 +36,7 @@ use App\Models\Event;
  * @package App\Livewire\Venue
  *
  */
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Details extends Component
 {
     public EventHistory $eventHistory;
