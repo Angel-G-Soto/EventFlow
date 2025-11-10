@@ -301,32 +301,7 @@ class EventService
         });
     }
 
-    // Request creator cancels event
-    public function cancelEvent(Event $event, User $approver, string $comment): Event
-    {
-        return DB::transaction(function () use ($event, $approver, $comment) {
-            Event::where('id', $event->id)
-                ->where('status', 'approved')
-                ->update(['status' => 'cancelled']);
-
-            $lastHistory = $event->history()
-                ->latest()
-                ->first();
-
-            if ($lastHistory) {
-                $lastHistory->update([
-                    'approver_id' => $approver->id,
-                    'action' => 'cancelled',
-                    'comment' => $comment ?? 'Event was cancelled.',
-                ]);
-            }
-            // Run audit trail
-
-            // Send email to the approvers
-
-            return $event->refresh();
-        });
-    }
+    // Request creator cancels event (older signature removed; unified below)
 
     // Mark event as completed
     public function markEventAsCompleted(): void
@@ -550,38 +525,106 @@ class EventService
 
     public function performManualOverride(Event $event, array $data, User $user, string $justification, string $action): Event
     {
-        return DB::transaction(function () use ($event, $data, $user, $justification) {
-            // Make changes
-            $event->update([
-                'venue_id' => $data['venue_id'],
+        return DB::transaction(function () use ($event, $data, $user, $justification, $action) {
+            // Build a filtered payload; only include provided keys and map aliases
+            $updates = [];
+            $map = [
+                'venue_id'                      => 'venue_id',
+                'organization_name'             => 'organization_name',
+                'organization_advisor_name'     => 'organization_advisor_name',
+                'organization_advisor_email'    => 'organization_advisor_email',
+                'creator_institutional_number'  => 'creator_institutional_number',
+                'creator_phone_number'          => 'creator_phone_number',
+                'title'                         => 'title',
+                'description'                   => 'description',
+                'start_time'                    => 'start_time',
+                'end_time'                      => 'end_time',
+                'status'                        => 'status',
+                // Aliases
+                'guests'                        => 'guest_size',
+                'handles_food'                  => 'handles_food',
+                'use_institutional_funds'       => 'use_institutional_funds',
+                'external_guests'               => 'external_guest',
+            ];
+            foreach ($map as $in => $col) {
+                if (array_key_exists($in, $data)) {
+                    $updates[$col] = $data[$in];
+                }
+            }
 
-                'organization_name' => $data['organization_name'] ?? null,
-                'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
-                'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
-                //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+            if (!empty($updates)) {
+                $event->update($updates);
+            }
 
-                'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
-                'creator_phone_number' => $data['creator_phone_number'] ?? null,
-
-                'title' => $data['title'],
-                'description' => $data['description'] ?? null,
-                'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'],
-
-                'status' => $data['status'] ?? 'approved',
-                'guest_size' => $data['guests'] ?? null,
-                'handles_food' => $data['handles_food'] ?? false,
-                'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
-                'external_guest' => $data['external_guests'] ?? false,
+            // Append event history with justification; keep standardized label
+            EventHistory::create([
+                'event_id' => $event->id,
+                'action'   => 'manual override',
+                'comment'  => (string) $justification,
             ]);
 
-            // Run audit trail
-            $this->auditService->logAdminAction($user->id, $user->name, 'ADMIN_OVERRIDE', $justification);
+            // Build audit context including justification and changed fields
+            $actorName = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($actorName === '') {
+                $actorName = (string)($user->name ?? ($user->email ?? ''));
+            }
+            $ctx = ['meta' => [
+                'action'        => (string) $action,
+                'justification' => (string) $justification,
+                'fields'        => array_keys($updates),
+            ]];
+            try {
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $ctx['meta']);
+                }
+            } catch (\Throwable) { /* no-http context */ }
 
-            // Add to event history
-            EventHistory::create(['event_id' => $event->id, 'action' => 'manual override', 'comment' => $justification]);
+            // Run audit trail with event id as target
+            $this->auditService->logAdminAction(
+                (int) $user->id,
+                $actorName,
+                'ADMIN_OVERRIDE',
+                (string) $event->id,
+                $ctx
+            );
 
-            return $event;
+            return $event->refresh();
+        });
+    }
+
+    /**
+     * Cancel an event and append audit/history. Centralizes status value to avoid UI hardcoding.
+     */
+    public function cancelEvent(Event $event, User $user, string $justification): Event
+    {
+        return DB::transaction(function () use ($event, $user, $justification) {
+            // Guard: only transition to cancelled from approved
+            $updated = Event::where('id', $event->id)
+                ->where('status', 'approved')
+                ->update(['status' => 'cancelled']);
+
+            if ($updated === 0) {
+                // No state change; return current model without side effects
+                return $event;
+            }
+
+            // Append history with standardized action label and justification
+            EventHistory::create([
+                'event_id' => $event->id,
+                'action'   => 'cancelled',
+                'comment'  => $justification ?: 'Event was cancelled.',
+            ]);
+
+            // Audit with justification in meta
+            $this->auditService->logAdminAction(
+                (int) $user->id,
+                (string) ($user->name ?? ($user->first_name . ' ' . $user->last_name)),
+                'ADMIN_OVERRIDE',
+                (string) $event->id,
+                ['meta' => ['justification' => (string) $justification]]
+            );
+
+            return $event->refresh();
         });
     }
 
@@ -599,7 +642,78 @@ class EventService
 
     public function getAllEvents(array $filters = []): LengthAwarePaginator
     {
-        return Event::all()->paginate(15);
+        $q = Event::query()->with(['venue', 'requester', 'categories']);
+
+        if (!empty($filters['status'])) {
+            $q->where('status', (string) $filters['status']);
+        }
+        if (!empty($filters['venue_id'])) {
+            $q->where('venue_id', (int) $filters['venue_id']);
+        }
+        if (!empty($filters['organization_name'])) {
+            $q->where('organization_name', (string) $filters['organization_name']);
+        }
+        if (!empty($filters['from'])) {
+            $q->where('start_time', '>=', (string) $filters['from']);
+        }
+        if (!empty($filters['to'])) {
+            $q->where('end_time', '<=', (string) $filters['to']);
+        }
+
+        return $q->orderByDesc('created_at')->paginate(15);
+    }
+
+    /**
+     * Distinct event statuses from the database, sorted case-insensitively.
+     * Service-level helper so UI does not touch models/constants.
+     *
+     * @return \Illuminate\Support\Collection<int,string>
+     */
+    public function getDistinctEventStatuses(): \Illuminate\Support\Collection
+    {
+        return Event::query()
+            ->whereNotNull('status')
+            ->select('status')
+            ->distinct()
+            ->pluck('status')
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim((string)$v))
+            ->unique(function ($v) { return mb_strtolower($v); })
+            ->sort(function ($a, $b) { return strnatcasecmp($a, $b); })
+            ->values();
+    }
+
+    /**
+     * Distinct organization names from the database, sorted case-insensitively.
+     *
+     * @return \Illuminate\Support\Collection<int,string>
+     */
+    public function getDistinctOrganizations(): \Illuminate\Support\Collection
+    {
+        return Event::query()
+            ->whereNotNull('organization_name')
+            ->select('organization_name')
+            ->distinct()
+            ->pluck('organization_name')
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim((string)$v))
+            ->unique(function ($v) { return mb_strtolower($v); })
+            ->sort(function ($a, $b) { return strnatcasecmp($a, $b); })
+            ->values();
+    }
+
+    /**
+     * All venue names from DB, sorted by name. Exposed via EventService to keep
+     * EventIndex decoupled from models and other services.
+     *
+     * @return \Illuminate\Support\Collection<int,string>
+     */
+    public function listVenueNames(): \Illuminate\Support\Collection
+    {
+        return Venue::query()
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->pluck('name');
     }
 
     // [

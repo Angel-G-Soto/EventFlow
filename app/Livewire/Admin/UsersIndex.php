@@ -573,7 +573,7 @@ class UsersIndex extends Component
             $allRoles = [];
         }
 
-        return response()->view('livewire.admin.users-index', [
+        return view('livewire.admin.users-index', [
             'rows'        => $paginator,
             'visibleIds'  => $paginator->pluck('id')->all(),
             'departments' => $departments,

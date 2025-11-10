@@ -38,55 +38,37 @@ class EventsIndex extends Component
 
     // Accessors and Mutators
     /**
-     * Dynamic list of organizations derived from current requests (excluding soft-deleted).
-     * Falls back to requestor when organization is missing. Sorted naturally, case-insensitive.
+     * Organizations list from DB via service (distinct), no hardcoding.
      *
      * @return array<int,string>
      */
     public function getOrganizationsProperty(): array
     {
-        $vals = $this->allRequests()
-            ->map(function ($request) {
-                $v = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
-                return is_string($v) ? trim($v) : '';
-            })
-            ->filter(fn($v) => $v !== '')
-            ->all();
-
-        // Case-insensitive unique preserving first seen casing
-        $map = [];
-        foreach ($vals as $v) {
-            $k = mb_strtolower($v);
-            if (!isset($map[$k])) $map[$k] = $v;
+        try {
+            return app(EventService::class)
+                ->getDistinctOrganizations()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            return [];
         }
-
-        $values = array_values($map);
-        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
-        return $values;
     }
 
     /**
-     * Dynamic list of statuses from current requests (excluding soft-deleted).
-     * Unique, naturally sorted, preserves original casing of first occurrence.
+     * Status list from DB via service (distinct), no hardcoding.
      *
      * @return array<int,string>
      */
     public function getStatusesProperty(): array
     {
-        $vals = $this->allRequests()
-            ->pluck('status')
-            ->filter(fn($v) => is_string($v) && trim($v) !== '')
-            ->map(fn($v) => trim($v))
-            ->all();
-
-        $map = [];
-        foreach ($vals as $v) {
-            $k = mb_strtolower($v);
-            if (!isset($map[$k])) $map[$k] = $v;
+        try {
+            return app(EventService::class)
+                ->getDistinctEventStatuses()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            return [];
         }
-        $values = array_values($map);
-        usort($values, fn($a, $b) => strnatcasecmp($a, $b));
-        return $values;
     }
 
     /**
@@ -304,24 +286,8 @@ class EventsIndex extends Component
                 $svc = app(EventService::class);
                 $event = $this->getEventFromServiceById((int)$this->editId);
                 if ($event) {
-                    // Replace delete with a cancel via performManualOverride
-                    $venueId = (int)($event->venue_id ?? 0);
-                    $payload = [
-                        'venue_id'     => $venueId,
-                        'title'        => (string)($event->title ?? 'Untitled'),
-                        'description'  => (string)($event->description ?? ''),
-                        'start_time'   => (string)($event->start_time),
-                        'end_time'     => (string)($event->end_time),
-                        'status'       => 'cancelled',
-                        'guests'       => (int)($event->guest_size ?? 0),
-                        'organization_name' => (string)($event->organization_name ?? ''),
-                        'organization_advisor_name'  => (string)($event->organization_advisor_name ?? ''),
-                        'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
-                        'handles_food' => (bool)($event->handles_food ?? false),
-                        'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
-                        'external_guests' => (bool)($event->external_guest ?? false),
-                    ];
-                    $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'cancel');
+                    // Delegate cancellation to service (no status hardcoding in UI)
+                    $svc->cancelEvent($event, Auth::user(), (string)($this->justification ?? ''));
                 }
             } catch (\Throwable $e) {
                 // Surface a validation error instead of falling back
@@ -535,25 +501,21 @@ class EventsIndex extends Component
      * The visible IDs are obtained from the paginator.
      * The view is rendered with the paginator, visible IDs, and organizations.
      *
-     * @return Response
+     * @return \Illuminate\Contracts\View\View
      */
-    public function render()
+    public function render(): \Illuminate\Contracts\View\View
     {
         $paginator = $this->paginated();
         if ($this->page !== $paginator->currentPage()) {
             $paginator = $this->paginated();
         }
         $visibleIds = $paginator->pluck('id')->all();
-        // Build unique venue names for dropdown (case-insensitive, preserve first casing)
-        $venueMap = [];
-        foreach ($this->allRequests() as $req) {
-            $vn = trim((string)($req['venue'] ?? ''));
-            if ($vn === '') continue;
-            $k = mb_strtolower($vn);
-            if (!isset($venueMap[$k])) $venueMap[$k] = $vn;
+        // Venue names from DB via service
+        try {
+            $venues = app(EventService::class)->listVenueNames()->values()->all();
+        } catch (\Throwable $e) {
+            $venues = [];
         }
-        $venues = array_values($venueMap);
-        usort($venues, fn($a, $b) => strnatcasecmp($a, $b));
         return view('livewire.admin.events-index', [
             'rows' => $paginator,
             'visibleIds' => $visibleIds,
@@ -580,9 +542,7 @@ class EventsIndex extends Component
     }
 
     // Private/Protected Helper Methods
-    /**
-     * Returns a collection of all events, excluding any soft-deleted events.
-     */
+
     protected function allRequests(): Collection
     {
         // Query live data from DB and normalize for the view
@@ -605,7 +565,7 @@ class EventsIndex extends Component
                     'venue_id' => (int)($e->venue_id ?? 0),
                     'from' => (string)$from,
                     'to' => (string)$to,
-                    'status' => (string)($e->status ?? 'pending'),
+                    'status' => (string)($e->status ?? ''),
                     'category' => (string)$category,
                     'updated' => now()->format('Y-m-d H:i'),
                     'description' => (string)($e->description ?? ''),

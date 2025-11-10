@@ -90,7 +90,9 @@ class UserService
      */
     public function getUsersWithNoRoles(): Collection
     {
-        return User::whereDoesntHave('roles')->get();
+        return User::whereDoesntHave('roles')
+            ->with('department')
+            ->get();
     }
 
     // Removed implicit actor fallback helpers; admin actor must be provided explicitly by callers when auditing.
@@ -193,7 +195,8 @@ class UserService
         // Ensure the department exists before assigning
         $department = Department::findOrFail($departmentId);
 
-        $user->department_id = $department->department_id;
+        // Department PK is 'id'; assign to user's foreign key column
+        $user->department_id = (int) $department->id;
         $user->save();
 
         // Audit the action; require explicit admin, no fallback
@@ -357,6 +360,8 @@ class UserService
         return User::whereHas('roles', function ($query) use ($roleCode) {
             // Align with roles table schema: column is 'code' (not 'r_code')
             $query->where('code', $roleCode);
-        })->get();
+        })
+            ->with(['department', 'roles'])
+            ->get();
     }
 }
