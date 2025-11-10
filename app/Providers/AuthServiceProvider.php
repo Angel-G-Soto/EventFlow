@@ -29,6 +29,11 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
+
+        // My Requests
+        Gate::define('viewMyRequest', [EventPolicy::class, 'viewMyRequest']);
+
+        // Pending Requests to Approve
         Gate::define('viewMyPendingRequests', [EventPolicy::class, 'viewMyPendingRequests']);
         Gate::define('manageMyPendingRequests', [EventPolicy::class, 'manageMyPendingRequests']);
     }

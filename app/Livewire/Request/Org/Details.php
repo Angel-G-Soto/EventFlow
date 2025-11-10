@@ -84,6 +84,8 @@ class Details extends Component
 
     public function render()
     {
+        $this->authorize('viewMyRequest', $this->event);
+
         $eventService = app(EventService::class);
         $docs = $eventService->getEventDocuments($this->event)->toArray();
         return view('livewire.request.org.details', compact('docs'));

@@ -13,9 +13,9 @@ class EventPolicy
     /**
      * Determine whether the user can view and edit the model.
      */
-    public function viewAndEditMyRequest(User $user, Event $event): bool
+    public function viewMyRequest(User $user, Event $event): bool
     {
-        return $user->id = $event->creator_id;
+        return $user->id === $event->creator_id;
     }
 
     /**
