@@ -10,9 +10,12 @@ $isVenueManager = $roleNames->contains('venue-manager');
 $isDirector = $roleNames->contains('department-director');
 @endphp
 
-<nav class="navbar navbar-expand-lg navbar-light" style="border-bottom: 3px solid var(--bs-success)">
+<nav class="navbar navbar-expand-lg navbar-dark"
+  style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
-    <a class="navbar-brand fw-semibold" href="{{ url('/') }}">EventFlow</a>
+    <a class="navbar-brand fw-semibold" href="#">
+      <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
+      EventFlow</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
       aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -109,15 +112,16 @@ $isDirector = $roleNames->contains('department-director');
       </ul>
 
       <div class="d-flex ms-auto gap-2">
-        <button class="btn btn-success-subtle p-2" type="button" title="Notifications" aria-label="Open notifications">
+        <button class="btn btn-success-subtle p-2 text-white" type="button" title="Notifications"
+          aria-label="Open notifications">
           <i class="bi bi-bell"></i>
         </button>
-        <button class="btn btn-success-subtle p-2" type="button" title="Help" aria-label="Open help">
+        <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
           <i class="bi bi-question-lg"></i>
         </button>
         <form method="POST" action="{{ route('logout') }}" class="m-0">
           @csrf
-          <button class="btn btn-success-subtle p-2" type="submit" title="Log out" aria-label="Log out">
+          <button class="btn btn-success-subtle p-2 text-white" type="submit" title="Log out" aria-label="Log out">
             <i class="bi bi-box-arrow-right"></i>
           </button>
         </form>

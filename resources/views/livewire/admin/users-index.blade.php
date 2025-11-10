@@ -68,8 +68,8 @@
               <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
-                @if($sortField === 'name')
-                @if($sortDirection === 'asc')
+                @if((($sortField ?? '') === 'name'))
+                @if((($sortDirection ?? '') === 'asc'))
                 <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
                 @else
                 <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
@@ -145,7 +145,8 @@
     <div class="modal-dialog modal-dialog-centered">
       <form class="modal-content" wire:submit.prevent="save">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>{{ $editId ? 'Edit User' : 'Add User' }}</h5>
+          <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>{{ (($editId ?? null) ? 'Edit User' : 'Add
+            User') }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
             wire:click="$set('editId', null)"></button>
         </div>
@@ -199,7 +200,9 @@
                 wire:model.live="editDepartment">
                 <option value="">Select Department</option>
                 @foreach(($departments ?? []) as $dept)
-                <option value="{{ $dept->name }}">{{ $dept->name }}</option>
+                <option value="{{ is_object($dept) ? $dept->name : (is_array($dept) ? $dept['name'] : $dept) }}">
+                  {{ is_object($dept) ? $dept->name : (is_array($dept) ? $dept['name'] : $dept) }}
+                </option>
                 @endforeach
               </select>
               @error('editDepartment')
