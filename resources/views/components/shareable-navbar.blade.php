@@ -20,7 +20,7 @@ $isDirector = $roleNames->contains('department-director');
 
     <style>
       /* Smooth transition for dropdown items */
-      .dropdown-menu .dropdown-item,
+      .dropdown-menu .dropdown-item
       {
       transition: background-color 0.25s, color 0.25s, font-weight 0.25s;
       }
@@ -115,12 +115,21 @@ $isDirector = $roleNames->contains('department-director');
         <button class="btn btn-success-subtle p-2" type="button" title="Help" aria-label="Open help">
           <i class="bi bi-question-lg"></i>
         </button>
-        <form method="POST" action="{{ route('logout') }}" class="m-0">
-          @csrf
-          <button class="btn btn-success-subtle p-2" type="submit" title="Log out" aria-label="Log out">
-            <i class="bi bi-box-arrow-right"></i>
-          </button>
-        </form>
+        @if(Auth::check())
+          <form method="POST" action="{{ route('saml.logout') }}" class="m-0">
+              @csrf
+              <button class="btn btn-success-subtle p-2" type="submit" title="Log out" aria-label="Log out">
+                  <i class="bi bi-box-arrow-right"></i>
+              </button>
+          </form>
+        @else
+          <form method="GET" action="{{ route('saml.login') }}" class="m-0">
+              @csrf
+              <button class="btn btn-success-subtle p-2" title="Log in" aria-label="Log in">
+                  <i class="bi bi-box-arrow-right"></i>
+              </button>
+          </form>
+        @endif
       </div>
     </div>
   </div>

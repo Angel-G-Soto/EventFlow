@@ -33,6 +33,12 @@ Route::get('/auth/saml/login', function () {
 
 })->name("saml.login");
 
+Route::post('/logout', function () {
+
+    \Illuminate\Support\Facades\Auth::logout();
+    return redirect('logout');
+
+})->name("saml.logout");
 
 Route::any('/auth/callback', function () {
 
