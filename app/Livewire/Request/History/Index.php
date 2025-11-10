@@ -28,7 +28,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Layout;
 
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Index extends Component
 {
     use WithPagination;
@@ -56,6 +56,8 @@ class Index extends Component
 
     public function render()
     {
+        $this->authorize('viewMyApprovalHistory', EventHistory::class);
+
         $user = Auth::user();
 
         // Get the roles filter (from Filters component)

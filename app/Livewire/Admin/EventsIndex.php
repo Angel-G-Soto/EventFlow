@@ -135,6 +135,8 @@ class EventsIndex extends Component
      */
     public function openEdit(int $id): void
     {
+        $this->authorize('perform-override');
+
         $request = $this->filtered()->firstWhere('id', $id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
@@ -148,6 +150,8 @@ class EventsIndex extends Component
      */
     public function openView(int $id): void
     {
+        $this->authorize('access-dashboard');
+
         $request = $this->filtered()->firstWhere('id', $id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
@@ -162,6 +166,8 @@ class EventsIndex extends Component
      */
     protected function fillEditFromRequest(array $request): void
     {
+        $this->authorize('perform-override');
+
         $this->editId = $request['id'];
         $this->eTitle = $request['title'];
         $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
@@ -192,6 +198,8 @@ class EventsIndex extends Component
      */
     public function save(): void
     {
+        $this->authorize('perform-override');
+
         // Validate fields before asking for justification
         $this->validate($this->eventFieldRules());
         if (!$this->datesInOrder()) {
@@ -209,6 +217,8 @@ class EventsIndex extends Component
      */
     public function confirmSave(): void
     {
+        $this->authorize('perform-override');
+
         $this->validateJustification();
         $isEditing = !empty($this->editId);
         $this->dispatch('bs:close', id: 'oversightJustify');
@@ -257,6 +267,8 @@ class EventsIndex extends Component
      */
     public function delete(int $id): void
     {
+        $this->authorize('perform-override');
+
         $this->editId = $id;
         $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'oversightConfirm');
@@ -267,6 +279,8 @@ class EventsIndex extends Component
      */
     public function proceedDelete(): void
     {
+        $this->authorize('perform-override');
+
         $this->dispatch('bs:close', id: 'oversightConfirm');
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
@@ -280,6 +294,8 @@ class EventsIndex extends Component
      */
     public function confirmDelete(): void
     {
+        $this->authorize('perform-override');
+
         if ($this->editId) {
             $this->validateJustification();
             try {
@@ -311,6 +327,8 @@ class EventsIndex extends Component
      */
     public function approve(): void
     {
+        $this->authorize('perform-override');
+
         $this->actionType = 'approve';
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
@@ -322,6 +340,8 @@ class EventsIndex extends Component
      * It will open the justification modal with the action type set to 'deny', allowing the user to enter a justification for the denial.
      */    public function deny(): void
     {
+        $this->authorize('perform-override');
+
         $this->actionType = 'deny';
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
@@ -334,6 +354,8 @@ class EventsIndex extends Component
      */
     public function advance(): void
     {
+        $this->authorize('perform-override');
+
         $this->actionType = 'advance';
         $this->advanceTo = '';
         $this->dispatch('bs:open', id: 'oversightAdvance');
@@ -347,6 +369,8 @@ class EventsIndex extends Component
      */
     public function reroute(): void
     {
+        $this->authorize('perform-override');
+
         $this->actionType = 'reroute';
         $this->rerouteTo = '';
         $this->dispatch('bs:open', id: 'oversightReroute');
@@ -418,6 +442,8 @@ class EventsIndex extends Component
      */
     public function confirmJustify(): void
     {
+        $this->authorize('perform-override');
+
         $type = $this->actionType ?? '';
         if ($type === 'delete') {
             $this->confirmDelete();
@@ -435,6 +461,8 @@ class EventsIndex extends Component
      */
     public function confirmAdvance(): void
     {
+        $this->authorize('perform-override');
+
         $data = $this->validate([
             'advanceTo' => ['required', 'string', 'min:2', 'max:120'],
         ]);
@@ -462,6 +490,8 @@ class EventsIndex extends Component
      */
     public function confirmReroute(): void
     {
+        $this->authorize('perform-override');
+
         $data = $this->validate([
             'rerouteTo' => ['required', 'string', 'min:2', 'max:120'],
         ]);
@@ -505,6 +535,8 @@ class EventsIndex extends Component
      */
     public function render(): \Illuminate\Contracts\View\View
     {
+        $this->authorize('access-dashboard');
+
         $paginator = $this->paginated();
         if ($this->page !== $paginator->currentPage()) {
             $paginator = $this->paginated();
@@ -545,6 +577,8 @@ class EventsIndex extends Component
 
     protected function allRequests(): Collection
     {
+        $this->authorize('perform-override');
+
         // Query live data from DB and normalize for the view
         $raw = $this->fetchEventsCollection();
         $rows = $raw
@@ -713,5 +747,5 @@ class EventsIndex extends Component
         return $list->firstWhere('id', $id) ?? null;
     }
 
-    
+
 }

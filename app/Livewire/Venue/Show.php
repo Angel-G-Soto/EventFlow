@@ -75,6 +75,8 @@ class Show extends Component
      */
     public function render()
     {
+        $this->authorize('view-venue', $this->venue);
+
         return view('livewire.venue.show', [
             'open'  => $this->fmtTime($this->venue->opening_time),
             'close' => $this->fmtTime($this->venue->closing_time),

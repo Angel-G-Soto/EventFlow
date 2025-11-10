@@ -12,7 +12,7 @@ class AdminPolicy
    */
   public function accessDashboard(User $user): bool
   {
-    return $user->getRoleNames()->contains('Admin');
+    return $user->getRoleNames()->contains('system-admin');
   }
 
   /**
@@ -21,7 +21,7 @@ class AdminPolicy
    */
   public function performOverride(User $user): bool
   {
-    return $user->getRoleNames()->contains('Admin');
+    return $user->getRoleNames()->contains('system-admin');
   }
 
   /**
@@ -29,6 +29,14 @@ class AdminPolicy
    */
   public function manageUsers(User $user): bool
   {
-    return $user->getRoleNames()->contains('Admin');
+    return $user->getRoleNames()->contains('system-admin');
   }
+
+    /**
+     * Determine whether the user can create, edit, suspend, or delete venues and departments.
+     */
+    public function manageVenues(User $user): bool
+    {
+        return $user->getRoleNames()->contains('system-admin');
+    }
 }
