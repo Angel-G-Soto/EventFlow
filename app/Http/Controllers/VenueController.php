@@ -47,7 +47,7 @@ class VenueController extends Controller
     public function administratorVenueIndex()
     {
         // Run policy that verifies the user is the administrator
-        if (!Auth::user()->getRoleNames()->contains('system-administrator')) abort(403, 'Only administrators can access this page.');
+        if (!Auth::user()->getRoleNames()->contains('system-admin')) abort(403, 'Only administrators can access this page.');
 
         // Run service that brings all the venues
         $venueService = app(VenueService::class);

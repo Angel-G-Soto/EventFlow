@@ -31,4 +31,12 @@ class AdminPolicy
   {
     return $user->getRoleNames()->contains('system-admin');
   }
+
+    /**
+     * Determine whether the user can create, edit, suspend, or delete venues and departments.
+     */
+    public function manageVenues(User $user): bool
+    {
+        return $user->getRoleNames()->contains('system-admin');
+    }
 }

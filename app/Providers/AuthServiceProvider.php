@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Event;
 use App\Models\EventHistory;
+use App\Policies\AdminPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\EventHistoryPolicy;
 use App\Policies\EventPolicy;
@@ -51,5 +52,11 @@ class AuthServiceProvider extends ServiceProvider
         // Department
         Gate::define('view-department', [DepartmentPolicy::class, 'view']);
         Gate::define('assign-manager', [DepartmentPolicy::class, 'assignManager']);
+
+        // System Administration
+        Gate::define('access-dashboard', [AdminPolicy::class, 'accessDashboard']);
+        Gate::define('perform-override', [AdminPolicy::class, 'performOverride']);
+        Gate::define('manage-users', [AdminPolicy::class, 'manageUsers']);
+        Gate::define('manage-venues', [AdminPolicy::class, 'manageVenues']);
     }
 }
