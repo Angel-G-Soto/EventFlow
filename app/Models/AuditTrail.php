@@ -44,17 +44,14 @@ class AuditTrail extends Model
         'target_type',
         'target_id',
         // HTTP context and extra metadata
-        'ip',
-        'method',
-        'path',
         'ua',
         'meta',
     ];
 
     protected $casts = [
         'user_id'   => 'int',
-        'created_at'=> 'datetime',
-        'updated_at'=> 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
         'meta'      => 'array',
     ];
     /**
