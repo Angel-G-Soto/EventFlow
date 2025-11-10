@@ -115,21 +115,30 @@ $isDirector = $roleNames->contains('department-director');
         <button class="btn btn-success-subtle p-2" type="button" title="Help" aria-label="Open help">
           <i class="bi bi-question-lg"></i>
         </button>
-        @if(Auth::check())
-          <form method="POST" action="{{ route('saml.logout') }}" class="m-0">
-              @csrf
-              <button class="btn btn-success-subtle p-2" type="submit" title="Log out" aria-label="Log out">
-                  <i class="bi bi-box-arrow-right"></i>
-              </button>
-          </form>
-        @else
-          <form method="GET" action="{{ route('saml.login') }}" class="m-0">
-              @csrf
-              <button class="btn btn-success-subtle p-2" title="Log in" aria-label="Log in">
-                  <i class="bi bi-box-arrow-right"></i>
-              </button>
-          </form>
-        @endif
+          @if(Auth::check())
+              <form method="POST" action="{{ route('saml.logout') }}" class="m-0">
+                  @csrf
+                  <button class="btn p-2 d-flex align-items-center"
+                          type="submit"
+                          title="Log out"
+                          aria-label="Log out"
+                          style="border: none; outline: none; transition: all 0.3s ease;">
+                      <span class="me-2" style="color: black;">Log out</span>
+                      <i class="bi bi-box-arrow-right" style="color: black;"></i>
+                  </button>
+              </form>
+          @else
+              <form method="GET" action="{{ route('saml.login') }}" class="m-0">
+                  @csrf
+                  <button class="btn p-2 d-flex align-items-center"
+                          title="Log in"
+                          aria-label="Log in"
+                          style="border: none; outline: none; transition: all 0.3s ease;">
+                      <span class="me-2" style="color: black;">Log in</span>
+                      <i class="bi bi-box-arrow-right" style="color: black;"></i>
+                  </button>
+              </form>
+          @endif
       </div>
     </div>
   </div>
