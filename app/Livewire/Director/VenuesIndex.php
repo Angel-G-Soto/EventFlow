@@ -27,11 +27,6 @@ class VenuesIndex extends Component
   #[Validate('required|email:rfc,dns|max:255')]
   public string $email = '';
 
-  public function boot(){
-        $this->depID = Auth::user()->department_id;
-        $this->department = app(DepartmentService::class)->getDepartmentByID($this->depID);
-
-    }
 
   public function openModal(User $employee): void
   {
@@ -41,6 +36,7 @@ class VenuesIndex extends Component
   }
   public function removeManager()
   {
+      $this->authorize('assign-manager', $this->department);
 
       app(DepartmentService::class)->removeUserFromDepartment($this->department, $this->selectedEmployee);
       $this->email = '';
@@ -50,6 +46,8 @@ class VenuesIndex extends Component
 
   public function addManager()
   {
+//      dd($this->department, Auth::user()->getRoleNames());
+      $this->authorize('assign-manager', $this->department);
 
       $this->validate();
       $user = app(UserService::class)->findOrCreateUser(email: $this->email);
@@ -61,6 +59,8 @@ class VenuesIndex extends Component
   }
   public function saveAssign(): void
   {
+      $this->authorize('assign-manager', $this->department);
+
     $this->validate([
       'assignManager' => 'required|email', // later: user selector of role "Venue Manager"
     ]);
@@ -75,9 +75,13 @@ class VenuesIndex extends Component
 
   public function render()
   {
+      $this->authorize('view-department');
+
+      $this->depID = Auth::user()->department_id;
+      $this->department = app(DepartmentService::class)->getDepartmentByID($this->depID);
 
       $venues = app(DepartmentService::class)->getDepartmentVenues($this->department);
-      $employees = app(DepartmentService::class)->getVenueManagers(Auth::id());
+      $employees = app(DepartmentService::class)->getDepartmentManagers($this->department);
 
     return view('livewire.director.venues-index', compact('venues', 'employees'));
   }

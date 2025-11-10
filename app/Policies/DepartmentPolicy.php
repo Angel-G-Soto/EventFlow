@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Department;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Auth;
 
 class DepartmentPolicy
 {
@@ -19,9 +20,9 @@ class DepartmentPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Department $department): bool
+    public function view(User $user): bool
     {
-        return $user->getRoleNames()->contains('department-director') && $user->department_id == $department->department_id;
+        return $user->getRoleNames()->contains('department-director') && $user->department_id;
     }
 
     /**
@@ -69,6 +70,6 @@ class DepartmentPolicy
      */
     public function assignManager(User $user, Department $department): bool
     {
-        return $user->getRoleNames()->contains('department-director') && $user->department_id == $department->department_id;
+        return $user->roles->pluck('name')->intersect(['department-director']) && $user->department_id === $department->id;
     }
 }

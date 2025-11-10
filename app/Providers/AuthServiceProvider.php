@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Event;
 use App\Models\EventHistory;
+use App\Policies\DepartmentPolicy;
 use App\Policies\EventHistoryPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\VenuePolicy;
@@ -46,5 +47,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-venue', [VenuePolicy::class, 'view']);
         Gate::define('update-requirements', [VenuePolicy::class, 'updateRequirements']);
         Gate::define('update-availability', [VenuePolicy::class, 'updateAvailability']);
+
+        // Department
+        Gate::define('view-department', [DepartmentPolicy::class, 'view']);
+        Gate::define('assign-manager', [DepartmentPolicy::class, 'assignManager']);
     }
 }
