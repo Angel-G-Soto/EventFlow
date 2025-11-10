@@ -16,9 +16,14 @@ class EventHistoryPolicy {
      * @param User $user
      * @return bool
      */
-    public function viewMyApprovalHistory(User $user): bool
+    public function viewMyApprovalHistory(): bool
     {
-        return contains($user->roles->get('name')->toArray(), ['advisor', 'venue-manager', 'event-approver']);
+        $user = Auth::user();
+        // Ensure the roles relationship is loaded
+        $user->load('roles');
+
+        // Check if the user's roles contain any of the roles: 'advisor', 'venue-manager', or 'event-approver'
+        return $user->roles->pluck('name')->intersect(['advisor', 'venue-manager', 'event-approver'])->isNotEmpty();
     }
 
     /**
@@ -33,7 +38,12 @@ class EventHistoryPolicy {
      */
     public function manageMyApprovalHistory(User $user, EventHistory $eventHistory): bool
     {
-        return contains($user->roles->get('name')->toArray(), ['advisor', 'venue-manager', 'event-approver'])
+        $user = Auth::user();
+        // Ensure the roles relationship is loaded
+        $user->load('roles');
+
+        // Check if the user's roles contain any of the roles: 'advisor', 'venue-manager', or 'event-approver'
+        return $user->roles->pluck('name')->intersect(['advisor', 'venue-manager', 'event-approver'])->isNotEmpty()
             && $user->id == $eventHistory->approver_id;
     }
 }

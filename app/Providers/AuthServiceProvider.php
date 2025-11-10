@@ -36,5 +36,9 @@ class AuthServiceProvider extends ServiceProvider
         // Pending Requests to Approve
         Gate::define('viewMyPendingRequests', [EventPolicy::class, 'viewMyPendingRequests']);
         Gate::define('manageMyPendingRequests', [EventPolicy::class, 'manageMyPendingRequests']);
+
+        // History of Approval
+        Gate::define('viewMyApprovalHistory', [EventHistoryPolicy::class, 'viewMyApprovalHistory']);
+        Gate::define('manageMyApprovalHistory', [EventHistoryPolicy::class, 'manageMyApprovalHistory']);
     }
 }

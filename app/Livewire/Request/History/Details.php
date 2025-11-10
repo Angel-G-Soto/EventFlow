@@ -57,6 +57,8 @@ class Details extends Component
 
     public function save(): void
     {
+        $this->authorize('manageMyApprovalHistory', $this->eventHistory);
+
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
         $eventHistoryService = app(EventService::class);
@@ -70,6 +72,8 @@ class Details extends Component
 
     public function approve(): void
     {
+        $this->authorize('manageMyApprovalHistory', $this->eventHistory);
+
         // ... do your action
         app(EventService::class)->approve($this->eventHistory->event);
         $this->redirectRoute('approver.history.index');
@@ -91,6 +95,8 @@ class Details extends Component
 
     public function render()
     {
+        $this->authorize('manageMyApprovalHistory', $this->eventHistory);
+
 //        dd($this->eventHistory);
         $docs = app(EventService::class)->getEventDocuments($this->eventHistory->event)->toArray();
 
