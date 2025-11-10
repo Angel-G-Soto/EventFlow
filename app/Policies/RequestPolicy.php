@@ -25,10 +25,9 @@ class RequestPolicy
      * any of these roles, they are allowed to view their pending requests.
      *
      * @param User $user The user requesting the access.
-     * @param Event $event The event to check.
      * @return bool Returns true if the user has any of the allowed roles, false otherwise.
      */
-    public function viewMyPendingRequests(User $user, Event $event): bool
+    public function viewMyPendingRequests(User $user): bool
     {
         // Check if the user's roles contain any of the roles: 'advisor', 'venue-manager', or 'event-approver'
         return contains($user->roles->get('name')->toArray(), ['advisor', 'venue-manager', 'event-approver']);
@@ -77,10 +76,9 @@ class RequestPolicy
      * Verifies if the user has the appropriate roles to access the Approval History Page
      *
      * @param User $user
-     * @param EventHistory $eventHistory
      * @return bool
      */
-    public function viewMyApprovalHistory(User $user, EventHistory $eventHistory): bool
+    public function viewMyApprovalHistory(User $user): bool
     {
         return contains($user->roles->get('name')->toArray(), ['advisor', 'venue-manager', 'event-approver']);
     }
