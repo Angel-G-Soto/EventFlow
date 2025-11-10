@@ -289,7 +289,7 @@ class UserService
      * @param User|null $admin
      * @param string|null $justification Optional admin-provided justification to include in audit log.
      */
-    public function createUser(array $data, User $admin, string $justification): User
+    public function createUser(array $data, User $admin): User
     {
         $payload = [
             'first_name' => $data['first_name'] ?? '',
@@ -300,7 +300,6 @@ class UserService
         if (!empty($data['password'])) {
             $payload['password'] = $data['password'];
         }
-        // In UserService::createUser(array $data, User $admin)
 
         $user = User::create($payload);
 
@@ -326,9 +325,6 @@ class UserService
 
             // Optional HTTP context (falls back to meta-only if no request)
             $ctx = ['meta' => ['source' => 'user_create']];
-            if (($justification = trim((string)$justification)) !== '') {
-                $ctx['meta']['justification'] = $justification;
-            }
             try {
                 if (request()) {
                     $ctx = app(\App\Services\AuditService::class)
