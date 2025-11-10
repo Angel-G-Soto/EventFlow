@@ -30,7 +30,7 @@ use Livewire\WithPagination;
  * Accepts a Venue or ID in mount() and renders the details Blade view.
  */
 
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Details extends Component
 {
     use WithPagination;

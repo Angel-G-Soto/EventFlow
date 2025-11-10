@@ -22,6 +22,7 @@ use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Policies\EventPolicy;
 
 /**
  * Class Details
@@ -29,7 +30,7 @@ use Livewire\Component;
  * Presents a single Venue's details.
  * Accepts a Venue or ID in mount() and renders the details Blade view.
  */
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Details extends Component
 {
 /**
@@ -55,6 +56,8 @@ class Details extends Component
 
     public function save()
     {
+
+
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
 
@@ -69,6 +72,8 @@ class Details extends Component
 
     public function approve()
     {
+
+
         app(EventService::class)->approveEvent($this->event, Auth::user());
 
         $this->redirectRoute('approver.pending.index');
@@ -90,6 +95,9 @@ class Details extends Component
 
     public function render()
     {
+//        dd($this->event);
+
+        $this->authorize('manageMyPendingRequests', $this->event);
 
         $eventService = app(EventService::class);
         $docs = $eventService->getEventDocuments($this->event)->toArray();

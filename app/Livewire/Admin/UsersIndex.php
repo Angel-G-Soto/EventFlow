@@ -121,6 +121,8 @@ class UsersIndex extends Component
      */
     public function openCreate(): void
     {
+        $this->authorize('manage-users');
+
         $this->reset(['editId', 'editName', 'editEmail', 'editDepartment']);
         $this->editRoles = [];
         $this->resetErrorBag();
@@ -137,6 +139,8 @@ class UsersIndex extends Component
      */
     public function openEdit(int $id): void
     {
+        $this->authorize('manage-users');
+
         $user = $this->allUsers()->firstWhere('id', $id);
         if (!$user) return;
 
@@ -165,6 +169,8 @@ class UsersIndex extends Component
      */
     public function save(): void
     {
+        $this->authorize('manage-users');
+
         // Check email uniqueness before validation
         $users = $this->allUsers();
         $existingUser = $users->firstWhere('email', $this->editEmail);
@@ -193,6 +199,8 @@ class UsersIndex extends Component
      */
     public function confirmSave(): void
     {
+        $this->authorize('manage-users');
+
         $this->validate();
 
         $svc = app(UserService::class);
@@ -257,6 +265,8 @@ class UsersIndex extends Component
      */
     public function clearRoles(int $id): void
     {
+        $this->authorize('manage-users');
+
         $this->editId = $id;
         $this->actionType = 'clear-roles';
         $this->dispatch('bs:open', id: 'userConfirm');
@@ -267,6 +277,8 @@ class UsersIndex extends Component
      */
     public function proceedClearRoles(): void
     {
+        $this->authorize('manage-users');
+
         $this->dispatch('bs:close', id: 'userConfirm');
         $this->dispatch('bs:open', id: 'userJustify');
     }
@@ -280,6 +292,8 @@ class UsersIndex extends Component
      */
     public function confirmClearRoles(): void
     {
+        $this->authorize('manage-users');
+
         $this->validateOnly('justification');
 
         if ($this->editId) {
@@ -305,6 +319,8 @@ class UsersIndex extends Component
      */
     public function confirmJustify(): void
     {
+        $this->authorize('manage-users');
+
         if (($this->actionType ?? '') === 'clear-roles') {
             $this->confirmClearRoles();
         } else {
@@ -322,6 +338,8 @@ class UsersIndex extends Component
      */
     protected function allUsers(): Collection
     {
+        $this->authorize('manage-users');
+
         // Fetch users via service to avoid direct model queries from the view
         $svc = app(UserService::class);
         $users = collect();
@@ -423,6 +441,8 @@ class UsersIndex extends Component
      */
     protected function validateJustification(): void
     {
+        $this->authorize('manage-users');
+
         $this->validate([
             'justification' => ['required', 'string', 'min:10', 'max:200']
         ]);
@@ -552,6 +572,8 @@ class UsersIndex extends Component
      */
     public function render()
     {
+        $this->authorize('manage-users');
+
         $paginator = $this->paginated();
 
         // Load departments via service

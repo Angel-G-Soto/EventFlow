@@ -49,6 +49,8 @@ class VenuesIndex extends Component
      */
     public function getDepartmentsProperty(): array
     {
+        $this->authorize('manage-venues');
+
         // Gather departments from current venues (excluding soft-deleted)
         $deps = $this->allVenues()
             ->pluck('department')
@@ -141,6 +143,8 @@ class VenuesIndex extends Component
      */
     public function openCreate(): void
     {
+        $this->authorize('manage-venues');
+
         $this->resetEdit();
         $this->dispatch('bs:open', id: 'venueModal');
     }
@@ -154,6 +158,8 @@ class VenuesIndex extends Component
      */
     public function openCsvModal(): void
     {
+        $this->authorize('manage-venues');
+
         $this->reset('csvFile');
         $this->importErrorMsg = null; // clear any previous error before a new attempt
         $this->dispatch('bs:open', id: 'csvModal');
@@ -175,6 +181,8 @@ class VenuesIndex extends Component
      */
     public function uploadCsv(): void
     {
+        $this->authorize('manage-venues');
+
         // Validate only the CSV file; accept common CSV MIME types and extensions
         $this->validate([
             'csvFile' => 'required|file|max:25600 |mimes:csv,txt', // 25 MB
@@ -227,6 +235,8 @@ class VenuesIndex extends Component
      */
     public function checkImportStatus(): void
     {
+        $this->authorize('manage-venues');
+
         if (!$this->importKey) return;
         try {
             $cacheBase = 'venues_import:' . $this->importKey;
@@ -265,6 +275,8 @@ class VenuesIndex extends Component
      */
     public function openEdit(int $id): void
     {
+        $this->authorize('manage-venues');
+
         // Fetch venue via service only (no direct model queries here)
         $venue = null;
         try {
@@ -300,6 +312,8 @@ class VenuesIndex extends Component
      */
     public function showDetails(int $id): void
     {
+        $this->authorize('manage-venues');
+
         try {
             $venue = app(VenueService::class)->getVenueById($id);
             if (!$venue) {
@@ -372,6 +386,8 @@ class VenuesIndex extends Component
      */
     public function save(): void
     {
+        $this->authorize('manage-venues');
+
         $this->validate();
 
         // ensure each 'to' is after its 'from'
@@ -400,6 +416,8 @@ class VenuesIndex extends Component
      */
     public function confirmSave(): void
     {
+        $this->authorize('manage-venues');
+
         $this->validateJustification();
 
         // Resolve relations via services
@@ -481,6 +499,8 @@ class VenuesIndex extends Component
      */
     public function confirmJustify(): void
     {
+        $this->authorize('manage-venues');
+
         if (($this->actionType ?? '') === 'delete') {
             $this->confirmDelete();
         } else {
@@ -497,6 +517,8 @@ class VenuesIndex extends Component
      */
     public function delete(int $id): void
     {
+        $this->authorize('manage-venues');
+
         $this->editId = $id;
         $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'venueConfirm');
@@ -507,6 +529,8 @@ class VenuesIndex extends Component
      */
     public function proceedDelete(): void
     {
+        $this->authorize('manage-venues');
+
         $this->dispatch('bs:close', id: 'venueConfirm');
         $this->dispatch('bs:open', id: 'venueJustify');
     }
@@ -520,6 +544,8 @@ class VenuesIndex extends Component
      */
     public function confirmDelete(): void
     {
+        $this->authorize('manage-venues');
+
         if ($this->editId) {
             $this->validateJustification();
             try {
@@ -578,6 +604,8 @@ class VenuesIndex extends Component
      */
     public function render()
     {
+        $this->authorize('manage-venues');
+
         $paginator = $this->paginated();
         if ($this->page !== $paginator->currentPage()) {
             $paginator = $this->paginated();

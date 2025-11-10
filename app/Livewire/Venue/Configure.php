@@ -131,6 +131,8 @@ class Configure extends Component
 
     public function saveAvailability(): void
     {
+        $this->authorize('update-availability', $this->venue);
+
         $this->validate();
 
 //        $this->venue->update([
@@ -176,6 +178,9 @@ class Configure extends Component
 
     public function save(): void
     {
+        $this->authorize('update-availability', $this->venue);
+        $this->authorize('update-requirements', $this->venue);
+
         // Normalize positions to current order
         foreach ($this->rows as $i => &$row) {
             $row['position'] = $i;
@@ -278,6 +283,9 @@ class Configure extends Component
 
     public function render()
     {
+        $this->authorize('update-availability', $this->venue);
+        $this->authorize('update-requirements', $this->venue);
+
         return view('livewire.venue.configure');
     }
 }

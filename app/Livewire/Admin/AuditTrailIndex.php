@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\AuditTrail;
 use Carbon\CarbonImmutable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -75,6 +76,8 @@ class AuditTrailIndex extends Component
 
   public function showDetails(int $id): void
   {
+      $this->authorize('access-dashboard');
+
     if ($id <= 0) {
       $this->detailsId = null;
       $this->details = [];
@@ -168,6 +171,9 @@ class AuditTrailIndex extends Component
    */
   public function render()
   {
+
+      $this->authorize('access-dashboard');
+
     $filters = [];
     if ($this->userId)   $filters['user_id'] = (int)$this->userId;
     if ($this->action)   $filters['action']  = $this->action;

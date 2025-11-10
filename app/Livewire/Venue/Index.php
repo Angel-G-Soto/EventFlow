@@ -51,6 +51,9 @@ class Index extends Component
 
     public function configure(Venue $venue){
 
+        $this->authorize('update-availability', $venue);
+        $this->authorize('update-requirements', $venue);
+
         $this->redirectRoute('venue.requirements.edit', ['venue'=>$venue]);
     }
 /**
@@ -59,6 +62,8 @@ class Index extends Component
  */
     public function render()
     {
+
+
         $venues = Venue::query()->where('department_id', Auth::user()->department_id)
             ->latest()
             ->paginate(8);
