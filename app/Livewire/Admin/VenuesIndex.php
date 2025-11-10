@@ -738,6 +738,4 @@ class VenuesIndex extends Component
         }
         return $out;
     }
-
-    
 }

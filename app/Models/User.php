@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
+use App\Models\Role;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -66,8 +68,41 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Model-level safety net: ensure every newly created user
+     * has the default 'user' role attached. This is idempotent and
+     * guarded to avoid interfering during migrations/seeding.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (User $user): void {
+            try {
+                // Ensure relations/tables exist before attempting pivot writes
+                if (!method_exists($user, 'roles')) {
+                    return;
+                }
+                if (!Schema::hasTable('roles') || !Schema::hasTable('user_role')) {
+                    return;
+                }
+                $default = Role::query()
+                    ->where('code', 'user')
+                    ->orWhere('name', 'user')
+                    ->first();
+                if (!$default) {
+                    $default = Role::firstOrCreate(['code' => 'user'], ['name' => 'user']);
+                }
+                if ($default) {
+                    // Idempotent attach; avoids duplicates
+                    $user->roles()->syncWithoutDetaching([(int) $default->id]);
+                }
+            } catch (\Throwable $e) {
+                // Best-effort only; never block user creation
+            }
+        });
     }
 
     //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
@@ -81,14 +116,14 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
-//    /**
-//     * Relationship between the User and Venue
-//     * @return HasMany
-//     */
-//    public function manages(): HasMany
-//    {
-//        return $this->hasMany(Venue::class, 'manager_id');
-//    }
+    //    /**
+    //     * Relationship between the User and Venue
+    //     * @return HasMany
+    //     */
+    //    public function manages(): HasMany
+    //    {
+    //        return $this->hasMany(Venue::class, 'manager_id');
+    //    }
 
     /**
      * Relation between User and Event Request History

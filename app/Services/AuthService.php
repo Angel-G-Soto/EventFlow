@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
+use App\Services\AuditService;
 
 /**
  * Class AuthService
@@ -28,6 +29,7 @@ class AuthService
 {
     public function __construct(
         private readonly UserService $userService, // Provided by your application
+        private readonly AuditService $auditService,
     ) {}
 
     /* -----------------------------------------------------------------
@@ -87,6 +89,23 @@ class AuthService
         /** @var User $user */
         $user = $this->userService->findOrCreateUser($email, $name ?: $email);
 
+        // Audit: if this login provisioned a new local account, log USER_CREATED
+        if (property_exists($user, 'wasRecentlyCreated') && $user->wasRecentlyCreated) {
+            try {
+                $display = trim((string)($user->first_name ?? '') . ' ' . (string)($user->last_name ?? '')) ?: (string)($user->email ?? '');
+                $ctx = ['meta' => ['source' => 'saml_login']];
+                try {
+                    if (function_exists('request') && request()) {
+                        $ctx = app(\App\Services\AuditService::class)
+                            ->buildContextFromRequest(request(), $ctx['meta']);
+                    }
+                } catch (\Throwable) { /* no-http context */
+                }
+                $this->auditService->logAction((int)$user->id, $display, 'USER_CREATED', (string)($user->id ?? 0), $ctx);
+            } catch (\Throwable) { /* best-effort */
+            }
+        }
+
         // Establish a standard session-based login
         Auth::login($user);
 
@@ -141,6 +160,23 @@ class AuthService
         /** @var User $user */
         $user = $this->userService->findOrCreateUser($email, $name);
 
+        // Audit: if this login provisioned a new local account, log USER_CREATED
+        if (property_exists($user, 'wasRecentlyCreated') && $user->wasRecentlyCreated) {
+            try {
+                $display = trim((string)($user->first_name ?? '') . ' ' . (string)($user->last_name ?? '')) ?: (string)($user->email ?? '');
+                $ctx = ['meta' => ['source' => 'nexo_login']];
+                try {
+                    if (function_exists('request') && request()) {
+                        $ctx = app(\App\Services\AuditService::class)
+                            ->buildContextFromRequest(request(), $ctx['meta']);
+                    }
+                } catch (\Throwable) { /* no-http context */
+                }
+                $this->auditService->logAction((int)$user->id, $display, 'USER_CREATED', (string)($user->id ?? 0), $ctx);
+            } catch (\Throwable) { /* best-effort */
+            }
+        }
+
         // Store Nexo affiliation context in session only (no DB writes here)
         Session::put(self::KEY_NEXO_ASSOC_ID,        $payload['assoc_id'] ?? null);
         Session::put(self::KEY_NEXO_ASSOC_NAME,      $payload['association_name'] ?? null);
@@ -170,4 +206,3 @@ class AuthService
         request()->session()->regenerateToken();
     }
 }
-

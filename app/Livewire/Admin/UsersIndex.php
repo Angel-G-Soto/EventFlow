@@ -4,7 +4,6 @@ namespace App\Livewire\Admin;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use App\Support\UserConstants;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
@@ -17,8 +16,7 @@ use Illuminate\Support\Str;
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
-    // Constants
-    public const ROLES = UserConstants::ROLES;
+
 
     // Traits / shared state
     use UserFilters, UserEditState;
@@ -36,10 +34,7 @@ class UsersIndex extends Component
      *
      * @return bool True if the current user has a role that does not require a department, false otherwise.
      */
-    public function getHasRoleWithoutDepartmentProperty(): bool
-    {
-        return $this->roleExemptsDepartment($this->editRoles);
-    }
+
 
     // Lifecycle
     // No mount preload required when querying directly from the DB
@@ -209,16 +204,13 @@ class UsersIndex extends Component
                     'first_name' => $first,
                     'last_name'  => $last,
                     'email'      => $this->editEmail,
-                ], \Illuminate\Support\Facades\Auth::user());
-                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user());
+                ], \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
                 // Department resolution
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
                 if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
-                    $deptSvc = app(DepartmentService::class);
-                    $dept = $deptSvc->getDepartmentByID($deptId);
-                    if ($dept) {
-                        $deptSvc->updateUserDepartment($dept, $user);
-                    }
+                    // Use UserService to assign department so audit logs include justification
+                    $svc->assignUserToDepartment($user, (int) $deptId, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
                 }
                 $this->toast('User updated');
             } catch (\Throwable $e) {
@@ -234,15 +226,11 @@ class UsersIndex extends Component
                     'email'      => $this->editEmail,
                     'auth_type'  => 'saml',
                     'password'   => bcrypt(str()->random(16)),
-                ], \Illuminate\Support\Facades\Auth::user());
-                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user());
+                ], \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
                 if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
-                    $deptSvc = app(DepartmentService::class);
-                    $dept = $deptSvc->getDepartmentByID($deptId);
-                    if ($dept) {
-                        $deptSvc->updateUserDepartment($dept, $user);
-                    }
+                    $svc->assignUserToDepartment($user, (int) $deptId, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
                 }
                 $this->toast('User created');
             } catch (\Throwable $e) {
@@ -299,7 +287,7 @@ class UsersIndex extends Component
                 $user = app(UserService::class)->findUserById((int)$this->editId);
                 if ($user) {
                     // Clear roles instead of deleting the user record
-                    app(UserService::class)->updateUserRoles($user, [], \Illuminate\Support\Facades\Auth::user());
+                    app(UserService::class)->updateUserRoles($user, [], \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to clear user roles.');
@@ -352,24 +340,21 @@ class UsersIndex extends Component
                 $users = collect();
             }
         } else {
-            // Get all users with any role
-            foreach ($this->roleCodes() as $code) {
-                try {
-                    $users = $users->merge($svc->getUsersWithRole($code));
-                } catch (\Throwable $e) {
-                    // ignore service errors for individual role fetches
-                }
-            }
-            // Add users with no roles
+            // Get all users with any role from the DB
             try {
+                $allRoles = $svc->getAllRoles()->pluck('code')->all();
+                foreach ($allRoles as $code) {
+                    $users = $users->merge($svc->getUsersWithRole($code));
+                }
+                // Add users with no roles
                 $users = $users->merge($svc->getUsersWithNoRoles());
+                // De-duplicate by primary key (id or user_id depending on schema)
+                $users = $users->unique(function ($u) {
+                    return $u->id ?? $u->user_id ?? spl_object_id($u);
+                })->values();
             } catch (\Throwable $e) {
-                // ignore service errors
+                $users = collect();
             }
-            // De-duplicate by primary key (id or user_id depending on schema)
-            $users = $users->unique(function ($u) {
-                return $u->id ?? $u->user_id ?? spl_object_id($u);
-            })->values();
         }
 
         // Apply search filter in-memory to avoid coupling to schema in service
@@ -420,8 +405,8 @@ class UsersIndex extends Component
     {
         // Department should only be provided when the user has the "Department Director" role
         $deptRequired = $this->roleRequiresDepartment($this->editRoles);
-        // Allowed role codes derived from constants
-        $allowedRoleCodes = $this->roleCodes();
+        // Allowed role codes derived from DB
+        $allowedRoleCodes = app(UserService::class)->getAllRoles()->pluck('code')->all();
 
         return [
             'editName'       => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
@@ -501,21 +486,25 @@ class UsersIndex extends Component
      *
      * @param array<int,string> $roles The set of role names to evaluate.
      */
-    protected function roleExemptsDepartment(array $roles): bool
-    {
-        return count(array_intersect($roles, UserConstants::ROLES_WITHOUT_DEPARTMENT)) > 0;
-    }
 
-    /**
-     * Determine if any of the given roles explicitly require a department.
-     * Only the "Department Director" role requires a department.
-     *
-     * @param array<int,string> $roles
-     */
+    // Only 'department-director' and 'venue-manager' can have a department
     protected function roleRequiresDepartment(array $roles): bool
     {
-        // Only the 'department-director' role requires a department
-        return in_array('department-director', $roles, true);
+        // Normalize selected roles to slug names, regardless of whether the UI
+        // is providing numeric codes or slug strings. Falls back gracefully if
+        // role lookup fails.
+        try {
+            $map = app(\App\Services\UserService::class)
+                ->getAllRoles()
+                ->mapWithKeys(fn($r) => [(string) $r->code => (string) $r->name]);
+        } catch (\Throwable $e) {
+            $map = collect();
+        }
+        $slugs = collect($roles)
+            ->map(fn($v) => (string) $v)
+            ->map(fn($v) => $map[$v] ?? $v)
+            ->all();
+        return in_array('department-director', $slugs, true) || in_array('venue-manager', $slugs, true);
     }
 
     /**
@@ -527,18 +516,9 @@ class UsersIndex extends Component
         $this->dispatch('toast', message: $message);
     }
 
-    
 
-    /**
-     * Compute the list of role CODES from the UserConstants names by slugging with dashes.
-     * Example: "Venue Manager" => "venue-manager".
-     *
-     * @return array<int,string>
-     */
-    protected function roleCodes(): array
-    {
-        return array_map(fn(string $n) => Str::slug($n), UserConstants::ROLES);
-    }
+
+
 
     /**
      * Resolve department id from the selected department name.
@@ -581,14 +561,23 @@ class UsersIndex extends Component
             $departments = collect();
         }
 
-        // Provide roles as CODES for UI value binding; view will prettify labels
-        $roleCodes = $this->roleCodes();
+        // Fetch all roles (code + name) from the database via UserService (not UserConstants)
+        $svc = app(UserService::class);
+        try {
+            // Provide both code (value) and name (label) to the view
+            $allRoles = $svc->getAllRoles()
+                ->sortBy('name')
+                ->map(fn($r) => ['code' => $r->code, 'name' => $r->name])
+                ->values();
+        } catch (\Throwable $e) {
+            $allRoles = [];
+        }
 
         return view('livewire.admin.users-index', [
             'rows'        => $paginator,
             'visibleIds'  => $paginator->pluck('id')->all(),
             'departments' => $departments,
-            'allRoles'    => $roleCodes, // codes used as values; labels prettified in view
+            'allRoles'    => $allRoles, // codes used as values; labels prettified in view
         ]);
     }
 }
