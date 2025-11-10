@@ -6,6 +6,8 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Blade;
+use App\Models\User;
+use App\Observers\UserObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,5 +32,8 @@ class AppServiceProvider extends ServiceProvider
 
             $event->extendSocialite('saml2', \SocialiteProviders\Saml2\Provider::class);
         });
+
+        // Register model observers
+        User::observe(UserObserver::class);
     }
 }

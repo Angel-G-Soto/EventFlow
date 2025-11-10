@@ -204,13 +204,13 @@ class UsersIndex extends Component
                     'first_name' => $first,
                     'last_name'  => $last,
                     'email'      => $this->editEmail,
-                ], \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
-                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                ], Auth::user(), (string) $this->justification);
+                $svc->updateUserRoles($user, $this->editRoles, Auth::user(), (string) $this->justification);
                 // Department resolution
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
                 if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
                     // Use UserService to assign department so audit logs include justification
-                    $svc->assignUserToDepartment($user, (int) $deptId, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                    $svc->assignUserToDepartment($user, (int) $deptId, Auth::user(), (string) $this->justification);
                 }
                 $this->toast('User updated');
             } catch (\Throwable $e) {
@@ -226,7 +226,7 @@ class UsersIndex extends Component
                     'email'      => $this->editEmail,
                     'auth_type'  => 'saml',
                     'password'   => bcrypt(str()->random(16)),
-                ], \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                ], Auth::user());
                 $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
                 if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
@@ -573,7 +573,7 @@ class UsersIndex extends Component
             $allRoles = [];
         }
 
-        return view('livewire.admin.users-index', [
+        return response()->view('livewire.admin.users-index', [
             'rows'        => $paginator,
             'visibleIds'  => $paginator->pluck('id')->all(),
             'departments' => $departments,

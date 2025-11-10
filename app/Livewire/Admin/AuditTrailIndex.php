@@ -199,19 +199,4 @@ class AuditTrailIndex extends Component
     return 'id';
   }
 
-  // Query builder / base
-  /**
-   * Build the base query with aliased columns to normalize schema variations.
-   *
-   * @return \Illuminate\Database\Eloquent\Builder
-   */
-  protected function baseQuery()
-  { /* handled via AuditService */
-  }
-
-  // Dummy data for development
-  /**
-   * Build in-memory dummy rows when there is no database data yet.
-   */
-  // Dummy rows removed: admin views rely solely on persisted audit data.
 }

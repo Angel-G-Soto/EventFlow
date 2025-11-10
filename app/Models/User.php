@@ -72,38 +72,7 @@ class User extends Authenticatable
             ->implode('');
     }
 
-    /**
-     * Model-level safety net: ensure every newly created user
-     * has the default 'user' role attached. This is idempotent and
-     * guarded to avoid interfering during migrations/seeding.
-     */
-    protected static function booted(): void
-    {
-        static::created(function (User $user): void {
-            try {
-                // Ensure relations/tables exist before attempting pivot writes
-                if (!method_exists($user, 'roles')) {
-                    return;
-                }
-                if (!Schema::hasTable('roles') || !Schema::hasTable('user_role')) {
-                    return;
-                }
-                $default = Role::query()
-                    ->where('code', 'user')
-                    ->orWhere('name', 'user')
-                    ->first();
-                if (!$default) {
-                    $default = Role::firstOrCreate(['code' => 'user'], ['name' => 'user']);
-                }
-                if ($default) {
-                    // Idempotent attach; avoids duplicates
-                    $user->roles()->syncWithoutDetaching([(int) $default->id]);
-                }
-            } catch (\Throwable $e) {
-                // Best-effort only; never block user creation
-            }
-        });
-    }
+    // Default role attachment handled by UserObserver (app/Observers/UserObserver.php)
 
     //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
 

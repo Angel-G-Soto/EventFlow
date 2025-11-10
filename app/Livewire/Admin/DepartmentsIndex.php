@@ -250,25 +250,25 @@ class DepartmentsIndex extends Component
 
   // Render
   /**
-   * Renders the departments index page.
-   *
-   * This function renders the departments index page and provides the necessary data
-   * to the view. It paginates the filtered collection of departments and ensures
-   * that the current page is within the bounds of the paginator. It then
-   * returns the view with the paginated data and the visible IDs.
-   *
-   * @return Response
-   */
-  public function render()
-  {
-    $paginator = $this->paginated();
-    $visibleIds = $paginator->pluck('id')->all();
-    return view('livewire.admin.departments-index', [
-      'rows' => $paginator,
-      'visibleIds' => $visibleIds,
-      'codes' => $this->codes,
-    ]);
-  }
+     * Renders the departments index page.
+     *
+     * This function renders the departments index page and provides the necessary data
+     * to the view. It paginates the filtered collection of departments and ensures
+     * that the current page is within the bounds of the paginator. It then
+     * returns the view with the paginated data and the visible IDs.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function render()
+    {
+      $paginator = $this->paginated();
+      $visibleIds = $paginator->pluck('id')->all();
+      return view('livewire.admin.departments-index', [
+        'rows' => $paginator,
+        'visibleIds' => $visibleIds,
+        'codes' => $this->codes,
+      ]);
+    }
 
   // Private/Protected Helper Methods
   // Data aggregation / sources
