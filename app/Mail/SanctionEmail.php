@@ -68,7 +68,7 @@ class SanctionEmail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'mail.sanctioned-email',
+            view: 'mail.sanction-email',
             with: [
                 'event' => $this->eventData,
             ]

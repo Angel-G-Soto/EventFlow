@@ -145,7 +145,7 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
-                    <input type="text" class="form-control" value="{{ $organization_name }}" disabled placeholder="Organization name">
+                    <input wire:model.defer="organization_name"   type="text" class="form-control" value="{{ $organization_name }}" {{--disabled--}} placeholder="Organization name">
                 </div>
 
                 <div class="col-md-6">

@@ -20,7 +20,9 @@
 namespace App\Livewire\Request\History;
 
 use App\Models\EventHistory;
+use App\Services\EventHistoryService;
 use App\Services\EventService;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -36,7 +38,7 @@ use App\Models\Event;
  * @package App\Livewire\Venue
  *
  */
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Details extends Component
 {
     public EventHistory $eventHistory;
@@ -91,7 +93,7 @@ class Details extends Component
 
     public function render()
     {
-//        dd($this->eventHistory);
+
         $docs = app(EventService::class)->getEventDocuments($this->eventHistory->event)->toArray();
 
         // Use document service method that accepts event_id and return the array of docs.
@@ -99,3 +101,18 @@ class Details extends Component
         return view('livewire.request.history.details', compact('docs'));
     }
 }
+
+
+//$eventDetails = app(NotificationService::class)->getEventDetails($this->eventHistory->event);
+//$approverEmails = app(EventHistoryService::class)->getEventApproverEmails($this->eventHistory->event);
+//app(NotificationService::class)->dispatchCancellationNotifications(
+//    recipientEmails: $approverEmails,
+//    eventDetails: $eventDetails,
+//    justification: 'Example',
+//);
+//
+//        app(NotificationService::class)->dispatchApprovalRequiredNotification(
+//            approverEmail: 'andres.torres18@upr.edu',eventDetails: $eventDetails
+//        );
+//
+//        dd($this->eventHistory);

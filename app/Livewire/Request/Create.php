@@ -173,11 +173,11 @@ class Create extends Component
      */
     public function mount(array $organization = []): void
     {
-        $this->organization_id   = $organization['id']            ?? null;  // optional
-        $this->organization_name = $organization['name']          ?? '';
-        $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
-//        $this->advisor_phone     = $organization['advisor_phone'] ?? '';
-        $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
+//        $this->organization_id   = $organization['id']            ?? null;  // optional
+//        $this->organization_name = $organization['name']          ?? '';
+//        $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
+////        $this->advisor_phone     = $organization['advisor_phone'] ?? '';
+//        $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
     }
 
 
@@ -377,6 +377,7 @@ class Create extends Component
             'guest_size' => $this->guest_size,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
+            'organization_name'=> $this->organization_name,
             'organization_advisor_name' => $this->organization_advisor_name,
             'organization_advisor_email' => $this->organization_advisor_email,
             'handles_food' => $this->handles_food,
@@ -422,26 +423,34 @@ class Create extends Component
             }
         }
 
-//        $eventService->updateOrCreateFromEventForm(
-//            data: $data,
-//            creator: $user,
-//            action: 'publish',
-//            document_ids: $this->uploadedDocumentIds,
-//        );
 
-
-
-
-            // call updateOrCreateFromEventForm
-
-
-            // return home or pending requests or ...
-
-
+        $this->clear();
 
         session()->flash('success', 'Event submitted successfully.');
         redirect()->route('public.calendar'); // or to a details/thanks page
     }
+
+    public function clear(){
+
+        // datetime-local string
+        $this->creator_phone_number = '';
+        $this->creator_institutional_number = '';
+        $this->title = '';
+        $this->description = '';
+        $this->guest_size = '';
+        $this->start_time = '';
+        $this->end_time = '';
+        $this->category_ids = [];
+        $this->uploadedDocumentIds = [];
+        $this->use_institutional_funds = false;
+        $this->handles_food = false;
+        $this->external_guest = false;
+        $this->requirementFiles = [];
+        $this->organization_name = '';
+        $this->organization_advisor_name= '';
+        $this->organization_advisor_email   = '';
+    }
+
 
     /**
      * Render the Livewire view.

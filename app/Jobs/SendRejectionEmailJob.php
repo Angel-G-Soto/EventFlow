@@ -45,6 +45,9 @@ class SendRejectionEmailJob implements ShouldQueue
      */
     public string $justification;
 
+    public array $recipientEmails;
+
+
     /**
      * Create a new job instance.
      *
@@ -52,11 +55,12 @@ class SendRejectionEmailJob implements ShouldQueue
      * @param array<string,mixed> $eventData     Event metadata (id, title, dates, etc.).
      * @param string              $justification Reason the event was rejected.
      */
-    public function __construct(string $creatorEmail, array $eventData, string $justification)
+    public function __construct(string $creatorEmail, array $recipientEmails, array $eventData, string $justification)
     {
         $this->creatorEmail = $creatorEmail;
         $this->eventData = $eventData;
         $this->justification = $justification;
+        $this->recipientEmails = $recipientEmails;
     }
 
     /**
@@ -73,5 +77,14 @@ class SendRejectionEmailJob implements ShouldQueue
         Mail::to($this->creatorEmail)->send(
             new RejectionEmail($this->eventData, $this->justification)
         );
+
+
+        foreach ($this->recipientEmails as $recipientEmail) {
+            Mail::to($recipientEmail)->send(
+                new RejectionEmail($this->eventData, $this->justification)
+            );
+        }
+
+
     }
 }

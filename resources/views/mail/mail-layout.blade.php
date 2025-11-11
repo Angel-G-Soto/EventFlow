@@ -58,10 +58,6 @@
                       <td style="background:#f0f4f8; padding:16px 24px;">
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                               <tr>
-                                  <td align="left" style="font-family:Arial, Helvetica, sans-serif; color:#6b7280; font-size:12px; line-height:1.5;">
-                                      © {{ date('Y') }} {{ config('app.name', 'EventFlow') }} — All rights reserved.
-                                      <br>
-                                  </td>
                                   <td align="right" style="font-family:Arial, Helvetica, sans-serif; color:#6b7280; font-size:12px;">
 
                                       <a style="color:#6b7280; text-decoration:none;">{{ config('app.name', 'EventFlow') }}</a>

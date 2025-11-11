@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Models\Department;
 use App\Models\Document;
 use App\Models\Event;
 use App\Models\EventHistory;
@@ -123,6 +124,14 @@ class EventService
 //                    }
                 }
 
+                if (!empty($data['organization_advisor_email'])) {
+                $eventDetails = app(NotificationService::class)->getEventDetails($event);
+                app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                    approverEmail: $event->organization_advisor_email,
+                    eventDetails: $eventDetails,
+                );
+                }
+
                 return $event;
             });
         }
@@ -159,6 +168,17 @@ class EventService
             // Run audit trail
 
             // Send rejection email to prior approvers and creator
+            $creatorEmail = $event->requester->email;
+
+            $eventDetails = app(NotificationService::class)->getEventDetails($event);
+            $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+            app(NotificationService::class)->dispatchRejectionNotification(
+                creatorEmail: $creatorEmail,
+                recipientEmails: $approverEmails,
+                eventDetails: $eventDetails,
+                justification: $justification,
+            );
+
 
             return $event->refresh();
         }
@@ -220,8 +240,15 @@ class EventService
                 }
                 else {
                     // Send notification to next approver
-
+//                    $creatorEmail = $event->requester->email;
+//                    $eventDetails = app(NotificationService::class)->getEventDetails($event);
+//                    app(NotificationService::class)->dispatchSanctionedNotification(
+//                        creatorEmail: $creatorEmail,
+//                        eventDetails: $eventDetails,
+//                    );
                 }
+
+                $this->sendApproverEmails($event);
                 return $event->refresh();
             });
         }
@@ -295,6 +322,14 @@ class EventService
                 // Run audit trail
 
                 // Send email to the approvers
+                $eventDetails = app(NotificationService::class)->getEventDetails($event);
+                $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+                app(NotificationService::class)->dispatchWithdrawalNotifications(
+                    recipientEmails: $approverEmails,
+                    eventDetails: $eventDetails,
+                    justification: $comment,
+                );
+
 
                 return $event->refresh();
             });
@@ -319,9 +354,19 @@ class EventService
                         'comment' => $comment ?? 'Event was cancelled.',
                     ]);
                 }
-                // Run audit trail
+//                // Run audit trail
+//
+//                // Send email to the approvers
+                $creatorEmail = $event->requester->email;
+                $eventDetails = app(NotificationService::class)->getEventDetails($event);
+                $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+                app(NotificationService::class)->dispatchCancellationNotifications(
+                    creatorEmail: $creatorEmail,
+                    recipientEmails: $approverEmails,
+                    eventDetails: $eventDetails,
+                    justification: $comment ?? 'Event was cancelled.',
+                );
 
-                // Send email to the approvers
 
                 return $event->refresh();
             });
@@ -636,6 +681,43 @@ class EventService
             }
 
             return $query->paginate(15);
+        }
+
+        public function sendApproverEmails(Event $event){
+//            pending - venue manager approval' => 'pending - dsca approval',
+            $eventDetails = app(NotificationService::class)->getEventDetails($event);
+            switch ($event->status)
+            {
+                case 'pending - venue manager approval':
+                    $venue = app(VenueService::class)->getVenueById($event->venue_id);
+                    if($venue != null){
+                        $departmentEmployees = Department::findOrFail($venue->department_id)->employees();
+                        $recipientEmails = $departmentEmployees->pluck('email')->toArray();
+                        foreach ($recipientEmails as $recipientEmail) {
+                            app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                                $recipientEmail, $eventDetails);
+                        }
+
+                    }
+
+                    break;
+                case 'pending - dsca approval':
+                    $eventApproverEmails= app(UserService::class)->getUsersWithRole('4')
+                        ->pluck('email')->toArray();
+                    foreach ($eventApproverEmails as $approverEmail) {
+                        app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                            $approverEmail, $eventDetails);
+                    }
+                    break;
+                case 'approved':
+                    $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
+
+                    app(NotificationService::class)->dispatchSanctionedNotification(
+                        $creatorEmail, $eventDetails
+                    );
+
+            }
+
         }
 
 }

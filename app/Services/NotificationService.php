@@ -7,6 +7,10 @@ use App\Jobs\SendCancellationEmailJob;
 use App\Jobs\SendRejectionEmailJob;
 use App\Jobs\SendSanctionedEmailJob;
 use App\Jobs\SendWithdrawalEmailJob;
+use App\Models\Event;
+use App\Models\User;
+use App\Models\Venue;
+use App\Services\VenueService;
 
 /**
  * Service responsible for dispatching notification email jobs for EventFlow.
@@ -59,10 +63,11 @@ class NotificationService
      */
     public function dispatchRejectionNotification(
         string $creatorEmail,
+        array $recipientEmails,
         array $eventDetails,
         string $justification
     ): void {
-        SendRejectionEmailJob::dispatch($creatorEmail, $eventDetails, $justification);
+        SendRejectionEmailJob::dispatch($creatorEmail, $recipientEmails,$eventDetails, $justification);
     }
 
     /**
@@ -94,11 +99,12 @@ class NotificationService
      * @see SendCancellationEmailJob
      */
     public function dispatchCancellationNotifications(
+        string $creatorEmail,
         array $recipientEmails,
         array $eventDetails,
         string $justification
     ): void {
-        SendCancellationEmailJob::dispatch($recipientEmails, $eventDetails, $justification);
+        SendCancellationEmailJob::dispatch($creatorEmail, $recipientEmails, $eventDetails, $justification);
     }
 
     /**
@@ -119,4 +125,22 @@ class NotificationService
     ): void {
         SendWithdrawalEmailJob::dispatch($recipientEmails, $eventDetails, $justification);
     }
+    public function getEventDetails(Event $event)
+    {
+        $venue = app(VenueService::class)->getVenueById($event->venue_id);
+        $user = app(UserService::class)->findUserById($event->creator_id);
+
+        return [
+            'title' => $event->title,
+            'organization_name' => $event->organization_name,
+            'creator_name' => $user->first_name . ' ' . $user->last_name,
+            'organization_advisor_name' => $event->organization_advisor_name,
+            'organization_advisor_email' => $event->organization_advisor_email,
+            'creator_email' => $user->email,
+            'start_time' => $event->start_time,
+            'end_time'=> $event->end_time,
+            'venue_name' => $venue->name,
+            ];
+    }
+
 }

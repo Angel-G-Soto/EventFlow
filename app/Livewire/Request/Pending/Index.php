@@ -9,7 +9,7 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Index extends Component
 {
     use WithPagination;

@@ -71,5 +71,12 @@ class EventHistoryService
         return $query;
     }
 
+    public function getEventApproverEmails(Event $event){
+        $approverIds = EventHistory::where('event_id',$event->id)->pluck('approver_id');
+        return User::whereIn('id', $approverIds)->pluck('email')->toArray();
+
+
+    }
+
 
 }

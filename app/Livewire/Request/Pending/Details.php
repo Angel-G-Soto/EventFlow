@@ -18,10 +18,14 @@
 namespace App\Livewire\Request\Pending;
 
 use App\Models\Event;
+use App\Services\EventHistoryService;
 use App\Services\EventService;
+use App\Services\NotificationService;
+use App\Services\UserService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Mockery\Matcher\Not;
 
 /**
  * Class Details
@@ -29,7 +33,7 @@ use Livewire\Component;
  * Presents a single Venue's details.
  * Accepts a Venue or ID in mount() and renders the details Blade view.
  */
-#[Layout('layouts.user')]
+#[Layout('layouts.app')]
 class Details extends Component
 {
 /**
@@ -57,6 +61,7 @@ class Details extends Component
     {
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
+
 
         app(EventService::class)->denyEvent($this->justification, $this->event, Auth::user());
 
@@ -90,7 +95,6 @@ class Details extends Component
 
     public function render()
     {
-
         $eventService = app(EventService::class);
         $docs = $eventService->getEventDocuments($this->event)->toArray();
         $conflicts = $eventService->conflictingEvents($this->event)->paginate(4);
