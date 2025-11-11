@@ -568,7 +568,7 @@ class UsersIndex extends Component
     /**
      * Renders the Livewire view for the users index page.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\View\View
      */
     public function render()
     {

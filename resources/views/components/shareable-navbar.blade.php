@@ -121,19 +121,19 @@ $isDirector = $roleNames->contains('department-director');
         @if(Auth::check())
         <form method="POST" action="{{ route('saml.logout') }}" class="m-0">
           @csrf
-          <button class="btn p-2 d-flex align-items-center" type="submit" title="Log out" aria-label="Log out"
-            style="border: none; outline: none; transition: all 0.3s ease;">
-            <span class="me-2" style="color: black;">Log out</span>
-            <i class="bi bi-box-arrow-right" style="color: black;"></i>
+          <button class="btn p-2 d-flex align-items-center text-white" type="submit" title="Log out"
+            aria-label="Log out" style="border: none; outline: none; transition: all 0.3s ease;">
+            <span class="me-2">Log out</span>
+            <i class="bi bi-box-arrow-right"></i>
           </button>
         </form>
         @else
         <form method="GET" action="{{ route('saml.login') }}" class="m-0">
           @csrf
-          <button class="btn p-2 d-flex align-items-center" title="Log in" aria-label="Log in"
+          <button class="btn p-2 d-flex align-items-center text-white" title="Log in" aria-label="Log in"
             style="border: none; outline: none; transition: all 0.3s ease;">
-            <span class="me-2" style="color: black;">Log in</span>
-            <i class="bi bi-box-arrow-right" style="color: black;"></i>
+            <span class="me-2">Log in</span>
+            <i class="bi bi-box-arrow-right"></i>
           </button>
         </form>
         @endif
