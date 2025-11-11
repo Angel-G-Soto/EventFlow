@@ -129,4 +129,22 @@ class Event extends Model
     {
         return $this->history()->orderBy('created_at', 'desc')->first()->approver;
     }
+
+
+    public function getSimpleStatus(): string
+    {
+        if (str_contains($this->status, 'advisor')) {
+            return 'Awaiting Advisor Approval';
+        }
+        if (str_contains($this->status, 'venue manager')) {
+            return 'Awaiting Venue Manager Approval';
+        }
+        if (str_contains($this->status, 'dsca')) {
+            return 'Awaiting DSCA Approval';
+        }
+        else {
+            return ucfirst($this->status);
+        }
+    }
+
 }
