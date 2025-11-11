@@ -44,8 +44,8 @@
                                 {{ \Illuminate\Support\Carbon::parse($c->start_time)->format('M j, Y g:ia') }}
                                 &ndash;
                                 {{ \Illuminate\Support\Carbon::parse($c->end_time)->format('M j, Y g:ia') }}
-                                @if (!empty($c->organization_nexo_name))
-                                    &middot; {{ $c->organization_nexo_name }}
+                                @if (!empty($c->organization_name))
+                                    &middot; {{ $c->organization_name }}
                                 @endif
                             </div>
                         </div>
@@ -68,7 +68,7 @@
     <div class="card container">
         <div class="card-body" style="text-align: justify">
             <h3>Event Name: {{$event->title}}</h3>
-            <h5>Student Organization: {{$event->organization_nexo_name}}</h5>
+            <h5>Student Organization: {{$event->organization_name}}</h5>
             Description: {{$event->description}}
             <br>
             <br>
