@@ -631,7 +631,7 @@ class EventService
 
     // GET
 
-    public function getBookedVenues(DateTime $startTime, DateTime $endTime): \Illuminate\Database\Eloquent\Collection|\Illuminate\Support\Collection
+    public function getBookedVenues(DateTime $startTime, DateTime $endTime): Collection
     {
         return Event::where('status', 'Approved')
             ->where(function ($query) use ($startTime, $endTime) {
@@ -669,7 +669,7 @@ class EventService
      *
      * @return \Illuminate\Support\Collection<int,string>
      */
-    public function getDistinctEventStatuses(): \Illuminate\Support\Collection
+    public function getDistinctEventStatuses(): Collection
     {
         return Event::query()
             ->whereNotNull('status')
@@ -688,7 +688,7 @@ class EventService
      *
      * @return \Illuminate\Support\Collection<int,string>
      */
-    public function getDistinctOrganizations(): \Illuminate\Support\Collection
+    public function getDistinctOrganizations(): Collection
     {
         return Event::query()
             ->whereNotNull('organization_name')
@@ -708,7 +708,7 @@ class EventService
      *
      * @return \Illuminate\Support\Collection<int,string>
      */
-    public function listVenueNames(): \Illuminate\Support\Collection
+    public function listVenueNames(): Collection
     {
         return Venue::query()
             ->whereNull('deleted_at')

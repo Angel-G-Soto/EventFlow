@@ -81,7 +81,6 @@
             <th>Organization</th>
             <th>Venue</th>
             <th>Date/Time</th>
-            <th>Status</th>
             <th class="text-end" style="width:120px;">Actions</th>
           </tr>
         </thead>
@@ -98,10 +97,6 @@
                 ') }}</div>
               <div class="text-secondary small">→ {{ \Illuminate\Support\Str::before($r['to'],' ') }} {{
                 \Illuminate\Support\Str::after($r['to'],' ') }}</div>
-            </td>
-            <td>
-              <span class="badge text-bg-light me-1 {{ $this->statusBadgeClass($r['status']) }}">{{ $r['status']
-                }}</span>
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
@@ -122,7 +117,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="8" class="text-center text-secondary py-4">No requests found.</td>
+            <td colspan="7" class="text-center text-secondary py-4">No requests found.</td>
           </tr>
           @endforelse
         </tbody>

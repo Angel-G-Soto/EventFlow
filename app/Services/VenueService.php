@@ -165,7 +165,7 @@ class VenueService
     {
         // Check for error
         if ($start_time >= $end_time) {
-            throw new \InvalidArgumentException('Start time must be before end time.');
+            throw new InvalidArgumentException('Start time must be before end time.');
         }
         try {
             // Get events that occur on between the date parameters (// MOCK FROM EVENT SERVICE)
@@ -396,9 +396,9 @@ class VenueService
         try {
             // Validate manager role to be 'venue-manager' and to belong to the departments of the venues
             if (!$manager->getRoleNames()->contains('venue-manager')) {
-                throw new \InvalidArgumentException('Manager does not have the required role.');
+                throw new InvalidArgumentException('Manager does not have the required role.');
             } elseif (!$manager->department()->where('id', $venue->department_id)->first() != null) {
-                throw new \InvalidArgumentException('Manager does not belong to the venue department.');
+                throw new InvalidArgumentException('Manager does not belong to the venue department.');
             }
 
             // Verify that the requirementsData structure is met
@@ -411,19 +411,19 @@ class VenueService
 
             foreach ($trimmedData as $i => $doc) {
                 if (!is_array($doc)) {
-                    throw new \InvalidArgumentException("Requirement at index {$i} must be an array.");
+                    throw new InvalidArgumentException("Requirement at index {$i} must be an array.");
                 }
 
                 // Must contain all expected keys
                 $missingKeys = array_diff($expectedKeys, array_keys($doc));
                 if ($missingKeys) {
-                    throw new \InvalidArgumentException("Missing keys in requirement at index {$i}: " . implode(', ', $missingKeys));
+                    throw new InvalidArgumentException("Missing keys in requirement at index {$i}: " . implode(', ', $missingKeys));
                 }
 
                 // No null or empty values
                 foreach ($expectedKeys as $key) {
                     if ($doc[$key] == null) {
-                        throw new \InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
+                        throw new InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
                     }
                 }
             }
@@ -736,7 +736,7 @@ class VenueService
 
             foreach ($venues as $venue) {
                 if (!$venue instanceof Venue) {
-                    throw new \InvalidArgumentException('List contains elements that are not venues.');
+                    throw new InvalidArgumentException('List contains elements that are not venues.');
                 }
             };
 
@@ -751,7 +751,7 @@ class VenueService
                     );
                 }
             };
-        } catch (\InvalidArgumentException $exception) {
+        } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable) {
             throw new Exception('Unable to remove the venues.');
