@@ -64,4 +64,20 @@ class EventHistory extends Model
     {
         return $this->comment;
     }
+
+    public function getSimpleStatus(): string
+    {
+        if (str_contains($this->status_when_signed, 'advisor')) {
+            return 'Advisor Approval';
+        }
+        if (str_contains($this->status_when_signed, 'venue manager')) {
+            return 'Venue Manager Approval';
+        }
+        if (str_contains($this->status_when_signed, 'dsca')) {
+            return 'DSCA Approval';
+        }
+        else {
+            return ucfirst($this->status_when_signed);
+        }
+    }
 }

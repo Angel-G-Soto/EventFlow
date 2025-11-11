@@ -68,20 +68,7 @@
                         <td class="fw-medium">{{$history->event->organization_name  ?? '—' }}</td>
                         <td class="fw-medium">{{$history->action  ?? '—' }}</td>
                         <td class="fw-medium">
-                            @php
-                                $statusLower = strtolower($history->status_when_signed);
-
-                                if (str_contains($statusLower, 'advisor')) {
-                                    $display = 'Advisor Approval';
-                                } elseif (str_contains($statusLower, 'venue')) {
-                                    $display = 'Venue Approval';
-                                } elseif (str_contains($statusLower, 'dsca')) {
-                                    $display = 'Event Approval';
-                                } else {
-                                    $display = $history->status_when_signed;
-                                }
-                            @endphp
-                            <span class="badge rounded-pill text-bg-secondary">{{ $display }}</span>
+                            <span class="badge rounded-pill bg-secondary">{{$history->getSimpleStatus()}}</span>
                         </td>
                         <td class="fw-medium">{{$history->created_at}}</td>
                         <td class="fw-medium text-end">

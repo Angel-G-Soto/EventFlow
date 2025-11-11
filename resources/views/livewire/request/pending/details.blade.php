@@ -82,11 +82,21 @@
     </div>
 
     {{-- Event Header --}}
-    <section class="card shadow-sm mb-4" aria-labelledby="event-header">
+    <section class="card shadow-sm mb-4" aria-labelledby="event-header" role="region">
         <div class="card-body">
             <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
+
+            <!-- Status as a tag (badge) with appropriate styles and ARIA labeling -->
+            <p>
+                <span class="badge bg-secondary" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
+                    {{ 'Status: '. $event->getSimpleStatus() }}
+                </span>
+            </p>
+
             <p class="text-muted mb-1">
-                {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
+                <span class="sr-only">Event Start Date: </span>{{ $start->format('M j, Y') }}
+                at <span class="sr-only">From: </span>{{ $start->format('g:i A') }} –
+                <span class="sr-only">To: </span>{{ $end->format('g:i A') }}
             </p>
         </div>
     </section>

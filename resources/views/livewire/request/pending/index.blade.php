@@ -65,20 +65,14 @@
                                 <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
                                 <td class="fw-medium">{{\Carbon\Carbon::parse($event->created_at)->toDayDateTimeString()}}</td>
                                 <td class="fw-medium">
-                                    @php
-                                        $statusLower = strtolower($event->status);
+                                    @if($event->status === 'cancelled' || $event->status === 'withdrawn' || $event->status === 'rejected')
+                                        <span class="badge rounded-pill bg-danger">{{$event->getSimpleStatus()}}</span>
+                                    @elseif($event->status === 'approved' || $event->status === 'completed')
+                                        <span class="badge rounded-pill bg-success">{{$event->getSimpleStatus()}}</span>
+                                    @else
+                                        <span class="badge rounded-pill bg-warning">{{$event->getSimpleStatus()}}</span>
 
-                                        if (str_contains($statusLower, 'advisor')) {
-                                            $display = 'Advisor Approval';
-                                        } elseif (str_contains($statusLower, 'venue')) {
-                                            $display = 'Venue Approval';
-                                        } elseif (str_contains($statusLower, 'dsca')) {
-                                            $display = 'Event Approval';
-                                        } else {
-                                            $display = $event->status;
-                                        }
-                                    @endphp
-                                    <span class="badge rounded-pill text-bg-secondary">{{ $display }}</span>
+                                    @endif
                                 </td>
                                 <td class="fw-medium text-end">
                                     <button class="btn btn-outline-secondary text-end" style="text-align: right"

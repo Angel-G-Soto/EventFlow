@@ -51,15 +51,7 @@
 
                         <dt class="col-sm-4">Approval Type</dt>
                         <dd class="col-sm-8">
-                            @if(str_contains($eventHistory->status_when_signed, 'venue manager'))
-                                Venue Manager
-                            @elseif(str_contains($eventHistory->status_when_signed, 'dsca'))
-                                Event Approver (DSCA)
-                            @elseif(str_contains($eventHistory->status_when_signed, 'advisor'))
-                                Advisor
-                            @else
-                                {{ $eventHistory->status_when_signed ?? 'No comment provided.' }}
-                            @endif
+                            {{$eventHistory->getSimpleStatus()}}
                         </dd>
                     </dl>
                 </div>
@@ -77,16 +69,13 @@
                         <p class="text-muted mb-1">
                             {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
                         </p>
-                        @php
-                            $statusLower = strtolower($eventHistory->event->status);
-
-                            if (str_contains($statusLower, 'pending')) {
-                                $display = 'Pending Approval';
-                            } else {
-                                $display = ucfirst($eventHistory->event->status);
-                            }
-                        @endphp
-                        <span class="badge rounded-pill text-bg-secondary">Current Status: {{ $display }}</span>
+                        @if($eventHistory->event->status === 'cancelled' || $eventHistory->event->status === 'withdrawn' || $eventHistory->event->status === 'rejected')
+                            <span class="badge rounded-pill bg-danger">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                        @elseif($eventHistory->event->status === 'approved' || $eventHistory->event->status === 'completed')
+                            <span class="badge rounded-pill bg-success">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                        @else
+                            <span class="badge rounded-pill bg-warning">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                        @endif
                     </div>
                 </div>
             </div>
