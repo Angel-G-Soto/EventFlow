@@ -90,7 +90,7 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="venue_rows">Rows</label>
+      <label class="text-secondary small mb-0 text-black" for="venue_rows">Rows</label>
       <select id="venue_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>

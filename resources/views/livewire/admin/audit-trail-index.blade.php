@@ -66,7 +66,7 @@ return $dt;
       {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
     </small>
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="audit_rows">Rows</label>
+      <label class="text-secondary small mb-0 text-black" for="audit_rows">Rows</label>
       <select id="audit_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="perPage">
         <option>25</option>
         <option>50</option>

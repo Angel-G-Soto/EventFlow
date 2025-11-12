@@ -22,6 +22,15 @@ $isDirector = $roleNames->contains('department-director');
     </button>
 
     <style>
+      /* Accent color */
+      :root {
+        --app-accent: #3a5178;
+      }
+
+      .bg-accent {
+        background-color: var(--app-accent) !important;
+      }
+
       /* Smooth transition for dropdown items */
       .dropdown-menu .dropdown-item {
         transition: background-color 0.25s, color 0.25s, font-weight 0.25s;
@@ -31,13 +40,14 @@ $isDirector = $roleNames->contains('department-director');
       .dropdown-menu .dropdown-item:focus {
 
         font-weight: bold;
+        background-color: var(--bs-success-bg-subtle);
       }
     </style>
 
     <div id="navMain" class="collapse navbar-collapse">
       <ul class="navbar-nav mr-auto">
         <li class="nav-item">
-          <a class="fw-bold nav-link {{ Route::is('public.calendar') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold {{ Route::is('public.calendar') ? 'active' : '' }}"
             href="{{ route('public.calendar') }}">
             Calendar
           </a>
@@ -45,7 +55,8 @@ $isDirector = $roleNames->contains('department-director');
         @if($user)
 
         <li class="nav-item">
-          <a class="fw-bold nav-link {{ Route::is('user.index') ? 'active' : '' }}" href="{{ route('user.index') }}">
+          <a class="nav-link text-nowrap fw-bold {{ Route::is('user.index') ? 'active' : '' }}"
+            href="{{ route('user.index') }}">
             My Requests
           </a>
         </li>
@@ -53,17 +64,17 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isAdvisor || $isApprover)
         <li class="nav-item dropdown">
-          <a class="fw-bold nav-link dropdown-toggle {{ Route::is('approver.history.index') || Route::is('approver.pending.index') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('approver.history.index') || Route::is('approver.pending.index') ? 'active' : '' }}"
             href="#" id="requestsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Requests
           </a>
           <ul class="dropdown-menu" aria-labelledby="requestsDropdown">
             <li>
-              <a class="dropdown-item {{ Route::is('approver.pending.index') ? 'active fw-bold bg-success' : '' }}"
+              <a class="dropdown-item {{ Route::is('approver.pending.index') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('approver.pending.index') }}">Pending Requests</a>
             </li>
             <li>
-              <a class="dropdown-item {{ Route::is('approver.history.index') ? 'active fw-bold bg-success' : '' }}"
+              <a class="dropdown-item {{ Route::is('approver.history.index') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('approver.history.index') }}">Approval History</a>
             </li>
           </ul>
@@ -72,7 +83,7 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isVenueManager)
         <li class="nav-item">
-          <a class="fw-bold nav-link {{ (Route::is('venues.manage') || Route::is('venue.index')) ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold {{ (Route::is('venues.manage') || Route::is('venue.index')) ? 'active ' : '' }}"
             href="{{ route('venues.manage') }}">
             My Venues
           </a>
@@ -81,7 +92,7 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isDirector)
         <li class="nav-item">
-          <a class="fw-bold nav-link {{ Route::is('director.venues.index') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold {{ Route::is('director.venues.index') ? 'active' : '' }}"
             href="{{ route('director.venues.index') }}">
             My Departments
           </a>
@@ -90,53 +101,57 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isAdmin)
         <li class="nav-item dropdown">
-          <a class="fw-bold nav-link dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
             href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Administrator
           </a>
           <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-            <li><a class="dropdown-item {{ Route::is('admin.users') ? 'active fw-bold bg-success' : '' }}"
+            <li><a class="dropdown-item {{ Route::is('admin.users') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.users') }}">Users</a></li>
-            <li><a class="dropdown-item {{ Route::is('admin.departments') ? 'active fw-bold bg-success' : '' }}"
+            <li><a class="dropdown-item {{ Route::is('admin.departments') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.departments') }}">Departments</a></li>
-            <li><a class="dropdown-item {{ Route::is('admin.venues') ? 'active fw-bold bg-success' : '' }}"
+            <li><a class="dropdown-item {{ Route::is('admin.venues') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.venues') }}">Venues</a></li>
-            <li><a class="dropdown-item {{ Route::is('admin.events') ? 'active fw-bold bg-success' : '' }}"
+            <li><a class="dropdown-item {{ Route::is('admin.events') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.events') }}">Events</a></li>
-            <li><a class="dropdown-item {{ Route::is('admin.audit') ? 'active fw-bold bg-success' : '' }}"
+            <li><a class="dropdown-item {{ Route::is('admin.audit') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.audit') }}">Audit Log</a></li>
           </ul>
         </li>
         @endif
       </ul>
 
-      <div class="d-flex ms-auto gap-2">
-        <button class="btn btn-success-subtle p-2 text-white" type="button" title="Notifications"
-          aria-label="Open notifications">
-          <i class="bi bi-bell"></i>
-        </button>
-        <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
-          <i class="bi bi-question-lg"></i>
-        </button>
-        @if(Auth::check())
-        <form method="POST" action="{{ route('saml.logout') }}" class="m-0">
-          @csrf
-          <button class="btn p-2 d-flex align-items-center text-white" type="submit" title="Log out"
-            aria-label="Log out" style="border: none; outline: none; transition: all 0.3s ease;">
-            <span class="me-2">Log out</span>
-            <i class="bi bi-box-arrow-right"></i>
+      <div class="d-flex w-100 mt-2 mt-lg-0 justify-content-between justify-content-lg-end align-items-center gap-2">
+        {{-- <div class="d-flex gap-2">
+          <button class="btn btn-success-subtle p-2 text-white" type="button" title="Notifications"
+            aria-label="Open notifications">
+            <i class="bi bi-bell"></i>
           </button>
-        </form>
-        @else
-        <form method="GET" action="{{ route('saml.login') }}" class="m-0">
-          @csrf
-          <button class="btn p-2 d-flex align-items-center text-white" title="Log in" aria-label="Log in"
-            style="border: none; outline: none; transition: all 0.3s ease;">
-            <span class="me-2">Log in</span>
-            <i class="bi bi-box-arrow-right"></i>
+          <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
+            <i class="bi bi-question-lg"></i>
           </button>
-        </form>
-        @endif
+        </div> --}}
+        <div class="ms-auto ms-lg-0">
+          @if(Auth::check())
+          <form method="POST" action="{{ route('saml.logout') }}" class="m-0">
+            @csrf
+            <button class="btn p-2 d-flex align-items-center text-white" type="submit" title="Log out"
+              aria-label="Log out" style="border: none; outline: none; transition: all 0.3s ease;">
+              <span class="me-2">Log out</span>
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
+          </form>
+          @else
+          <form method="GET" action="{{ route('saml.login') }}" class="m-0">
+            @csrf
+            <button class="btn p-2 d-flex align-items-center text-white" title="Log in" aria-label="Log in"
+              style="border: none; outline: none; transition: all 0.3s ease;">
+              <span class="me-2">Log in</span>
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
+          </form>
+          @endif
+        </div>
       </div>
     </div>
   </div>

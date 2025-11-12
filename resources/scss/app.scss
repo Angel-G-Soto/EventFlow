@@ -8,7 +8,49 @@
 /* Admin forms: show red asterisk on required labels */
 .form-label.required::after,
 .form-check-label.required::after {
-	content: ' *';
-	color: #dc3545;
-	/* Bootstrap danger */
+  content: ' *';
+  color: #dc3545;
+  /* Bootstrap danger */
 }
+
+/* Mobile-friendly tap targets for small action buttons in tables */
+@media (max-width: 576px) {
+
+  /* Increase touch area for icon-only action buttons */
+  .table .btn-group.btn-group-sm .btn {
+    padding: 0.5rem 0.6rem;
+    /* bigger than .btn-sm */
+    font-size: 1rem;
+    /* improve legibility */
+    line-height: 1.2;
+    min-width: 44px;
+    /* recommended tap target */
+    min-height: 44px;
+    /* recommended tap target */
+  }
+
+  .table .btn-group.btn-group-sm {
+    gap: 0.25rem;
+  }
+
+  .table .btn-group.btn-group-sm .btn i {
+    font-size: 1.1rem;
+  }
+}
+
+/* Mobile: lighten dropdowns (selects and menus) to match navbar accent */
+// @media (max-width: 576px) {
+
+//   /* Navbar/menus dropdown styling */
+//   .navbar .dropdown-menu,
+//   .dropdown-menu {
+//     /* Prefer variable override so Bootstrap uses it everywhere internally */
+//     --bs-dropdown-bg: var(--bs-success-bg-subtle);
+//     background-color: var(--bs-dropdown-bg);
+//   }
+
+//   .dropdown-menu .dropdown-item:hover,
+//   .dropdown-menu .dropdown-item:focus {
+//     background-color: var(--bs-success-border-subtle);
+//   }
+// }
