@@ -329,9 +329,9 @@ class EventService
     }
 
     // Mark event as completed
-    public function markEventAsCompleted(): void
+    public function markEventAsCompleted()
     {
-        DB::transaction(function () {
+        return DB::transaction(function () {
             // Get the start and end of yesterday
             $yesterdayStart = Carbon::yesterday()->startOfDay();
             $yesterdayEnd = Carbon::yesterday()->endOfDay();
