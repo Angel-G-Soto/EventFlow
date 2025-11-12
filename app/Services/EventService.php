@@ -669,7 +669,7 @@ class EventService
      *
      * @return \Illuminate\Support\Collection<int,string>
      */
-    public function getDistinctEventStatuses(): Collection
+    public function getDistinctEventStatuses(): SupportCollection
     {
         return Event::query()
             ->whereNotNull('status')
@@ -688,7 +688,7 @@ class EventService
      *
      * @return \Illuminate\Support\Collection<int,string>
      */
-    public function getDistinctOrganizations(): Collection
+    public function getDistinctOrganizations(): SupportCollection
     {
         return Event::query()
             ->whereNotNull('organization_name')
@@ -708,12 +708,46 @@ class EventService
      *
      * @return \Illuminate\Support\Collection<int,string>
      */
-    public function listVenueNames(): Collection
+    public function listVenueNames(): SupportCollection
     {
         return Venue::query()
             ->whereNull('deleted_at')
             ->orderBy('name')
             ->pluck('name');
+    }
+
+    /**
+     * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
+     *
+     * @return \Illuminate\Support\Collection<int,array{id:int,label:string}>
+     */
+    public function listVenuesForFilter(): SupportCollection
+    {
+        $venues = Venue::query()
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'code')
+            ->get();
+
+        // Count duplicates by normalized name
+        $nameCounts = $venues
+            ->groupBy(fn($v) => mb_strtolower(trim((string)($v->name ?? ''))))
+            ->map->count();
+
+        // Build label, appending code for duplicates when available
+        $options = $venues->map(function ($v) use ($nameCounts) {
+            $norm = mb_strtolower(trim((string)($v->name ?? '')));
+            $code = trim((string)($v->code ?? ''));
+            $label = (string)($v->name ?? '');
+            if ($norm !== '' && ($nameCounts[$norm] ?? 0) > 1 && $code !== '') {
+                $label .= ' (' . $code . ')';
+            }
+            return ['id' => (int)$v->id, 'label' => $label];
+        });
+
+        // Natural, case-insensitive sort by label
+        return $options
+            ->sort(fn($a, $b) => strnatcasecmp($a['label'], $b['label']))
+            ->values();
     }
 
     // [

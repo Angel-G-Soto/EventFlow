@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Services\AuditService;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 /**
  * UserService
@@ -139,7 +140,7 @@ class UserService
         foreach ($missing as $rcode) {
             $created = Role::firstOrCreate(
                 ['code' => $rcode],
-                ['name' => \Illuminate\Support\Str::of($rcode)->replace('-', ' ')->title()]
+                ['name' => Str::of($rcode)->replace('-', ' ')->title()]
             );
             //            $existing[$rcode] = $created->id;
             $foundIds[] = (int) $created->id;
@@ -163,7 +164,7 @@ class UserService
             }
             try {
                 if (request()) {
-                    $ctx = app(\App\Services\AuditService::class)
+                    $ctx = app(AuditService::class)
                         ->buildContextFromRequest(request(), $ctx['meta']);
                 }
             } catch (\Throwable) { /* queue/no-http */
@@ -221,7 +222,7 @@ class UserService
             }
             try {
                 if (request()) {
-                    $ctx = app(\App\Services\AuditService::class)
+                    $ctx = app(AuditService::class)
                         ->buildContextFromRequest(request(), $ctx['meta']);
                 }
             } catch (\Throwable) { /* queue/no-http */
@@ -268,7 +269,7 @@ class UserService
             }
             try {
                 if (request()) {
-                    $ctx = app(\App\Services\AuditService::class)
+                    $ctx = app(AuditService::class)
                         ->buildContextFromRequest(request(), $ctx['meta']);
                 }
             } catch (\Throwable) { /* queue/no-http */
@@ -330,7 +331,7 @@ class UserService
             $ctx = ['meta' => ['source' => 'user_create']];
             try {
                 if (request()) {
-                    $ctx = app(\App\Services\AuditService::class)
+                    $ctx = app(AuditService::class)
                         ->buildContextFromRequest(request(), $ctx['meta']);
                 }
             } catch (\Throwable) {

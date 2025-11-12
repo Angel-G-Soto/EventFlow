@@ -235,10 +235,10 @@ class UsersIndex extends Component
                     'auth_type'  => 'saml',
                     'password'   => bcrypt(str()->random(16)),
                 ], Auth::user());
-                $svc->updateUserRoles($user, $this->editRoles, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                $svc->updateUserRoles($user, $this->editRoles, Auth::user(), (string) $this->justification);
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
                 if ($deptId && $this->roleRequiresDepartment($this->editRoles)) {
-                    $svc->assignUserToDepartment($user, (int) $deptId, \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                    $svc->assignUserToDepartment($user, (int) $deptId, Auth::user(), (string) $this->justification);
                 }
                 $this->toast('User created');
             } catch (\Throwable $e) {
@@ -301,7 +301,7 @@ class UsersIndex extends Component
                 $user = app(UserService::class)->findUserById((int)$this->editId);
                 if ($user) {
                     // Clear roles instead of deleting the user record
-                    app(UserService::class)->updateUserRoles($user, [], \Illuminate\Support\Facades\Auth::user(), (string) $this->justification);
+                    app(UserService::class)->updateUserRoles($user, [], Auth::user(), (string) $this->justification);
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to clear user roles.');

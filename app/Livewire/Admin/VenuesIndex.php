@@ -429,7 +429,7 @@ class VenuesIndex extends Component
                 $dept = app(DepartmentService::class)->findByName($deptName);
                 if (!$dept) {
                     $created = app(DepartmentService::class)->updateOrCreateDepartment([
-                        ['name' => $deptName, 'code' => \Illuminate\Support\Str::slug($deptName)]
+                        ['name' => $deptName, 'code' => Str::slug($deptName)]
                     ]);
                     $dept = $created->first();
                 }
@@ -470,7 +470,7 @@ class VenuesIndex extends Component
         ];
 
         $venue = null;
-        $admin = \Illuminate\Support\Facades\Auth::user();
+        $admin = Auth::user();
         try {
             if ($this->editId) {
                 $existing = app(VenueService::class)->getVenueById((int)$this->editId);
@@ -552,7 +552,7 @@ class VenuesIndex extends Component
             try {
                 $venue = app(VenueService::class)->getVenueById((int)$this->editId);
                 if ($venue) {
-                    app(VenueService::class)->deactivateVenues([$venue], \Illuminate\Support\Facades\Auth::user());
+                    app(VenueService::class)->deactivateVenues([$venue], Auth::user());
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to delete venue.');
@@ -676,7 +676,7 @@ class VenuesIndex extends Component
     protected function filtered(): Collection
     {
         $needle = mb_strtolower(trim($this->search));
-        return $this->allVenues()->filter(function ($venue) use ($needle) {
+        $data = $this->allVenues()->filter(function ($venue) use ($needle) {
             $hit = $needle === '' ||
                 str_contains(mb_strtolower($venue['name']), $needle) ||
                 str_contains(mb_strtolower($venue['room']), $needle) ||
@@ -690,6 +690,21 @@ class VenuesIndex extends Component
 
             return $hit && $deptOk && $capOk;
         })->values();
+
+        // If there are duplicate venue names in the current dataset,
+        // append the venue code to the name to disambiguate.
+        $nameCounts = $data->countBy(function ($row) {
+            return mb_strtolower(trim((string)($row['name'] ?? '')));
+        });
+
+        return $data->map(function ($row) use ($nameCounts) {
+            $norm = mb_strtolower(trim((string)($row['name'] ?? '')));
+            $code = trim((string)($row['room'] ?? ''));
+            if ($norm !== '' && ($nameCounts[$norm] ?? 0) > 1 && $code !== '') {
+                $row['name'] = (string)$row['name'] . ' (' . $code . ')';
+            }
+            return $row;
+        });
     }
 
     /**

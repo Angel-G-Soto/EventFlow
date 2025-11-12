@@ -122,7 +122,6 @@ class EventsIndex extends Component
         $this->to = null;
         $this->requestor = '';
         $this->category = '';
-        $this->organization = '';
         $this->page = 1;
     }
 
@@ -269,7 +268,7 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
-        $this->editId = $id;
+        $this->editId = isset($id) && is_int($id) ? $id : null;
         $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'oversightConfirm');
     }
@@ -509,9 +508,9 @@ class EventsIndex extends Component
             $paginator = $this->paginated();
         }
         $visibleIds = $paginator->pluck('id')->all();
-        // Venue names from DB via service
+        // Venue options for filter (disambiguate duplicate names)
         try {
-            $venues = app(EventService::class)->listVenueNames()->values()->all();
+            $venues = app(EventService::class)->listVenuesForFilter()->values()->all();
         } catch (\Throwable $e) {
             $venues = [];
         }
@@ -593,7 +592,7 @@ class EventsIndex extends Component
             // Venue filter: support either venue id (int) or venue name (string)
             $venueOk = true;
             if (!is_null($this->venue) && $this->venue !== '') {
-                if (is_int($this->venue)) {
+                if (is_int($this->venue) || (is_string($this->venue) && ctype_digit($this->venue))) {
                     $venueOk = (int)($request['venue_id'] ?? 0) === (int)$this->venue;
                 } else {
                     $venueOk = (string)$request['venue'] === (string)$this->venue;
@@ -695,7 +694,7 @@ class EventsIndex extends Component
     {
         try {
             $res = app(EventService::class)->getAllEvents([]);
-            if ($res instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+            if ($res instanceof LengthAwarePaginator) {
                 return collect($res->items());
             }
             if (is_iterable($res)) return collect($res);
