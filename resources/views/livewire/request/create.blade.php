@@ -78,9 +78,9 @@
                 </div>
 
                 <div class="col-md-12">
-                    <label class="form-label required">Number of Guests</label>
+                    <label class="form-label">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
-                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
+
                 </div>
 
                 <div class="col-md-6">
