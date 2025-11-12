@@ -176,7 +176,8 @@
                 @foreach(($allRoles ?? []) as $role)
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" id="role_{{ $role['code'] }}"
-                    value="{{ $role['code'] }}" wire:model.live="editRoles" @disabled(($editId ?? null) && $role['code']==='user')>
+                    value="{{ $role['code'] }}" wire:model.live="editRoles" @disabled(($editId ?? null) &&
+                    $role['code']==='user' )>
                   <label class="form-check-label" for="role_{{ $role['code'] }}">
                     {{ $role['name'] }}
                   </label>
@@ -184,7 +185,7 @@
                 @endforeach
               </div>
               @if(!($editId ?? null))
-                <small class="text-muted">The <b>User</b> role is pre-checked for all new users.</small>
+              <small class="text-muted">The <b>User</b> role is pre-checked for all new users.</small>
               @endif
               @error('editRoles') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>

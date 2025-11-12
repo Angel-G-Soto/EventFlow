@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Event\EventCollection;
 use Illuminate\Database\Eloquent\Collection;
 use function PHPUnit\Framework\isEmpty;
+use DateTimeInterface;
 
 class EventService
 {
@@ -714,6 +715,67 @@ class EventService
             ->whereNull('deleted_at')
             ->orderBy('name')
             ->pluck('name');
+    }
+
+    /**
+     * Return normalized Event DTO rows for oversight UI, using service-only mapping.
+     *
+     * Filters: status, venue_id, organization_name, from, to
+     *
+     * @param array<string,mixed> $filters
+     * @return \Illuminate\Support\Collection<int,array<string,mixed>>
+     */
+    public function getEventRows(array $filters = []): SupportCollection
+    {
+        $q = Event::query()->with(['venue', 'requester', 'categories']);
+
+        if (!empty($filters['status'])) {
+            $q->where('status', (string) $filters['status']);
+        }
+        if (!empty($filters['venue_id'])) {
+            $q->where('venue_id', (int) $filters['venue_id']);
+        }
+        if (!empty($filters['organization_name'])) {
+            $q->where('organization_name', (string) $filters['organization_name']);
+        }
+        if (!empty($filters['from'])) {
+            $q->where('start_time', '>=', (string) $filters['from']);
+        }
+        if (!empty($filters['to'])) {
+            $q->where('end_time', '<=', (string) $filters['to']);
+        }
+
+        $events = $q->orderByDesc('created_at')->get();
+
+        return $events->map(function ($e) {
+            $from = $e->start_time instanceof DateTimeInterface ? $e->start_time->format('Y-m-d H:i') : (string)$e->start_time;
+            $to   = $e->end_time   instanceof DateTimeInterface ? $e->end_time->format('Y-m-d H:i')   : (string)$e->end_time;
+            $requestor = method_exists($e, 'requester') && $e->requester
+                ? trim(($e->requester->first_name ?? '') . ' ' . ($e->requester->last_name ?? ''))
+                : ('User ' . (string)($e->creator_id ?? ''));
+            $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
+            $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
+            return [
+                'id' => (int)$e->id,
+                'title' => (string)($e->title ?? 'Untitled'),
+                'requestor' => $requestor,
+                'organization' => (string)($e->organization_name ?? ''),
+                'organization_advisor_name' => (string)($e->organization_advisor_name ?? ''),
+                'organization_advisor_email' => (string)($e->organization_advisor_email ?? ''),
+                'venue' => (string)$venueName,
+                'venue_id' => (int)($e->venue_id ?? 0),
+                'from' => (string)$from,
+                'to' => (string)$to,
+                'status' => (string)($e->status ?? ''),
+                'category' => (string)$category,
+                'updated' => now()->format('Y-m-d H:i'),
+                'description' => (string)($e->description ?? ''),
+                'attendees' => (int)($e->guest_size ?? 0),
+                'handles_food' => (bool)($e->handles_food ?? false),
+                'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
+                'external_guest' => (bool)($e->external_guest ?? false),
+            ];
+        })->values();
     }
 
     /**
