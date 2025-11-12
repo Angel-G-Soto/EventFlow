@@ -779,6 +779,24 @@ class EventService
     }
 
     /**
+     * Sync the event's category based on a provided category NAME string.
+     * If name doesn't resolve, leave categories unchanged.
+     */
+    public function syncEventCategoryByName(Event $event, string $categoryName): void
+    {
+        $name = trim($categoryName);
+        if ($name === '') return;
+        try {
+            $cat = Category::where('name', $name)->first();
+            if ($cat) {
+                $event->categories()->sync([$cat->id]);
+            }
+        } catch (\Throwable) {
+            // ignore
+        }
+    }
+
+    /**
      * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
      *
      * @return \Illuminate\Support\Collection<int,array{id:int,label:string}>
