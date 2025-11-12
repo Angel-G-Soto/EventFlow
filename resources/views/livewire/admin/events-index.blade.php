@@ -39,9 +39,14 @@
         {{-- Category filter removed intentionally --}}
         {{-- Organization filter removed; included in search --}}
         <div class="col-md-4"><label class="form-label" for="ev_from">From</label><input id="ev_from"
-            type="datetime-local" class="form-control" wire:model.live="from"></div>
+            type="datetime-local" class="form-control" wire:model.defer="from"></div>
         <div class="col-md-4"><label class="form-label" for="ev_to">To</label><input id="ev_to" type="datetime-local"
-            class="form-control" wire:model.live="to"></div>
+            class="form-control" wire:model.defer="to"></div>
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" wire:click="applyDateRange" type="button" aria-label="Apply date range">
+            Apply
+          </button>
+        </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
@@ -153,8 +158,7 @@
                 id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
                 id="ev_v_advisor_email" class="form-control" readonly value="{{ $eAdvisorEmail }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_phone">Advisor Phone</label><input
-                id="ev_v_advisor_phone" class="form-control" readonly value="{{ $eAdvisorPhone }}"></div>
+            
             <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
                 value="{{ $eStudentNumber }}"></div>
             <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control" readonly
@@ -214,13 +218,27 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6"><label class="form-label" for="ev_e_title">Title</label><input id="ev_e_title"
-                class="form-control" wire:model.live="eTitle" placeholder="Event title"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_org">Organization</label><input id="ev_e_org"
-                class="form-control" wire:model.live="eOrganization" placeholder="Organization name"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_venue">Venue</label><input id="ev_e_venue"
-                class="form-control" wire:model.live="eVenue" placeholder="Venue name"></div>
+            <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="ev_e_title">Title</label>
+              <input id="ev_e_title" class="form-control @error('eTitle') is-invalid @enderror" wire:model.live="eTitle" placeholder="Event title">
+              @error('eTitle')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_org">Organization</label>
+              <input id="ev_e_org" class="form-control @error('eOrganization') is-invalid @enderror" wire:model.live="eOrganization" placeholder="Organization name">
+              @error('eOrganization')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_venue">Venue</label>
+              <select id="ev_e_venue" class="form-select @error('eVenueId') is-invalid @enderror" wire:model.live="eVenueId">
+                <option value="0">Select a venue</option>
+                @foreach(($venues ?? []) as $v)
+                  <option value="{{ $v['id'] }}">{{ $v['label'] }}</option>
+                @endforeach
+              </select>
+              @error('eVenueId')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor">Advisor Name</label><input
                 id="ev_e_advisor" class="form-control" wire:model.live="eAdvisorName" placeholder="Advisor's full name">
             </div>
@@ -233,24 +251,35 @@
             <div class="col-md-3"><label class="form-label" for="ev_e_student_phone">Student Phone</label><input
                 id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####">
             </div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_from">From</label><input id="ev_e_from"
-                type="datetime-local" class="form-control" wire:model.live="eFrom"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_to">To</label><input id="ev_e_to"
-                type="datetime-local" class="form-control" wire:model.live="eTo"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_attendees">Attendees</label><input
-                id="ev_e_attendees" type="number" class="form-control" min="0" wire:model.live="eAttendees"
-                placeholder="0+"></div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_from">From</label>
+              <input id="ev_e_from" type="datetime-local" class="form-control @error('eFrom') is-invalid @enderror" wire:model.live="eFrom">
+              @error('eFrom')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_to">To</label>
+              <input id="ev_e_to" type="datetime-local" class="form-control @error('eTo') is-invalid @enderror" wire:model.live="eTo">
+              @error('eTo')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_attendees">Attendees</label>
+              <input id="ev_e_attendees" type="number" class="form-control @error('eAttendees') is-invalid @enderror" min="1" wire:model.live="eAttendees" placeholder="0+">
+              @error('eAttendees')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_category">Category</label>
-              <select id="ev_e_category" class="form-select" wire:model.live="eCategory">
+              <select id="ev_e_category" class="form-select @error('eCategory') is-invalid @enderror" wire:model.live="eCategory">
                 @foreach($categories as $cat)
                 <option value="{{ $cat }}">{{ $cat }}</option>
                 @endforeach
               </select>
+              @error('eCategory')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-12"><label class="form-label" for="ev_e_purpose">Description</label><textarea
-                id="ev_e_purpose" class="form-control" rows="3" wire:model.live="ePurpose"
-                placeholder="What is this event about?"></textarea></div>
+            <div class="col-12">
+              <label class="form-label" for="ev_e_purpose">Description</label>
+              <textarea id="ev_e_purpose" class="form-control @error('ePurpose') is-invalid @enderror" rows="3" wire:model.live="ePurpose" placeholder="What is this event about?"></textarea>
+              @error('ePurpose')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
 
             <div class="col-12">
               <label class="form-label">Policies</label>
