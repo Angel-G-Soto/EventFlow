@@ -20,6 +20,8 @@ class EnsureAuthentication
         // Check if the user is not authenticated
         if (!Auth::check()) {
             // Redirect to the saml.login route
+            session()->put('url.intended', $request->fullUrl() ?: '/');
+//            dd(session('url.intended'));
             return Socialite::driver('saml2')->redirect();
         }
 

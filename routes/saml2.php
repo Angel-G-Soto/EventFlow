@@ -28,9 +28,7 @@ use App\Models\User;
 //    ->name('nexo.callback');
 
 Route::get('/auth/saml/login', function () {
-
     return Socialite::driver('saml2')->redirect();
-
 })->name("saml.login");
 
 Route::post('/auth/saml/logout', function () {
@@ -53,6 +51,8 @@ Route::any('/auth/callback', function () {
         'auth_type' => 'saml2',
         'password' => "thisisatest",
     ]);
+
     Auth::login($user);
-    return redirect('/');
+
+    return redirect()->intended('/');
 })->name("saml.callback");
