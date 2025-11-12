@@ -31,8 +31,6 @@ trait EventEditState
   public string $actionType = '';
   public string $justification = '';
 
-  // Reroute target
-  public string $rerouteTo = '';
 
   // Advance target
   public string $advanceTo = '';

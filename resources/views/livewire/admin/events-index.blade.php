@@ -10,14 +10,15 @@
           <label class="form-label" for="ev_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
-              <input id="ev_search" class="form-control" placeholder="title, requestor" wire:model.defer="search">
+              <input id="ev_search" class="form-control" placeholder="Search title, requestor, or organization"
+                wire:model.defer="search">
               <button class="btn btn-secondary" type="submit" aria-label="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
           </form>
         </div>
-        <div class="col-md-2">
+        {{-- <div class="col-md-2">
           <label class="form-label" for="ev_status">Status</label>
           <select id="ev_status" class="form-select" wire:model.live="status">
             <option value="">All</option>
@@ -25,7 +26,7 @@
             <option value="{{ $st }}">{{ $st }}</option>
             @endforeach
           </select>
-        </div>
+        </div> --}}
         <div class="col-md-3">
           <label class="form-label" for="ev_venue">Venue</label>
           <select id="ev_venue" class="form-select" wire:model.live="venue">
@@ -36,18 +37,10 @@
           </select>
         </div>
         {{-- Category filter removed intentionally --}}
-        <div class="col-md-2">
-          <label class="form-label" for="ev_org">Organization</label>
-          <select id="ev_org" class="form-select" wire:model.live="organization">
-            <option value="">All</option>
-            @foreach($organizations as $org)
-            <option value="{{ $org }}">{{ $org }}</option>
-            @endforeach
-          </select>
-        </div>
-        <div class="col-md-2"><label class="form-label" for="ev_from">From</label><input id="ev_from"
+        {{-- Organization filter removed; included in search --}}
+        <div class="col-md-4"><label class="form-label" for="ev_from">From</label><input id="ev_from"
             type="datetime-local" class="form-control" wire:model.live="from"></div>
-        <div class="col-md-2"><label class="form-label" for="ev_to">To</label><input id="ev_to" type="datetime-local"
+        <div class="col-md-4"><label class="form-label" for="ev_to">To</label><input id="ev_to" type="datetime-local"
             class="form-control" wire:model.live="to"></div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
@@ -109,8 +102,8 @@
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})"
-                  aria-label="Delete request {{ $r['id'] }}" title="Delete request #{{ $r['id'] }}">
-                  <i class="bi bi-trash3"></i>
+                  aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
+                  <i class="bi bi-x-circle"></i>
                 </button>
               </div>
             </td>
@@ -309,35 +302,11 @@
   {{-- Justification for save/delete/approve/deny --}}
   <x-justification id="oversightJustify" submit="confirmJustify" model="justification" />
 
-  {{-- Confirm delete --}}
-  <x-confirm-delete id="oversightConfirm" title="Delete request" message="Are you sure you want to delete this request?"
+  {{-- Confirm cancel --}}
+  <x-confirm-delete id="oversightConfirm" title="Cancel request" message="Are you sure you want to cancel this request?"
     confirm="proceedDelete" />
 
-  {{-- Reroute modal --}}
-  <div class="modal fade" id="oversightReroute" tabindex="-1" aria-hidden="true" wire:ignore.self>
-    <div class="modal-dialog">
-      <form class="modal-content" wire:submit.prevent="confirmReroute">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-shuffle me-2"></i>Re-route Request</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Route to</label>
-            <input type="text" class="form-control" placeholder="e.g., Advisor, Manager, Jane Doe"
-              wire:model.live="rerouteTo">
-            @error('rerouteTo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
-            aria-label="Cancel and close">Cancel</button>
-          <button class="btn btn-warning" type="submit" aria-label="Confirm re-route"><i
-              class="bi bi-shuffle me-1"></i>Re-route</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  {{-- Reroute disabled --}}
 
   {{-- Advance modal --}}
   <div class="modal fade" id="oversightAdvance" tabindex="-1" aria-hidden="true" wire:ignore.self>
