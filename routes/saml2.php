@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Models\User;
@@ -38,7 +40,7 @@ Route::post('/auth/saml/logout', function () {
 
 })->name("saml.logout");
 
-Route::any('/auth/callback', function () {
+Route::any('/auth/callback', function (Request $request) {
 
     $saml = Socialite::driver('saml2')->stateless()->user();
 //    $saml = Socialite::driver('saml2')->stateless()->user();
@@ -54,5 +56,8 @@ Route::any('/auth/callback', function () {
 
     Auth::login($user);
 
-    return redirect()->intended('/');
+    $fallback = Cookie::get('saml_intended', '/');
+    Cookie::queue(Cookie::forget('saml_intended'));
+
+    return redirect()->intended($fallback);
 })->name("saml.callback");
