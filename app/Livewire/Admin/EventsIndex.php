@@ -106,6 +106,28 @@ class EventsIndex extends Component
         $this->page = 1;
     }
 
+    /**
+     * Apply the selected date range (from/to) and reset pagination.
+     */
+    public function applyDateRange(): void
+    {
+        $this->page = 1;
+    }
+
+    /**
+     * Keep venue label ($eVenue) in sync when the selected venue id changes in the edit modal.
+     */
+    public function updatedEVenueId($value): void
+    {
+        try {
+            $opts = app(EventService::class)->listVenuesForFilter();
+            $match = collect($opts)->firstWhere('id', (int)$value);
+            if (is_array($match) && isset($match['label'])) {
+                $this->eVenue = (string)$match['label'];
+            }
+        } catch (\Throwable) { /* noop */ }
+    }
+
     // Filters: clear/reset
 
     /**
@@ -171,6 +193,7 @@ class EventsIndex extends Component
         $this->eTitle = $request['title'];
         $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
         $this->eVenue = $request['venue'];
+        $this->eVenueId = (int)($request['venue_id'] ?? 0);
         $this->eFrom = substr($request['from'], 0, 16);
         $this->eTo   = substr($request['to'], 0, 16);
         $this->eAttendees = $request['attendees'] ?? 0;
@@ -184,9 +207,9 @@ class EventsIndex extends Component
         $this->eOrganization   = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
         $this->eAdvisorName    = $request['organization_advisor_name']  ?? '';
         $this->eAdvisorEmail   = $request['organization_advisor_email'] ?? '';
-        $this->eAdvisorPhone   = $request['organization_advisor_phone'] ?? '';
-        $this->eStudentNumber  = $request['student_number'] ?? '';
-        $this->eStudentPhone   = $request['student_phone']  ?? '';
+        // Map to DB-backed creator fields
+        $this->eStudentNumber  = $request['creator_institutional_number'] ?? '';
+        $this->eStudentPhone   = $request['creator_phone_number'] ?? '';
     }
 
     // Persist edits / session writes
@@ -228,7 +251,7 @@ class EventsIndex extends Component
                 $svc = app(EventService::class);
                 $event = $this->getEventFromServiceById((int)$this->editId);
                 if ($event) {
-                    $venueId = (int)($event->venue_id ?? 0);
+                    $venueId = (int)($this->eVenueId ?: ($event->venue_id ?? 0));
                     // Build full payload for performManualOverride
                     $payload = [
                         'venue_id'     => $venueId,
@@ -241,12 +264,18 @@ class EventsIndex extends Component
                         'organization_name' => (string)$this->eOrganization,
                         'organization_advisor_name'  => (string)$this->eAdvisorName,
                         'organization_advisor_email' => (string)$this->eAdvisorEmail,
+                        'creator_institutional_number' => (string)$this->eStudentNumber,
+                        'creator_phone_number'          => (string)$this->eStudentPhone,
                         'handles_food' => (bool)$this->eHandlesFood,
                         'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
                         'external_guests' => (bool)$this->eExternalGuest,
                     ];
                     // Route edits through performManualOverride (service-only, no model access here)
-                    $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
+                    $saved = $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
+                    // Sync category by name (if provided)
+                    if (trim((string)$this->eCategory) !== '') {
+                        try { $svc->syncEventCategoryByName($saved, (string)$this->eCategory); } catch (\Throwable) { /* noop */ }
+                    }
                 }
             } catch (\Throwable $e) {
                 // swallow update errors
@@ -571,6 +600,8 @@ class EventsIndex extends Component
                     'handles_food' => (bool)($e->handles_food ?? false),
                     'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
                     'external_guest' => (bool)($e->external_guest ?? false),
+                    'creator_institutional_number' => (string)($e->creator_institutional_number ?? ''),
+                    'creator_phone_number'  => (string)($e->creator_phone_number ?? ''),
                 ];
             });
         return collect($rows);
@@ -629,7 +660,7 @@ class EventsIndex extends Component
         return [
             'eTitle' => ['required', 'string', 'min:3', 'max:120', 'not_regex:/^\s*$/'],
             'ePurpose' => ['required', 'string', 'min:3', 'max:2000', 'not_regex:/^\s*$/'],
-            'eVenue' => ['required', 'string', 'max:120', 'not_regex:/^\s*$/'],
+            'eVenueId' => ['required', 'integer', 'min:1'],
             'eFrom' => ['required', 'string'], // validated as date in datesInOrder()
             'eTo' => ['required', 'string'],   // validated as date in datesInOrder()
             'eAttendees' => ['required', 'integer', 'min:1', 'max:50000'],
@@ -640,7 +671,7 @@ class EventsIndex extends Component
             'eOrganization' => ['required', 'string', 'min:2', 'max:120', 'not_regex:/^\s*$/'],
             'eAdvisorName' => ['nullable', 'string', 'max:120'],
             'eAdvisorEmail' => ['nullable', 'email', 'max:120'],
-            'eAdvisorPhone' => ['nullable', 'string', 'max:50'],
+            // Advisor phone removed; no backing column in schema
             'eStudentNumber' => ['nullable', 'string', 'max:50'],
             'eStudentPhone' => ['nullable', 'string', 'max:50'],
         ];
