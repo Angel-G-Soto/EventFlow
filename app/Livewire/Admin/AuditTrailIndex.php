@@ -65,7 +65,7 @@ class AuditTrailIndex extends Component
   {
     return [
       'userId'    => ['nullable', 'integer', 'min:1'],
-      'action'    => ['nullable', 'string', 'max:100'],
+      'action'    => ['nullable', 'string', 'max:100', 'not_regex:/^\s*$/'],
       'from'      => ['nullable', 'date_format:Y-m-d'],
       'to'        => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
       'adminOnly' => ['boolean'],

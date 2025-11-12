@@ -348,19 +348,20 @@ class VenuesIndex extends Component
      */
     protected function rules(): array
     {
+        $allowedDepartments = app(DepartmentService::class)->getAllDepartments()->pluck('name')->all();
         return [
-            'vName'      => 'required|string|max:150',
-            'vRoom'      => 'required|string|max:50',
-            'vDepartment' => 'required|string|max:120',
-            'vCapacity'  => 'required|integer|min:0', // >= 0
-            'vManager'   => 'nullable|string|max:120',
-            'vStatus'    => 'required|in:Active,Inactive',
-            'vFeatures'  => 'array',
+            'vName'      => ['required', 'string', 'max:150', 'not_regex:/^\s*$/'],
+            'vRoom'      => ['required', 'string', 'max:50', 'not_regex:/^\s*$/'],
+            'vDepartment' => ['required', 'string', 'max:120', 'in:' . implode(',', $allowedDepartments)],
+            'vCapacity'  => ['required', 'integer', 'min:1', 'max:100000'], // must be positive
+            'vManager'   => ['nullable', 'string', 'max:120'],
+            'vStatus'    => ['required', 'in:Active,Inactive'],
+            'vFeatures'  => ['array'],
             // Justification validated separately on confirm; keep rule for Livewire error bag consistency
-            'justification' => 'nullable|string|min:10|max:200',
-            'timeRanges'            => 'array',
-            'timeRanges.*.from'     => 'required|date_format:H:i',
-            'timeRanges.*.to'       => 'required|date_format:H:i',
+            'justification' => ['nullable', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],
+            'timeRanges'            => ['array'],
+            'timeRanges.*.from'     => ['required', 'date_format:H:i'],
+            'timeRanges.*.to'       => ['required', 'date_format:H:i'],
         ];
     }
 

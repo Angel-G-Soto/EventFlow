@@ -372,7 +372,7 @@ class DepartmentsIndex extends Component
   protected function rules(): array
   {
     return [
-      'justification' => ['required', 'string', 'min:10', 'max:200'],
+      'justification' => ['required', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],
     ];
   }
 

@@ -367,14 +367,7 @@ class EventsIndex extends Component
      * This function is used to re-route an event request that has been flagged for oversight.
      * It will open the justification modal with the action type set to 'reroute', allowing the user to enter a justification for the re-routing.
      */
-    public function reroute(): void
-    {
-        $this->authorize('perform-override');
-
-        $this->actionType = 'reroute';
-        $this->rerouteTo = '';
-        $this->dispatch('bs:open', id: 'oversightReroute');
-    }
+    // reroute removed
 
     // Confirm action flows
     /**
@@ -453,6 +446,7 @@ class EventsIndex extends Component
             $this->confirmAction();
             return;
         }
+        // 'reroute' removed
         $this->confirmSave();
     }
 
@@ -485,43 +479,16 @@ class EventsIndex extends Component
         $this->reset('actionType', 'advanceTo');
     }
 
-    /**
-     * Confirm reroute with a target. Updates status and stores the reroute target.
-     */
-    public function confirmReroute(): void
-    {
-        $this->authorize('perform-override');
-
-        $data = $this->validate([
-            'rerouteTo' => ['required', 'string', 'min:2', 'max:120'],
-        ]);
-
-        if ($this->editId) {
-            foreach ($this->requests as &$request) {
-                if ((int)($request['id'] ?? 0) === (int)$this->editId) {
-                    $request['status']     = 'Pending';
-                    $request['updated']    = now()->format('Y-m-d H:i');
-                    $request['routed_to']  = (string)($data['rerouteTo'] ?? $this->rerouteTo);
-                    break;
-                }
-            }
-            unset($request);
-        }
-
-        $this->dispatch('bs:close', id: 'oversightReroute');
-        $this->dispatch('bs:close', id: 'oversightEdit');
-        $this->dispatch('toast', message: 'Re-routed to ' . $this->rerouteTo);
-        $this->reset('actionType', 'rerouteTo');
-    }
-
+        // Reroute logic removed
+    
     /**
      * Navigates to a given page number, clamping within valid bounds.
      */
     public function goToPage(int $target): void
     {
-        $total = $this->filtered()->count();
-        $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
-        $this->page = max(1, min($target, $last));
+    $total = $this->filtered()->count();
+    $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
+    $this->page = max(1, min($target, $last));
     }
 
     /**
@@ -551,7 +518,6 @@ class EventsIndex extends Component
         return view('livewire.admin.events-index', [
             'rows' => $paginator,
             'visibleIds' => $visibleIds,
-            'organizations' => $this->organizations,
             'statuses' => $this->statuses,
             'categories' => $this->categoryPool,
             'venues' => $venues,
@@ -564,12 +530,11 @@ class EventsIndex extends Component
      */
     public function statusBadgeClass(string $status): string
     {
-        $s = mb_strtolower(trim($status));
+    $s = mb_strtolower(trim($status));
         if ($s === '') return 'text-bg-secondary';
         if (str_contains($s, 'approve')) return 'text-bg-success';
         if (str_contains($s, 'deny') || str_contains($s, 'reject') || str_contains($s, 'cancel') || str_contains($s, 'withdraw')) return 'text-bg-danger';
         if (str_contains($s, 'pending')) return 'text-bg-primary';
-        if (str_contains($s, 'complete')) return 'text-bg-info';
         return 'text-bg-secondary';
     }
 
@@ -619,9 +584,11 @@ class EventsIndex extends Component
     {
         $s = mb_strtolower(trim($this->search));
         return $this->allRequests()->filter(function ($request) use ($s) {
+            $orgVal = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
             $hit = $s === '' ||
                 str_contains(mb_strtolower($request['title']), $s) ||
-                str_contains(mb_strtolower($request['requestor']), $s);
+                str_contains(mb_strtolower($request['requestor']), $s) ||
+                str_contains(mb_strtolower((string)$orgVal), $s);
             $statOk  = $this->status === '' || $request['status'] === $this->status;
             // Venue filter: support either venue id (int) or venue name (string)
             $venueOk = true;
@@ -633,8 +600,8 @@ class EventsIndex extends Component
                 }
             }
             $catOk   = $this->category === '' || $request['category'] === $this->category;
-            $orgVal  = $request['organization'] ?? ($request['organization_nexo_name'] ?? ($request['requestor'] ?? ''));
-            $orgOk   = $this->organization === '' || $orgVal === $this->organization;
+            // Organization is part of free-text search; org filter disabled
+            $orgOk   = true;
 
             // Normalize date comparisons to timestamps
             $dateOk = true;
@@ -661,17 +628,17 @@ class EventsIndex extends Component
     protected function eventFieldRules(): array
     {
         return [
-            'eTitle' => ['required', 'string', 'min:3', 'max:120'],
-            'ePurpose' => ['required', 'string', 'min:3', 'max:2000'],
-            'eVenue' => ['required', 'string', 'max:120'],
+            'eTitle' => ['required', 'string', 'min:3', 'max:120', 'not_regex:/^\s*$/'],
+            'ePurpose' => ['required', 'string', 'min:3', 'max:2000', 'not_regex:/^\s*$/'],
+            'eVenue' => ['required', 'string', 'max:120', 'not_regex:/^\s*$/'],
             'eFrom' => ['required', 'string'], // validated as date in datesInOrder()
             'eTo' => ['required', 'string'],   // validated as date in datesInOrder()
-            'eAttendees' => ['required', 'integer', 'min:0', 'max:50000'],
+            'eAttendees' => ['required', 'integer', 'min:1', 'max:50000'],
             'eCategory' => ['required', 'string', Rule::in($this->categoryPool)],
             'eHandlesFood' => ['boolean'],
             'eUseInstitutionalFunds' => ['boolean'],
             'eExternalGuest' => ['boolean'],
-            'eOrganization' => ['required', 'string', 'min:2', 'max:120'],
+            'eOrganization' => ['required', 'string', 'min:2', 'max:120', 'not_regex:/^\s*$/'],
             'eAdvisorName' => ['nullable', 'string', 'max:120'],
             'eAdvisorEmail' => ['nullable', 'email', 'max:120'],
             'eAdvisorPhone' => ['nullable', 'string', 'max:50'],
@@ -709,7 +676,7 @@ class EventsIndex extends Component
     protected function rules(): array
     {
         return [
-            'justification' => ['required', 'string', 'min:10', 'max:200']
+            'justification' => ['required', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/']
         ];
     }
 
@@ -742,9 +709,9 @@ class EventsIndex extends Component
      */
     protected function getEventFromServiceById(int $id)
     {
-        if ($id <= 0) return null;
-        $list = $this->fetchEventsCollection();
-        return $list->firstWhere('id', $id) ?? null;
+    if (!isset($id) || $id <= 0) return null;
+    $list = $this->fetchEventsCollection();
+    return $list->firstWhere('id', $id) ?? null;
     }
 
 

@@ -396,14 +396,14 @@ class UsersIndex extends Component
     protected function mapUserToRow($u): array
     {
         $name = trim(trim((string)($u->first_name ?? '')) . ' ' . trim((string)($u->last_name ?? '')));
-        // Ensure unique role codes for display
+        // Ensure unique role names for display
         $roles = method_exists($u, 'roles')
             ? $u->roles
-            ->map(fn($r) => $r->code ?? \Illuminate\Support\Str::slug((string)$r->name))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all()
+                ->map(fn($r) => $r->name ?? '')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all()
             : [];
 
         return [
@@ -425,14 +425,20 @@ class UsersIndex extends Component
         $deptRequired = $this->roleRequiresDepartment($this->editRoles);
         // Allowed role codes derived from DB
         $allowedRoleCodes = app(UserService::class)->getAllRoles()->pluck('code')->all();
+        // Allowed departments from DB
+        $allowedDepartments = app(DepartmentService::class)->getAllDepartments()->pluck('name')->all();
 
         return [
-            'editName'       => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'editEmail'      => 'required|email|regex:/@upr[a-z]*\.edu$/i',
-            'editRoles'      => 'array|min:1',
-            'editRoles.*'    => 'string|in:' . implode(',', $allowedRoleCodes), // validate by ROLE CODE
-            'editDepartment' => $deptRequired ? 'required|string' : 'nullable|string',
-            'justification'  => 'nullable|string|min:10|max:200',
+            'editName'       => [
+                'required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/', 'not_regex:/^\s*$/',
+            ],
+            'editEmail'      => [
+                'required', 'email', 'regex:/@upr[a-z]*\.edu$/i', 'not_regex:/^\s*$/', 'unique:users,email,' . ($this->editId ?? 'NULL') . ',id',
+            ],
+            'editRoles'      => ['array', 'min:1'],
+            'editRoles.*'    => ['string', 'in:' . implode(',', $allowedRoleCodes)], // validate by ROLE CODE
+            'editDepartment' => $deptRequired ? ['required', 'string', 'in:' . implode(',', $allowedDepartments)] : ['nullable', 'string'],
+            'justification'  => ['nullable', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],
         ];
     }
 
@@ -510,21 +516,20 @@ class UsersIndex extends Component
     // Only 'department-director' and 'venue-manager' can have a department
     protected function roleRequiresDepartment(array $roles): bool
     {
-        // Normalize selected roles to slug names, regardless of whether the UI
-        // is providing numeric codes or slug strings. Falls back gracefully if
-        // role lookup fails.
+        // Normalize selected roles to names only
         try {
-            $map = app(\App\Services\UserService::class)
+            $roleNames = app(UserService::class)
                 ->getAllRoles()
-                ->mapWithKeys(fn($r) => [(string) $r->code => (string) $r->name]);
+                ->pluck('name')
+                ->all();
         } catch (\Throwable $e) {
-            $map = collect();
+            $roleNames = [];
         }
-        $slugs = collect($roles)
+        $names = collect($roles)
             ->map(fn($v) => (string) $v)
-            ->map(fn($v) => $map[$v] ?? $v)
+            ->filter(fn($v) => in_array($v, $roleNames, true))
             ->all();
-        return in_array('department-director', $slugs, true) || in_array('venue-manager', $slugs, true);
+        return in_array('Department Director', $names, true) || in_array('Venue Manager', $names, true);
     }
 
     /**
