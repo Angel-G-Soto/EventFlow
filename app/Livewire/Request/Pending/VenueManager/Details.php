@@ -75,7 +75,7 @@ class Details extends Component
 //            ->where('start_time', '<', $this->event->end_time)
 //            ->where('end_time',   '>', $this->event->start_time)
             ->orderBy('start_time')
-            ->select(['id', 'title', 'start_time', 'end_time', 'organization_nexo_name']);
+            ->select(['id', 'title', 'start_time', 'end_time', 'organization_name']);
     }
 
     /**

@@ -96,12 +96,74 @@
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Event Category (multiple)</label>
-                    <select class="form-select" wire:model.defer="category_ids" multiple size="5">
-                        @foreach ($allCategories as $cat)
-                            <option value="{{ $cat['id'] }}">{{ $cat['name'] }}</option>
-                        @endforeach
-                    </select>
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <label class="form-label">Event Categories</label>
+                        <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories" @disabled(empty($category_ids))>
+                            Clear selection
+                        </button>
+                    </div>
+
+                    <div class="card border shadow-sm">
+                        <div class="card-body">
+                            <div class="row g-2 align-items-center mb-3">
+                                <div class="col-md-8">
+                                    <input
+                                        type="search"
+                                        class="form-control"
+                                        placeholder="Search categories (e.g., Workshop, Fundraiser)"
+                                        wire:model.debounce.300ms="categorySearch"
+                                    >
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <small class="text-muted">
+                                        {{ count($category_ids) }} selected
+                                    </small>
+                                </div>
+                            </div>
+
+                            @if (!empty($selectedCategoryLabels))
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Selected</small>
+                                    @foreach ($selectedCategoryLabels as $id => $label)
+                                        <span class="badge rounded-pill text-bg-light border me-1 mb-1">
+                                            {{ $label }}
+                                            <button
+                                                type="button"
+                                                class="btn btn-link btn-sm text-decoration-none ps-1"
+                                                wire:click="removeCategory({{ (int) $id }})"
+                                                aria-label="Remove {{ $label }}"
+                                            >&times;</button>
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div class="row row-cols-1 row-cols-md-2 g-2">
+                                @forelse ($filteredCategories as $cat)
+                                    <div class="col">
+                                        <label class="border rounded p-3 h-100 d-flex gap-3 align-items-start shadow-sm">
+                                            <input
+                                                type="checkbox"
+                                                class="form-check-input mt-1"
+                                                value="{{ $cat['id'] }}"
+                                                wire:model.live="category_ids"
+                                            >
+                                            <span>
+                                                <span class="fw-semibold d-block">{{ $cat['name'] }}</span>
+                                                @if (!empty($cat['description'] ?? null))
+                                                    <small class="text-muted">{{ $cat['description'] }}</small>
+                                                @endif
+                                            </span>
+                                        </label>
+                                    </div>
+                                @empty
+                                    <div class="col">
+                                        <p class="text-muted mb-0">No categories match your search.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <label class="form-label">General Requirements</label>
@@ -201,14 +263,53 @@
     {{-- STEP 3 --}}
     @if ($step === 3)
         <form wire:submit.prevent="submit">
+
             <div class="mb-3">
-                <div class="form-text">Upload the documents required for the selected venue.</div>
+                <div class="form-text">Upload the documents required due to the nature of the event.</div>
             </div>
+
+            {{-- If 'This event is to sell food' is checked, show a link --}}
+            @if ($handles_food)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
+
+            {{-- If 'This event uses institutional funds' is checked, show a link --}}
+            @if ($use_institutional_funds)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
+
+            {{-- If 'This event has an external guest' is checked, show a link --}}
+            @if ($external_guest)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
 
 
             @if (empty($requiredDocuments))
                 <div class="alert alert-secondary">No documents required for this venue.</div>
             @else
+
+                <div class="mb-3">
+                    <div class="form-text">Upload the documents required for this venue.</div>
+                </div>
+
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
@@ -268,7 +369,3 @@
         }
     });
 </script>
-
-
-
-

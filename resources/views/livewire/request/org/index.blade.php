@@ -70,11 +70,11 @@
                         <td class="fw-medium">{{ $event->created_at}}</td>
                         <td class="fw-medium">
                         @if($event->status === 'cancelled' || $event->status === 'withdrawn' || $event->status === 'rejected')
-                                <span class="badge rounded-pill bg-danger">{{$event->status}}</span>
+                                <span class="badge rounded-pill bg-danger">{{$event->getSimpleStatus()}}</span>
                             @elseif($event->status === 'approved' || $event->status === 'completed')
-                                <span class="badge rounded-pill bg-success">{{$event->status}}</span>
+                                <span class="badge rounded-pill bg-success">{{$event->getSimpleStatus()}}</span>
                             @else
-                                <span class="badge rounded-pill bg-warning">{{$event->status}}</span>
+                                <span class="badge rounded-pill bg-warning">{{$event->getSimpleStatus()}}</span>
 
                         @endif
                         </td>

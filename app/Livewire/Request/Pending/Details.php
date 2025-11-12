@@ -97,11 +97,13 @@ class Details extends Component
     {
 //        dd($this->event);
 
-        $this->authorize('manageMyPendingRequests', $this->event);
+        $event = $this->event;
+        $this->authorize('manageMyPendingRequests', $event);
 
         $eventService = app(EventService::class);
-        $docs = $eventService->getEventDocuments($this->event)->toArray();
-        $conflicts = $eventService->conflictingEvents($this->event)->paginate(4);
+        $event->loadMissing('categories:id,name');
+        $docs = $eventService->getEventDocuments($event)->toArray();
+        $conflicts = $eventService->conflictingEvents($event)->paginate(4);
 //        dd($conflicts);
         return view('livewire.request.pending.details', compact( 'docs', 'conflicts'));
     }

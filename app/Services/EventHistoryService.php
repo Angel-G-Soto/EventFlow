@@ -42,7 +42,10 @@ class EventHistoryService
             ? $roles
             : Role::all()->pluck('name')->toArray();
 
-        $query = EventHistory::where('approver_id', $user->id)
+        $query = EventHistory::with([
+                'event:id,title,organization_name',
+            ])
+            ->where('approver_id', $user->id)
             ->whereIn('action', ['approved', 'rejected', 'cancelled'])
             ->where(function ($q) use ($activeRoles, $user) {
                 foreach ($activeRoles as $role) {
