@@ -201,14 +201,53 @@
     {{-- STEP 3 --}}
     @if ($step === 3)
         <form wire:submit.prevent="submit">
+
             <div class="mb-3">
-                <div class="form-text">Upload the documents required for the selected venue.</div>
+                <div class="form-text">Upload the documents required due to the nature of the event.</div>
             </div>
+
+            {{-- If 'This event is to sell food' is checked, show a link --}}
+            @if ($handles_food)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
+
+            {{-- If 'This event uses institutional funds' is checked, show a link --}}
+            @if ($use_institutional_funds)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
+
+            {{-- If 'This event has an external guest' is checked, show a link --}}
+            @if ($external_guest)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
 
 
             @if (empty($requiredDocuments))
                 <div class="alert alert-secondary">No documents required for this venue.</div>
             @else
+
+                <div class="mb-3">
+                    <div class="form-text">Upload the documents required for this venue.</div>
+                </div>
+
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
