@@ -124,7 +124,7 @@ class UsersIndex extends Component
         $this->authorize('manage-users');
 
         $this->reset(['editId', 'editName', 'editEmail', 'editDepartment']);
-        $this->editRoles = [];
+        $this->editRoles = ['user'];
         $this->resetErrorBag();
         $this->resetValidation();
         $this->dispatch('bs:open', id: 'editUserModal');
@@ -147,8 +147,14 @@ class UsersIndex extends Component
         $this->editId     = $user['id'];
         $this->editName   = $user['name'];
         $this->editEmail  = $user['email'];
-        // Roles are tracked as role CODES internally (e.g., 'venue-manager')
-        $this->editRoles = $user['roles'] ?? [];
+        // Roles are tracked as normalized CODES (slug-lower). Always include 'user'.
+        $roles = collect($user['roles'] ?? [])
+            ->map(fn($v) => Str::slug(mb_strtolower((string)$v)))
+            ->push('user')
+            ->unique()
+            ->values()
+            ->all();
+        $this->editRoles = $roles;
         $this->editDepartment = $user['department'] ?? '';
 
         $this->resetErrorBag();
@@ -360,7 +366,8 @@ class UsersIndex extends Component
         } else {
             // Get all users with any role from the DB
             try {
-                $allRoles = $svc->getAllRoles()->pluck('code')->all();
+                // Use role NAMEs as the canonical code (DB uses numeric code; names are slugs like 'venue-manager')
+                $allRoles = $svc->getAllRoles()->pluck('name')->all();
                 foreach ($allRoles as $code) {
                     $users = $users->merge($svc->getUsersWithRole($code));
                 }
@@ -396,10 +403,11 @@ class UsersIndex extends Component
     protected function mapUserToRow($u): array
     {
         $name = trim(trim((string)($u->first_name ?? '')) . ' ' . trim((string)($u->last_name ?? '')));
-        // Ensure unique role names for display
+        // Track roles as CODES for consistency with validation and saving
         $roles = method_exists($u, 'roles')
             ? $u->roles
-                ->map(fn($r) => $r->name ?? '')
+                // Prefer role NAME (textual slug) over numeric code
+                ->map(fn($r) => Str::slug(mb_strtolower((string)($r->name ?? ($r->code ?? '')))))
                 ->filter()
                 ->unique()
                 ->values()
@@ -411,7 +419,7 @@ class UsersIndex extends Component
             'name' => $name,
             'email' => (string)($u->email ?? ''),
             'department' => (string)optional($u->department)->name ?? '—',
-            // Track roles internally as unique CODES; if code missing, fall back to slug(name)
+            // Track roles internally as unique CODES
             'roles' => $roles,
         ];
     }
@@ -423,8 +431,16 @@ class UsersIndex extends Component
     {
         // Department should only be provided when the user has the "Department Director" role
         $deptRequired = $this->roleRequiresDepartment($this->editRoles);
-        // Allowed role codes derived from DB
-        $allowedRoleCodes = app(UserService::class)->getAllRoles()->pluck('code')->all();
+        // Allowed role codes derived from DB role NAMEs (normalized to slug-lower)
+        $allowedRoleCodes = app(UserService::class)->getAllRoles()
+            ->pluck('name')
+            ->map(fn($c) => \Illuminate\Support\Str::slug(mb_strtolower((string)$c)))
+            ->unique()
+            ->values()
+            ->all();
+        if (!in_array('user', $allowedRoleCodes, true)) {
+            $allowedRoleCodes[] = 'user';
+        }
         // Allowed departments from DB
         $allowedDepartments = app(DepartmentService::class)->getAllDepartments()->pluck('name')->all();
 
@@ -516,20 +532,9 @@ class UsersIndex extends Component
     // Only 'department-director' and 'venue-manager' can have a department
     protected function roleRequiresDepartment(array $roles): bool
     {
-        // Normalize selected roles to names only
-        try {
-            $roleNames = app(UserService::class)
-                ->getAllRoles()
-                ->pluck('name')
-                ->all();
-        } catch (\Throwable $e) {
-            $roleNames = [];
-        }
-        $names = collect($roles)
-            ->map(fn($v) => (string) $v)
-            ->filter(fn($v) => in_array($v, $roleNames, true))
-            ->all();
-        return in_array('Department Director', $names, true) || in_array('Venue Manager', $names, true);
+        // Roles are provided as codes (e.g., 'department-director', 'venue-manager')
+        $codes = collect($roles)->map(fn($v) => (string)$v)->all();
+        return in_array('department-director', $codes, true) || in_array('venue-manager', $codes, true);
     }
 
     /**
@@ -591,10 +596,14 @@ class UsersIndex extends Component
         // Fetch all roles (code + name) from the database via UserService (not UserConstants)
         $svc = app(UserService::class);
         try {
-            // Provide both code (value) and name (label) to the view
+            // Provide code (value) and name (label) where code is the role NAME slug (DB 'name')
             $allRoles = $svc->getAllRoles()
+                ->map(fn($r) => [
+                    'code' => Str::slug(mb_strtolower((string)($r->name ?? $r->code ?? ''))),
+                    'name' => (string)($r->name ?? ''),
+                ])
+                ->unique('code')
                 ->sortBy('name')
-                ->map(fn($r) => ['code' => $r->code, 'name' => $r->name])
                 ->values();
         } catch (\Throwable $e) {
             $allRoles = [];
@@ -608,3 +617,6 @@ class UsersIndex extends Component
         ]);
     }
 }
+
+
+

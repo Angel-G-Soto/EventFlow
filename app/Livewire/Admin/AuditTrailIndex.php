@@ -127,7 +127,7 @@ class AuditTrailIndex extends Component
     $targetId   = $log->target_id ?? null;
     $target     = $targetType ? class_basename($targetType) : '—';
     if (!empty($targetId)) {
-      $target .= '#' . $targetId;
+      $target .= ': #' . $targetId;
     }
 
     return [

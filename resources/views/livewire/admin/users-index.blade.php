@@ -115,6 +115,7 @@
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="clearRoles({{ $user['id'] }})" type="button"
+                  @disabled(((count($user['roles'] ?? [])===1) && in_array('user', $user['roles'] ?? [])))
                   aria-label="Clear roles for user {{ $user['name'] }}"
                   title="Clear roles for user {{ $user['name'] }}">
                   <i class="bi bi-arrow-clockwise"></i>
@@ -175,24 +176,25 @@
                 @foreach(($allRoles ?? []) as $role)
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" id="role_{{ $role['code'] }}"
-                    value="{{ $role['code'] }}" wire:model.live="editRoles">
+                    value="{{ $role['code'] }}" wire:model.live="editRoles" @disabled(($editId ?? null) && $role['code']==='user')>
                   <label class="form-check-label" for="role_{{ $role['code'] }}">
                     {{ $role['name'] }}
                   </label>
                 </div>
                 @endforeach
               </div>
+              @if(!($editId ?? null))
+                <small class="text-muted">The <b>User</b> role is pre-checked for all new users.</small>
+              @endif
               @error('editRoles') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="col-12 col-md-6">
               @php
-              // Determine if department is required for current role selection.
-              // Supports either numeric role codes or slug names in $editRoles.
-              $selectedRaw = collect($editRoles ?? [])->map(fn($v) => (string)$v);
-              $byCode = collect($allRoles ?? [])->mapWithKeys(fn($r) => [(string)$r['code'] => (string)$r['name']]);
-              $selectedSlugs = $selectedRaw->map(fn($v) => $byCode[$v] ?? $v);
-              $requiresDept = $selectedSlugs->contains('department-director') ||
-              $selectedSlugs->contains('venue-manager');
+              // Determine if department is required (normalize to slug-lower)
+              $selectedCodes = collect($editRoles ?? [])->map(fn($v) =>
+              \Illuminate\Support\Str::slug(mb_strtolower((string)$v)));
+              $requiresDept = $selectedCodes->contains('department-director') ||
+              $selectedCodes->contains('venue-manager');
               @endphp
               <label class="form-label {{ $requiresDept ? 'required' : '' }}" for="edit_department">Department</label>
               @if($requiresDept)

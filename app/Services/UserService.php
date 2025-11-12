@@ -9,6 +9,7 @@ use App\Services\AuditService;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 /**
  * UserService
@@ -113,7 +114,7 @@ class UserService
         //        $missing  = array_values(array_diff($roleCodes, $existing->keys()->all()));
 
         $requested = collect($roleCodes)
-            ->map(fn($v) => (string) $v)
+            ->map(fn($v) => mb_strtolower((string) $v))
             ->filter(fn($v) => $v !== '')
             ->values()
             ->all();
@@ -121,22 +122,22 @@ class UserService
             $requested[] = 'user'; // default role for all users
         }
 
-        // Resolve existing roles by matching either code OR name (to handle legacy data)
+        // Resolve existing roles case-insensitively by matching either code OR name (to handle legacy data)
         $roles = Role::query()
-            ->whereIn('code', $requested)
-            ->orWhereIn('name', $requested)
+            ->whereIn(DB::raw('LOWER(code)'), $requested)
+            ->orWhereIn(DB::raw('LOWER(name)'), $requested)
             ->get(['id', 'code', 'name']);
 
         $foundIds = $roles->pluck('id')->all();
-        $foundKeys = $roles
+        $foundKeysLower = $roles
             ->flatMap(function ($r) {
-                return [$r->code => true, $r->name => true];
+                return [mb_strtolower((string)$r->code) => true, mb_strtolower((string)$r->name) => true];
             })
             ->keys()
             ->all();
 
         // Create any missing roles using the provided string as the CODE; name is prettified
-        $missing = array_values(array_diff($requested, $foundKeys));
+        $missing = array_values(array_diff($requested, $foundKeysLower));
         foreach ($missing as $rcode) {
             $created = Role::firstOrCreate(
                 ['code' => $rcode],
@@ -359,8 +360,8 @@ class UserService
     public function getUsersWithRole(string $roleCode): Collection
     {
         return User::whereHas('roles', function ($query) use ($roleCode) {
-            // Align with roles table schema: column is 'code' (not 'r_code')
-            $query->where('code', $roleCode);
+            // Roles table uses human-readable slug in 'name'; 'code' is numeric in this schema
+            $query->where('name', $roleCode);
         })
             ->with(['department', 'roles'])
             ->get();

@@ -97,8 +97,10 @@ return $dt;
             <td>{{ $r->user_id ?? '—' }}</td>
             <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
             <td class="text-truncate" style="max-width:220px;">
-              {{ $r->target_type ? class_basename('User') : '—' }}
-              @if($r->target_id)#{{ $r->target_id }}@endif
+              {{ $r->target_type ? class_basename($r->target_type) : '—' }}
+              @if($r->target_id)
+              : #{{ $r->target_id }}
+              @endif
             </td>
             <td class="text-end">
               <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->id }})"
