@@ -101,7 +101,7 @@
               @if(!empty($roles))
               {{-- Chip-style badges for roles for better readability --}}
               @foreach($roles as $r)
-              @php $label = $roleMap[$r] ?? \Illuminate\Support\Str::of($r)->replace('-', ' ')->title(); @endphp
+              @php $label = $roleMap[$r] ?? Str::of($r)->replace('-', ' ')->title(); @endphp
               <span class="badge text-bg-light me-1">{{ $label }}</span>
               @endforeach
               @else

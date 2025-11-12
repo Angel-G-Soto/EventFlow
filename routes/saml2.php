@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Models\User;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,7 +37,7 @@ Route::get('/auth/saml/login', function () {
 
 Route::post('/auth/saml/logout', function () {
 
-    \Illuminate\Support\Facades\Auth::logout();
+    Auth::logout();
     return redirect('/');
 
 })->name("saml.logout");

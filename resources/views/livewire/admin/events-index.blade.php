@@ -31,8 +31,8 @@
           <label class="form-label" for="ev_venue">Venue</label>
           <select id="ev_venue" class="form-select" wire:model.live="venue">
             <option value="">All</option>
-            @foreach($venues as $vName)
-            <option value="{{ $vName }}">{{ $vName }}</option>
+            @foreach($venues as $v)
+            <option value="{{ $v['id'] }}">{{ $v['label'] }}</option>
             @endforeach
           </select>
         </div>
@@ -86,10 +86,9 @@
             <td>{{ $r['organization'] ?? ($r['organization_nexo_name'] ?? '') }}</td>
             <td>{{ $r['venue'] }}</td>
             <td>
-              <div>{{ \Illuminate\Support\Str::before($r['from'],' ') }} {{ \Illuminate\Support\Str::after($r['from'],'
-                ') }}</div>
-              <div class="text-secondary small">→ {{ \Illuminate\Support\Str::before($r['to'],' ') }} {{
-                \Illuminate\Support\Str::after($r['to'],' ') }}</div>
+              <div>{{ $r['from'] }}</div>
+              <div class="text-secondary small">→ {{ Str::before($r['to'],' ') }} {{
+                Str::after($r['to'],' ') }}</div>
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
@@ -98,10 +97,19 @@
                   <i class="bi bi-info-lg"></i>
                 </button>
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})"
+                  @disabled(\Carbon\Carbon::parse($r['to'] ?? now())->isPast()
+                  || str_contains(strtolower($r['status'] ?? ''), 'cancel')
+                  || str_contains(strtolower($r['status'] ?? ''), 'reject')
+                  || str_contains(strtolower($r['status'] ?? ''), 'withdraw'))
                   aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})"
+                  @disabled(!(strtolower($r['status'] ?? '' )==='approved' ) || \Carbon\Carbon::parse($r['to'] ??
+                  now())->isPast()
+                  || str_contains(strtolower($r['status'] ?? ''), 'cancel')
+                  || str_contains(strtolower($r['status'] ?? ''), 'reject')
+                  || str_contains(strtolower($r['status'] ?? ''), 'withdraw'))
                   aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
                   <i class="bi bi-x-circle"></i>
                 </button>
@@ -219,9 +227,6 @@
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor_email">Advisor Email</label><input
                 id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"
                 placeholder="advisor@example.edu"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label><input
-                id="ev_e_advisor_phone" class="form-control" wire:model.live="eAdvisorPhone" placeholder="###-###-####">
-            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
                 id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber" placeholder="Student ID">
             </div>
@@ -290,8 +295,6 @@
                 class="bi bi-x-octagon me-1"></i>Deny</button>
             <button type="button" class="btn btn-outline-secondary" wire:click.prevent="advance"
               aria-label="Advance request"><i class="bi bi-arrow-right-circle me-1"></i>Advance</button>
-            <button type="button" class="btn btn-outline-warning" wire:click.prevent="reroute"
-              aria-label="Re-route request"><i class="bi bi-shuffle me-1"></i>Re-route</button>
           </div>
           <button class="btn btn-primary" type="submit" aria-label="Save request"><i class="bi me-1"></i>Save</button>
         </div>

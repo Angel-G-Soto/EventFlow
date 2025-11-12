@@ -122,31 +122,36 @@ $isDirector = $roleNames->contains('department-director');
       </ul>
 
       <div class="d-flex w-100 mt-2 mt-lg-0 justify-content-between justify-content-lg-end align-items-center gap-2">
-        {{-- <div class="d-flex gap-2">
-          <button class="btn btn-success-subtle p-2 text-white" type="button" title="Notifications"
+        <div class="d-flex gap-2">
+          {{-- <button class="btn btn-success-subtle p-2 text-white" type="button" title="Notifications"
             aria-label="Open notifications">
             <i class="bi bi-bell"></i>
-          </button>
+          </button>--}}
           <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
             <i class="bi bi-question-lg"></i>
           </button>
-        </div> --}}
+        </div>
         <div class="ms-auto ms-lg-0">
           @if(Auth::check())
-          <form method="POST" action="{{ route('saml.logout') }}" class="m-0">
+          <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0">
             @csrf
-            <button class="btn p-2 d-flex align-items-center text-white" type="submit" title="Log out"
-              aria-label="Log out" style="border: none; outline: none; transition: all 0.3s ease;">
-              <span class="me-2">Log out</span>
+            <button class="btn p-2 d-flex align-items-center text-white fw-bold" type="button" title="Log out"
+              aria-label="Log out" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
+              style="border: none; outline: none; transition: all 0.3s ease;">
+              <span class="me-2">Log Out</span>
               <i class="bi bi-box-arrow-right"></i>
             </button>
           </form>
+          {{-- Confirm logout modal --}}
+          <x-confirm-logout id="logoutConfirmModal" title="Confirm logout"
+            message="Are you sure you want to log out?"
+            formId="navbarLogoutForm" confirmLabel="Log out" />
           @else
           <form method="GET" action="{{ route('saml.login') }}" class="m-0">
             @csrf
-            <button class="btn p-2 d-flex align-items-center text-white" title="Log in" aria-label="Log in"
+            <button class="btn p-2 d-flex align-items-center text-white fw-bold" title="Log in" aria-label="Log in"
               style="border: none; outline: none; transition: all 0.3s ease;">
-              <span class="me-2">Log in</span>
+              <span class="me-2">Log In</span>
               <i class="bi bi-box-arrow-right"></i>
             </button>
           </form>
