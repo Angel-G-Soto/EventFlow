@@ -136,6 +136,32 @@
         </div>
     </section>
 
+    {{-- Categories --}}
+    <section class="card shadow-sm mb-4" aria-labelledby="event-categories">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 id="event-categories" class="fw-semibold mb-0">Categories</h3>
+                @if($event->categories->isNotEmpty())
+                    <small class="text-muted">{{ $event->categories->count() }} selected</small>
+                @endif
+            </div>
+            @if($event->categories->isEmpty())
+                <p class="text-muted mb-0">No categories were associated with this event.</p>
+            @else
+                <ul class="mb-0 ps-3">
+                    @foreach($event->categories as $category)
+                        <li class="mb-2">
+                            <span class="fw-semibold d-block">{{ $category->name }}</span>
+                            @if(!empty($category->description))
+                                <small class="text-muted">{{ $category->description }}</small>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+    </section>
+
     {{-- Documents --}}
     <section class="card shadow-sm mb-4" aria-labelledby="event-documents">
         <div class="card-body">

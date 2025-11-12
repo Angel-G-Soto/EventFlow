@@ -89,6 +89,7 @@ class Create extends Component
  * @var array
  */
     public array $category_ids = [];
+    public string $categorySearch = '';
 
  /**
   * @var int[]
@@ -443,6 +444,19 @@ class Create extends Component
         redirect()->route('public.calendar'); // or to a details/thanks page
     }
 
+    public function clearCategories(): void
+    {
+        $this->category_ids = [];
+    }
+
+    public function removeCategory(int $categoryId): void
+    {
+        $this->category_ids = array_values(array_filter(
+            $this->category_ids,
+            fn ($id) => (int) $id !== (int) $categoryId
+        ));
+    }
+
     /**
      * Render the Livewire view.
      * The controller/route can also pass $organization externally when mounting.
@@ -451,10 +465,26 @@ class Create extends Component
      */
     public function render()
     {
-        $category  = app(CategoryService::class)->getAllCategories()->toArray();
+        $categories  = app(CategoryService::class)->getAllCategories()->toArray();
+        $search = trim($this->categorySearch);
+        $filtered = array_values(array_filter($categories, function ($cat) use ($search) {
+            if ($search === '') {
+                return true;
+            }
+            return str_contains(
+                mb_strtolower($cat['name']),
+                mb_strtolower($search)
+            );
+        }));
+
+        $selectedLabels = collect($categories)
+            ->whereIn('id', $this->category_ids)
+            ->pluck('name', 'id')
+            ->toArray();
 
         return view('livewire.request.create',[
-            'allCategories' => $category,
+            'filteredCategories' => $filtered,
+            'selectedCategoryLabels' => $selectedLabels,
         ]);
     }
 }
