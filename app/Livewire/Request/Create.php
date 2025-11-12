@@ -28,7 +28,7 @@ use App\Services\VenueService;
 use App\Services\DocumentService;
 use App\Services\UserService;
 use Illuminate\Support\Carbon;
-
+use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
@@ -165,6 +165,9 @@ class Create extends Component
  */
     public array $uploads = []; // key => TemporaryUploadedFile
 
+
+    public string $venueCodeSearch = '';
+
     /**
      * mount
      * Initialize defaults. This component expects an $organization array
@@ -280,7 +283,7 @@ class Create extends Component
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-        $this->validate($this->rulesForStep($this->step));
+//        $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
@@ -294,7 +297,7 @@ class Create extends Component
         if ($this->step === 2) {
             // Step 2 complete ⇒ fetch required docs for chosen venue
             //$this->requiredDocuments = $docSvc->forVenue((int)3);
-            $this->requiredDocuments = app(VenueService::class)->getVenueRequirements($this->venue_id)->toArray();
+            $this->requiredDocuments = app(VenueService::class)->getVenueRequirements((int)$this->venue_id)->toArray();
             //dd($this->requiredDocuments);
             $this->step = 3;
             return;
@@ -486,5 +489,25 @@ class Create extends Component
             'filteredCategories' => $filtered,
             'selectedCategoryLabels' => $selectedLabels,
         ]);
+    }
+
+
+    #[Computed]
+    public function filteredVenues(): array
+    {
+        $term = trim($this->venueCodeSearch ?? '');
+        if ($term === '') {
+            return $this->availableVenues;
+        }
+        $needle = mb_strtolower($term);
+        return array_values(array_filter($this->availableVenues, function ($v) use ($needle) {
+            $code = mb_strtolower((string)($v['code'] ?? ''));
+            return str_contains($code, $needle);
+        }));
+    }
+
+    public function selectVenue(int $id): void
+    {
+        $this->venue_id = $id;
     }
 }

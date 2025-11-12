@@ -212,13 +212,13 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" class="form-control" wire:model.defer="organization_advisor_name" placeholder="Enter advisor's name">
+                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" {{--wire:model.defer="organization_advisor_name"--}} disabled placeholder="Enter advisor's name">
                     @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" class="form-control" wire:model.defer="organization_advisor_email" placeholder="Enter advisor's email">
+                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" {{--wire:model.defer="organization_advisor_email"--}}  disabled placeholder="Enter advisor's email">
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -242,20 +242,64 @@
 
 
             <div class="mb-3">
-                <label class="form-label">Venue</label>
-                <select class="form-select" wire:model="venue_id">
-                    <option value="">— Select venue —</option>
-                    @foreach ($availableVenues as $v)
-                        <option value="{{ $v['id'] }}">{{ $v['code'] }}</option>
-                    @endforeach
-                </select>
-                @error('venue_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                <label for="venueCodeSearch" class="form-label">Search by venue code</label>
+                <input id="venueCodeSearch"
+                       type="text"
+                       class="form-control"
+                       placeholder="e.g., 1098"
+                       wire:model.live.debounce.300ms="venueCodeSearch"
+                       wire:keydown.enter.prevent />
+                <div class="form-text">Type a venue code to filter the list below.</div>
             </div>
+
+            <div class="table-responsive mb-2">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th scope="col" style="width:56px">Select</th>
+                        <th scope="col">Code</th>
+                        <th scope="col">Name</th>
+                        <th scope="col" class="text-end">Capacity</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($this->filteredVenues as $v)
+                        <tr wire:key="venue-row-{{ $v['id'] }}"
+                            class="{{ (int)$venue_id === (int)($v['id'] ?? 0) ? 'table-primary' : '' }}"
+                            style="cursor:pointer"
+                            wire:click="selectVenue({{ $v['id'] }})">
+                            <td>
+                                <input type="radio"
+                                       class="form-check-input"
+                                       wire:model.live="venue_id"
+                                       value="{{ $v['id'] }}"
+                                       aria-label="Select {{ $v['code'] ?? ('Venue #'.$v['id']) }}" />
+                            </td>
+                            <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
+                            <td>{{ $v['name'] ?? '—' }}</td>
+                            <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No venues match the current filter.</td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @error('venue_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+
 
 
             <div class="d-flex justify-content-between mt-4">
                 <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
-                <button type="submit" class="btn btn-primary">Next</button>
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    wire:loading.attr="disabled"
+                    wire:target="next"
+                    @disabled(!$venue_id)
+                >Next</button>
             </div>
         </form>
     @endif
