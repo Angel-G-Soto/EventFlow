@@ -78,8 +78,9 @@
                 </div>
 
                 <div class="col-md-12">
-                    <label class="form-label">Number of Guests</label>
+                    <label class="form-label required">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
+                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
 
                 </div>
 
@@ -164,6 +165,7 @@
                             </div>
                         </div>
                     </div>
+                    @error('category_ids') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                 </div>
 
                 <label class="form-label">General Requirements</label>
@@ -208,6 +210,7 @@
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
                     <input type="text" class="form-control" value="{{ $organization_name }}" disabled placeholder="Organization name">
+                    @error('organization_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
@@ -233,7 +236,12 @@
 
         <form wire:submit.prevent="next">
             <div class="mb-3">
-                <div class="form-text">Showing venues available between <strong>{{ $start_time ?: '—' }}</strong> and <strong>{{ $end_time ?: '—' }}</strong>.</div>
+                <div class="form-text">
+                    Showing venues available between
+                    <strong>{{ $this->formattedStartTime }}</strong>
+                    and
+                    <strong>{{ $this->formattedEndTime }}</strong>.
+                </div>
             </div>
 
 
@@ -242,15 +250,61 @@
             @endif
 
 
-            <div class="mb-3">
-                <label for="venueCodeSearch" class="form-label">Search by venue code</label>
-                <input id="venueCodeSearch"
-                       type="text"
-                       class="form-control"
-                       placeholder="e.g., 1098"
-                       wire:model.live.debounce.300ms="venueCodeSearch"
-                       wire:keydown.enter.prevent />
-                <div class="form-text">Type a venue code to filter the list below.</div>
+            <div class="card shadow-sm mb-3">
+                <div class="card-body" wire:keydown.enter.prevent="runVenueSearch">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5 col-lg-4">
+                            <label for="venueSearch" class="form-label">Search by name or code</label>
+                            <input id="venueSearch"
+                                   type="text"
+                                   class="form-control"
+                                   placeholder="e.g., SALON DE CLASES or AE-102"
+                                   wire:model.defer="venueSearch">
+                        </div>
+                        <div class="col-md-3 col-lg-2">
+                            <label for="venueCapacityFilter" class="form-label">Minimum capacity</label>
+                            <input id="venueCapacityFilter"
+                                   type="number"
+                                   min="0"
+                                   class="form-control"
+                                   placeholder="50"
+                                   wire:model.defer="venueCapacityFilter">
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="venueDepartmentFilter" class="form-label">Department</label>
+                            <select id="venueDepartmentFilter"
+                                    class="form-select"
+                                    wire:model.defer="venueDepartmentFilter">
+                                <option value="">All departments</option>
+                                @foreach($departments as $department)
+                                    <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-primary flex-fill"
+                                wire:click="runVenueSearch"
+                                wire:loading.attr="disabled"
+                                wire:target="runVenueSearch">
+                                @if ($loadingVenues)
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                @endif
+                                Search
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary flex-fill"
+                                wire:click="resetVenueFilters"
+                                wire:loading.attr="disabled"
+                                wire:target="resetVenueFilters">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability query.</div>
+                </div>
             </div>
 
             <div class="table-responsive mb-2">
@@ -292,7 +346,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">No venues match the current filter.</td>
+                            <td colspan="5" class="text-center text-muted py-4">No venues match the current filter.</td>
                         </tr>
                     @endforelse
                     </tbody>

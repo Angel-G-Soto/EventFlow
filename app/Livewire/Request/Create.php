@@ -23,6 +23,7 @@ namespace App\Livewire\Request;
 //use Illuminate\Support\Facades\DB;
 
 use App\Services\CategoryService;
+use App\Services\DepartmentService;
 use App\Services\EventService;
 use App\Services\VenueService;
 use App\Services\DocumentService;
@@ -192,7 +193,9 @@ class Create extends Component
     public array $uploads = []; // key => TemporaryUploadedFile
 
 
-    public string $venueCodeSearch = '';
+    public string $venueSearch = '';
+    public ?int $venueCapacityFilter = null;
+    public ?int $venueDepartmentFilter = null;
 
     /**
      * mount
@@ -232,11 +235,12 @@ class Create extends Component
                 'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10'],
-                'guest_size' => ['integer','min:0'],
+                'guest_size' => ['required','integer','min:0'],
                 'start_time' => ['required','date'],
                 'end_time' => ['required','date','after:start_time'],
-                'category_ids' => ['array','min:0'],
+                'category_ids' => ['array','min:1'],
 //                'category_ids.*' => ['integer', Rule::exists('categories','id')],
+                'organization_name' => ['required','string','max:255'],
                 'organization_id' => ['nullable','integer'],
                 'organization_advisor_name' => ['required','string','max:150'],
 //                'advisor_phone' => ['required','string','max:20'],
@@ -309,7 +313,7 @@ class Create extends Component
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-        $this->validate($this->rulesForStep($this->step));
+        //$this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
@@ -341,7 +345,7 @@ class Create extends Component
      * Compute available venues for the current time range.
      *
      */
-    protected function loadAvailableVenues(?VenueService $service = null): void
+    protected function loadAvailableVenues(?VenueService $service = null, array $filters = []): void
     {
         $this->loadingVenues = true;
         $this->availableVenues = [];
@@ -349,7 +353,7 @@ class Create extends Component
             $start = Carbon::parse($this->start_time);
             $end = Carbon::parse($this->end_time);
             $service = $service ?? app(VenueService::class);
-            $this->availableVenues = $service->getAvailableVenues($start, $end)->toArray();
+            $this->availableVenues = $service->getAvailableVenues($start, $end, $filters)->toArray();
             //dd($this->availableVenues);
             $this->selectedVenueDetails = $this->resolveVenueDetails($this->venue_id);
             $this->resetVenuePagination();
@@ -360,14 +364,55 @@ class Create extends Component
         }
     }
 
+    public function runVenueSearch(): void
+    {
+        if (!$this->validTimeRange()) {
+            $this->addError('venue_id', 'Select a valid start and end time before searching for venues.');
+            return;
+        }
+
+        $this->loadAvailableVenues(filters: $this->buildVenueFilters());
+    }
+
+    public function resetVenueFilters(): void
+    {
+        $this->venueSearch = '';
+        $this->venueCapacityFilter = null;
+        $this->venueDepartmentFilter = null;
+
+        if ($this->validTimeRange()) {
+            $this->loadAvailableVenues();
+        }
+
+        $this->resetVenuePagination();
+    }
+
+    /**
+     * @return array<string,int|string>
+     */
+    protected function buildVenueFilters(): array
+    {
+        $filters = [];
+
+        $search = trim($this->venueSearch);
+        if ($search !== '') {
+            $filters['search'] = $search;
+        }
+
+        if ($this->venueCapacityFilter !== null && $this->venueCapacityFilter > 0) {
+            $filters['capacity'] = (int)$this->venueCapacityFilter;
+        }
+
+        if ($this->venueDepartmentFilter !== null && $this->venueDepartmentFilter > 0) {
+            $filters['department_id'] = (int)$this->venueDepartmentFilter;
+        }
+
+        return $filters;
+    }
+
     public function updatedVenueId($value): void
     {
         $this->selectedVenueDetails = $this->resolveVenueDetails((int)$value);
-    }
-
-    public function updatedVenueCodeSearch(): void
-    {
-        $this->resetVenuePagination();
     }
 
     public function showVenueDescription(?int $venueId = null): void
@@ -505,7 +550,7 @@ class Create extends Component
             try {
                 $doc = $service->handleUpload(
                     file:   $uploaded,          // UploadedFile-compatible
-                    userId: auth()->id(),  // or pass the student/submitter id you need
+                    userId: Auth::id(),  // or pass the student/submitter id you need
                     eventId:$event->id
                 );
 
@@ -577,39 +622,32 @@ class Create extends Component
             ->pluck('name', 'id')
             ->toArray();
 
+        $departments = app(DepartmentService::class)
+            ->getAllDepartments()
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->toArray();
+
         return view('livewire.request.create',[
             'filteredCategories' => $filtered,
             'selectedCategoryLabels' => $selectedLabels,
+            'departments' => $departments,
         ]);
     }
 
-
-    #[Computed]
-    public function filteredVenues(): array
-    {
-        $term = trim($this->venueCodeSearch ?? '');
-        if ($term === '') {
-            return $this->availableVenues;
-        }
-        $needle = mb_strtolower($term);
-        return array_values(array_filter($this->availableVenues, function ($v) use ($needle) {
-            $code = mb_strtolower((string)($v['code'] ?? ''));
-            return str_contains($code, $needle);
-        }));
-    }
 
     #[Computed]
     public function paginatedVenues(): array
     {
         $meta = $this->venuePagination();
         $offset = max(0, ($meta['current'] - 1) * $meta['per']);
-        return array_slice($this->filteredVenues(), $offset, $meta['per']);
+        return array_slice($this->availableVenues, $offset, $meta['per']);
     }
 
     #[Computed]
     public function venuePagination(): array
     {
-        $total = count($this->filteredVenues());
+        $total = count($this->availableVenues);
         $perPage = max(1, (int)$this->venuePerPage);
         $lastPage = max(1, (int)ceil($total / $perPage));
         $current = max(1, min($this->venuePage, $lastPage));
