@@ -36,7 +36,7 @@ class DepartmentService
     public function getDepartmentByID(int $id): Department|null
     {
         if ($id < 0) {
-            throw new \InvalidArgumentException('Department ID must be a positive integer.');
+            throw new InvalidArgumentException('Department ID must be a positive integer.');
         }
 
         return Department::find($id);
@@ -190,7 +190,7 @@ class DepartmentService
         } catch (ModelNotFoundException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            throw new \Exception('Failed to update the user(s) department.');
+            throw new Exception('Failed to update the user(s) department.');
         }
     }
 
@@ -229,7 +229,7 @@ class DepartmentService
             throw $exception;
         }
         catch (Throwable $exception) {
-            throw new \Exception('Failed to update the user(s) department.');
+            throw new Exception('Failed to update the user(s) department.');
         }
     }
 
@@ -268,7 +268,7 @@ class DepartmentService
             throw $exception;
         }
         catch (Throwable $exception) {
-            throw new \Exception('Failed to update the user(s) department.');
+            throw new Exception('Failed to update the user(s) department.');
         }
     }
 

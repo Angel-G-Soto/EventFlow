@@ -868,7 +868,7 @@ class EventService
     {
         if ($id <= 0) return null;
         return Event::query()
-            ->with(['venue', 'requester', 'categories'])
+            ->with(['venue', 'requester', 'categories', 'documents'])
             ->find($id);
     }
 

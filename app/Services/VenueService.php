@@ -687,7 +687,7 @@ class VenueService
      * @return Collection
      * @throws Exception
      */
-    public function updateOrCreateFromImportData(array $venueData, User $admin): Collection
+    public function updateOrCreateFromImportData(array $venueData, User $admin, array $context = []): Collection
     {
         try {
             // Iterate through the array
@@ -769,12 +769,17 @@ class VenueService
             }
 
             // Audit import action when admin context is available (auth-less supported)
+            $ctx = $context;
+            if (empty($ctx) && function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request());
+            }
             if ($admin) {
                 $this->auditService->logAdminAction(
                     $admin->id,
                     'system-admin',
                     'VENUES_IMPORTED',
-                    'venues_import'
+                    'venues_import',
+                    $ctx
                 );
             }
 
