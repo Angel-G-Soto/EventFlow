@@ -478,12 +478,18 @@
 
             <dt class="col-sm-3">Availability</dt>
             <dd class="col-sm-9">
-              @php($open = $details['opening'] ?? null)
-              @php($close = $details['closing'] ?? null)
-              @if($open || $close)
-              <span>{{ $fmtTime($open ?? '') }} – {{ $fmtTime($close ?? '') }}</span>
+              @php($availabilitySlots = $details['availabilities'] ?? [])
+              @if(!empty($availabilitySlots))
+              <ul class="list-unstyled mb-0">
+                @foreach($availabilitySlots as $slot)
+                <li class="d-flex justify-content-between border-bottom py-1">
+                  <span class="fw-semibold">{{ $slot['day'] }}</span>
+                  <span>{{ $fmtTime($slot['opens']) }} – {{ $fmtTime($slot['closes']) }}</span>
+                </li>
+                @endforeach
+              </ul>
               @else
-              <span class="text-muted">No availability</span>
+              <span class="text-muted">No availability configured.</span>
               @endif
             </dd>
           </dl>

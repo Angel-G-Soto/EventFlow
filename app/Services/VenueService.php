@@ -693,11 +693,12 @@ class VenueService
             // Iterate through the array
             $updatedVenues = new Collection();
 
+            $allowedImportExtras = ['department', 'department_code', 'department_code_raw', 'department_name_raw', 'availabilities'];
             foreach ($venueData as $venue) {
                 // Verify that the requirementsData structure is met
 
                 // Check for invalid keys
-                $invalidKeys = array_diff(array_keys($venue), new Venue()->getFillable(), ['department']);
+                $invalidKeys = array_diff(array_keys($venue), new Venue()->getFillable(), $allowedImportExtras);
                 if (!empty($invalidKeys)) {
                     throw new InvalidArgumentException(
                         'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
@@ -716,6 +717,13 @@ class VenueService
             }
 
             foreach ($venueData as $venue) {
+                $availabilityPayload = null;
+                if (array_key_exists('availabilities', $venue)) {
+                    if (!is_array($venue['availabilities'])) {
+                        throw new InvalidArgumentException('Availabilities must be listed as an array of entries.');
+                    }
+                    $availabilityPayload = $this->normalizeAvailabilityPayload($venue['availabilities']);
+                }
                 // Try to resolve department by code first, then by name
                 $deptCode = $venue['department_code'] ?? $venue['department_code_raw'] ?? null;
                 $deptNameOrCode = $venue['department'] ?? null;
@@ -750,7 +758,9 @@ class VenueService
 
                 $updatedVenues->add($venueModel);
 
-                if (
+                if ($availabilityPayload !== null) {
+                    $this->syncAvailabilityRecords($venueModel, $availabilityPayload);
+                } elseif (
                     $venueModel->wasRecentlyCreated
                     || !$venueModel->availabilities()->exists()
                 ) {

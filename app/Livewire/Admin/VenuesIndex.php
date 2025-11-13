@@ -36,6 +36,16 @@ class VenuesIndex extends Component
     public ?int $detailsId = null;
     public array $details = [];
 
+    private const DAYS_OF_WEEK = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+    ];
+
     // Sorting
     public string $sortField = '';
     public string $sortDirection = 'asc';
@@ -320,6 +330,7 @@ class VenuesIndex extends Component
                 $this->addError('detailsId', 'Venue not found.');
                 return;
             }
+            $venue->loadMissing('availabilities');
             // Normalize details payload for the view
             $features = $this->mapFeaturesStringToLabels((string)($venue->features ?? ''));
             $this->detailsId = (int) $venue->id;
@@ -330,14 +341,42 @@ class VenuesIndex extends Component
                 'code'       => (string) ($venue->code ?? ''),
                 'capacity'   => (int) ($venue->capacity ?? 0),
                 'manager'    => (string) (optional($venue->manager)->email ?? ''),
-                'features'   => $features,
-                'opening'    => $venue->opening_time ? substr((string)$venue->opening_time, 0, 5) : null,
-                'closing'    => $venue->closing_time ? substr((string)$venue->closing_time, 0, 5) : null,
+                'features'       => $features,
+                'availabilities' => $this->formatAvailabilityForDetails($venue->availabilities ?? collect()),
             ];
             $this->dispatch('bs:open', id: 'venueDetails');
         } catch (\Throwable $e) {
             $this->addError('detailsId', 'Unable to load venue.');
         }
+    }
+
+    protected function formatAvailabilityForDetails(Collection $availabilities): array
+    {
+        if ($availabilities->isEmpty()) {
+            return [];
+        }
+
+        $order = array_flip(self::DAYS_OF_WEEK);
+
+        return $availabilities
+            ->sortBy(function ($slot) use ($order) {
+                $day = (string) ($slot->day ?? '');
+                $dayIndex = $order[$day] ?? 99;
+                $time = (string) ($slot->opens_at ?? '');
+                return sprintf('%02d_%s', $dayIndex, $time);
+            })
+            ->map(function ($slot) {
+                return [
+                    'day' => (string) ($slot->day ?? ''),
+                    'opens' => substr((string) ($slot->opens_at ?? ''), 0, 5),
+                    'closes' => substr((string) ($slot->closes_at ?? ''), 0, 5),
+                ];
+            })
+            ->filter(function ($slot) {
+                return $slot['day'] !== '';
+            })
+            ->values()
+            ->all();
     }
 
     // Validation / rules
