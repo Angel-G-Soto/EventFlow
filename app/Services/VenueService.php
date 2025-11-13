@@ -725,7 +725,7 @@ class VenueService
                 if ($department == null) {
                     throw new ModelNotFoundException('Department [' . ($deptCode ?: $deptNameOrCode) . '] does not exist.');
                 }
-                $updatedVenues->add(Venue::updateOrCreate(
+                $venueModel = Venue::updateOrCreate(
                     [
                         'name' => $venue['name'],
                         'code' => $venue['code'],
@@ -738,7 +738,16 @@ class VenueService
                         'capacity' => $venue['capacity'],
                         'test_capacity' => $venue['test_capacity'],
                     ]
-                ));
+                );
+
+                $updatedVenues->add($venueModel);
+
+                if (
+                    $venueModel->wasRecentlyCreated
+                    || !$venueModel->availabilities()->exists()
+                ) {
+                    $this->syncAvailabilityRecords($venueModel, $this->defaultWeekdayAvailability());
+                }
             }
 
             // Audit import action when admin context is available (auth-less supported)
@@ -845,6 +854,19 @@ class VenueService
         foreach ($slots as $slot) {
             $venue->availabilities()->create($slot);
         }
+    }
+
+    private function defaultWeekdayAvailability(): array
+    {
+        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+        return array_map(function ($day) {
+            return [
+                'day' => $day,
+                'opens_at' => '08:00:00',
+                'closes_at' => '17:00:00',
+            ];
+        }, $days);
     }
 
     /**
