@@ -86,18 +86,6 @@
             <td class="fw-medium">{{ $d['name'] }}</td>
             <td>{{ $d['code'] }}</td>
             <td>{{ trim($d['director'] ?? '') }}</td>
-            {{--<td class="text-end">
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
-                  aria-label="Edit department {{ $d['name'] }}" title="Edit department {{ $d['name'] }}">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-outline-danger" wire:click="delete({{ $d['id'] }})"
-                  aria-label="Delete department {{ $d['name'] }}" title="Delete department {{ $d['name'] }}">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </div>
-            </td>--}}
           </tr>
           @empty
           <tr>
@@ -139,7 +127,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
             aria-label="Cancel and close">Cancel</button>
           <button class="btn btn-primary" type="submit" aria-label="Save department"><i
               class="bi bi me-1"></i>Save</button>

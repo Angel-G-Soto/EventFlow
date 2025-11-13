@@ -21,14 +21,16 @@ class ProcessCsvFileUpload implements ShouldQueue
 
     protected string $file_name;
     protected int $admin_id;
+    protected array $context;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(String $file_name, int $admin_id)
+    public function __construct(string $file_name, int $admin_id, array $context = [])
     {
         $this->file_name = $file_name;
         $this->admin_id = $admin_id;
+        $this->context = $context;
     }
 
     /**
@@ -135,7 +137,7 @@ class ProcessCsvFileUpload implements ShouldQueue
             }
 
             // Import via service
-            $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser);
+            $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser, $this->context);
 
             // Cleanup and done
             Storage::disk('uploads_temp')->delete($this->file_name);

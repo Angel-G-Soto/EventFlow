@@ -44,7 +44,7 @@
             class="form-control" wire:model.defer="to"></div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-primary w-100" wire:click="applyDateRange" type="button" aria-label="Apply date range">
-            Apply
+            Apply Date Range
           </button>
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
@@ -102,19 +102,34 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-info" wire:click="openView({{ $r['id'] }})"
+                <button class="btn btn-info" wire:click="openView({{ $r['id'] }})"
                   aria-label="View request {{ $r['id'] }}">
-                  <i class="bi bi-info-lg"></i>
+                  <i class="bi bi-info-circle"></i>
                 </button>
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})"
+                <button @class([ 'btn' , 'btn-outline-secondary'=> $r['status_is_cancelled'] || $r['status_is_denied']
+                  ||
+                  $r['status_is_completed'] || $r['status_is_approved'],
+                  'btn-secondary' => !($r['status_is_cancelled'] || $r['status_is_denied'] ||
+                  $r['status_is_completed'] || $r['status_is_approved']),
+                  ]) wire:click="openEdit({{ $r['id'] }})"
                   aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}"
-                  @disabled($r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_completed'] ||
-                  $r['status_is_approved'])>
+                  @disabled(
+                  $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_completed'] ||
+                  $r['status_is_approved']
+                  )>
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})"
-                  @disabled(!$r['status_is_approved'] || $r['is_past_event'] || $r['status_is_cancelled'] ||
-                  $r['status_is_denied'] || $r['status_is_withdrawn'] || $r['status_is_completed'])
+                <button @class([ 'btn' , 'btn-outline-danger'=> !$r['status_is_approved'] || $r['is_past_event'] ||
+                  $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
+                  $r['status_is_completed'],
+                  'btn-danger' => !(!$r['status_is_approved'] || $r['is_past_event'] ||
+                  $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
+                  $r['status_is_completed']),
+                  ]) wire:click="delete({{ $r['id'] }})"
+                  @disabled(
+                  !$r['status_is_approved'] || $r['is_past_event'] || $r['status_is_cancelled'] ||
+                  $r['status_is_denied'] || $r['status_is_withdrawn'] || $r['status_is_completed']
+                  )
                   aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
                   <i class="bi bi-x-circle"></i>
                 </button>
@@ -154,6 +169,8 @@
                 class="form-control" readonly value="{{ $eOrganization }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_venue">Venue</label><input id="ev_v_venue"
                 class="form-control" readonly value="{{ $eVenue }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_status">Status</label><input id="ev_v_status"
+                class="form-control" readonly value="{{ $eStatus ?: 'Unknown' }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_advisor">Advisor Name</label><input
                 id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
@@ -197,6 +214,27 @@
                     <label class="form-check-label" for="ev_v_external_guest">External guests</label>
                   </div>
                 </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Documents</label>
+              <div class="border rounded px-3 py-2 bg-light">
+                @if(count($eDocuments))
+                <ul class="list-unstyled mb-0 small">
+                  @foreach($eDocuments as $doc)
+                  <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                    <span class="text-break">{{ $doc['label'] }}</span>
+                    @if(!empty($doc['url']))
+                    <a class="text-decoration-none small" href="{{ $doc['url'] }}" target="_blank" rel="noreferrer">
+                      View
+                    </a>
+                    @endif
+                  </li>
+                  @endforeach
+                </ul>
+                @else
+                <p class="mb-0 small text-muted">No documents uploaded.</p>
+                @endif
               </div>
             </div>
           </div>
@@ -326,12 +364,12 @@
         </div>
         <div class="modal-footer d-flex justify-content-between">
           <div class="btn-group">
-            <button type="button" class="btn btn-outline-success" wire:click.prevent="approve"
-              aria-label="Approve request"><i class="bi bi-check2-circle me-1"></i>Approve</button>
-            <button type="button" class="btn btn-outline-danger" wire:click.prevent="deny" aria-label="Deny request"><i
+            <button type="button" class="btn btn-success" wire:click.prevent="approve" aria-label="Approve request"><i
+                class="bi bi-check2-circle me-1"></i>Approve</button>
+            <button type="button" class="btn btn-danger" wire:click.prevent="deny" aria-label="Deny request"><i
                 class="bi bi-x-octagon me-1"></i>Deny</button>
-            <button type="button" class="btn btn-outline-secondary" wire:click.prevent="advance"
-              aria-label="Advance request"><i class="bi bi-arrow-right-circle me-1"></i>Advance</button>
+            <button type="button" class="btn btn-secondary" wire:click.prevent="advance" aria-label="Advance request"><i
+                class="bi bi-arrow-right-circle me-1"></i>Advance</button>
           </div>
           <button class="btn btn-primary" type="submit" aria-label="Save request"><i class="bi me-1"></i>Save</button>
         </div>
@@ -360,7 +398,7 @@
           <p class="mb-0">Are you sure you want to advance this request to the next approval step?</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
             aria-label="Cancel and close">Cancel</button>
           <button class="btn btn-secondary" type="submit" aria-label="Confirm advance"><i
               class="bi bi-arrow-right-circle me-1"></i>Confirm Advance</button>

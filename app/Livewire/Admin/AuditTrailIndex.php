@@ -139,6 +139,7 @@ class AuditTrailIndex extends Component
       'target'   => $target,
 
       'ua'         => $log->user_agent ?? ($log->ua ?? '—'),
+      'ip'         => (string) ($log->ip ?? 'Unknown'),
       'created_at' => optional($log->created_at ?? null)->format('Y-m-d H:i:s')
         ?: (is_string($log->created_at ?? null) ? $log->created_at : ''),
 

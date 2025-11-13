@@ -110,12 +110,16 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $user['id'] }})" type="button"
+                <button class="btn btn-secondary" wire:click="openEdit({{ $user['id'] }})" type="button"
                   aria-label="Edit user {{ $user['name'] }}" title="Edit user {{ $user['name'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="clearRoles({{ $user['id'] }})" type="button"
-                  @disabled(((count($user['roles'] ?? [])===1) && in_array('user', $user['roles'] ?? [])))
+                <button @class([
+                  'btn',
+                  'btn-outline-danger' => ((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])),
+                  'btn-danger' => !((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])),
+                ]) wire:click="clearRoles({{ $user['id'] }})" type="button"
+                  @disabled(((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])))
                   aria-label="Clear roles for user {{ $user['name'] }}"
                   title="Clear roles for user {{ $user['name'] }}">
                   <i class="bi bi-arrow-clockwise"></i>
@@ -220,7 +224,7 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
             aria-label="Cancel and close">Cancel</button>
           <button class="btn btn-primary" type="submit" aria-label="Save user"><i class="bi me-1"></i>Save</button>
         </div>

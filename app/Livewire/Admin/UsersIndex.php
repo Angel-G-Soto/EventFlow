@@ -434,7 +434,7 @@ class UsersIndex extends Component
         // Allowed role codes derived from DB role NAMEs (normalized to slug-lower)
         $allowedRoleCodes = app(UserService::class)->getAllRoles()
             ->pluck('name')
-            ->map(fn($c) => \Illuminate\Support\Str::slug(mb_strtolower((string)$c)))
+            ->map(fn($c) => Str::slug(mb_strtolower((string)$c)))
             ->unique()
             ->values()
             ->all();

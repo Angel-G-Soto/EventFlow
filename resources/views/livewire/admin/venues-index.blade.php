@@ -140,7 +140,7 @@
               </button>
             </th>
             {{--<th>Manager</th>--}}
-            <th>Availability</th>
+            {{--<th>Availability</th>--}}
             <th class="text-end" style="width:140px;">Actions</th>
           </tr>
         </thead>
@@ -153,7 +153,7 @@
             <td>{{ $v['room'] }}</td>
             <td>{{ $v['capacity'] }}</td>
             {{-- <td> {{ $v['manager'] }} </td> --}}
-            <td class="text-truncate" style="max-width:220px;">
+            {{-- <td class="text-truncate" style="max-width:220px;">
               @php $hasOC = !empty($v['opening'] ?? '') || !empty($v['closing'] ?? ''); @endphp
               @if ($hasOC)
               <div class="small">{{ $fmtTime($v['opening'] ?? '') }} – {{ $fmtTime($v['closing'] ?? '') }}</div>
@@ -169,18 +169,14 @@
               @else
               <span class="text-muted small">No availability</span>
               @endif
-            </td>
+            </td> --}}
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="showDetails({{ $v['id'] }})"
+                <button class="btn btn-info" wire:click="showDetails({{ $v['id'] }})"
                   aria-label="Show details for venue {{ $v['name'] }}" title="Show details">
                   <i class="bi bi-info-circle"></i>
                 </button>
-                {{--<button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
-                  aria-label="Edit venue {{ $v['name'] }}" title="Edit venue {{ $v['name'] }}">
-                  <i class="bi bi-pencil"></i>
-                </button>--}}
-                <button class="btn btn-outline-danger" wire:click="delete({{ $v['id'] }})"
+                <button class="btn btn-danger" wire:click="delete({{ $v['id'] }})"
                   aria-label="Delete venue {{ $v['name'] }}" title="Delete venue {{ $v['name'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
@@ -189,7 +185,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="6" class="text-center text-secondary py-4">No venues found.</td>
+            <td colspan="5" class="text-center text-secondary py-4">No venues found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -285,7 +281,7 @@
           @error('csvFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
             aria-label="Cancel and close">Cancel</button>
           <button class="btn btn-primary" type="submit" aria-label="Upload CSV" @disabled(!$csvFile)
             wire:loading.attr="disabled" wire:target="csvFile,uploadCsv">
@@ -360,7 +356,7 @@
             <div class="col-12">
               <div class="d-flex align-items-center justify-content-between">
                 <h6 class="mb-2">Availability dates</h6>
-                <button class="btn btn-outline-secondary btn-sm" type="button" wire:click="addTimeRange">
+                <button class="btn btn-secondary btn-sm" type="button" wire:click="addTimeRange">
                   <i class="bi bi-plus-lg me-1"></i>Add
                 </button>
               </div>
@@ -389,7 +385,7 @@
                         @enderror
                       </td>
                       <td>
-                        <button type="button" class="btn btn-outline-danger btn-sm"
+                        <button type="button" class="btn btn-danger btn-sm"
                           aria-label="Remove time range {{ $i }}" wire:click="removeTimeRange({{ $i }})">
                           <i class="bi bi-x-lg"></i>
                         </button>
@@ -411,7 +407,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
             aria-label="Cancel and close">Cancel</button>
           <button class="btn btn-primary" type="submit" aria-label="Save venue"><i class="bi me-1"></i>Save</button>
         </div>
@@ -496,7 +492,7 @@
           @endif
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>

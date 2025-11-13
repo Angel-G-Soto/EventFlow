@@ -221,7 +221,14 @@ class VenuesIndex extends Component
             // Dispatch async processing job (scan + parse + import)
             $admin = Auth::user();
             $adminId = is_object($admin) ? (int) $admin->id : 0;
-            ProcessCsvFileUpload::dispatch($safe, $adminId);
+            $context = [];
+            if (function_exists('request') && request()) {
+                $context = [
+                    'ip' => request()->ip(),
+                    'ua' => request()->userAgent(),
+                ];
+            }
+            ProcessCsvFileUpload::dispatch($safe, $adminId, $context);
 
             // Track status key for polling in the UI
             $this->importKey = $safe;

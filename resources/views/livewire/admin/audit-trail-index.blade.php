@@ -103,7 +103,7 @@ return $dt;
               @endif
             </td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->id }})"
+              <button class="btn btn-info btn-sm" wire:click="showDetails({{ $r->id }})"
                 aria-label="Show details for audit #{{ $r->id }}" title="Show details for audit #{{ $r->id }}">
                 <i class="bi bi-info-circle"></i>
               </button>
@@ -142,6 +142,8 @@ return $dt;
             <dd class="col-sm-9">{{ $details['target'] ?? '—' }}</dd>
             <dt class="col-sm-3">User Agent</dt>
             <dd class="col-sm-9"><small class="text-break">{{ $details['ua'] ?? '—' }}</small></dd>
+            <dt class="col-sm-3">IP Address</dt>
+            <dd class="col-sm-9"><small class="text-break">{{ $details['ip'] ?? 'Unknown' }}</small></dd>
             <dt class="col-sm-3">Created</dt>
             <dd class="col-sm-9">{{ $fmtAudit($details['created_at']) }}</dd>
           </dl>
@@ -155,7 +157,7 @@ return $dt;
           @endif
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>

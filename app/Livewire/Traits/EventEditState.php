@@ -26,6 +26,8 @@ trait EventEditState
   public string $eAdvisorEmail = '';
   public string $eStudentNumber = '';
   public string $eStudentPhone = '';
+  public string $eStatus = '';
+  public array $eDocuments = [];
 
   // Justification/action for save/delete
   public string $actionType = '';

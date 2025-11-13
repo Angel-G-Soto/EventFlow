@@ -169,6 +169,7 @@ class EventsIndex extends Component
         $request = $this->filtered()->firstWhere('id', $id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
+        $this->loadViewDocuments((int)($request['id'] ?? 0));
         $this->dispatch('bs:open', id: 'oversightView');
     }
 
@@ -191,6 +192,7 @@ class EventsIndex extends Component
         $this->eTo   = substr($request['to'], 0, 16);
         $this->eAttendees = $request['attendees'] ?? 0;
         $this->eCategory  = $request['category'] ?? '';
+        $this->eStatus    = (string)($request['status'] ?? '');
         // Policies
         $this->eHandlesFood = (bool)($request['handles_food'] ?? false);
         $this->eUseInstitutionalFunds = (bool)($request['use_institutional_funds'] ?? false);
@@ -679,6 +681,36 @@ class EventsIndex extends Component
             return app(EventService::class)->findEventById($id);
         } catch (\Throwable $e) {
             return null;
+        }
+    }
+
+
+    protected function loadViewDocuments(int $eventId): void
+    {
+        $this->eDocuments = [];
+        $previousStatus = $this->eStatus;
+        try {
+            $event = app(EventService::class)->findEventById($eventId);
+            if (!$event) {
+                $this->eStatus = $previousStatus;
+                return;
+            }
+            $this->eStatus = (string)($event->status ?? $previousStatus);
+            $documents = collect($event->documents ?? []);
+            $this->eDocuments = $documents
+                ->map(function ($doc) {
+                    $name = (string)($doc->name ?? '');
+                    $path = (string)($doc->file_path ?? '');
+                    $label = basename($path ?: $name ?: ('document-' . ($doc->id ?? '')));
+                    $url = $name !== '' ? route('documents.show', ['name' => $name]) : null;
+                    return compact('name', 'label', 'url');
+                })
+                ->filter(fn($doc) => trim((string)($doc['name'] ?? '')) !== '')
+                ->values()
+                ->all();
+        } catch (\Throwable $exception) {
+            $this->eStatus = $previousStatus;
+            $this->eDocuments = [];
         }
     }
 
