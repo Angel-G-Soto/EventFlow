@@ -75,4 +75,27 @@ class EventPolicy
             default => false,
         };
     }
+
+    /**
+     * Determine whether the user can download a PDF summary for the event.
+     *
+     * Only the original requester or an approver role can download once the event is approved.
+     */
+    public function downloadEventPdf(User $user, Event $event): bool
+    {
+        if ($event->status !== 'approved') {
+            return false;
+        }
+
+        if ($user->id === $event->creator_id) {
+            return true;
+        }
+
+        $user->loadMissing('roles');
+
+        return $user->roles
+            ->pluck('name')
+            ->intersect(['advisor', 'venue-manager', 'event-approver'])
+            ->isNotEmpty();
+    }
 }
