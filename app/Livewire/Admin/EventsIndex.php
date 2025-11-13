@@ -11,6 +11,7 @@ use App\Livewire\Traits\EventEditState;
 use App\Services\CategoryService;
 use App\Services\EventService;
 // Note: Admin views must use services only (no direct models). Venue lookups are avoided here.
+use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
@@ -21,14 +22,6 @@ class EventsIndex extends Component
     // Traits / shared state
     use EventFilters, EventEditState;
 
-    /**
-     * Backing store for generated requests displayed in oversight.
-     * Generated from EventFactory on mount and kept stable during the session.
-     *
-     * @var array<int,array<string,mixed>>
-     */
-    // Properties / backing stores
-    public array $requests = [];
     /**
      * Pool of category names generated from CategoryFactory (no DB).
      *
@@ -260,7 +253,7 @@ class EventsIndex extends Component
                         'start_time'   => str_replace('T', ' ', (string)$this->eFrom),
                         'end_time'     => str_replace('T', ' ', (string)$this->eTo),
                         'status'       => (string)($event->status ?? 'approved'),
-                        'guests'       => (int)$this->eAttendees,
+                            'guest_size'   => (int)$this->eAttendees,
                         'organization_name' => (string)$this->eOrganization,
                         'organization_advisor_name'  => (string)$this->eAdvisorName,
                         'organization_advisor_email' => (string)$this->eAdvisorEmail,
@@ -268,7 +261,7 @@ class EventsIndex extends Component
                         'creator_phone_number'          => (string)$this->eStudentPhone,
                         'handles_food' => (bool)$this->eHandlesFood,
                         'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
-                        'external_guests' => (bool)$this->eExternalGuest,
+                            'external_guest' => (bool)$this->eExternalGuest,
                     ];
                     // Route edits through performManualOverride (service-only, no model access here)
                     $saved = $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
@@ -545,40 +538,8 @@ class EventsIndex extends Component
     protected function allRequests(): Collection
     {
         $this->authorize('perform-override');
-
-        // Query live data from DB and normalize for the view
-        $raw = $this->fetchEventsCollection();
-        $rows = $raw
-            ->map(function ($e) {
-                $from = $e->start_time instanceof DateTimeInterface ? $e->start_time->format('Y-m-d H:i') : (string)$e->start_time;
-                $to   = $e->end_time   instanceof DateTimeInterface ? $e->end_time->format('Y-m-d H:i')   : (string)$e->end_time;
-                $requestor = method_exists($e, 'requester') && $e->requester ? trim(($e->requester->first_name ?? '') . ' ' . ($e->requester->last_name ?? '')) : ('User ' . (string)($e->creator_id ?? ''));
-                $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
-                $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
-                return [
-                    'id' => (int)$e->id,
-                    'title' => (string)($e->title ?? 'Untitled'),
-                    'requestor' => $requestor,
-                    'organization' => (string)($e->organization_name ?? ''),
-                    'organization_advisor_name' => (string)($e->organization_advisor_name ?? ''),
-                    'organization_advisor_email' => (string)($e->organization_advisor_email ?? ''),
-                    'venue' => (string)$venueName,
-                    'venue_id' => (int)($e->venue_id ?? 0),
-                    'from' => (string)$from,
-                    'to' => (string)$to,
-                    'status' => (string)($e->status ?? ''),
-                    'category' => (string)$category,
-                    'updated' => now()->format('Y-m-d H:i'),
-                    'description' => (string)($e->description ?? ''),
-                    'attendees' => (int)($e->guest_size ?? 0),
-                    'handles_food' => (bool)($e->handles_food ?? false),
-                    'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
-                    'external_guest' => (bool)($e->external_guest ?? false),
-                    'creator_institutional_number' => (string)($e->creator_institutional_number ?? ''),
-                    'creator_phone_number'  => (string)($e->creator_phone_number ?? ''),
-                ];
-            });
-        return collect($rows);
+        // Fetch and normalize live data from DB every time
+        return app(EventService::class)->getEventRows([]);
     }
 
     /**

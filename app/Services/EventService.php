@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
+
 use App\Models\Category;
 use App\Models\Document;
 use App\Models\Event;
@@ -177,11 +179,18 @@ class EventService
 
         $this->updateLastHistory($event, $approver, $justification ?: 'unjustified rejection', 'rejected');
 
-        // Run audit trail
+        $fresh = $event->refresh();
+        $this->auditService->logEventAdminAction(
+            $approver,
+            $fresh,
+            'EVENT_DENIED',
+            [
+                'status' => 'rejected',
+                'justification' => (string)($justification ?? ''),
+            ]
+        );
 
-        // Send rejection email to prior approvers and creator
-
-        return $event->refresh();
+        return $fresh;
     }
 
     /**
@@ -220,6 +229,18 @@ class EventService
                 $this->createPendingHistory($result, $nextStatus, $approver);
             }
 
+            if ($result->status === $nextStatus) {
+                $this->auditService->logEventAdminAction(
+                    $approver,
+                    $result,
+                    'EVENT_APPROVED',
+                    [
+                        'next_status' => $nextStatus,
+                        'comment' => (string)($comment ?? ''),
+                    ]
+                );
+            }
+
             return $result;
         });
     }
@@ -233,7 +254,22 @@ class EventService
                 throw new \InvalidArgumentException('Event cannot be advanced from current status');
             }
 
-            return $this->commitStatusTransition($event, $statusFlow[$currentStatus], $user, 'advance', $justification);
+            $nextStatus = $statusFlow[$currentStatus];
+            $result = $this->commitStatusTransition($event, $nextStatus, $user, 'advance', $justification);
+
+            if ($result->status === $nextStatus) {
+                $this->auditService->logEventAdminAction(
+                    $user,
+                    $result,
+                    'EVENT_ADVANCED',
+                    [
+                        'next_status' => $nextStatus,
+                        'justification' => (string)$justification,
+                    ]
+                );
+            }
+
+            return $result;
         });
     }
 
@@ -305,7 +341,6 @@ class EventService
         ]);
     }
 
-
     /**
      * Allow the request creator to withdraw their pending event.
      *
@@ -356,10 +391,31 @@ class EventService
             $yesterdayEnd = Carbon::yesterday()->endOfDay();
 
             // Update events that ended yesterday and are approved
-            Event::where('status', 'approved')
+            $events = Event::where('status', 'approved')
                 ->whereBetween('end_time', [$yesterdayStart, $yesterdayEnd])
-                ->update(['status' => 'completed']);
+                ->get();
+
+            foreach ($events as $event) {
+                $event->update(['status' => 'completed']);
+                $this->logAutoCompletion($event);
+            }
         });
+    }
+
+    protected function logAutoCompletion(Event $event): void
+    {
+        $systemUserId = (int) config('eventflow.system_user_id', 0);
+        if ($systemUserId <= 0) {
+            return;
+        }
+
+        $this->auditService->logAdminAction(
+            $systemUserId,
+            'System',
+            'EVENT_COMPLETED_AUTO',
+            (string) $event->id,
+            ['meta' => ['status' => 'completed']]
+        );
     }
 
     /**
@@ -631,27 +687,35 @@ class EventService
                 'start_time'                    => 'start_time',
                 'end_time'                      => 'end_time',
                 'status'                        => 'status',
-                // Aliases
-                'guests'                        => 'guest_size',
+                'guest_size'                    => 'guest_size',
                 'handles_food'                  => 'handles_food',
                 'use_institutional_funds'       => 'use_institutional_funds',
-                'external_guests'               => 'external_guest',
+                'external_guest'                => 'external_guest',
             ];
+
             foreach ($map as $in => $col) {
                 if (array_key_exists($in, $data)) {
                     $updates[$col] = $data[$in];
                 }
             }
 
+            Log::debug('performManualOverride: update payload', ['event_id' => $event->id, 'updates' => $updates]);
+
             if (!empty($updates)) {
-                $event->update($updates);
+                $result = $event->update($updates);
+                Log::debug('performManualOverride: update result', ['event_id' => $event->id, 'result' => $result]);
+            } else {
+                Log::debug('performManualOverride: no updates to apply', ['event_id' => $event->id]);
             }
 
             // Append event history with justification; keep standardized label
+            $statusWhenSigned = (string)($updates['status'] ?? $event->status ?? 'manual override');
             EventHistory::create([
-                'event_id' => $event->id,
-                'action'   => 'manual override',
-                'comment'  => (string) $justification,
+                'event_id'          => $event->id,
+                'approver_id'       => (int)$user->id,
+                'action'            => 'manual override',
+                'comment'           => (string) $justification,
+                'status_when_signed' => $statusWhenSigned,
             ]);
 
             // Build audit context including justification and changed fields
@@ -679,7 +743,12 @@ class EventService
                 $ctx
             );
 
-            return $event->refresh();
+            $refreshed = $event->refresh();
+            Log::debug('performManualOverride: DB state after refresh', [
+                'event_id' => $refreshed->id,
+                'attributes' => $refreshed->getAttributes()
+            ]);
+            return $refreshed;
         });
     }
 
@@ -895,6 +964,28 @@ class EventService
                 : ('User ' . (string)($e->creator_id ?? ''));
             $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
             $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
+            $status = (string)($e->status ?? '');
+            $statusNorm = mb_strtolower(trim($status));
+            $status_is_cancelled = str_contains($statusNorm, 'cancel');
+            $status_is_denied = str_contains($statusNorm, 'reject') || str_contains($statusNorm, 'deny');
+            $status_is_withdrawn = str_contains($statusNorm, 'withdraw');
+            $status_is_completed = str_contains($statusNorm, 'completed');
+            $status_is_approved = $statusNorm === 'approved';
+            $endTime = $e->end_time;
+            $is_past_event = false;
+            try {
+                $endAt = null;
+                if ($endTime instanceof DateTimeInterface) {
+                    $endAt = Carbon::instance($endTime);
+                } elseif (!empty($endTime)) {
+                    $endAt = Carbon::parse((string)$endTime);
+                }
+                if ($endAt) {
+                    $is_past_event = $endAt->isPast();
+                }
+            } catch (\Throwable) {
+                $is_past_event = false;
+            }
             return [
                 'id' => (int)$e->id,
                 'title' => (string)($e->title ?? 'Untitled'),
@@ -906,7 +997,7 @@ class EventService
                 'venue_id' => (int)($e->venue_id ?? 0),
                 'from' => (string)$from,
                 'to' => (string)$to,
-                'status' => (string)($e->status ?? ''),
+                'status' => $status,
                 'category' => (string)$category,
                 'updated' => now()->format('Y-m-d H:i'),
                 'description' => (string)($e->description ?? ''),
@@ -914,6 +1005,13 @@ class EventService
                 'handles_food' => (bool)($e->handles_food ?? false),
                 'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
                 'external_guest' => (bool)($e->external_guest ?? false),
+                // Computed status fields for UI logic
+                'status_is_cancelled' => $status_is_cancelled,
+                'status_is_denied' => $status_is_denied,
+                'status_is_withdrawn' => $status_is_withdrawn,
+                'status_is_completed' => $status_is_completed,
+                'status_is_approved' => $status_is_approved,
+                'is_past_event' => $is_past_event,
             ];
         })->values();
     }

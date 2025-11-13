@@ -107,15 +107,14 @@
                   <i class="bi bi-info-lg"></i>
                 </button>
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})"
-                  aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}">
+                  aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}"
+                  @disabled($r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_completed'] ||
+                  $r['status_is_approved'])>
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})"
-                  @disabled(!(strtolower($r['status'] ?? '' )==='approved' ) || \Carbon\Carbon::parse($r['to'] ??
-                  now())->isPast()
-                  || str_contains(strtolower($r['status'] ?? ''), 'cancel')
-                  || str_contains(strtolower($r['status'] ?? ''), 'reject')
-                  || str_contains(strtolower($r['status'] ?? ''), 'withdraw'))
+                  @disabled(!$r['status_is_approved'] || $r['is_past_event'] || $r['status_is_cancelled'] ||
+                  $r['status_is_denied'] || $r['status_is_withdrawn'] || $r['status_is_completed'])
                   aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
                   <i class="bi bi-x-circle"></i>
                 </button>
@@ -159,7 +158,7 @@
                 id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
                 id="ev_v_advisor_email" class="form-control" readonly value="{{ $eAdvisorEmail }}"></div>
-            
+
             <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
                 value="{{ $eStudentNumber }}"></div>
             <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control" readonly
@@ -219,23 +218,26 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-            <div class="row g-3">
+          <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label" for="ev_e_title">Title</label>
-              <input id="ev_e_title" class="form-control @error('eTitle') is-invalid @enderror" wire:model.live="eTitle" placeholder="Event title">
+              <input id="ev_e_title" class="form-control @error('eTitle') is-invalid @enderror" wire:model.live="eTitle"
+                placeholder="Event title">
               @error('eTitle')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_org">Organization</label>
-              <input id="ev_e_org" class="form-control @error('eOrganization') is-invalid @enderror" wire:model.live="eOrganization" placeholder="Organization name">
+              <input id="ev_e_org" class="form-control @error('eOrganization') is-invalid @enderror"
+                wire:model.live="eOrganization" placeholder="Organization name">
               @error('eOrganization')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_venue">Venue</label>
-              <select id="ev_e_venue" class="form-select @error('eVenueId') is-invalid @enderror" wire:model.live="eVenueId">
+              <select id="ev_e_venue" class="form-select @error('eVenueId') is-invalid @enderror"
+                wire:model.live="eVenueId">
                 <option value="0">Select a venue</option>
                 @foreach(($venues ?? []) as $v)
-                  <option value="{{ $v['id'] }}">{{ $v['label'] }}</option>
+                <option value="{{ $v['id'] }}">{{ $v['label'] }}</option>
                 @endforeach
               </select>
               @error('eVenueId')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -254,22 +256,26 @@
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_from">From</label>
-              <input id="ev_e_from" type="datetime-local" class="form-control @error('eFrom') is-invalid @enderror" wire:model.live="eFrom">
+              <input id="ev_e_from" type="datetime-local" class="form-control @error('eFrom') is-invalid @enderror"
+                wire:model.live="eFrom">
               @error('eFrom')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_to">To</label>
-              <input id="ev_e_to" type="datetime-local" class="form-control @error('eTo') is-invalid @enderror" wire:model.live="eTo">
+              <input id="ev_e_to" type="datetime-local" class="form-control @error('eTo') is-invalid @enderror"
+                wire:model.live="eTo">
               @error('eTo')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_attendees">Attendees</label>
-              <input id="ev_e_attendees" type="number" class="form-control @error('eAttendees') is-invalid @enderror" min="1" wire:model.live="eAttendees" placeholder="0+">
+              <input id="ev_e_attendees" type="number" class="form-control @error('eAttendees') is-invalid @enderror"
+                min="1" wire:model.live="eAttendees" placeholder="0+">
               @error('eAttendees')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_category">Category</label>
-              <select id="ev_e_category" class="form-select @error('eCategory') is-invalid @enderror" wire:model.live="eCategory">
+              <select id="ev_e_category" class="form-select @error('eCategory') is-invalid @enderror"
+                wire:model.live="eCategory">
                 @foreach($categories as $cat)
                 <option value="{{ $cat }}">{{ $cat }}</option>
                 @endforeach
@@ -278,7 +284,8 @@
             </div>
             <div class="col-12">
               <label class="form-label" for="ev_e_purpose">Description</label>
-              <textarea id="ev_e_purpose" class="form-control @error('ePurpose') is-invalid @enderror" rows="3" wire:model.live="ePurpose" placeholder="What is this event about?"></textarea>
+              <textarea id="ev_e_purpose" class="form-control @error('ePurpose') is-invalid @enderror" rows="3"
+                wire:model.live="ePurpose" placeholder="What is this event about?"></textarea>
               @error('ePurpose')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
@@ -341,26 +348,26 @@
 
   {{-- Reroute disabled --}}
 
-      {{-- Advance modal (confirmation) --}}
-      <div class="modal fade" id="oversightAdvance" tabindex="-1" aria-hidden="true" wire:ignore.self>
-        <div class="modal-dialog">
-          <form class="modal-content" wire:submit.prevent="confirmAdvance">
-            <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-arrow-right-circle me-2"></i>Confirm Advance</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <p class="mb-0">Are you sure you want to advance this request to the next approval step?</p>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
-                aria-label="Cancel and close">Cancel</button>
-              <button class="btn btn-secondary" type="submit" aria-label="Confirm advance"><i
-                  class="bi bi-arrow-right-circle me-1"></i>Confirm Advance</button>
-            </div>
-          </form>
+  {{-- Advance modal (confirmation) --}}
+  <div class="modal fade" id="oversightAdvance" tabindex="-1" aria-hidden="true" wire:ignore.self>
+    <div class="modal-dialog">
+      <form class="modal-content" wire:submit.prevent="confirmAdvance">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-arrow-right-circle me-2"></i>Confirm Advance</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-      </div>
+        <div class="modal-body">
+          <p class="mb-0">Are you sure you want to advance this request to the next approval step?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-secondary" type="submit" aria-label="Confirm advance"><i
+              class="bi bi-arrow-right-circle me-1"></i>Confirm Advance</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
