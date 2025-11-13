@@ -283,7 +283,7 @@ class Create extends Component
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-        $this->validate($this->rulesForStep($this->step));
+//        $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
@@ -506,8 +506,33 @@ class Create extends Component
         }));
     }
 
+    #[Computed]
+    public function formattedStartTime(): string
+    {
+        return $this->formatDisplayDate($this->start_time);
+    }
+
+    #[Computed]
+    public function formattedEndTime(): string
+    {
+        return $this->formatDisplayDate($this->end_time);
+    }
+
     public function selectVenue(int $id): void
     {
         $this->venue_id = $id;
+    }
+
+    protected function formatDisplayDate(?string $value): string
+    {
+        if (empty($value)) {
+            return '—';
+        }
+
+        try {
+            return Carbon::parse($value)->format('M j, Y g:i A');
+        } catch (\Throwable $e) {
+            return (string)$value;
+        }
     }
 }

@@ -27,6 +27,9 @@ class VenuesIndex extends Component
   #[Validate('required|email:rfc,dns|max:255')]
   public string $email = '';
 
+  #[Validate('required|same:email')]
+  public string $emailConfirmation = '';
+
 
   public function openModal(User $employee): void
   {
@@ -39,7 +42,7 @@ class VenuesIndex extends Component
       $this->authorize('assign-manager', $this->department);
 
       app(DepartmentService::class)->removeUserFromDepartment($this->department, $this->selectedEmployee);
-      $this->email = '';
+      $this->reset(['email', 'emailConfirmation']);
       $this->selectedEmployee = null;
       return $this->redirect(route('director.venues.index'), navigate: false);
   }
@@ -52,7 +55,7 @@ class VenuesIndex extends Component
       $this->validate();
       $user = app(UserService::class)->findOrCreateUser(email: $this->email);
       app(DepartmentService::class)->addUserToDepartment($this->department, $user);
-      $this->email = '';
+      $this->reset(['email', 'emailConfirmation']);
       $this->selectedEmployee = null;
       return $this->redirect(route('director.venues.index'), navigate: false);
 

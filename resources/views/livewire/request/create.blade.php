@@ -230,9 +230,15 @@
     {{-- STEP 2 --}}
 
     @if ($step === 2)
+
         <form wire:submit.prevent="next">
             <div class="mb-3">
-                <div class="form-text">Showing venues available between <strong>{{ $start_time ?: '—' }}</strong> and <strong>{{ $end_time ?: '—' }}</strong>.</div>
+                <div class="form-text">
+                    Showing venues available between
+                    <strong>{{ $this->formattedStartTime }}</strong>
+                    and
+                    <strong>{{ $this->formattedEndTime }}</strong>.
+                </div>
             </div>
 
 

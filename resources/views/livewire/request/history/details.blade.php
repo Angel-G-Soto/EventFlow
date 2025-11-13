@@ -26,7 +26,7 @@
 
 <div>
     <div class="container my-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
             <h1 class="fw-bold mb-4">Approval Details</h1>
             <button type="button"
                     wire:click="back"
