@@ -236,7 +236,7 @@ class EventService
 
             $this->auditService->logAdminAction(
                 $actorId,
-                $actorName,              // targetType (your admin pattern)
+                'event',
                 'EVENT_DENIED',
                 (string) $event->id,
                 $ctx
@@ -301,7 +301,7 @@ class EventService
 
                 $this->auditService->logAdminAction(
                     $actorId,
-                    $actorName,             // targetType
+                    'event',
                     $action,
                     (string) $event->id,
                     $ctx
@@ -533,7 +533,7 @@ class EventService
 
         $this->auditService->logAdminAction(
             $systemUserId,
-            'System',
+            'event',
             'EVENT_COMPLETED_AUTO',
             (string) $event->id,
             ['meta' => ['status' => 'completed']]
@@ -858,8 +858,8 @@ class EventService
 
             // Run audit trail with event id as target
             $this->auditService->logAdminAction(
-                (int) $user->id,
-                $actorName,
+                $user->id,
+                'event',
                 'ADMIN_OVERRIDE',
                 (string) $event->id,
                 $ctx
@@ -899,8 +899,8 @@ class EventService
 
             // Audit with justification in meta
             $this->auditService->logAdminAction(
-                (int) $user->id,
-                (string) ($user->name ?? ($user->first_name . ' ' . $user->last_name)),
+                $user->id,
+                'event',
                 'ADMIN_OVERRIDE',
                 (string) $event->id,
                 ['meta' => ['justification' => (string) $justification]]

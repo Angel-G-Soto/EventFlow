@@ -99,10 +99,10 @@ class CategoryService {
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,               // targetType (admin label pattern)
-                        'CATEGORY_UPDATED',        // action code
-                        (string) ($category->id ?? $category_id), // target id
+                        $actorId,
+                        'category',
+                        'CATEGORY_UPDATED',
+                        (string) ($category->id ?? $category_id),
                         $ctx
                     );
                 }
@@ -160,7 +160,7 @@ class CategoryService {
 
                     $audit->logAdminAction(
                         (int) $actorId,
-                        $actorLabel,
+                        'category',
                         'CATEGORY_DELETED',
                         (string) ($category->id ?? $category_id),
                         $ctx

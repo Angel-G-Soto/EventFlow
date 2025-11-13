@@ -151,10 +151,10 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,             // targetType
-                        'DEPT_UPSERT_BATCH',     // actionCode
-                        'batch',                 // targetId
+                        $actorId,
+                        'department',
+                        'DEPT_UPSERT_BATCH',
+                        'batch',
                         $ctx
                     );
                 }
@@ -213,8 +213,8 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
+                        $actorId,
+                        'department',
                         'DEPT_DELETED',
                         (string) ($dept->id ?? $id),
                         $ctx
@@ -292,8 +292,8 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
+                        $actorId,
+                        'department',
                         'USER_DEPT_SET',
                         (string) ($manager->id ?? '0'),
                         $ctx
@@ -367,8 +367,8 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
+                        $actorId,
+                        'department',
                         'USER_DEPT_ADDED_ROLE',
                         (string) ($manager->id ?? '0'),
                         $ctx
@@ -448,8 +448,8 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
+                        $actorId,
+                        'department',
                         'USER_DEPT_REMOVED_ROLE',
                         (string) ($manager->id ?? '0'),
                         $ctx
