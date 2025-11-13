@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\UseRequirement;
 use App\Models\Venue;
+use App\Models\VenueAvailability;
 use Carbon\Carbon;
 use DateTime;
 use Exception;
@@ -17,12 +18,29 @@ use InvalidArgumentException;
 
 class VenueService
 {
+    private const DAYS_OF_WEEK = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+    ];
 
     protected DepartmentService $departmentService;
     protected UseRequirementService $useRequirementService;
     protected AuditService $auditService;
     protected UserService $userService;
 
+    /**
+     * Create a new VenueService instance.
+     *
+     * @param DepartmentService $departmentService
+     * @param UseRequirementService $useRequirementService
+     * @param AuditService $auditService
+     * @param UserService $userService
+     */
     public function __construct(DepartmentService $departmentService, UseRequirementService $useRequirementService, AuditService $auditService, UserService $userService)
     {
         $this->departmentService =  $departmentService;
@@ -49,11 +67,10 @@ class VenueService
      *     'department_id' => integer,
      *     'name' => string,
      *     'code' => string,
+     *     'description' => string,
      *     'features' => string,
      *     'capacity' => integer,
      *     'test_capacity' => integer,
-     *     'opening_time' => time,
-     *     'closing_time' => time,
      *  ]
      *
      * @param array|null $filters
@@ -64,7 +81,9 @@ class VenueService
     {
         try {
 
-            $query = Venue::query()->whereNull('deleted_at');
+            $query = Venue::query()
+                ->with('availabilities')
+                ->whereNull('deleted_at');
 
             if (!empty($filters)) {
                 // Verify that the requirementsData structure is met
@@ -106,10 +125,6 @@ class VenueService
                         case 'capacity':
                         case 'test_capacity':
                             $query->where($key, '>=', (int) $value);
-                            break;
-                        case 'opening_time':
-                        case 'closing_time':
-                            $query->whereTime($key, '=', $value);
                             break;
                         default:
                             break;
@@ -167,6 +182,9 @@ class VenueService
         if ($start_time >= $end_time) {
             throw new InvalidArgumentException('Start time must be before end time.');
         }
+        if ($start_time->format('Y-m-d') !== $end_time->format('Y-m-d')) {
+            throw new InvalidArgumentException('Availability lookup must start and end on the same day.');
+        }
         try {
             // Get events that occur on between the date parameters (// MOCK FROM EVENT SERVICE)
             $unavailableEventVenues = Event::where('status', 'approved')
@@ -183,10 +201,18 @@ class VenueService
                 ->unique()
                 ->toArray();
 
-            //dd(Venue::whereNotIn('id', $unavailableEventVenues)->get());
+            $day = $start_time->format('l');
+            $startHour = $start_time->format('H:i:s');
+            $endHour = $end_time->format('H:i:s');
 
-            // Return venues that are not in the approved events.
-            return Venue::whereNotIn('id', $unavailableEventVenues)->get();
+            return Venue::whereNotIn('id', $unavailableEventVenues)
+                ->with('availabilities')
+                ->whereHas('availabilities', function ($query) use ($day, $startHour, $endHour) {
+                    $query->where('day', $day)
+                        ->where('opens_at', '<=', $startHour)
+                        ->where('closes_at', '>=', $endHour);
+                })
+                ->get();
         } catch (\Throwable $exception) {
             throw new Exception('Unable to extract available venues.');
         }
@@ -315,27 +341,27 @@ class VenueService
      */
 
     /**
-     * Update the operating hours of a venue.
-     *
-     * This method updates the opening and closing times of the given venue.
-     * The operation is performed by a manager with the 'venue-manager' role.
-     * If the venue does not exist, it will be created with the provided ID and hours.
+     * Update the availability schedule of a venue.
      *
      * @param Venue $venue
-     * @param Carbon $opening_hours
-     * @param Carbon $closing_hours
+     * @param array<int,array<string,mixed>> $availabilityData
      * @param User $manager
      * @return Venue
      * @throws Exception
      */
-    public function updateVenueOperatingHours(Venue $venue, Carbon $opening_hours, Carbon $closing_hours, User $manager): Venue
+    public function updateVenueOperatingHours(Venue $venue, array $availabilityData, User $manager): Venue
     {
         try {
 
             // Validate manager role to be 'venue-manager' and to belong to the departments of the venues
-            if (!$manager->getRoleNames()->contains('venue-manager') && !($manager->department_id === $venue->department_id)) {
+            if (
+                !$manager->getRoleNames()->contains('venue-manager')
+                || $manager->department_id !== $venue->department_id
+            ) {
                 throw new InvalidArgumentException('The user must be venue-manager and belong to the department of the venue.');
             }
+
+            $normalized = $this->normalizeAvailabilityPayload($availabilityData);
 
             // Audit: operating hours update
             $managerLabel = $manager->name ?? trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
@@ -346,19 +372,12 @@ class VenueService
                 $manager->id,
                 $managerLabel,
                 'UPDATE_OPERATING_HOURS',
-                'Updated operating hours for venue #' . $venue->id
+                'Updated availability schedule for venue #' . $venue->id
             );
 
-            // Update the venue with the filtered data
-            return Venue::updateOrCreate(
-                [
-                    'id' => $venue->id
-                ],
-                [
-                    'opening_time' => $opening_hours,
-                    'closing_time' => $closing_hours,
-                ]
-            );
+            $this->syncAvailabilityRecords($venue, $normalized);
+
+            return $venue->refresh()->load('availabilities');
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -481,11 +500,11 @@ class VenueService
      *      'department_id' => integer,
      *      'name' => string,
      *      'code' => string,
+     *      'description' => string|null,
      *      'features' => string,
      *      'capacity' => integer,
      *      'test_capacity' => integer,
-     *      'opening_time' => time,
-     *      'closing_time' => time,
+     *      'availabilities' => array<array{day:string,opens_at:string,closes_at:string}>
      *   ]
      *
      * @param array $data
@@ -524,15 +543,28 @@ class VenueService
         $venue->department_id = $data['department_id'];
         $venue->name          = $data['name'];
         $venue->code          = $data['code'];
+        $venue->description   = $data['description'] ?? null;
         $venue->features      = $data['features'];
         $venue->capacity      = $data['capacity'];
         $venue->test_capacity = $data['test_capacity'];
-        $venue->opening_time  = $data['opening_time'];
-        $venue->closing_time  = $data['closing_time'];
 
         $venue->save();
 
-        return $venue;
+        $availabilityPayload = [];
+        if (!empty($data['availabilities'])) {
+            if (!is_array($data['availabilities'])) {
+                throw new InvalidArgumentException('Availabilities must be an array of entries.');
+            }
+            $availabilityPayload = $this->normalizeAvailabilityPayload($data['availabilities']);
+        } else {
+            $availabilityPayload = $this->buildLegacyAvailabilityPayload($data);
+        }
+
+        if (!empty($availabilityPayload)) {
+            $this->syncAvailabilityRecords($venue, $availabilityPayload);
+        }
+
+        return $venue->load('availabilities');
     }
 
     /**
@@ -544,11 +576,11 @@ class VenueService
      *     'department_id' => integer,
      *     'name' => string,
      *     'code' => string,
+     *     'description' => string|null,
      *     'features' => string,
      *     'capacity' => integer,
      *     'test_capacity' => integer,
-     *     'opening_time' => time,
-     *     'closing_time' => time,
+     *     'availabilities' => array<array{day:string,opens_at:string,closes_at:string}>
      *  ]
      *
      * @param Venue $venue
@@ -566,12 +598,26 @@ class VenueService
             throw new InvalidArgumentException('The manager and the director must be system-admin.');
         }
 
+        $allowedKeys = array_merge($venue->getFillable(), ['availabilities', 'opening_time', 'closing_time']);
+
         // Check for invalid keys
-        $invalidKeys = array_diff(array_keys($data), $venue->getFillable());
+        $invalidKeys = array_diff(array_keys($data), $allowedKeys);
         if (!empty($invalidKeys)) {
             throw new InvalidArgumentException(
                 'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
             );
+        }
+
+        $availabilityPayload = null;
+        $legacyPayload = [];
+        if (array_key_exists('availabilities', $data)) {
+            if (!is_array($data['availabilities'])) {
+                throw new InvalidArgumentException('Availabilities must be an array of entries.');
+            }
+            $availabilityPayload = $data['availabilities'];
+            unset($data['availabilities']);
+        } else {
+            $legacyPayload = $this->buildLegacyAvailabilityPayload($data);
         }
 
         // Check for null values
@@ -595,12 +641,21 @@ class VenueService
         }
 
         // Update the venue with the filtered data
-        return Venue::updateOrCreate(
+        $venue = Venue::updateOrCreate(
             [
                 'id' => $venue->id
             ],
             $data
         );
+
+        if ($availabilityPayload !== null) {
+            $normalized = $this->normalizeAvailabilityPayload($availabilityPayload);
+            $this->syncAvailabilityRecords($venue, $normalized);
+        } elseif (!empty($legacyPayload)) {
+            $this->syncAvailabilityRecords($venue, $legacyPayload);
+        }
+
+        return $venue->load('availabilities');
         //}
         //catch (InvalidArgumentException $exception) {throw $exception;}
         //catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
@@ -678,7 +733,7 @@ class VenueService
                 if ($department == null) {
                     throw new ModelNotFoundException('Department [' . ($deptCode ?: $deptNameOrCode) . '] does not exist.');
                 }
-                $updatedVenues->add(Venue::updateOrCreate(
+                $venueModel = Venue::updateOrCreate(
                     [
                         'name' => $venue['name'],
                         'code' => $venue['code'],
@@ -691,7 +746,16 @@ class VenueService
                         'capacity' => $venue['capacity'],
                         'test_capacity' => $venue['test_capacity'],
                     ]
-                ));
+                );
+
+                $updatedVenues->add($venueModel);
+
+                if (
+                    $venueModel->wasRecentlyCreated
+                    || !$venueModel->availabilities()->exists()
+                ) {
+                    $this->syncAvailabilityRecords($venueModel, $this->defaultWeekdayAvailability());
+                }
             }
 
             // Audit import action when admin context is available (auth-less supported)
@@ -711,6 +775,136 @@ class VenueService
         } catch (\Throwable $exception) {
             throw new Exception('Unable to synchronize venue data.');
         }
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $availabilityData
+     * @return array<int,array{day:string,opens_at:string,closes_at:string}>
+     */
+    private function normalizeAvailabilityPayload(array $availabilityData): array
+    {
+        $normalized = [];
+        foreach (array_values($availabilityData) as $index => $slot) {
+            if (!is_array($slot)) {
+                throw new InvalidArgumentException("Availability entry at index {$index} must be an array.");
+            }
+
+            $requiredKeys = ['day', 'opens_at', 'closes_at'];
+            $missing = array_diff($requiredKeys, array_keys($slot));
+            if (!empty($missing)) {
+                throw new InvalidArgumentException(
+                    'Availability entry at index ' . $index . ' is missing keys: ' . implode(', ', $missing)
+                );
+            }
+
+            $day = $this->normalizeDay((string)$slot['day'], $index);
+            $opensAt = $this->normalizeTimeValue($slot['opens_at'], 'opens_at', $index);
+            $closesAt = $this->normalizeTimeValue($slot['closes_at'], 'closes_at', $index);
+
+            if ($opensAt >= $closesAt) {
+                throw new InvalidArgumentException("Availability entry at index {$index} must close after it opens.");
+            }
+
+            $normalized[] = [
+                'day' => $day,
+                'opens_at' => $opensAt,
+                'closes_at' => $closesAt,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeDay(string $day, int $index): string
+    {
+        $value = ucfirst(strtolower(trim($day)));
+        if (!in_array($value, self::DAYS_OF_WEEK, true)) {
+            throw new InvalidArgumentException("Availability entry at index {$index} has an invalid day value.");
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param string|Carbon|DateTime $value
+     */
+    private function normalizeTimeValue($value, string $field, int $index): string
+    {
+        if ($value instanceof Carbon || $value instanceof DateTime) {
+            return $value->format('H:i:s');
+        }
+
+        if (is_string($value)) {
+            $time = trim($value);
+            if ($time === '') {
+                throw new InvalidArgumentException("Availability entry at index {$index} has an empty {$field} value.");
+            }
+            if (strlen($time) === 5) {
+                $time .= ':00';
+            }
+
+            try {
+                $parsed = Carbon::createFromFormat('H:i:s', $time);
+            } catch (\Throwable) {
+                throw new InvalidArgumentException("Availability entry at index {$index} has an invalid {$field} value.");
+            }
+
+            return $parsed->format('H:i:s');
+        }
+
+        throw new InvalidArgumentException("Availability entry at index {$index} has an invalid {$field} value.");
+    }
+
+    private function syncAvailabilityRecords(Venue $venue, array $slots): void
+    {
+        $venue->availabilities()->delete();
+
+        foreach ($slots as $slot) {
+            $venue->availabilities()->create($slot);
+        }
+    }
+
+    /**
+     * Provide the default Monday–Friday 08:00–17:00 availability slots.
+     *
+     * @return array<int,array{day:string,opens_at:string,closes_at:string}>
+     */
+    private function defaultWeekdayAvailability(): array
+    {
+        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+        return array_map(function ($day) {
+            return [
+                'day' => $day,
+                'opens_at' => '08:00:00',
+                'closes_at' => '17:00:00',
+            ];
+        }, $days);
+    }
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    private function buildLegacyAvailabilityPayload(array &$data): array
+    {
+        $from = $data['opening_time'] ?? null;
+        $to = $data['closing_time'] ?? null;
+
+        unset($data['opening_time'], $data['closing_time']);
+
+        if (!$from || !$to) {
+            return [];
+        }
+
+        $slots = array_map(function ($day) use ($from, $to) {
+            return [
+                'day' => $day,
+                'opens_at' => $from,
+                'closes_at' => $to,
+            ];
+        }, self::DAYS_OF_WEEK);
+
+        return $this->normalizeAvailabilityPayload($slots);
     }
 
     /**

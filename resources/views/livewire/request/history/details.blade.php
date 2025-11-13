@@ -92,6 +92,24 @@
             </div>
         </section>
 
+        @if($eventHistory->event->venue)
+            <section class="card shadow-sm mb-4" aria-labelledby="venue-details">
+                <div class="card-body">
+                    <h4 id="venue-details" class="fw-semibold border-bottom pb-2 mb-3">Venue Details</h4>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">{{ $eventHistory->event->venue->name ?? '—' }}</dd>
+
+                        <dt class="col-sm-4">Code</dt>
+                        <dd class="col-sm-8">{{ $eventHistory->event->venue->code ?? '—' }}</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">{{ $eventHistory->event->venue->description ?? 'No description available.' }}</dd>
+                    </dl>
+                </div>
+            </section>
+        @endif
+
 
         {{-- Organization & Requester Info --}}
         <section class="card shadow-sm mb-4" aria-labelledby="organization-info">

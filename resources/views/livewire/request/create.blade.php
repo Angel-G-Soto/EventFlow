@@ -233,12 +233,7 @@
 
         <form wire:submit.prevent="next">
             <div class="mb-3">
-                <div class="form-text">
-                    Showing venues available between
-                    <strong>{{ $this->formattedStartTime }}</strong>
-                    and
-                    <strong>{{ $this->formattedEndTime }}</strong>.
-                </div>
+                <div class="form-text">Showing venues available between <strong>{{ $start_time ?: '—' }}</strong> and <strong>{{ $end_time ?: '—' }}</strong>.</div>
             </div>
 
 
@@ -308,6 +303,55 @@
                 >Next</button>
             </div>
         </form>
+    @endif
+    @if ($showVenueDescriptionModal && $selectedVenueDetails)
+        <div
+            class="modal fade show d-block"
+            tabindex="-1"
+            aria-modal="true"
+            role="dialog"
+            style="background: rgba(0,0,0,0.35);"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            {{ $selectedVenueDetails['name'] ?? 'Venue details' }}
+                            <small class="text-muted ms-2">{{ $selectedVenueDetails['code'] ?? '' }}</small>
+                        </h5>
+                        <button type="button" class="btn-close" aria-label="Close" wire:click="closeVenueDescription"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">
+                            {{ $selectedVenueDetails['description'] ?? 'No description available.' }}
+                        </p>
+
+                        <h6>Availability</h6>
+                        @php($slots = $selectedVenueDetails['availabilities'] ?? [])
+                        @if (!empty($slots))
+                            <ul class="list-group">
+                                @foreach ($slots as $slot)
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span class="fw-semibold">{{ $slot['day'] }}</span>
+                                        <span>
+                                            {{ \Carbon\Carbon::parse($slot['opens_at'])->format('g:i A') }}
+                                            –
+                                            {{ \Carbon\Carbon::parse($slot['closes_at'])->format('g:i A') }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-muted mb-0">No availability configured.</p>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" wire:click="closeVenueDescription">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
     @endif
 
     {{-- STEP 3 --}}

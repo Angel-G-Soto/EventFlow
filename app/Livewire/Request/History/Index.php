@@ -75,9 +75,10 @@ class Index extends Component
 
         // Apply search by title if provided
         if (!empty($this->filters['searchTitle'])) {
-            $search = $this->filters['searchTitle'];
-            $query->whereHas('event', function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%');
+            $term = '%' . $this->filters['searchTitle'] . '%';
+            $query->whereHas('event', function ($q) use ($term) {
+                $q->where('title', 'like', $term)
+                    ->orWhere('organization_name', 'like', $term);
             });
         }
 
@@ -94,4 +95,3 @@ class Index extends Component
 
 
 }
-

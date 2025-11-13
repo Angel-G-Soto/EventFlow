@@ -37,11 +37,10 @@ class Venue extends Model
         'department_id',
         'name',
         'code',
+        'description',
         'features',
         'capacity',
         'test_capacity',
-        'opening_time',
-        'closing_time',
     ];
 
     /**
@@ -74,6 +73,11 @@ class Venue extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class);
+    }
+
+    public function availabilities(): HasMany
+    {
+        return $this->hasMany(VenueAvailability::class);
     }
 
 //    public function manager(): BelongsTo
@@ -130,16 +134,30 @@ class Venue extends Model
     public function isOpenAt(DateTime $date): bool
     {
         $hour = $date->format('H:i:s');
-        $start = $this->opening_time;
-        $end = $this->closing_time;
+        $day = $date->format('l');
 
-        if ($start <= $end) {
-            // Normal Hours
-            return $hour >= $start && $hour <= $end;
-        } else {
-            // Overnight Hours
-            return $hour >= $start || $hour <= $end;
+        return $this->availabilities()
+            ->where('day', $day)
+            ->where('opens_at', '<=', $hour)
+            ->where('closes_at', '>=', $hour)
+            ->exists();
+    }
+
+    protected function hasAvailabilityBetween(DateTime $startTime, DateTime $endTime): bool
+    {
+        if ($startTime->format('Y-m-d') !== $endTime->format('Y-m-d')) {
+            return false;
         }
+
+        $day = $startTime->format('l');
+        $startHour = $startTime->format('H:i:s');
+        $endHour = $endTime->format('H:i:s');
+
+        return $this->availabilities()
+            ->where('day', $day)
+            ->where('opens_at', '<=', $startHour)
+            ->where('closes_at', '>=', $endHour)
+            ->exists();
     }
 
     /**
@@ -183,7 +201,7 @@ class Venue extends Model
      */
     public function isAvailable(DateTime $startTime, DateTime $endTime): bool
     {
-        return $this->isOpenAt($startTime) && !$this->hasConflict($startTime, $endTime);
+        return $this->hasAvailabilityBetween($startTime, $endTime) && !$this->hasConflict($startTime, $endTime);
     }
 
 }

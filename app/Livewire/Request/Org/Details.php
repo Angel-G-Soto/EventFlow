@@ -89,7 +89,10 @@ class Details extends Component
         $eventService = app(EventService::class);
         $event = $this->event;
         $docs = $eventService->getEventDocuments($event)->toArray();
-        $event->loadMissing('categories:id,name');
+        $event->loadMissing([
+            'categories:id,name',
+            'venue:id,name,code,description',
+        ]);
         return view('livewire.request.org.details', [
             'docs' => $docs,
         ]);

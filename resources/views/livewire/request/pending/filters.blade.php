@@ -40,7 +40,7 @@
             <label for="searchTitle" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Search</label>
             <div class="input-group input-group-sm">
                 <input id="searchTitle" type="text" class="form-control"
-                       placeholder="Search by title..."
+                       placeholder="Search by title or organization..."
                        wire:model.defer="searchTitle"
                        wire:keydown.enter="apply"
                        style="font-size: 1.05rem;">

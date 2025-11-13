@@ -97,7 +97,10 @@ class Details extends Component
     {
         $this->authorize('manageMyApprovalHistory', $this->eventHistory);
 
-        $event = tap($this->eventHistory->event)->loadMissing('categories:id,name');
+        $event = tap($this->eventHistory->event)->loadMissing([
+            'categories:id,name',
+            'venue:id,name,code,description',
+        ]);
 
         $docs = app(EventService::class)->getEventDocuments($event)->toArray();
 
