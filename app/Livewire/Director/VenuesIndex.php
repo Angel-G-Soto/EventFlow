@@ -23,6 +23,9 @@ class VenuesIndex extends Component
   public ?User $selectedEmployee= null;
   public ?int $depID = null;
   public Department $department;
+  public ?int $pendingManagerId = null;
+  public string $pendingManagerEmail = '';
+  public string $pendingManagerDepartment = '';
 
   #[Validate('required|email:rfc,dns|max:255')]
   public string $email = '';
@@ -51,11 +54,76 @@ class VenuesIndex extends Component
 
       $this->validate();
       $user = app(UserService::class)->findOrCreateUser(email: $this->email);
+      $user->loadMissing('department');
+
+      if ($this->needsDepartmentChangeConfirmation($user)) {
+          $this->prepareDepartmentChangeConfirmation($user);
+          return;
+      }
+
+      return $this->completeManagerAssignment($user);
+
+  }
+
+  public function confirmManagerTransfer()
+  {
+      if (!$this->pendingManagerId) {
+          return;
+      }
+
+      $user = User::find($this->pendingManagerId);
+      if (!$user) {
+          $this->resetManagerConfirmation();
+          return;
+      }
+
+      $user->loadMissing('department');
+      return $this->completeManagerAssignment($user);
+  }
+
+  public function cancelManagerTransfer(): void
+  {
+      $this->resetManagerConfirmation();
+      $this->dispatch('close-modal', id: 'confirmManagerTransferModal');
+      $this->dispatch('open-modal', id: 'emailModal');
+  }
+
+  protected function needsDepartmentChangeConfirmation(User $user): bool
+  {
+      return !empty($user->department_id)
+          && $user->department_id !== $this->department->id;
+  }
+
+  protected function prepareDepartmentChangeConfirmation(User $user): void
+  {
+      $this->pendingManagerId = $user->id;
+      $this->pendingManagerEmail = $user->email;
+      $this->pendingManagerDepartment = $user->department?->name ?? 'another department';
+      $this->dispatch('close-modal', id: 'emailModal');
+      $this->dispatch('open-modal', id: 'confirmManagerTransferModal');
+  }
+
+  protected function completeManagerAssignment(User $user)
+  {
       app(DepartmentService::class)->addUserToDepartment($this->department, $user);
+      $this->resetManagerForms();
+      $this->dispatch('close-modal', id: 'emailModal');
+      $this->dispatch('close-modal', id: 'confirmManagerTransferModal');
+      return $this->redirect(route('director.venues.index'), navigate: false);
+  }
+
+  protected function resetManagerForms(): void
+  {
       $this->email = '';
       $this->selectedEmployee = null;
-      return $this->redirect(route('director.venues.index'), navigate: false);
+      $this->resetManagerConfirmation();
+  }
 
+  protected function resetManagerConfirmation(): void
+  {
+      $this->pendingManagerId = null;
+      $this->pendingManagerEmail = '';
+      $this->pendingManagerDepartment = '';
   }
   public function saveAssign(): void
   {

@@ -410,22 +410,42 @@
 </div>
 
 <script>
-    // Flag to prevent 'beforeunload' on form submit
-    let isSubmitting = false;
-
-    // Add event listener for the form submit action
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            isSubmitting = true;
-        });
-    });
-
-    // Trigger beforeunload when the user tries to leave the page (except on form submit)
-    window.addEventListener('beforeunload', function (event) {
-        if (!isSubmitting) { // Only show the warning if it's not a form submission
-            const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
-            event.returnValue = confirmationMessage;  // For most modern browsers
-            return confirmationMessage;              // For older browsers
+    (function initializeLeaveWarning() {
+        if (window.eventFormLeaveGuardInitialized) {
+            return;
         }
-    });
+        window.eventFormLeaveGuardInitialized = true;
+
+        const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
+        let shouldWarn = true;
+
+        const handleBeforeUnload = function (event) {
+            if (!shouldWarn) {
+                return;
+            }
+
+            event.preventDefault();
+            event.returnValue = confirmationMessage;
+            return confirmationMessage;
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        const registerLivewireHandlers = () => {
+            if (!window.Livewire || typeof window.Livewire.on !== 'function') {
+                return;
+            }
+
+            window.Livewire.on('event-form-submitted', () => {
+                shouldWarn = false;
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            });
+        };
+
+        if (window.Livewire) {
+            registerLivewireHandlers();
+        } else {
+            document.addEventListener('livewire:init', registerLivewireHandlers);
+        }
+    })();
 </script>
