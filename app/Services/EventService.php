@@ -30,7 +30,13 @@ class EventService
     protected $categoryService;
     protected $auditService;
 
-    // Construct
+    /**
+     * Create a new EventService instance.
+     *
+     * @param VenueService $venueService
+     * @param CategoryService $categoryService
+     * @param AuditService $auditService
+     */
     public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService)
     {
         $this->venueService = $venueService;
@@ -42,6 +48,16 @@ class EventService
 
     // FORM
 
+    /**
+     * Persist an event request originating from the public form.
+     *
+     * @param array $data Validated event payload.
+     * @param User $creator Authenticated user creating the event.
+     * @param string $action Either 'draft' or 'publish' to determine workflow.
+     * @param array<int>|null $document_ids Optional uploaded document identifiers.
+     * @param array<int>|null $categories_ids Optional category identifiers to sync.
+     * @return Event
+     */
     public function updateOrCreateFromEventForm(array $data, User $creator, string $action, ?array $document_ids = [], ?array $categories_ids = [])
     {
         return DB::transaction(function () use ($data, $document_ids, $categories_ids, $creator, $action) {
@@ -229,7 +245,12 @@ class EventService
     }
 
     /**
-     * Atomically update event status if current status matches
+     * Atomically update event status if the persisted status matches the expected one.
+     *
+     * @param Event $event
+     * @param string $currentStatus Expected current status.
+     * @param string $nextStatus Status to transition to.
+     * @return int Number of affected rows (0 if race condition prevented update).
      */
     protected function updateEventStatus(Event $event, string $currentStatus, string $nextStatus): int
     {
@@ -240,7 +261,12 @@ class EventService
     }
 
     /**
-     * Update the most recent pending history record
+     * Update the latest pending history entry with an action and comment.
+     *
+     * @param Event $event
+     * @param User $approver
+     * @param string|null $comment
+     * @param string $action Final action label (approved/rejected/etc).
      */
     protected function updateLastHistory(Event $event, User $approver, ?string $comment = null, string $action)
     {
@@ -259,7 +285,11 @@ class EventService
     }
 
     /**
-     * Create a new pending history for the next approver
+     * Create a new pending history entry for the next approval step.
+     *
+     * @param Event $event
+     * @param string $nextStatus
+     * @param User $approver
      */
     protected function createPendingHistory(Event $event, string $nextStatus, User $approver)
     {
@@ -272,9 +302,14 @@ class EventService
     }
 
 
-    // Status related methods
-
-    // Request creator withdraws event
+    /**
+     * Allow the request creator to withdraw their pending event.
+     *
+     * @param Event $event
+     * @param User $user
+     * @param string|null $comment
+     * @return Event
+     */
     public function withdrawEvent(Event $event, User $user, $comment): Event
     {
         return DB::transaction(function () use ($event, $user, $comment) {
@@ -304,10 +339,14 @@ class EventService
 
     // Request creator cancels event (older signature removed; unified below)
 
-    // Mark event as completed
-    public function markEventAsCompleted()
+    /**
+     * Mark any approved events that finished yesterday as completed.
+     *
+     * @return void
+     */
+    public function markEventAsCompleted(): void
     {
-        return DB::transaction(function () {
+        DB::transaction(function () {
             // Get the start and end of yesterday
             $yesterdayStart = Carbon::yesterday()->startOfDay();
             $yesterdayEnd = Carbon::yesterday()->endOfDay();
@@ -319,13 +358,24 @@ class EventService
         });
     }
 
-    // Dashboards
-
+    /**
+     * Build a base query for events created by the given user.
+     *
+     * @param User $user
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function getMyRequestedEvents(User $user): \Illuminate\Database\Eloquent\Builder
     {
         return Event::where('creator_id', $user->id);
     }
 
+    /**
+     * Get pending requests routed to the supplied approver role.
+     *
+     * @param User $user
+     * @param Role $role
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function genericGetPendingRequests(User $user, Role $role): \Illuminate\Database\Eloquent\Builder
     {
         return match ($role->name) {
@@ -344,6 +394,13 @@ class EventService
         };
     }
 
+    /**
+     * Retrieve pending requests matching any of the user's active roles.
+     *
+     * @param User $user
+     * @param array<int,string>|null $roles Optional subset of role names to filter by.
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function genericGetPendingRequestsV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
         $query = Event::query();
@@ -400,6 +457,12 @@ class EventService
 
 
 
+    /**
+     * Build a query of events previously acted upon by the approver.
+     *
+     * @param User $user
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function genericApproverRequestHistory(User $user): \Illuminate\Database\Eloquent\Builder
     {
         return Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
@@ -412,6 +475,13 @@ class EventService
             }]);
     }
 
+    /**
+     * Build an approver history query filtered by the provided roles.
+     *
+     * @param User $user
+     * @param array<int,string>|null $roles
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function genericApproverRequestHistoryV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
         $query = Event::select(
@@ -467,6 +537,12 @@ class EventService
         return $query;
     }
 
+    /**
+     * Build a query for events that overlap the supplied event window.
+     *
+     * @param Event $event
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function conflictingEvents(Event $event)
     {
         return Event::where(function ($query) {
@@ -488,6 +564,12 @@ class EventService
     }
 
 
+    /**
+     * Retrieve the documents attached to an event.
+     *
+     * @param Event $event
+     * @return Collection
+     */
     public function getEventDocuments(Event $event): Collection
     {
         return $event->documents;
@@ -817,6 +899,13 @@ class EventService
     //     category_id => [],
     //     organization_name => []
     // ]
+    /**
+     * Fetch paginated history for an approver with optional filters.
+     *
+     * @param User $user
+     * @param array<string,mixed> $filters
+     * @return LengthAwarePaginator
+     */
     public function getApproverRequestHistory(User $user, $filters = [])
     {
         $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')

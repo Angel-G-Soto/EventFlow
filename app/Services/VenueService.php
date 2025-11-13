@@ -33,6 +33,14 @@ class VenueService
     protected AuditService $auditService;
     protected UserService $userService;
 
+    /**
+     * Create a new VenueService instance.
+     *
+     * @param DepartmentService $departmentService
+     * @param UseRequirementService $useRequirementService
+     * @param AuditService $auditService
+     * @param UserService $userService
+     */
     public function __construct(DepartmentService $departmentService, UseRequirementService $useRequirementService, AuditService $auditService, UserService $userService)
     {
         $this->departmentService =  $departmentService;
@@ -856,6 +864,11 @@ class VenueService
         }
     }
 
+    /**
+     * Provide the default Monday–Friday 08:00–17:00 availability slots.
+     *
+     * @return array<int,array{day:string,opens_at:string,closes_at:string}>
+     */
     private function defaultWeekdayAvailability(): array
     {
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
