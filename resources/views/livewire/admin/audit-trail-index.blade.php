@@ -94,12 +94,12 @@ return $dt;
             <td class="text-nowrap">
               {{ $fmtAudit($r->created_at ?? null) }}
             </td>
-            <td>{{ $r->user_id ?? '—' }}</td>
+            <td>#{{ $r->user_id ?? '—' }}</td>
             <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
             <td class="text-truncate" style="max-width:220px;">
-              {{ $r->target_type ? class_basename($r->target_type) : '—' }}
+              {{ $r->target_type ? class_basename($r->target_type) : '—' }}:
               @if($r->target_id)
-              : #{{ $r->target_id }}
+              #{{ $r->target_id }}
               @endif
             </td>
             <td class="text-end">
@@ -111,7 +111,7 @@ return $dt;
           </tr>
           @empty
           <tr>
-            <td colspan="7" class="text-center text-secondary py-4">No audit entries found.</td>
+            <td colspan="5" class="text-center text-secondary py-4">No audit entries found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -135,7 +135,12 @@ return $dt;
           @if(!empty($details))
           <dl class="row">
             <dt class="col-sm-3">User</dt>
-            <dd class="col-sm-9">{{ $details['user_id'] ?? '—' }}</dd>
+            <dd class="col-sm-9">
+              {{ $details['user_name'] ?? 'Unknown User' }}
+              @if(!empty($details['user_id']))
+              <span class="text-muted small">#{{ $details['user_id'] }}</span>
+              @endif
+            </dd>
             <dt class="col-sm-3">Action</dt>
             <dd class="col-sm-9">{{ $details['action'] ?? '' }}</dd>
             <dt class="col-sm-3">Target</dt>

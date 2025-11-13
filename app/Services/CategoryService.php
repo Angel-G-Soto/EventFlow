@@ -3,8 +3,9 @@
 namespace App\Services;
 use App\Models\Category;
 use Exception;
-use \Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use Throwable;
 
@@ -79,8 +80,8 @@ class CategoryService {
                 /** @var \App\Services\AuditService $audit */
                 $audit = app(\App\Services\AuditService::class);
 
-                $actor   = auth()->user();
-                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+                $actor   = Auth::user();
+                $actorId = $actor?->id ?? null;
 
                 if ($actorId > 0) {
                     $actorLabel = $actor
@@ -106,7 +107,7 @@ class CategoryService {
                         $ctx
                     );
                 }
-            } catch (\Throwable) { /* best-effort */ }
+            } catch (Throwable) { /* best-effort */ }
 
 
             // Return collection of updated values
@@ -139,8 +140,8 @@ class CategoryService {
                 /** @var \App\Services\AuditService $audit */
                 $audit = app(\App\Services\AuditService::class);
 
-                $actor   = auth()->user();
-                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+                $actor   = Auth::user();
+                $actorId = $actor?->id ?? null;
 
                 if ($actorId > 0 && $deleted) {
                     $actorLabel = $actor
@@ -166,7 +167,7 @@ class CategoryService {
                         $ctx
                     );
                 }
-            } catch (\Throwable) { /* best-effort */ }
+            } catch (Throwable) { /* best-effort */ }
 
             return $deleted;
         }
@@ -176,17 +177,15 @@ class CategoryService {
 
 
 
-    /**
-    public function deleteCategory(int $category_id): bool
-    {
-    try {
-    if ($category_id < 0) throw new InvalidArgumentException('Category ID must be a positive integer.');
+    // /**
+    // public function deleteCategory(int $category_id): bool
+    // {
+    // try {
+    // if ($category_id < 0) throw new InvalidArgumentException('Category ID must be a positive integer.');
 
-    return Category::findOrFail($category_id)->delete();
-    }
-    catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified category.');}
-    }
-     *
-     */
+    // return Category::findOrFail($category_id)->delete();
+    // }
+    // catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified category.');}
+    // }
     /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
 }
