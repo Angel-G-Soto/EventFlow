@@ -242,7 +242,18 @@
 
 
             <div class="mb-3">
-                <label class="form-label">Venue</label>
+                <div class="d-flex align-items-center justify-content-between">
+                    <label class="form-label">Venue</label>
+                    @if ($selectedVenueDetails)
+                        <button
+                            type="button"
+                            class="btn btn-link btn-sm text-decoration-none"
+                            wire:click="showVenueDescription"
+                        >
+                            View details
+                        </button>
+                    @endif
+                </div>
                 <select class="form-select" wire:model="venue_id">
                     <option value="">— Select venue —</option>
                     @foreach ($availableVenues as $v)
@@ -258,6 +269,55 @@
                 <button type="submit" class="btn btn-primary">Next</button>
             </div>
         </form>
+    @endif
+    @if ($showVenueDescriptionModal && $selectedVenueDetails)
+        <div
+            class="modal fade show d-block"
+            tabindex="-1"
+            aria-modal="true"
+            role="dialog"
+            style="background: rgba(0,0,0,0.35);"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            {{ $selectedVenueDetails['name'] ?? 'Venue details' }}
+                            <small class="text-muted ms-2">{{ $selectedVenueDetails['code'] ?? '' }}</small>
+                        </h5>
+                        <button type="button" class="btn-close" aria-label="Close" wire:click="closeVenueDescription"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">
+                            {{ $selectedVenueDetails['description'] ?? 'No description available.' }}
+                        </p>
+
+                        <h6>Availability</h6>
+                        @php($slots = $selectedVenueDetails['availabilities'] ?? [])
+                        @if (!empty($slots))
+                            <ul class="list-group">
+                                @foreach ($slots as $slot)
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span class="fw-semibold">{{ $slot['day'] }}</span>
+                                        <span>
+                                            {{ \Carbon\Carbon::parse($slot['opens_at'])->format('g:i A') }}
+                                            –
+                                            {{ \Carbon\Carbon::parse($slot['closes_at'])->format('g:i A') }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-muted mb-0">No availability configured.</p>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" wire:click="closeVenueDescription">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
     @endif
 
     {{-- STEP 3 --}}

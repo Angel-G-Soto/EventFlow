@@ -48,6 +48,16 @@ class Create extends Component
     use WithFileUploads;
     protected DocumentService $docs;
 
+    private const DAYS_OF_WEEK = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+    ];
+
 
 // Wizard state
 /**
@@ -153,6 +163,14 @@ class Create extends Component
  * @var bool
  */
     public bool $loadingVenues = false;
+/**
+ * @var array|null
+ */
+    public ?array $selectedVenueDetails = null;
+/**
+ * @var bool
+ */
+    public bool $showVenueDescriptionModal = false;
 
 
 // Part 3 (dynamic required docs)
@@ -322,11 +340,66 @@ class Create extends Component
             $service = $service ?? app(VenueService::class);
             $this->availableVenues = $service->getAvailableVenues($start, $end)->toArray();
             //dd($this->availableVenues);
+            $this->selectedVenueDetails = $this->resolveVenueDetails($this->venue_id);
         } catch (\Throwable $e) {
             $this->addError('venue_id', 'Could not load venue availability.');
         } finally {
             $this->loadingVenues = false;
         }
+    }
+
+    public function updatedVenueId($value): void
+    {
+        $this->selectedVenueDetails = $this->resolveVenueDetails((int)$value);
+    }
+
+    public function showVenueDescription(): void
+    {
+        $details = $this->resolveVenueDetails($this->venue_id);
+        if ($details) {
+            $this->selectedVenueDetails = $details;
+            $this->showVenueDescriptionModal = true;
+        }
+    }
+
+    public function closeVenueDescription(): void
+    {
+        $this->showVenueDescriptionModal = false;
+    }
+
+    protected function resolveVenueDetails(?int $venueId): ?array
+    {
+        if (!$venueId) {
+            return null;
+        }
+
+        foreach ($this->availableVenues as $venue) {
+            if ((int)($venue['id'] ?? 0) !== (int)$venueId) {
+                continue;
+            }
+
+            $venue['availabilities'] = $this->sortAvailabilitySlots($venue['availabilities'] ?? []);
+            return $venue;
+        }
+
+        return null;
+    }
+
+    protected function sortAvailabilitySlots(array $slots): array
+    {
+        $order = array_flip(self::DAYS_OF_WEEK);
+        usort($slots, function ($a, $b) use ($order) {
+            $dayA = $order[$a['day'] ?? ''] ?? 99;
+            $dayB = $order[$b['day'] ?? ''] ?? 99;
+
+            if ($dayA === $dayB) {
+                return strcmp((string)($a['opens_at'] ?? ''), (string)($b['opens_at'] ?? ''));
+            }
+
+            return $dayA <=> $dayB;
+        });
+
+        return $slots;
     }
 
     /**
