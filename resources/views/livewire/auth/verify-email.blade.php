@@ -8,6 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.auth')] class extends Component {
+    // Actions
     /**
      * Send an email verification notification to the user.
      */
@@ -28,6 +29,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $this->redirect('/', navigate: true);
     }
 
+    // Lifecycle hooks
     /**
      * Handle the component's rendering hook.
      */
@@ -47,9 +49,9 @@ new #[Layout('components.layouts.auth')] class extends Component {
     </flux:text>
 
     @if (session('status') == 'verification-link-sent')
-        <flux:text class="text-center font-medium !dark:text-green-400 !text-green-600">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
-        </flux:text>
+    <flux:text class="text-center font-medium !dark:text-green-400 !text-green-600">
+        {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+    </flux:text>
     @endif
 
     <div class="flex flex-col items-center justify-between space-y-3">

@@ -1,22 +1,48 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Auth\AuthController;
+use App\Models\User;
 use Laravel\Socialite\Facades\Socialite;
-
 use Illuminate\Support\Facades\Auth;
 
-use App\Models\User;
+/*
+|--------------------------------------------------------------------------
+| SAML & Nexo Auth Routes (Single Controller)
+|--------------------------------------------------------------------------
+| Register this file from routes/web.php or RouteServiceProvider:
+|   require base_path('routes/saml2.php');
+|
+| Notes:
+| - Keep these outside of 'auth' middleware (these endpoints establish auth).
+| - If Nexo always POSTs from a server-to-server call, prefer ->post() instead of ->any().
+| - Attach API key/signature middleware to the Nexo route when integrating.
+*/
 
+//Route::get('/auth/saml/login', [AuthController::class, 'samlRedirect'])
+//    ->name('saml.login');
+//
+//Route::any('/auth/callback', [AuthController::class, 'samlCallback'])
+//    ->name('saml.callback');
+//
+//Route::any('/auth/nexo/callback', [AuthController::class, 'nexoCallback'])
+//    // ->middleware('verify.apikey') // uncomment to use API-key middleware when integrating
+//    ->name('nexo.callback');
 
 Route::get('/auth/saml/login', function () {
-
     return Socialite::driver('saml2')->redirect();
-
 })->name("saml.login");
 
+Route::post('/auth/saml/logout', function () {
 
-Route::any('/auth/callback', function () {
+    Auth::logout();
+    return redirect('/');
+
+})->name("saml.logout");
+
+Route::any('/auth/callback', function (Request $request) {
 
     $saml = Socialite::driver('saml2')->stateless()->user();
 //    $saml = Socialite::driver('saml2')->stateless()->user();
@@ -29,10 +55,11 @@ Route::any('/auth/callback', function () {
         'auth_type' => 'saml2',
         'password' => "thisisatest",
     ]);
-    Auth::login($user);
-    return redirect('/dashboard');
-})->name("saml.callback");
 
-//Route::get('/auth/saml/metadata', function () {
-//    return Socialite::driver('saml2')->getServiceProviderMetadata();
-//})->name("saml.metadata");
+    Auth::login($user);
+
+    $fallback = Cookie::get('saml_intended', '/');
+    Cookie::queue(Cookie::forget('saml_intended'));
+
+    return redirect()->intended($fallback);
+})->name("saml.callback");

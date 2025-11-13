@@ -3,14 +3,18 @@
 namespace App\Models;
 
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Http\Request;
+use \Illuminate\Database\Eloquent\Collection;
 
 class Event extends Model
 {
+    use HasFactory;
     /**
      * The primary key associated with the table.
      *
@@ -24,24 +28,22 @@ class Event extends Model
      */
     protected $fillable = [
         'creator_id',
-        'current_approver_id',
         'venue_id',
-        'e_organization_nexo_id',
-        'e_advisor_name',
-        'e_advisor_email',
-        'e_advisor_phone',
-        'e_organization_name',
-        'e_title',
-        'e_type',
-        'e_description',
-        'e_status',
-        'e_status_code',
-        'e_upload_status',
-        'e_start_time',
-        'e_end_time',
-        'e_student_id',
-        'e_student_phone',
-        'e_guests',
+        'organization_name',
+        'organization_advisor_email',
+        'organization_advisor_name',
+        //'organization_advisor_phone',
+        'creator_institutional_number',
+        'creator_phone_number',
+        'title',
+        'description',
+        'start_time',
+        'end_time',
+        'status',
+        'guest_size',
+        'handles_food',
+        'use_institutional_funds',
+        'external_guest',
     ];
 
     /**
@@ -51,13 +53,15 @@ class Event extends Model
      */
     protected $connection = 'mariadb';
 
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
+
     /**
      * Relationship between the Event and User
      * @return BelongsTo
      */
     public function requester(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'creator_id');
     }
 
     /**
@@ -84,66 +88,63 @@ class Event extends Model
      */
     public function history(): HasMany
     {
-        return $this->hasMany(EventRequestHistory::class);
+        return $this->hasMany(EventHistory::class);
     }
 
-//    /**
-//     * Determine if the event has any attached documents.
-//     *
-//     * @return bool
-//     */
-//    public function hasDocuments(): bool
-//    {
-//        return $this->documents()->exists();
-//    }
+    /**
+     *
+     * @return BelongsToMany
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class);
+    }
 
-//    /**
-//     * Get the venue associated with the event.
-//     *
-//     * @return Venue|null
-//     */
-//    public function getVenue(): ?Venue
-//    {
-//        return $this->venue;
-//    }
 
-//    /**
-//     * This method is used to update or create an event based on the request input.
-//     * NOTE: This function does not update the documents. Use the documents equivalent
-//     * method to update or create files.
-//     *
-//     * @param Request $request
-//     * @return Event
-//     */
-//    public function updateOrCreateEvent(Request $request): Event
-//    {
-//
-//        if (request()->has('event_id'))
-//        {
-//            $event = self::find($request->event_id);
-//        }
-//        else
-//        {
-//            $event = new self();
-//        }
-//
-//        if ($request->has('e_student_id')) $event->e_student_id = $request->e_student_id;
-//        if ($request->has('e_student_phone')) $event->e_student_phone = $request->e_student_phone;
-//        if ($request->has('e_organization')) $event->e_organization = $request->e_organization;
-//        if ($request->has('e_advisor_name')) $event->e_advisor_name = $request->e_advisor_name;
-//        if ($request->has('e_advisor_email')) $event->e_advisor_email = $request->e_advisor_email;
-//        if ($request->has('e_advisor_phone')) $event->e_advisor_phone = $request->e_advisor_phone;
-//        if ($request->has('e_title')) $event->e_title = $request->e_title;
-//        if ($request->has('e_category')) $event->e_category = $request->e_category;
-//        if ($request->has('e_description')) $event->e_description = $request->e_description;
-//        if ($request->has('e_status')) $event->e_status = $request->e_status;
-//        if ($request->has('e_start_date')) $event->e_start_date = $request->e_start_date;
-//        if ($request->has('e_end_date')) $event->e_end_date = $request->e_end_date;
-//        if ($request->has('e_guests')) $event->e_guests = $request->e_guests;
-//        if ($request->has('venue_id')) $event->venue_id = $request->venue_id;
-//
-//        $event->save();
-//
-//        return $event;
-//    }
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+
+    /**
+     * Retrieve the full approval or modification history for this model.
+     *
+     * This method returns all related history records associated with the current model,
+     * typically representing approval steps, changes, or actions performed over time.
+     *
+     * @return Collection
+     */
+    public function getHistory(): Collection
+    {
+        return $this->history()->get();
+    }
+
+    /**
+     * Get the user who most recently acted as approver for this model.
+     *
+     * This method fetches the latest history record (by creation date) and returns
+     * the associated approver user instance. It assumes that at least one history
+     * record exists; otherwise, a null reference error may occur.
+     *
+     * @return User
+     */
+    public function getCurrentApprover(): User
+    {
+        return $this->history()->orderBy('created_at', 'desc')->first()->approver;
+    }
+
+
+    public function getSimpleStatus(): string
+    {
+        if (str_contains($this->status, 'advisor')) {
+            return 'Awaiting Advisor Approval';
+        }
+        if (str_contains($this->status, 'venue manager')) {
+            return 'Awaiting Venue Manager Approval';
+        }
+        if (str_contains($this->status, 'dsca')) {
+            return 'Awaiting DSCA Approval';
+        }
+        else {
+            return ucfirst($this->status);
+        }
+    }
+
 }

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Document extends Model
 {
+    use HasFactory;
     /**
      * The primary key associated with the table.
      *
@@ -26,8 +28,9 @@ class Document extends Model
      * @var string[]
      */
     protected $fillable = [
-        'd_name',
-        'd_file_path',
+        'event_id',
+        'name',
+        'file_path',
     ];
 
     /**
@@ -37,5 +40,16 @@ class Document extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+
+    public function getNameOfFile(): string
+    {
+        return $this->name;
+    }
+
+    public function getFilePath(): string
+    {
+        return $this->file_path;
     }
 }

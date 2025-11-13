@@ -6,15 +6,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
+use App\Models\Role;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -23,6 +29,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         /*'name',*/
+        'department_id',
         'email',
         'password',
         'first_name',
@@ -61,16 +68,63 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 
+    // Default role attachment handled by UserObserver (app/Observers/UserObserver.php)
+
+    //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
+
     /**
-     * Relationship between the Venue and Department
+     * Relationship between the User and Department
      * @return BelongsTo
      */
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    //    /**
+    //     * Relationship between the User and Venue
+    //     * @return HasMany
+    //     */
+    //    public function manages(): HasMany
+    //    {
+    //        return $this->hasMany(Venue::class, 'manager_id');
+    //    }
+
+    /**
+     * Relation between User and Event Request History
+     * @return HasMany
+     */
+    public function requestActionLog(): HasMany
+    {
+        return $this->hasMany(EventHistory::class, 'approver_id');
+    }
+
+    /**
+     * Relation between User and Events
+     * @return HasMany
+     */
+    public function requests(): HasMany
+    {
+        return $this->hasMany(Event::class, 'creator_id');
+    }
+
+    /**
+     * Relation between User and Role
+     * @return BelongsToMany
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'user_role');
+    }
+
+    //////////////////////////////////// METHODS //////////////////////////////////////////////////////
+
+    public function getRoleNames(): Collection
+    {
+        return $this->roles()->pluck('name')->unique();
     }
 }

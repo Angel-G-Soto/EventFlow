@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Department extends Model
 {
+    use HasFactory, SoftDeletes;
     /**
      * The primary key associated with the table.
      *
@@ -26,9 +30,8 @@ class Department extends Model
      * @var string[]
      */
     protected $fillable = [
-        'user_id',
-        'd_name',
-        'd_code',
+        'name',
+        'code',
     ];
 
     /**
@@ -44,8 +47,42 @@ class Department extends Model
      * Relationship between the Department and User
      * @return HasMany
      */
-    public function managers(): HasMany
+    public function employees(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    ///////////////////////// VALIDATE FUNCTIONALITY OF THE ROLES ///////////////////////////////////////
+    public function getDirector(): User|null
+    {
+        $employees = $this->employees()->get();
+
+        foreach ($employees as $employee) {
+            if ($employee->roles()->pluck('name')->contains('department-director')) {
+                return $employee;
+            }
+        }
+        return null;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public function getEmployees(): Collection
+    {
+        return $this->employees()->get();
+    }
+
+    public function getEmployeeCount(): int
+    {
+        return $this->employees()->count();
+    }
+
+    public function getVenues(): Collection
+    {
+        return $this->venues()->get();
+    }
+
+    public function getVenueCount(): int
+    {
+        return $this->venues()->count();
     }
 }

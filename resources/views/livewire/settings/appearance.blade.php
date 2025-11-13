@@ -3,7 +3,7 @@
 use Livewire\Volt\Component;
 
 new class extends Component {
-    //
+    // Properties / state (reserved for future appearance settings if needed)
 }; ?>
 
 <section class="w-full">

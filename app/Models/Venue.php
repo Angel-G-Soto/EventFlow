@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use DateTime;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Venue extends Model
 {
-    use softDeletes;
+    use softDeletes, HasFactory;
     /**
      * The primary key associated with the table.
      *
@@ -30,31 +33,23 @@ class Venue extends Model
      * @var string[]
      */
     protected $fillable = [
-        'v_name',
-        'v_code',
-        'v_department',
-        'v_features',
-        'v_capacity',
-        'v_test_capacity',
-        'use_requirement_id'
+        //'manager_id',
+        'department_id',
+        'name',
+        'code',
+        'description',
+        'features',
+        'capacity',
+        'test_capacity',
     ];
 
     /**
-     * Relationship between the Venue and User
-     * @return BelongsTo
+     * Relationship between the Venue and Requirement
+     * @return HasMany
      */
-//    public function user(): BelongsTo
-//    {
-//        return $this->belongsTo(User::class, 'user_id');
-//    }
-
-    /**
-     * Relationship between the Venue and Use Requirement
-     * @return BelongsTo
-     */
-    public function requirements(): BelongsTo
+    public function requirements(): HasMany
     {
-        return $this->belongsTo(UseRequirements::class);
+        return $this->hasMany(UseRequirement::class, 'venue_id');
     }
 
     /**
@@ -75,25 +70,138 @@ class Venue extends Model
         return $this->belongsTo(Department::class);
     }
 
-    /**
-     * Returns the venue usage requirements
-     *
-     * @param int $requirementId
-     * @return UseRequirements|null
-     */
-    public function getRequirementById(int $requirementId): ?UseRequirements
+    public function categories(): BelongsToMany
     {
-        return $this->requirements()->where('use_requirement_id', $requirementId)->first();
+        return $this->belongsToMany(Category::class);
+    }
+
+    public function availabilities(): HasMany
+    {
+        return $this->hasMany(VenueAvailability::class);
+    }
+
+//    public function manager(): BelongsTo
+//    {
+//        return $this->belongsTo(User::class, 'manager_id');
+//    }
+
+    //////////////////////////////////////////// METHODS //////////////////////////////////////////////////
+
+    public function getDepartmentID(): int
+    {
+        return $this->department_id;
     }
 
     /**
-     *  Returns the requests associated to the venue
+     * Returns an array of enabled features for this object.
      *
-     * @param int $eventId
-     * @return Event|null
+     * This method checks the internal `$features` array, where each element
+     * is expected to be `1` (enabled) or `0` (disabled). It maps the enabled
+     * entries to their corresponding names in the predefined `$allFeatures` list.
+     *
+     * @return array
      */
-    public function getRequestByEventId(int $eventId): ?Event
+    public function getFeatures(): array
     {
-        return $this->requests()->where('event_id', $eventId)->first();
+        // The list of all possible features
+        $allFeatures = ['online', 'multimedia', 'teaching', 'computers'];
+
+        // Initialize the array to store the enabled features
+        $enabledFeatures = [];
+
+        // Iterate through the features and add the enabled ones
+        foreach (str_split($this->features) as $index => $isEnabled) {
+            if ($isEnabled === '1') { // If the feature at this index is enabled (1)
+                $enabledFeatures[] = $allFeatures[$index]; // Add the corresponding feature to the array
+            }
+        }
+
+        // Return the enabled features as an array
+        return $enabledFeatures;
     }
+
+
+    /**
+     * Determine whether the venue is open at a given date and time.
+     *
+     * This method compares the provided time against the venue's defined opening
+     * and closing hours. It supports venues that operate past midnight
+     * (i.e., overnight schedules where closing time is earlier than opening time).
+     *
+     * @param DateTime $date
+     * @return bool
+     */
+    public function isOpenAt(DateTime $date): bool
+    {
+        $hour = $date->format('H:i:s');
+        $day = $date->format('l');
+
+        return $this->availabilities()
+            ->where('day', $day)
+            ->where('opens_at', '<=', $hour)
+            ->where('closes_at', '>=', $hour)
+            ->exists();
+    }
+
+    protected function hasAvailabilityBetween(DateTime $startTime, DateTime $endTime): bool
+    {
+        if ($startTime->format('Y-m-d') !== $endTime->format('Y-m-d')) {
+            return false;
+        }
+
+        $day = $startTime->format('l');
+        $startHour = $startTime->format('H:i:s');
+        $endHour = $endTime->format('H:i:s');
+
+        return $this->availabilities()
+            ->where('day', $day)
+            ->where('opens_at', '<=', $startHour)
+            ->where('closes_at', '>=', $endHour)
+            ->exists();
+    }
+
+    /**
+     * Check whether the venue has any approved event that conflicts
+     * with the specified time range.
+     *
+     * A conflict occurs if there is any approved event that overlaps
+     * with the provided start and end times — either starting, ending,
+     * or fully encompassing the requested window.
+     *
+     * @param DateTime $startTime
+     * @param DateTime $endTime
+     * @return bool
+     */
+    public function hasConflict(DateTime $startTime, DateTime $endTime): bool
+    {
+        return Event::where('status', 'approved')
+            ->where('venue_id', $this->id)
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query
+                    ->whereBetween('start_time', [$startTime, $endTime])        // Event starts within window
+                    ->orWhereBetween('end_time', [$startTime, $endTime])        // Event ends within window
+                    ->orWhere(function ($query) use ($startTime, $endTime) {    // Event fully covers window
+                        $query->where('start_time', '<=', $startTime)
+                            ->where('end_time', '>=', $endTime);
+                    });
+            })
+            ->exists();
+    }
+
+    /**
+     * Determine whether the venue is available for a given time range.
+     *
+     * The venue is considered available if:
+     * - It is open at the specified start time.
+     * - There are no approved events overlapping the provided time range.
+     *
+     * @param DateTime $startTime
+     * @param DateTime $endTime
+     * @return bool
+     */
+    public function isAvailable(DateTime $startTime, DateTime $endTime): bool
+    {
+        return $this->hasAvailabilityBetween($startTime, $endTime) && !$this->hasConflict($startTime, $endTime);
+    }
+
 }

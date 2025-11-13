@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Middleware\EnsureAuthentication;
+use App\Services\EventService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,12 +15,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            // Register Nexo API key middleware so routes can use ->middleware('nexo.api')
+            'nexo.api' => \App\Http\Middleware\VerifyApiKey::class
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -29,4 +35,12 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->withSchedule(function (Schedule $schedule) {
+        $schedule->call(function () {
+            app(EventService::class)->markEventAsCompleted();
+        })->dailyAt('00:00');
+
+        $schedule->exec('freshclam')->weeklyOn(6, '00:00');
+    })
+    ->create();
