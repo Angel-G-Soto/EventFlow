@@ -720,4 +720,15 @@ class Create extends Component
             return (string)$value;
         }
     }
+
+    #[Computed]
+    public function shouldShowRequirementUploads(): bool
+    {
+        $hasVenueRequirements = !empty($this->requiredDocuments);
+
+        return $hasVenueRequirements
+            || (bool) $this->handles_food
+            || (bool) $this->use_institutional_funds
+            || (bool) $this->external_guest;
+    }
 }

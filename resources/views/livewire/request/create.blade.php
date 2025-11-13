@@ -520,6 +520,9 @@
                         </li>
                     @endforeach
                 </ul>
+            @endif
+
+            @if ($this->shouldShowRequirementUploads)
                 <div class="mb-3">
                     <label for="requirementFiles" class="form-label">Upload Requirement Documents</label>
                     <input type="file"
@@ -527,16 +530,14 @@
                            id="requirementFiles"
                            wire:model="requirementFiles"
                            multiple
-{{--                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>--}}
-                            accept=".pdf"/>
+                           accept=".pdf"/>
                     <div class="form-text">
-{{--                        Upload all required documents here. Accepted formats: PDF, DOCX, JPG, PNG.--}}
                         Upload all required documents here. Accepted formats: PDF.
                     </div>
 
-                    @error('requirementFiles.*')
+                @error('requirementFiles.*')
                     <div class="text-danger">{{ $message }}</div>
-                    @enderror
+                @enderror
                 </div>
             @endif
 
