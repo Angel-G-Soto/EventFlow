@@ -191,6 +191,47 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="confirmManagerTransferModal" tabindex="-1" aria-labelledby="confirmManagerTransferModalLabel"
+         aria-hidden="true" wire:ignore.self data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="confirmManagerTransferModalLabel">Confirm reassignment</h1>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                            wire:click="cancelManagerTransfer"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        <strong>{{ $pendingManagerEmail ?: 'This user' }}</strong>
+                        currently belongs to
+                        <strong>{{ $pendingManagerDepartment ?: 'another department' }}</strong>.
+                    </p>
+                    <p class="mb-0">
+                        Continuing will reassign them to {{ $department->name ?? 'this department' }} and give them manager access here.
+                        Do you want to proceed?
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal"
+                            wire:click="cancelManagerTransfer">
+                        Cancel
+                    </button>
+                    <button type="button"
+                            class="btn btn-primary"
+                            wire:click="confirmManagerTransfer"
+                            wire:loading.attr="disabled">
+                        Reassign & Add Manager
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 </div>
@@ -211,4 +252,3 @@
             bootstrap.Modal.getOrCreateInstance(el).hide();
         });
     </script>
-

@@ -581,6 +581,8 @@ class Create extends Component
 
 
         session()->flash('success', 'Event submitted successfully.');
+        $this->dispatch('event-form-submitted');
+
         redirect()->route('public.calendar'); // or to a details/thanks page
     }
 
