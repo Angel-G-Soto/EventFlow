@@ -67,7 +67,7 @@ it('completes an approved event whose end_time has passed', function () {
     config()->set('eventflow.system_user_id', 1);
     $audit->shouldReceive('logAdminAction')
         ->once()
-        ->with(1, 'EVENT_COMPLETED_AUTO', 'Event', 1001);
+        ->with(1, 'event', 'EVENT_COMPLETED_AUTO', '1001', Mockery::any());
 
     $svc = new EventCompletionService($eventModel, $audit);
 

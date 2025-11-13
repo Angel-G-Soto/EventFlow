@@ -210,8 +210,8 @@ class UserService
             }
 
             $this->auditService->logAdminAction(
-                (int) $admin->id,
-                $actorName,
+                $admin->id,
+                'user',
                 'USER_ROLES_UPDATED',
                 (string) ($user->id ?? 0),
                 $ctx
@@ -268,8 +268,8 @@ class UserService
             }
 
             $this->auditService->logAdminAction(
-                (int) $admin->id,
-                $actorName,
+                $admin->id,
+                'department',
                 'USER_DEPT_ASSIGNED',
                 $targetId,
                 $ctx
@@ -286,44 +286,44 @@ class UserService
      * @param User|null $admin
      * @param string|null $justification Optional admin-provided justification to include in audit log.
      */
-    public function updateUserProfile(User $user, array $data, User $admin, string $justification): User
-    {
-        // Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
-        $fillableData = Arr::only($data, ['first_name', 'last_name', 'email']);
+    // public function updateUserProfile(User $user, array $data, User $admin, string $justification): User
+    // {
+    //     // Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
+    //     $fillableData = Arr::only($data, ['first_name', 'last_name', 'email']);
 
-        $user->fill($fillableData);
-        $user->save();
+    //     $user->fill($fillableData);
+    //     $user->save();
 
-        if ($admin && $admin->id) {
-            $adminName = trim(((string)($admin->first_name ?? '')) . ' ' . ((string)($admin->last_name ?? '')));
-            if ($adminName === '') {
-                $adminName = (string)($admin->email ?? '');
-            }
-            $ctx = ['meta' => [
-                'fields' => array_keys($fillableData),
-                'source' => 'user_profile_update',
-            ]];
-            if (($justification = trim((string)$justification)) !== '') {
-                $ctx['meta']['justification'] = $justification;
-            }
-            try {
-                if (request()) {
-                    $ctx = app(AuditService::class)
-                        ->buildContextFromRequest(request(), $ctx['meta']);
-                }
-            } catch (\Throwable) { /* queue/no-http */
-            }
-            $this->auditService->logAdminAction(
-                (int) $admin->id,
-                $adminName,
-                'USER_PROFILE_UPDATED',
-                (string) ($user->id ?? 0),
-                $ctx
-            );
-        }
+    //     if ($admin && $admin->id) {
+    //         $adminName = trim(((string)($admin->first_name ?? '')) . ' ' . ((string)($admin->last_name ?? '')));
+    //         if ($adminName === '') {
+    //             $adminName = (string)($admin->email ?? '');
+    //         }
+    //         $ctx = ['meta' => [
+    //             'fields' => array_keys($fillableData),
+    //             'source' => 'user_profile_update',
+    //         ]];
+    //         if (($justification = trim((string)$justification)) !== '') {
+    //             $ctx['meta']['justification'] = $justification;
+    //         }
+    //         try {
+    //             if (request()) {
+    //                 $ctx = app(AuditService::class)
+    //                     ->buildContextFromRequest(request(), $ctx['meta']);
+    //             }
+    //         } catch (\Throwable) { /* queue/no-http */
+    //         }
+    //         $this->auditService->logAdminAction(
+    //             (int) $admin->id,
+    //             $adminName,
+    //             'USER_PROFILE_UPDATED',
+    //             (string) ($user->id ?? 0),
+    //             $ctx
+    //         );
+    //     }
 
-        return $user;
-    }
+    //     return $user;
+    // }
 
     /**
      * Create a new user with the provided data.
@@ -378,10 +378,10 @@ class UserService
             }
 
             $this->auditService->logAdminAction(
-                (int) $admin->id,
-                $actorName,                 // target_type (keeps your existing pattern)
-                'USER_CREATED',             // action
-                (string) ($user->id ?? 0),  // target_id
+                $admin->id,
+                'user',
+                'USER_CREATED',
+                (string) ($user->id ?? 0),
                 $ctx
             );
         }

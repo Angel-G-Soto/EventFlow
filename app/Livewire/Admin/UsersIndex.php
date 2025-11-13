@@ -214,11 +214,11 @@ class UsersIndex extends Component
             try {
                 $user = $svc->findUserById((int)$this->editId);
                 [$first, $last] = $this->splitName($this->editName);
-                $svc->updateUserProfile($user, [
-                    'first_name' => $first,
-                    'last_name'  => $last,
-                    'email'      => $this->editEmail,
-                ], Auth::user(), (string) $this->justification);
+                // $svc->updateUserProfile($user, [
+                //     'first_name' => $first,
+                //     'last_name'  => $last,
+                //     'email'      => $this->editEmail,
+                // ], Auth::user(), (string) $this->justification);
                 $svc->updateUserRoles($user, $this->editRoles, Auth::user(), (string) $this->justification);
                 // Department resolution
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
@@ -449,7 +449,7 @@ class UsersIndex extends Component
                 'required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/', 'not_regex:/^\s*$/',
             ],
             'editEmail'      => [
-                'required', 'email', 'regex:/@upr[a-z]*\.edu$/i', 'not_regex:/^\s*$/', 'unique:users,email,' . ($this->editId ?? 'NULL') . ',id',
+                'required', 'email', 'regex:/@(uprm|upr)\.edu$/i', 'not_regex:/^\s*$/', 'unique:users,email,' . ($this->editId ?? 'NULL') . ',id',
             ],
             'editRoles'      => ['array', 'min:1'],
             'editRoles.*'    => ['string', 'in:' . implode(',', $allowedRoleCodes)], // validate by ROLE CODE
@@ -617,6 +617,5 @@ class UsersIndex extends Component
         ]);
     }
 }
-
 
 
