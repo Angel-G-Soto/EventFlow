@@ -165,18 +165,15 @@ class VenueService
     }
 
     /**
-     * Retrieve all available venues within a specified timeframe.
-     *
-     * This method returns a collection of venues that are not booked for any approved events
-     * overlapping with the provided start and end times. The timeframe is inclusive: any event
-     * starting, ending, or fully covering the window will mark the venue as unavailable.
+     * Retrieve all available venues within a specified timeframe applying optional filters.
      *
      * @param DateTime $start_time
      * @param DateTime $end_time
+     * @param array<string,mixed> $filters
      * @return Collection
      * @throws Exception
      */
-    public function getAvailableVenues(DateTime $start_time, DateTime $end_time): Collection
+    public function getAvailableVenues(DateTime $start_time, DateTime $end_time, array $filters = []): Collection
     {
         // Check for error
         if ($start_time >= $end_time) {
@@ -205,14 +202,43 @@ class VenueService
             $startHour = $start_time->format('H:i:s');
             $endHour = $end_time->format('H:i:s');
 
-            return Venue::whereNotIn('id', $unavailableEventVenues)
+            $query = Venue::whereNotIn('id', $unavailableEventVenues)
                 ->with('availabilities')
                 ->whereHas('availabilities', function ($query) use ($day, $startHour, $endHour) {
                     $query->where('day', $day)
                         ->where('opens_at', '<=', $startHour)
                         ->where('closes_at', '>=', $endHour);
-                })
-                ->get();
+                });
+
+            $nameFilter = trim((string)($filters['name'] ?? ''));
+            if ($nameFilter !== '') {
+                $query->where('name', 'like', '%' . $nameFilter . '%');
+            }
+
+            $codeFilter = trim((string)($filters['code'] ?? ''));
+            if ($codeFilter !== '') {
+                $query->where('code', 'like', '%' . $codeFilter . '%');
+            }
+
+            $search = trim((string)($filters['search'] ?? ''));
+            if ($search !== '') {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('code', 'like', '%' . $search . '%');
+                });
+            }
+
+            $capacityFilter = $filters['capacity'] ?? null;
+            if ($capacityFilter !== null && $capacityFilter !== '') {
+                $query->where('capacity', '>=', (int)$capacityFilter);
+            }
+
+            $departmentFilter = $filters['department_id'] ?? null;
+            if ($departmentFilter !== null && $departmentFilter !== '') {
+                $query->where('department_id', (int)$departmentFilter);
+            }
+
+            return $query->get();
         } catch (\Throwable $exception) {
             throw new Exception('Unable to extract available venues.');
         }
