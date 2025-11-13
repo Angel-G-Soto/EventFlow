@@ -10,7 +10,7 @@
   @livewireStyles
 </head>
 
-<body class="bg-body-tertiary">
+<body class="bg-secondary-subtle">
 
   <x-shareable-navbar />
 
@@ -21,40 +21,57 @@
   @livewireScripts
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-    const navCollapse = document.getElementById('navMain');
-    const navToggler = document.querySelector('.navbar-toggler');
+    document.addEventListener('DOMContentLoaded', function () {
+      try {
+        const navCollapse = document.getElementById('navMain');
+        const navToggler = document.querySelector('.navbar-toggler');
+        if (!navCollapse || !navToggler || !window.bootstrap) return;
 
-    // Toggle menu when hamburger is clicked
-    navToggler.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      const isOpen = navCollapse.classList.contains('show');
-      if (isOpen) {
-        navCollapse.classList.remove('show');
-        navToggler.setAttribute('aria-expanded', 'false');
-      } else {
-        navCollapse.classList.add('show');
-        navToggler.setAttribute('aria-expanded', 'true');
-      }
-    });
+        // Use Bootstrap's Collapse API to avoid conflicts
+        const bsCollapse = bootstrap.Collapse.getOrCreateInstance(navCollapse, { toggle: false });
 
-    // Close menu when nav links are clicked
-    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
-      link.addEventListener('click', () => {
-        navCollapse.classList.remove('show');
-        navToggler.setAttribute('aria-expanded', 'false');
-      });
-    });
+        // Toggle via API (let Bootstrap handle classes/animation)
+        navToggler.addEventListener('click', function () {
+          bsCollapse.toggle();
+        });
 
-    // Close menu when scrolling
-    window.addEventListener('scroll', () => {
-      if (navCollapse.classList.contains('show')) {
-        navCollapse.classList.remove('show');
-        navToggler.setAttribute('aria-expanded', 'false');
-      }
+        // Close on non-dropdown nav link clicks
+        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+          link.addEventListener('click', (e) => {
+            const el = e.currentTarget;
+            const togglesDropdown = el.classList.contains('dropdown-toggle') || el.getAttribute('data-bs-toggle') === 'dropdown';
+            if (!togglesDropdown) {
+              bsCollapse.hide();
+            }
+          });
+        });
+
+        // Optional: close on scroll
+        window.addEventListener('scroll', () => {
+          if (navCollapse.classList.contains('show')) {
+            bsCollapse.hide();
+          }
+        });
+
+        // Keep aria-expanded in sync for accessibility
+        navCollapse.addEventListener('shown.bs.collapse', () => navToggler.setAttribute('aria-expanded', 'true'));
+        navCollapse.addEventListener('hidden.bs.collapse', () => navToggler.setAttribute('aria-expanded', 'false'));
+
+        // Modal scroll guard: ensure body is scrollable after any modal closes
+        const ensureBodyScrollable = () => {
+          try {
+            const anyVisible = document.querySelector('.modal.show');
+            if (!anyVisible) {
+              document.body.classList.remove('modal-open');
+              document.body.style.removeProperty('overflow');
+              document.body.style.removeProperty('padding-right');
+              document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+            }
+          } catch (_) { /* noop */ }
+        };
+        document.addEventListener('hidden.bs.modal', ensureBodyScrollable);
+      } catch (_) { /* noop */ }
     });
-  });
   </script>
   <x-bs-bridge />
 </body>

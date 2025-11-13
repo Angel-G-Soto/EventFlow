@@ -25,6 +25,7 @@ use App\Services\UserService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Policies\EventPolicy;
 use Mockery\Matcher\Not;
 
 /**
@@ -59,6 +60,8 @@ class Details extends Component
 
     public function save()
     {
+
+
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
 
@@ -74,6 +77,8 @@ class Details extends Component
 
     public function approve()
     {
+
+
         app(EventService::class)->approveEvent($this->event, Auth::user());
 
         $this->redirectRoute('approver.pending.index');
@@ -95,9 +100,15 @@ class Details extends Component
 
     public function render()
     {
+//        dd($this->event);
+
+        $event = $this->event;
+        $this->authorize('manageMyPendingRequests', $event);
+
         $eventService = app(EventService::class);
-        $docs = $eventService->getEventDocuments($this->event)->toArray();
-        $conflicts = $eventService->conflictingEvents($this->event)->paginate(4);
+        $event->loadMissing('categories:id,name');
+        $docs = $eventService->getEventDocuments($event)->toArray();
+        $conflicts = $eventService->conflictingEvents($event)->paginate(4);
 //        dd($conflicts);
         return view('livewire.request.pending.details', compact( 'docs', 'conflicts'));
     }

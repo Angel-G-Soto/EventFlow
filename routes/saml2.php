@@ -1,8 +1,12 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Models\User;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,13 +32,17 @@ use App\Models\User;
 //    ->name('nexo.callback');
 
 Route::get('/auth/saml/login', function () {
-
     return Socialite::driver('saml2')->redirect();
-
 })->name("saml.login");
 
+Route::post('/auth/saml/logout', function () {
 
-Route::any('/auth/callback', function () {
+    Auth::logout();
+    return redirect('/');
+
+})->name("saml.logout");
+
+Route::any('/auth/callback', function (Request $request) {
 
     $saml = Socialite::driver('saml2')->stateless()->user();
 //    $saml = Socialite::driver('saml2')->stateless()->user();
@@ -47,6 +55,11 @@ Route::any('/auth/callback', function () {
         'auth_type' => 'saml2',
         'password' => "thisisatest",
     ]);
+
     Auth::login($user);
-    return redirect('/');
+
+    $fallback = Cookie::get('saml_intended', '/');
+    Cookie::queue(Cookie::forget('saml_intended'));
+
+    return redirect()->intended($fallback);
 })->name("saml.callback");

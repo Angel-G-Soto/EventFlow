@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services;
+
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Event;
@@ -115,9 +117,11 @@ class VenueService
                 }
             }
             return $query->orderBy('name')->paginate(10);
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new Exception('Unable to fetch the venues.');
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable to fetch the venues.');}
     }
 
     /**
@@ -134,11 +138,15 @@ class VenueService
     public function getVenueById(int $venue_id): ?Venue
     {
         try {
-            if ($venue_id < 0) {throw new InvalidArgumentException('Venue id must be greater than 0.');}
+            if ($venue_id < 0) {
+                throw new InvalidArgumentException('Venue id must be greater than 0.');
+            }
             return Venue::find($venue_id);
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new Exception('Unable get the venue.');
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable get the venue.');}
     }
 
     /**
@@ -157,7 +165,7 @@ class VenueService
     {
         // Check for error
         if ($start_time >= $end_time) {
-            throw new \InvalidArgumentException('Start time must be before end time.');
+            throw new InvalidArgumentException('Start time must be before end time.');
         }
         try {
             // Get events that occur on between the date parameters (// MOCK FROM EVENT SERVICE)
@@ -179,7 +187,9 @@ class VenueService
 
             // Return venues that are not in the approved events.
             return Venue::whereNotIn('id', $unavailableEventVenues)->get();
-        } catch (\Throwable $exception) {throw new Exception('Unable to extract available venues.');}
+        } catch (\Throwable $exception) {
+            throw new Exception('Unable to extract available venues.');
+        }
     }
 
     /**
@@ -192,7 +202,9 @@ class VenueService
      */
     public function findByID(int $venue_id): ?Venue
     {
-        if ($venue_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
+        if ($venue_id < 0) {
+            throw new InvalidArgumentException('Venue id must be greater than zero.');
+        }
         return Venue::find($venue_id);
     }
 
@@ -207,7 +219,9 @@ class VenueService
      */
     public function getVenuesWithDirectorId(int $user_id): Collection
     {
-        if ($user_id < 0) {throw new InvalidArgumentException('User id must be greater than zero.');}
+        if ($user_id < 0) {
+            throw new InvalidArgumentException('User id must be greater than zero.');
+        }
         return Venue::where('department_id', $this->userService->findUserById($user_id)->department->id)->get();
     }
 
@@ -223,7 +237,9 @@ class VenueService
      */
     public function getVenueRequirements(int $venue_id): Collection
     {
-        if ($venue_id < 0) {throw new InvalidArgumentException('Venue id must be greater than zero.');}
+        if ($venue_id < 0) {
+            throw new InvalidArgumentException('Venue id must be greater than zero.');
+        }
         return Venue::findOrFail($venue_id)->requirements;
     }
 
@@ -343,9 +359,11 @@ class VenueService
                     'closing_time' => $closing_hours,
                 ]
             );
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new Exception('Unable to update or create the operating hours.');
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable to update or create the operating hours.');}
     }
 
     /**
@@ -378,9 +396,9 @@ class VenueService
         try {
             // Validate manager role to be 'venue-manager' and to belong to the departments of the venues
             if (!$manager->getRoleNames()->contains('venue-manager')) {
-                throw new \InvalidArgumentException('Manager does not have the required role.');
+                throw new InvalidArgumentException('Manager does not have the required role.');
             } elseif (!$manager->department()->where('id', $venue->department_id)->first() != null) {
-                throw new \InvalidArgumentException('Manager does not belong to the venue department.');
+                throw new InvalidArgumentException('Manager does not belong to the venue department.');
             }
 
             // Verify that the requirementsData structure is met
@@ -393,19 +411,19 @@ class VenueService
 
             foreach ($trimmedData as $i => $doc) {
                 if (!is_array($doc)) {
-                    throw new \InvalidArgumentException("Requirement at index {$i} must be an array.");
+                    throw new InvalidArgumentException("Requirement at index {$i} must be an array.");
                 }
 
                 // Must contain all expected keys
                 $missingKeys = array_diff($expectedKeys, array_keys($doc));
                 if ($missingKeys) {
-                    throw new \InvalidArgumentException("Missing keys in requirement at index {$i}: " . implode(', ', $missingKeys));
+                    throw new InvalidArgumentException("Missing keys in requirement at index {$i}: " . implode(', ', $missingKeys));
                 }
 
                 // No null or empty values
                 foreach ($expectedKeys as $key) {
                     if ($doc[$key] == null) {
-                        throw new \InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
+                        throw new InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
                     }
                 }
             }
@@ -432,11 +450,11 @@ class VenueService
                     'Create requirement for venue #' . $venue->id
                 );
             }
-
-
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new Exception('Unable to update or create the venue requirements.');
         }
-        catch (InvalidArgumentException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
     }
 
     /*
@@ -497,8 +515,7 @@ class VenueService
             }
         }
 
-        if((!$this->departmentService->getDepartmentByID($data['department_id'])))
-        {
+        if ((!$this->departmentService->getDepartmentByID($data['department_id']))) {
             throw new InvalidArgumentException('The manager_id or department_id does not exist.');
         }
 
@@ -621,8 +638,7 @@ class VenueService
             // Iterate through the array
             $updatedVenues = new Collection();
 
-            foreach ($venueData as $venue)
-            {
+            foreach ($venueData as $venue) {
                 // Verify that the requirementsData structure is met
 
                 // Check for invalid keys
@@ -690,9 +706,11 @@ class VenueService
 
             // Return collection of updated values
             return $updatedVenues;
+        } catch (InvalidArgumentException | ModelNotFoundException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new Exception('Unable to synchronize venue data.');
         }
-        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;}
-        catch (\Throwable $exception) {throw new Exception('Unable to synchronize venue data.');}
     }
 
     /**
@@ -717,7 +735,9 @@ class VenueService
             }
 
             foreach ($venues as $venue) {
-                if (!$venue instanceof Venue) {throw new \InvalidArgumentException('List contains elements that are not venues.');}
+                if (!$venue instanceof Venue) {
+                    throw new InvalidArgumentException('List contains elements that are not venues.');
+                }
             };
 
             foreach ($venues as $venue) {
@@ -731,9 +751,10 @@ class VenueService
                     );
                 }
             };
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (\Throwable) {
+            throw new Exception('Unable to remove the venues.');
         }
-        catch (\InvalidArgumentException $exception) {throw $exception;}
-        catch (\Throwable) {throw new Exception('Unable to remove the venues.');}
-
     }
 }

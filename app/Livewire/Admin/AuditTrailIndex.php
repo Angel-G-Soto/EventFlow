@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\AuditTrail;
 use Carbon\CarbonImmutable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -64,7 +65,7 @@ class AuditTrailIndex extends Component
   {
     return [
       'userId'    => ['nullable', 'integer', 'min:1'],
-      'action'    => ['nullable', 'string', 'max:100'],
+      'action'    => ['nullable', 'string', 'max:100', 'not_regex:/^\s*$/'],
       'from'      => ['nullable', 'date_format:Y-m-d'],
       'to'        => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
       'adminOnly' => ['boolean'],
@@ -75,6 +76,8 @@ class AuditTrailIndex extends Component
 
   public function showDetails(int $id): void
   {
+      $this->authorize('access-dashboard');
+
     if ($id <= 0) {
       $this->detailsId = null;
       $this->details = [];
@@ -124,7 +127,7 @@ class AuditTrailIndex extends Component
     $targetId   = $log->target_id ?? null;
     $target     = $targetType ? class_basename($targetType) : '—';
     if (!empty($targetId)) {
-      $target .= '#' . $targetId;
+      $target .= ': #' . $targetId;
     }
 
     return [
@@ -168,6 +171,9 @@ class AuditTrailIndex extends Component
    */
   public function render()
   {
+
+      $this->authorize('access-dashboard');
+
     $filters = [];
     if ($this->userId)   $filters['user_id'] = (int)$this->userId;
     if ($this->action)   $filters['action']  = $this->action;
@@ -199,19 +205,4 @@ class AuditTrailIndex extends Component
     return 'id';
   }
 
-  // Query builder / base
-  /**
-   * Build the base query with aliased columns to normalize schema variations.
-   *
-   * @return \Illuminate\Database\Eloquent\Builder
-   */
-  protected function baseQuery()
-  { /* handled via AuditService */
-  }
-
-  // Dummy data for development
-  /**
-   * Build in-memory dummy rows when there is no database data yet.
-   */
-  // Dummy rows removed: admin views rely solely on persisted audit data.
 }

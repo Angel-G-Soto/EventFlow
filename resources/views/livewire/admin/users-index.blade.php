@@ -31,9 +31,8 @@
           <select id="users_role" class="form-select" wire:model.live="role">
             <option value="">All</option>
             <option value="__none__">No roles</option>
-            @foreach($allRoles as $r)
-            @php $label = \Illuminate\Support\Str::of($r)->replace('-', ' ')->title(); @endphp
-            <option value="{{ $r }}">{{ $label }}</option>
+            @foreach($allRoles as $role)
+            <option value="{{ $role['code'] }}">{{ $role['name'] }}</option>
             @endforeach
           </select>
         </div>
@@ -50,7 +49,7 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="users_rows">Rows</label>
+      <label class="text-secondary small mb-0 text-black" for="users_rows">Rows</label>
       <select id="users_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>
@@ -69,8 +68,8 @@
               <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
-                @if($sortField === 'name')
-                @if($sortDirection === 'asc')
+                @if((($sortField ?? '') === 'name'))
+                @if((($sortDirection ?? '') === 'asc'))
                 <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
                 @else
                 <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
@@ -94,12 +93,16 @@
             <td>{{ $user['email'] }}</td>
             <td>{{ $user['department'] }}</td>
             <td>
-              @php $roles = $user['roles']; @endphp
+              @php
+              $roles = $user['roles'];
+              // Build a map of code => name for display
+              $roleMap = collect($allRoles ?? [])->mapWithKeys(fn($r) => [$r['code'] => $r['name']]);
+              @endphp
               @if(!empty($roles))
               {{-- Chip-style badges for roles for better readability --}}
               @foreach($roles as $r)
-              <span class="badge text-bg-light me-1">{{ \Illuminate\Support\Str::of($r)->replace('-', ' ')->title()
-                }}</span>
+              @php $label = $roleMap[$r] ?? Str::of($r)->replace('-', ' ')->title(); @endphp
+              <span class="badge text-bg-light me-1">{{ $label }}</span>
               @endforeach
               @else
               <span class="text-muted">No roles</span>
@@ -112,6 +115,7 @@
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="clearRoles({{ $user['id'] }})" type="button"
+                  @disabled(((count($user['roles'] ?? [])===1) && in_array('user', $user['roles'] ?? [])))
                   aria-label="Clear roles for user {{ $user['name'] }}"
                   title="Clear roles for user {{ $user['name'] }}">
                   <i class="bi bi-arrow-clockwise"></i>
@@ -142,7 +146,8 @@
     <div class="modal-dialog modal-dialog-centered">
       <form class="modal-content" wire:submit.prevent="save">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>{{ $editId ? 'Edit User' : 'Add User' }}</h5>
+          <h5 class="modal-title"><i class="bi bi-person-gear me-2"></i>{{ (($editId ?? null) ? 'Edit User' : 'Add
+            User') }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
             wire:click="$set('editId', null)"></button>
         </div>
@@ -168,40 +173,47 @@
             <div class="col-12 col-md-6">
               <label class="form-label required">Roles</label>
               <div class="border rounded p-2" style="max-height:120px;overflow-y:auto;">
-                @foreach(($allRoles ?? []) as $rname)
-                @php $label = \Illuminate\Support\Str::of($rname)->replace('-', ' ')->title(); @endphp
+                @foreach(($allRoles ?? []) as $role)
                 <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="role_{{ $rname }}" value="{{ $rname }}"
-                    wire:model.live="editRoles">
-                  <label class="form-check-label" for="role_{{ $rname }}">
-                    {{ $label }}
+                  <input class="form-check-input" type="checkbox" id="role_{{ $role['code'] }}"
+                    value="{{ $role['code'] }}" wire:model.live="editRoles" @disabled(($editId ?? null) &&
+                    $role['code']==='user' )>
+                  <label class="form-check-label" for="role_{{ $role['code'] }}">
+                    {{ $role['name'] }}
                   </label>
                 </div>
                 @endforeach
               </div>
+              @if(!($editId ?? null))
+              <small class="text-muted">The <b>User</b> role is pre-checked for all new users.</small>
+              @endif
               @error('editRoles') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="col-12 col-md-6">
-              <label class="form-label {{ in_array('venue-manager', $editRoles ?? []) ? 'required' : '' }}"
-                for="edit_department">Department</label>
               @php
-              // Roles now passed as codes; venue-manager triggers department selection
-              $isDeptDirector = in_array('department-director', $editRoles);
+              // Determine if department is required (normalize to slug-lower)
+              $selectedCodes = collect($editRoles ?? [])->map(fn($v) =>
+              \Illuminate\Support\Str::slug(mb_strtolower((string)$v)));
+              $requiresDept = $selectedCodes->contains('department-director') ||
+              $selectedCodes->contains('venue-manager');
               @endphp
-              @if($isDeptDirector)
+              <label class="form-label {{ $requiresDept ? 'required' : '' }}" for="edit_department">Department</label>
+              @if($requiresDept)
               <select id="edit_department" class="form-select @error('editDepartment') is-invalid @enderror"
                 wire:model.live="editDepartment">
                 <option value="">Select Department</option>
                 @foreach(($departments ?? []) as $dept)
-                <option value="{{ $dept->name }}">{{ $dept->name }}</option>
+                <option value="{{ is_object($dept) ? $dept->name : (is_array($dept) ? $dept['name'] : $dept) }}">
+                  {{ is_object($dept) ? $dept->name : (is_array($dept) ? $dept['name'] : $dept) }}
+                </option>
                 @endforeach
               </select>
               @error('editDepartment')
               <div class="invalid-feedback">{{ $message }}</div>
               @enderror
               @else
-              <input type="text" class="form-control" value="—" disabled>
-              <small class="text-muted">Only Dept Directors have departments</small>
+              <input type="text" class="form-control" value="-" disabled>
+              <small class="text-muted">Department required for Directors or Venue Managers</small>
               @endif
             </div>
           </div>

@@ -22,29 +22,27 @@
 <div>
 <ul class="list-group">
     @foreach ($docs as $doc)
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-                <h6 class="mb-1">{{ $doc['name'] }}</h6>
-            </div>
-            <div class="btn-group" role="group" aria-label="Actions for {{ $doc['name'] }}">
-
-{{--                <a class="btn btn-outline-primary" href="{{ $doc['file_path'] }}" target="_blank" rel="noopener">Open</a>--}}
-                <a
-                    class="btn btn-primary"
-                    href="{{ route('documents.show', $doc['name']) }}"  {{-- or route('pdfs.show','sample.pdf') --}}
-                    target="_blank"
-                    rel="noopener"
-                >
-                    Open PDF
-                </a>
-
-
-                {{--                <a class="btn btn-outline-secondary" href="{{ $doc['file_path'] }}" download>Download</a>--}}
+        <li class="list-group-item">
+            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+                <div class="flex-grow-1 text-break">
+                    <h6 class="mb-1">{{ $doc['name'] }}</h6>
+                </div>
+                <div class="d-grid d-sm-inline-flex ms-sm-auto" role="group" aria-label="Actions for {{ $doc['name'] }}">
+{{--                    <a class="btn btn-outline-primary" href="{{ $doc['file_path'] }}" target="_blank" rel="noopener">Open</a>--}}
+                    <a
+                        class="btn btn-primary"
+                        href="{{ route('documents.show', $doc['name']) }}"  {{-- or route('pdfs.show','sample.pdf') --}}
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        Open PDF
+                    </a>
+{{--                    <a class="btn btn-outline-secondary" href="{{ $doc['file_path'] }}" download>Download</a>--}}
+                </div>
             </div>
         </li>
     @endforeach
 </ul>
 
 </div>
-
 

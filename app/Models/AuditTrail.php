@@ -43,12 +43,16 @@ class AuditTrail extends Model
         'action',
         'target_type',
         'target_id',
+        // HTTP context and extra metadata
+        'ua',
+        'meta',
     ];
 
     protected $casts = [
         'user_id'   => 'int',
-        'created_at'=> 'datetime',
-        'updated_at'=> 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'meta'      => 'array',
     ];
     /**
      * Get the user (actor) who performed the audited action.

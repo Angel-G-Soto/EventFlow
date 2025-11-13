@@ -66,7 +66,7 @@ return $dt;
       {{ method_exists($rows, 'total') ? $rows->total() : count($rows) }} results
     </small>
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="audit_rows">Rows</label>
+      <label class="text-secondary small mb-0 text-black" for="audit_rows">Rows</label>
       <select id="audit_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="perPage">
         <option>25</option>
         <option>50</option>
@@ -98,7 +98,9 @@ return $dt;
             <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
             <td class="text-truncate" style="max-width:220px;">
               {{ $r->target_type ? class_basename($r->target_type) : '—' }}
-              @if($r->target_id)#{{ $r->target_id }}@endif
+              @if($r->target_id)
+              : #{{ $r->target_id }}
+              @endif
             </td>
             <td class="text-end">
               <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->id }})"

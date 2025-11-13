@@ -78,9 +78,9 @@
                 </div>
 
                 <div class="col-md-12">
-                    <label class="form-label required">Number of Guests</label>
+                    <label class="form-label">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
-                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
+
                 </div>
 
                 <div class="col-md-6">
@@ -96,12 +96,74 @@
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Event Category (multiple)</label>
-                    <select class="form-select" wire:model.defer="category_ids" multiple size="5">
-                        @foreach ($allCategories as $cat)
-                            <option value="{{ $cat['id'] }}">{{ $cat['name'] }}</option>
-                        @endforeach
-                    </select>
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <label class="form-label">Event Categories</label>
+                        <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories" @disabled(empty($category_ids))>
+                            Clear selection
+                        </button>
+                    </div>
+
+                    <div class="card border shadow-sm">
+                        <div class="card-body">
+                            <div class="row g-2 align-items-center mb-3">
+                                <div class="col-md-8">
+                                    <input
+                                        type="search"
+                                        class="form-control"
+                                        placeholder="Search categories (e.g., Workshop, Fundraiser)"
+                                        wire:model.debounce.300ms="categorySearch"
+                                    >
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <small class="text-muted">
+                                        {{ count($category_ids) }} selected
+                                    </small>
+                                </div>
+                            </div>
+
+                            @if (!empty($selectedCategoryLabels))
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Selected</small>
+                                    @foreach ($selectedCategoryLabels as $id => $label)
+                                        <span class="badge rounded-pill text-bg-light border me-1 mb-1">
+                                            {{ $label }}
+                                            <button
+                                                type="button"
+                                                class="btn btn-link btn-sm text-decoration-none ps-1"
+                                                wire:click="removeCategory({{ (int) $id }})"
+                                                aria-label="Remove {{ $label }}"
+                                            >&times;</button>
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div class="row row-cols-1 row-cols-md-2 g-2">
+                                @forelse ($filteredCategories as $cat)
+                                    <div class="col">
+                                        <label class="border rounded p-3 h-100 d-flex gap-3 align-items-start shadow-sm">
+                                            <input
+                                                type="checkbox"
+                                                class="form-check-input mt-1"
+                                                value="{{ $cat['id'] }}"
+                                                wire:model.live="category_ids"
+                                            >
+                                            <span>
+                                                <span class="fw-semibold d-block">{{ $cat['name'] }}</span>
+                                                @if (!empty($cat['description'] ?? null))
+                                                    <small class="text-muted">{{ $cat['description'] }}</small>
+                                                @endif
+                                            </span>
+                                        </label>
+                                    </div>
+                                @empty
+                                    <div class="col">
+                                        <p class="text-muted mb-0">No categories match your search.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <label class="form-label">General Requirements</label>
@@ -150,13 +212,13 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" class="form-control" wire:model.defer="organization_advisor_name" placeholder="Enter advisor's name">
+                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" {{--wire:model.defer="organization_advisor_name"--}} disabled placeholder="Enter advisor's name">
                     @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" class="form-control" wire:model.defer="organization_advisor_email" placeholder="Enter advisor's email">
+                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" {{--wire:model.defer="organization_advisor_email"--}}  disabled placeholder="Enter advisor's email">
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -168,9 +230,15 @@
     {{-- STEP 2 --}}
 
     @if ($step === 2)
+
         <form wire:submit.prevent="next">
             <div class="mb-3">
-                <div class="form-text">Showing venues available between <strong>{{ $start_time ?: '—' }}</strong> and <strong>{{ $end_time ?: '—' }}</strong>.</div>
+                <div class="form-text">
+                    Showing venues available between
+                    <strong>{{ $this->formattedStartTime }}</strong>
+                    and
+                    <strong>{{ $this->formattedEndTime }}</strong>.
+                </div>
             </div>
 
 
@@ -180,20 +248,64 @@
 
 
             <div class="mb-3">
-                <label class="form-label">Venue</label>
-                <select class="form-select" wire:model="venue_id">
-                    <option value="">— Select venue —</option>
-                    @foreach ($availableVenues as $v)
-                        <option value="{{ $v['id'] }}">{{ $v['code'] }}</option>
-                    @endforeach
-                </select>
-                @error('venue_id') <div class="text-danger small">{{ $message }}</div> @enderror
+                <label for="venueCodeSearch" class="form-label">Search by venue code</label>
+                <input id="venueCodeSearch"
+                       type="text"
+                       class="form-control"
+                       placeholder="e.g., 1098"
+                       wire:model.live.debounce.300ms="venueCodeSearch"
+                       wire:keydown.enter.prevent />
+                <div class="form-text">Type a venue code to filter the list below.</div>
             </div>
+
+            <div class="table-responsive mb-2">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th scope="col" style="width:56px">Select</th>
+                        <th scope="col">Code</th>
+                        <th scope="col">Name</th>
+                        <th scope="col" class="text-end">Capacity</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($this->filteredVenues as $v)
+                        <tr wire:key="venue-row-{{ $v['id'] }}"
+                            class="{{ (int)$venue_id === (int)($v['id'] ?? 0) ? 'table-primary' : '' }}"
+                            style="cursor:pointer"
+                            wire:click="selectVenue({{ $v['id'] }})">
+                            <td>
+                                <input type="radio"
+                                       class="form-check-input"
+                                       wire:model.live="venue_id"
+                                       value="{{ $v['id'] }}"
+                                       aria-label="Select {{ $v['code'] ?? ('Venue #'.$v['id']) }}" />
+                            </td>
+                            <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
+                            <td>{{ $v['name'] ?? '—' }}</td>
+                            <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No venues match the current filter.</td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @error('venue_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+
 
 
             <div class="d-flex justify-content-between mt-4">
                 <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
-                <button type="submit" class="btn btn-primary">Next</button>
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    wire:loading.attr="disabled"
+                    wire:target="next"
+                    @disabled(!$venue_id)
+                >Next</button>
             </div>
         </form>
     @endif
@@ -201,14 +313,53 @@
     {{-- STEP 3 --}}
     @if ($step === 3)
         <form wire:submit.prevent="submit">
+
             <div class="mb-3">
-                <div class="form-text">Upload the documents required for the selected venue.</div>
+                <div class="form-text">Upload the documents required due to the nature of the event.</div>
             </div>
+
+            {{-- If 'This event is to sell food' is checked, show a link --}}
+            @if ($handles_food)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
+
+            {{-- If 'This event uses institutional funds' is checked, show a link --}}
+            @if ($use_institutional_funds)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
+
+            {{-- If 'This event has an external guest' is checked, show a link --}}
+            @if ($external_guest)
+                <div class="mb-3">
+                    <ul>
+                        <li>
+                            <a href="#" class="text-primary" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                        </li>
+                    </ul>
+                </div>
+            @endif
 
 
             @if (empty($requiredDocuments))
                 <div class="alert alert-secondary">No documents required for this venue.</div>
             @else
+
+                <div class="mb-3">
+                    <div class="form-text">Upload the documents required for this venue.</div>
+                </div>
+
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
@@ -268,7 +419,3 @@
         }
     });
 </script>
-
-
-
-

@@ -13,7 +13,6 @@ trait EventFilters
   public ?string $to   = null;
   public string $requestor = '';
   public string $category  = '';
-  public string $organization = '';
 
   // Paging
   public int $page = 1;

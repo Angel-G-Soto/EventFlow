@@ -10,14 +10,15 @@
           <label class="form-label" for="ev_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
-              <input id="ev_search" class="form-control" placeholder="title, requestor" wire:model.defer="search">
+              <input id="ev_search" class="form-control" placeholder="Search title, requestor, or organization"
+                wire:model.defer="search">
               <button class="btn btn-secondary" type="submit" aria-label="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
           </form>
         </div>
-        <div class="col-md-2">
+        {{-- <div class="col-md-2">
           <label class="form-label" for="ev_status">Status</label>
           <select id="ev_status" class="form-select" wire:model.live="status">
             <option value="">All</option>
@@ -25,30 +26,27 @@
             <option value="{{ $st }}">{{ $st }}</option>
             @endforeach
           </select>
-        </div>
+        </div> --}}
         <div class="col-md-3">
           <label class="form-label" for="ev_venue">Venue</label>
           <select id="ev_venue" class="form-select" wire:model.live="venue">
             <option value="">All</option>
-            @foreach($venues as $vName)
-            <option value="{{ $vName }}">{{ $vName }}</option>
+            @foreach($venues as $v)
+            <option value="{{ $v['id'] }}">{{ $v['label'] }}</option>
             @endforeach
           </select>
         </div>
         {{-- Category filter removed intentionally --}}
-        <div class="col-md-2">
-          <label class="form-label" for="ev_org">Organization</label>
-          <select id="ev_org" class="form-select" wire:model.live="organization">
-            <option value="">All</option>
-            @foreach($organizations as $org)
-            <option value="{{ $org }}">{{ $org }}</option>
-            @endforeach
-          </select>
+        {{-- Organization filter removed; included in search --}}
+        <div class="col-md-4"><label class="form-label" for="ev_from">From</label><input id="ev_from"
+            type="datetime-local" class="form-control" wire:model.defer="from"></div>
+        <div class="col-md-4"><label class="form-label" for="ev_to">To</label><input id="ev_to" type="datetime-local"
+            class="form-control" wire:model.defer="to"></div>
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" wire:click="applyDateRange" type="button" aria-label="Apply date range">
+            Apply
+          </button>
         </div>
-        <div class="col-md-2"><label class="form-label" for="ev_from">From</label><input id="ev_from"
-            type="datetime-local" class="form-control" wire:model.live="from"></div>
-        <div class="col-md-2"><label class="form-label" for="ev_to">To</label><input id="ev_to" type="datetime-local"
-            class="form-control" wire:model.live="to"></div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
@@ -61,7 +59,7 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="ev_rows">Rows</label>
+      <label class="text-secondary small mb-0 text-black" for="ev_rows">Rows</label>
       <select id="ev_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>
@@ -81,7 +79,6 @@
             <th>Organization</th>
             <th>Venue</th>
             <th>Date/Time</th>
-            <th>Status</th>
             <th class="text-end" style="width:120px;">Actions</th>
           </tr>
         </thead>
@@ -94,14 +91,9 @@
             <td>{{ $r['organization'] ?? ($r['organization_nexo_name'] ?? '') }}</td>
             <td>{{ $r['venue'] }}</td>
             <td>
-              <div>{{ \Illuminate\Support\Str::before($r['from'],' ') }} {{ \Illuminate\Support\Str::after($r['from'],'
-                ') }}</div>
-              <div class="text-secondary small">→ {{ \Illuminate\Support\Str::before($r['to'],' ') }} {{
-                \Illuminate\Support\Str::after($r['to'],' ') }}</div>
-            </td>
-            <td>
-              <span class="badge text-bg-light me-1 {{ $this->statusBadgeClass($r['status']) }}">{{ $r['status']
-                }}</span>
+              <div>{{ $r['from'] }}</div>
+              <div class="text-secondary small">→ {{ Str::before($r['to'],' ') }} {{
+                Str::after($r['to'],' ') }}</div>
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
@@ -110,19 +102,28 @@
                   <i class="bi bi-info-lg"></i>
                 </button>
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})"
+                  @disabled(\Carbon\Carbon::parse($r['to'] ?? now())->isPast()
+                  || str_contains(strtolower($r['status'] ?? ''), 'cancel')
+                  || str_contains(strtolower($r['status'] ?? ''), 'reject')
+                  || str_contains(strtolower($r['status'] ?? ''), 'withdraw'))
                   aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $r['id'] }})"
-                  aria-label="Delete request {{ $r['id'] }}" title="Delete request #{{ $r['id'] }}">
-                  <i class="bi bi-trash3"></i>
+                  @disabled(!(strtolower($r['status'] ?? '' )==='approved' ) || \Carbon\Carbon::parse($r['to'] ??
+                  now())->isPast()
+                  || str_contains(strtolower($r['status'] ?? ''), 'cancel')
+                  || str_contains(strtolower($r['status'] ?? ''), 'reject')
+                  || str_contains(strtolower($r['status'] ?? ''), 'withdraw'))
+                  aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
+                  <i class="bi bi-x-circle"></i>
                 </button>
               </div>
             </td>
           </tr>
           @empty
           <tr>
-            <td colspan="8" class="text-center text-secondary py-4">No requests found.</td>
+            <td colspan="7" class="text-center text-secondary py-4">No requests found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -157,8 +158,7 @@
                 id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
                 id="ev_v_advisor_email" class="form-control" readonly value="{{ $eAdvisorEmail }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_phone">Advisor Phone</label><input
-                id="ev_v_advisor_phone" class="form-control" readonly value="{{ $eAdvisorPhone }}"></div>
+            
             <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
                 value="{{ $eStudentNumber }}"></div>
             <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control" readonly
@@ -218,46 +218,68 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6"><label class="form-label" for="ev_e_title">Title</label><input id="ev_e_title"
-                class="form-control" wire:model.live="eTitle" placeholder="Event title"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_org">Organization</label><input id="ev_e_org"
-                class="form-control" wire:model.live="eOrganization" placeholder="Organization name"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_venue">Venue</label><input id="ev_e_venue"
-                class="form-control" wire:model.live="eVenue" placeholder="Venue name"></div>
+            <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="ev_e_title">Title</label>
+              <input id="ev_e_title" class="form-control @error('eTitle') is-invalid @enderror" wire:model.live="eTitle" placeholder="Event title">
+              @error('eTitle')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_org">Organization</label>
+              <input id="ev_e_org" class="form-control @error('eOrganization') is-invalid @enderror" wire:model.live="eOrganization" placeholder="Organization name">
+              @error('eOrganization')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_venue">Venue</label>
+              <select id="ev_e_venue" class="form-select @error('eVenueId') is-invalid @enderror" wire:model.live="eVenueId">
+                <option value="0">Select a venue</option>
+                @foreach(($venues ?? []) as $v)
+                  <option value="{{ $v['id'] }}">{{ $v['label'] }}</option>
+                @endforeach
+              </select>
+              @error('eVenueId')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor">Advisor Name</label><input
                 id="ev_e_advisor" class="form-control" wire:model.live="eAdvisorName" placeholder="Advisor's full name">
             </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor_email">Advisor Email</label><input
                 id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"
                 placeholder="advisor@example.edu"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label><input
-                id="ev_e_advisor_phone" class="form-control" wire:model.live="eAdvisorPhone" placeholder="###-###-####">
-            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
                 id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber" placeholder="Student ID">
             </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_phone">Student Phone</label><input
                 id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####">
             </div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_from">From</label><input id="ev_e_from"
-                type="datetime-local" class="form-control" wire:model.live="eFrom"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_to">To</label><input id="ev_e_to"
-                type="datetime-local" class="form-control" wire:model.live="eTo"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_attendees">Attendees</label><input
-                id="ev_e_attendees" type="number" class="form-control" min="0" wire:model.live="eAttendees"
-                placeholder="0+"></div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_from">From</label>
+              <input id="ev_e_from" type="datetime-local" class="form-control @error('eFrom') is-invalid @enderror" wire:model.live="eFrom">
+              @error('eFrom')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_to">To</label>
+              <input id="ev_e_to" type="datetime-local" class="form-control @error('eTo') is-invalid @enderror" wire:model.live="eTo">
+              @error('eTo')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_attendees">Attendees</label>
+              <input id="ev_e_attendees" type="number" class="form-control @error('eAttendees') is-invalid @enderror" min="1" wire:model.live="eAttendees" placeholder="0+">
+              @error('eAttendees')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_category">Category</label>
-              <select id="ev_e_category" class="form-select" wire:model.live="eCategory">
+              <select id="ev_e_category" class="form-select @error('eCategory') is-invalid @enderror" wire:model.live="eCategory">
                 @foreach($categories as $cat)
                 <option value="{{ $cat }}">{{ $cat }}</option>
                 @endforeach
               </select>
+              @error('eCategory')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-12"><label class="form-label" for="ev_e_purpose">Description</label><textarea
-                id="ev_e_purpose" class="form-control" rows="3" wire:model.live="ePurpose"
-                placeholder="What is this event about?"></textarea></div>
+            <div class="col-12">
+              <label class="form-label" for="ev_e_purpose">Description</label>
+              <textarea id="ev_e_purpose" class="form-control @error('ePurpose') is-invalid @enderror" rows="3" wire:model.live="ePurpose" placeholder="What is this event about?"></textarea>
+              @error('ePurpose')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
 
             <div class="col-12">
               <label class="form-label">Policies</label>
@@ -302,8 +324,6 @@
                 class="bi bi-x-octagon me-1"></i>Deny</button>
             <button type="button" class="btn btn-outline-secondary" wire:click.prevent="advance"
               aria-label="Advance request"><i class="bi bi-arrow-right-circle me-1"></i>Advance</button>
-            <button type="button" class="btn btn-outline-warning" wire:click.prevent="reroute"
-              aria-label="Re-route request"><i class="bi bi-shuffle me-1"></i>Re-route</button>
           </div>
           <button class="btn btn-primary" type="submit" aria-label="Save request"><i class="bi me-1"></i>Save</button>
         </div>
@@ -314,35 +334,11 @@
   {{-- Justification for save/delete/approve/deny --}}
   <x-justification id="oversightJustify" submit="confirmJustify" model="justification" />
 
-  {{-- Confirm delete --}}
-  <x-confirm-delete id="oversightConfirm" title="Delete request" message="Are you sure you want to delete this request?"
+  {{-- Confirm cancel --}}
+  <x-confirm-delete id="oversightConfirm" title="Cancel request" message="Are you sure you want to cancel this request?"
     confirm="proceedDelete" />
 
-  {{-- Reroute modal --}}
-  <div class="modal fade" id="oversightReroute" tabindex="-1" aria-hidden="true" wire:ignore.self>
-    <div class="modal-dialog">
-      <form class="modal-content" wire:submit.prevent="confirmReroute">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-shuffle me-2"></i>Re-route Request</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Route to</label>
-            <input type="text" class="form-control" placeholder="e.g., Advisor, Manager, Jane Doe"
-              wire:model.live="rerouteTo">
-            @error('rerouteTo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
-            aria-label="Cancel and close">Cancel</button>
-          <button class="btn btn-warning" type="submit" aria-label="Confirm re-route"><i
-              class="bi bi-shuffle me-1"></i>Re-route</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  {{-- Reroute disabled --}}
 
   {{-- Advance modal --}}
   <div class="modal fade" id="oversightAdvance" tabindex="-1" aria-hidden="true" wire:ignore.self>

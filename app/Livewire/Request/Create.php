@@ -28,7 +28,7 @@ use App\Services\VenueService;
 use App\Services\DocumentService;
 use App\Services\UserService;
 use Illuminate\Support\Carbon;
-
+use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
@@ -89,6 +89,7 @@ class Create extends Component
  * @var array
  */
     public array $category_ids = [];
+    public string $categorySearch = '';
 
  /**
   * @var int[]
@@ -164,6 +165,9 @@ class Create extends Component
  */
     public array $uploads = []; // key => TemporaryUploadedFile
 
+
+    public string $venueCodeSearch = '';
+
     /**
      * mount
      * Initialize defaults. This component expects an $organization array
@@ -173,11 +177,11 @@ class Create extends Component
      */
     public function mount(array $organization = []): void
     {
-//        $this->organization_id   = $organization['id']            ?? null;  // optional
-//        $this->organization_name = $organization['name']          ?? '';
-//        $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
-////        $this->advisor_phone     = $organization['advisor_phone'] ?? '';
-//        $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
+        $this->organization_id   = $organization['id']            ?? null;  // optional
+        $this->organization_name = $organization['name']          ?? '';
+        $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
+//        $this->advisor_phone     = $organization['advisor_phone'] ?? '';
+        $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
     }
 
 
@@ -202,7 +206,7 @@ class Create extends Component
                 'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10'],
-                'guest_size' => ['required','integer','min:1'],
+                'guest_size' => ['integer','min:0'],
                 'start_time' => ['required','date'],
                 'end_time' => ['required','date','after:start_time'],
                 'category_ids' => ['array','min:0'],
@@ -293,7 +297,7 @@ class Create extends Component
         if ($this->step === 2) {
             // Step 2 complete ⇒ fetch required docs for chosen venue
             //$this->requiredDocuments = $docSvc->forVenue((int)3);
-            $this->requiredDocuments = app(VenueService::class)->getVenueRequirements($this->venue_id)->toArray();
+            $this->requiredDocuments = app(VenueService::class)->getVenueRequirements((int)$this->venue_id)->toArray();
             //dd($this->requiredDocuments);
             $this->step = 3;
             return;
@@ -452,6 +456,19 @@ class Create extends Component
     }
 
 
+    public function clearCategories(): void
+    {
+        $this->category_ids = [];
+    }
+
+    public function removeCategory(int $categoryId): void
+    {
+        $this->category_ids = array_values(array_filter(
+            $this->category_ids,
+            fn ($id) => (int) $id !== (int) $categoryId
+        ));
+    }
+
     /**
      * Render the Livewire view.
      * The controller/route can also pass $organization externally when mounting.
@@ -460,10 +477,71 @@ class Create extends Component
      */
     public function render()
     {
-        $category  = app(CategoryService::class)->getAllCategories()->toArray();
+        $categories  = app(CategoryService::class)->getAllCategories()->toArray();
+        $search = trim($this->categorySearch);
+        $filtered = array_values(array_filter($categories, function ($cat) use ($search) {
+            if ($search === '') {
+                return true;
+            }
+            return str_contains(
+                mb_strtolower($cat['name']),
+                mb_strtolower($search)
+            );
+        }));
+
+        $selectedLabels = collect($categories)
+            ->whereIn('id', $this->category_ids)
+            ->pluck('name', 'id')
+            ->toArray();
 
         return view('livewire.request.create',[
-            'allCategories' => $category,
+            'filteredCategories' => $filtered,
+            'selectedCategoryLabels' => $selectedLabels,
         ]);
+    }
+
+
+    #[Computed]
+    public function filteredVenues(): array
+    {
+        $term = trim($this->venueCodeSearch ?? '');
+        if ($term === '') {
+            return $this->availableVenues;
+        }
+        $needle = mb_strtolower($term);
+        return array_values(array_filter($this->availableVenues, function ($v) use ($needle) {
+            $code = mb_strtolower((string)($v['code'] ?? ''));
+            return str_contains($code, $needle);
+        }));
+    }
+
+    #[Computed]
+    public function formattedStartTime(): string
+    {
+        return $this->formatDisplayDate($this->start_time);
+    }
+
+    #[Computed]
+    public function formattedEndTime(): string
+    {
+        return $this->formatDisplayDate($this->end_time);
+    }
+
+    public function selectVenue(int $id): void
+    {
+        $this->venue_id = $id;
+    }
+
+    protected function formatDisplayDate(?string $value): string
+    {
+        if (empty($value)) {
+            return '—';
+        }
+
+        try {
+            return Carbon::parse($value)->format('M j, Y g:i A');
+        } catch (\Throwable $e) {
+            return (string)$value;
+        }
     }
 }

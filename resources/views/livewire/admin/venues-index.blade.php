@@ -90,7 +90,7 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="venue_rows">Rows</label>
+      <label class="text-secondary small mb-0 text-black" for="venue_rows">Rows</label>
       <select id="venue_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>
@@ -140,7 +140,6 @@
               </button>
             </th>
             {{--<th>Manager</th>--}}
-            <th>Status</th>
             <th>Availability</th>
             <th class="text-end" style="width:140px;">Actions</th>
           </tr>
@@ -153,12 +152,7 @@
             <td>{{ $v['department'] }}</td>
             <td>{{ $v['room'] }}</td>
             <td>{{ $v['capacity'] }}</td>
-            {{--<td>{{ $v['manager'] }}</td>--}}
-            <td>
-              <span class="badge {{ $v['status']==='Active' ? 'text-bg-success' : 'text-bg-secondary' }}">
-                {{ $v['status'] }}
-              </span>
-            </td>
+            {{-- <td> {{ $v['manager'] }} </td> --}}
             <td class="text-truncate" style="max-width:220px;">
               @php $hasOC = !empty($v['opening'] ?? '') || !empty($v['closing'] ?? ''); @endphp
               @if ($hasOC)
@@ -195,7 +189,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="8" class="text-center text-secondary py-4">No venues found.</td>
+            <td colspan="6" class="text-center text-secondary py-4">No venues found.</td>
           </tr>
           @endforelse
         </tbody>

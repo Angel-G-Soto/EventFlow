@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
+use App\Models\Role;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -66,9 +68,11 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
+
+    // Default role attachment handled by UserObserver (app/Observers/UserObserver.php)
 
     //////////////////////////////////// RELATIONS //////////////////////////////////////////////////////
 
@@ -81,14 +85,14 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
-//    /**
-//     * Relationship between the User and Venue
-//     * @return HasMany
-//     */
-//    public function manages(): HasMany
-//    {
-//        return $this->hasMany(Venue::class, 'manager_id');
-//    }
+    //    /**
+    //     * Relationship between the User and Venue
+    //     * @return HasMany
+    //     */
+    //    public function manages(): HasMany
+    //    {
+    //        return $this->hasMany(Venue::class, 'manager_id');
+    //    }
 
     /**
      * Relation between User and Event Request History

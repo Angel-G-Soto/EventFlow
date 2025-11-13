@@ -59,6 +59,8 @@ class Details extends Component
 
     public function save(): void
     {
+        $this->authorize('manageMyApprovalHistory', $this->eventHistory);
+
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
         $eventHistoryService = app(EventService::class);
@@ -72,6 +74,8 @@ class Details extends Component
 
     public function approve(): void
     {
+        $this->authorize('manageMyApprovalHistory', $this->eventHistory);
+
         // ... do your action
         app(EventService::class)->approve($this->eventHistory->event);
         $this->redirectRoute('approver.history.index');
@@ -93,6 +97,11 @@ class Details extends Component
 
     public function render()
     {
+        $this->authorize('manageMyApprovalHistory', $this->eventHistory);
+
+        $event = tap($this->eventHistory->event)->loadMissing('categories:id,name');
+
+//        $docs = app(EventService::class)->getEventDocuments($event)->toArray();
 
         $docs = app(EventService::class)->getEventDocuments($this->eventHistory->event)->toArray();
 
@@ -101,18 +110,3 @@ class Details extends Component
         return view('livewire.request.history.details', compact('docs'));
     }
 }
-
-
-//$eventDetails = app(NotificationService::class)->getEventDetails($this->eventHistory->event);
-//$approverEmails = app(EventHistoryService::class)->getEventApproverEmails($this->eventHistory->event);
-//app(NotificationService::class)->dispatchCancellationNotifications(
-//    recipientEmails: $approverEmails,
-//    eventDetails: $eventDetails,
-//    justification: 'Example',
-//);
-//
-//        app(NotificationService::class)->dispatchApprovalRequiredNotification(
-//            approverEmail: 'andres.torres18@upr.edu',eventDetails: $eventDetails
-//        );
-//
-//        dd($this->eventHistory);

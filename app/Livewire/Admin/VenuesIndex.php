@@ -49,6 +49,8 @@ class VenuesIndex extends Component
      */
     public function getDepartmentsProperty(): array
     {
+        $this->authorize('manage-venues');
+
         // Gather departments from current venues (excluding soft-deleted)
         $deps = $this->allVenues()
             ->pluck('department')
@@ -141,6 +143,8 @@ class VenuesIndex extends Component
      */
     public function openCreate(): void
     {
+        $this->authorize('manage-venues');
+
         $this->resetEdit();
         $this->dispatch('bs:open', id: 'venueModal');
     }
@@ -154,6 +158,8 @@ class VenuesIndex extends Component
      */
     public function openCsvModal(): void
     {
+        $this->authorize('manage-venues');
+
         $this->reset('csvFile');
         $this->importErrorMsg = null; // clear any previous error before a new attempt
         $this->dispatch('bs:open', id: 'csvModal');
@@ -175,6 +181,8 @@ class VenuesIndex extends Component
      */
     public function uploadCsv(): void
     {
+        $this->authorize('manage-venues');
+
         // Validate only the CSV file; accept common CSV MIME types and extensions
         $this->validate([
             'csvFile' => 'required|file|max:25600 |mimes:csv,txt', // 25 MB
@@ -227,6 +235,8 @@ class VenuesIndex extends Component
      */
     public function checkImportStatus(): void
     {
+        $this->authorize('manage-venues');
+
         if (!$this->importKey) return;
         try {
             $cacheBase = 'venues_import:' . $this->importKey;
@@ -265,6 +275,8 @@ class VenuesIndex extends Component
      */
     public function openEdit(int $id): void
     {
+        $this->authorize('manage-venues');
+
         // Fetch venue via service only (no direct model queries here)
         $venue = null;
         try {
@@ -300,6 +312,8 @@ class VenuesIndex extends Component
      */
     public function showDetails(int $id): void
     {
+        $this->authorize('manage-venues');
+
         try {
             $venue = app(VenueService::class)->getVenueById($id);
             if (!$venue) {
@@ -334,19 +348,20 @@ class VenuesIndex extends Component
      */
     protected function rules(): array
     {
+        $allowedDepartments = app(DepartmentService::class)->getAllDepartments()->pluck('name')->all();
         return [
-            'vName'      => 'required|string|max:150',
-            'vRoom'      => 'required|string|max:50',
-            'vDepartment' => 'required|string|max:120',
-            'vCapacity'  => 'required|integer|min:0', // >= 0
-            'vManager'   => 'nullable|string|max:120',
-            'vStatus'    => 'required|in:Active,Inactive',
-            'vFeatures'  => 'array',
+            'vName'      => ['required', 'string', 'max:150', 'not_regex:/^\s*$/'],
+            'vRoom'      => ['required', 'string', 'max:50', 'not_regex:/^\s*$/'],
+            'vDepartment' => ['required', 'string', 'max:120', 'in:' . implode(',', $allowedDepartments)],
+            'vCapacity'  => ['required', 'integer', 'min:1', 'max:100000'], // must be positive
+            'vManager'   => ['nullable', 'string', 'max:120'],
+            'vStatus'    => ['required', 'in:Active,Inactive'],
+            'vFeatures'  => ['array'],
             // Justification validated separately on confirm; keep rule for Livewire error bag consistency
-            'justification' => 'nullable|string|min:10|max:200',
-            'timeRanges'            => 'array',
-            'timeRanges.*.from'     => 'required|date_format:H:i',
-            'timeRanges.*.to'       => 'required|date_format:H:i',
+            'justification' => ['nullable', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],
+            'timeRanges'            => ['array'],
+            'timeRanges.*.from'     => ['required', 'date_format:H:i'],
+            'timeRanges.*.to'       => ['required', 'date_format:H:i'],
         ];
     }
 
@@ -372,6 +387,8 @@ class VenuesIndex extends Component
      */
     public function save(): void
     {
+        $this->authorize('manage-venues');
+
         $this->validate();
 
         // ensure each 'to' is after its 'from'
@@ -400,6 +417,8 @@ class VenuesIndex extends Component
      */
     public function confirmSave(): void
     {
+        $this->authorize('manage-venues');
+
         $this->validateJustification();
 
         // Resolve relations via services
@@ -410,7 +429,7 @@ class VenuesIndex extends Component
                 $dept = app(DepartmentService::class)->findByName($deptName);
                 if (!$dept) {
                     $created = app(DepartmentService::class)->updateOrCreateDepartment([
-                        ['name' => $deptName, 'code' => \Illuminate\Support\Str::slug($deptName)]
+                        ['name' => $deptName, 'code' => Str::slug($deptName)]
                     ]);
                     $dept = $created->first();
                 }
@@ -451,7 +470,7 @@ class VenuesIndex extends Component
         ];
 
         $venue = null;
-        $admin = \Illuminate\Support\Facades\Auth::user();
+        $admin = Auth::user();
         try {
             if ($this->editId) {
                 $existing = app(VenueService::class)->getVenueById((int)$this->editId);
@@ -481,6 +500,8 @@ class VenuesIndex extends Component
      */
     public function confirmJustify(): void
     {
+        $this->authorize('manage-venues');
+
         if (($this->actionType ?? '') === 'delete') {
             $this->confirmDelete();
         } else {
@@ -497,6 +518,8 @@ class VenuesIndex extends Component
      */
     public function delete(int $id): void
     {
+        $this->authorize('manage-venues');
+
         $this->editId = $id;
         $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'venueConfirm');
@@ -507,6 +530,8 @@ class VenuesIndex extends Component
      */
     public function proceedDelete(): void
     {
+        $this->authorize('manage-venues');
+
         $this->dispatch('bs:close', id: 'venueConfirm');
         $this->dispatch('bs:open', id: 'venueJustify');
     }
@@ -520,12 +545,14 @@ class VenuesIndex extends Component
      */
     public function confirmDelete(): void
     {
+        $this->authorize('manage-venues');
+
         if ($this->editId) {
             $this->validateJustification();
             try {
                 $venue = app(VenueService::class)->getVenueById((int)$this->editId);
                 if ($venue) {
-                    app(VenueService::class)->deactivateVenues([$venue], \Illuminate\Support\Facades\Auth::user());
+                    app(VenueService::class)->deactivateVenues([$venue], Auth::user());
                 }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to delete venue.');
@@ -578,6 +605,8 @@ class VenuesIndex extends Component
      */
     public function render()
     {
+        $this->authorize('manage-venues');
+
         $paginator = $this->paginated();
         if ($this->page !== $paginator->currentPage()) {
             $paginator = $this->paginated();
@@ -647,7 +676,7 @@ class VenuesIndex extends Component
     protected function filtered(): Collection
     {
         $needle = mb_strtolower(trim($this->search));
-        return $this->allVenues()->filter(function ($venue) use ($needle) {
+        $data = $this->allVenues()->filter(function ($venue) use ($needle) {
             $hit = $needle === '' ||
                 str_contains(mb_strtolower($venue['name']), $needle) ||
                 str_contains(mb_strtolower($venue['room']), $needle) ||
@@ -661,6 +690,21 @@ class VenuesIndex extends Component
 
             return $hit && $deptOk && $capOk;
         })->values();
+
+        // If there are duplicate venue names in the current dataset,
+        // append the venue code to the name to disambiguate.
+        $nameCounts = $data->countBy(function ($row) {
+            return mb_strtolower(trim((string)($row['name'] ?? '')));
+        });
+
+        return $data->map(function ($row) use ($nameCounts) {
+            $norm = mb_strtolower(trim((string)($row['name'] ?? '')));
+            $code = trim((string)($row['room'] ?? ''));
+            if ($norm !== '' && ($nameCounts[$norm] ?? 0) > 1 && $code !== '') {
+                $row['name'] = (string)$row['name'] . ' (' . $code . ')';
+            }
+            return $row;
+        });
     }
 
     /**
@@ -738,6 +782,4 @@ class VenuesIndex extends Component
         }
         return $out;
     }
-
-    
 }

@@ -131,6 +131,8 @@ class DepartmentsIndex extends Component
    */
   public function openEdit(int $id): void
   {
+      $this->authorize('manage-venues');
+
     $departments = $this->filtered()->firstWhere('id', $id);
     if (!$departments) return;
     $this->editId = $departments['id'];
@@ -149,6 +151,8 @@ class DepartmentsIndex extends Component
    */
   public function save(): void
   {
+      $this->authorize('manage-venues');
+
     // Basic field validation (name/code required)
     $this->validate([
       'dName' => ['required', 'string', 'max:150'],
@@ -166,6 +170,8 @@ class DepartmentsIndex extends Component
    */
   public function confirmSave(): void
   {
+      $this->authorize('manage-venues');
+
     $this->validateJustification();
 
     // Use DepartmentService to upsert the department
@@ -197,6 +203,8 @@ class DepartmentsIndex extends Component
    */
   public function delete(int $id): void
   {
+      $this->authorize('manage-venues');
+
     $this->editId = $id;
     $this->actionType = 'delete';
     $this->dispatch('bs:open', id: 'deptConfirm');
@@ -207,6 +215,8 @@ class DepartmentsIndex extends Component
    */
   public function proceedDelete(): void
   {
+      $this->authorize('manage-venues');
+
     $this->dispatch('bs:close', id: 'deptConfirm');
     $this->dispatch('bs:open', id: 'deptJustify');
   }
@@ -220,6 +230,8 @@ class DepartmentsIndex extends Component
    */
   public function confirmDelete(): void
   {
+      $this->authorize('manage-venues');
+
     if ($this->editId) {
       $this->validateJustification();
       try {
@@ -241,6 +253,8 @@ class DepartmentsIndex extends Component
    */
   public function confirmJustify(): void
   {
+      $this->authorize('manage-venues');
+
     if (($this->actionType ?? '') === 'delete') {
       $this->confirmDelete();
     } else {
@@ -255,12 +269,14 @@ class DepartmentsIndex extends Component
    * This function renders the departments index page and provides the necessary data
    * to the view. It paginates the filtered collection of departments and ensures
    * that the current page is within the bounds of the paginator. It then
-   * returns the view with the paginated data and the visible IDs.
-   *
-   * @return Response
+  * returns the view with the paginated data and the visible IDs.
+  *
+   * @return \Illuminate\Contracts\View\View
    */
   public function render()
   {
+      $this->authorize('access-dashboard');
+
     $paginator = $this->paginated();
     $visibleIds = $paginator->pluck('id')->all();
     return view('livewire.admin.departments-index', [
@@ -356,7 +372,7 @@ class DepartmentsIndex extends Component
   protected function rules(): array
   {
     return [
-      'justification' => ['required', 'string', 'min:10', 'max:200'],
+      'justification' => ['required', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],
     ];
   }
 

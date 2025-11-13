@@ -3,11 +3,13 @@
 namespace App\Livewire\Request\Pending;
 
 use App\Services\EventService;
+use Illuminate\Auth\Access\Gate;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Policies\EventPolicy;
 
 #[Layout('layouts.app')]
 class Index extends Component
@@ -36,6 +38,9 @@ class Index extends Component
 
     public function render()
     {
+
+        $this->authorize('viewMyPendingRequests');
+
         $query = app(EventService::class);
 
         $roles = $this->filters['role'] ? [$this->filters['role']] : []; // if empty, send empty array

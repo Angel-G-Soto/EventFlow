@@ -26,7 +26,7 @@
 
 <div>
     <div class="container my-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
             <h1 class="fw-bold mb-4">Approval Details</h1>
             <button type="button"
                     wire:click="back"
@@ -51,15 +51,7 @@
 
                         <dt class="col-sm-4">Approval Type</dt>
                         <dd class="col-sm-8">
-                            @if(str_contains($eventHistory->status_when_signed, 'venue manager'))
-                                Venue Manager
-                            @elseif(str_contains($eventHistory->status_when_signed, 'dsca'))
-                                Event Approver (DSCA)
-                            @elseif(str_contains($eventHistory->status_when_signed, 'advisor'))
-                                Advisor
-                            @else
-                                {{ $eventHistory->status_when_signed ?? 'No comment provided.' }}
-                            @endif
+                            {{$eventHistory->getSimpleStatus()}}
                         </dd>
                     </dl>
                 </div>
@@ -77,16 +69,13 @@
                         <p class="text-muted mb-1">
                             {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
                         </p>
-                        @php
-                            $statusLower = strtolower($eventHistory->event->status);
-
-                            if (str_contains($statusLower, 'pending')) {
-                                $display = 'Pending Approval';
-                            } else {
-                                $display = ucfirst($eventHistory->event->status);
-                            }
-                        @endphp
-                        <span class="badge rounded-pill text-bg-secondary">Current Status: {{ $display }}</span>
+                        @if($eventHistory->event->status === 'cancelled' || $eventHistory->event->status === 'withdrawn' || $eventHistory->event->status === 'rejected')
+                            <span class="badge rounded-pill bg-danger">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                        @elseif($eventHistory->event->status === 'approved' || $eventHistory->event->status === 'completed')
+                            <span class="badge rounded-pill bg-success">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                        @else
+                            <span class="badge rounded-pill bg-warning">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -117,7 +106,7 @@
                     </dd>
 
                     <dt class="col-sm-4">Organization</dt>
-                    <dd class="col-sm-8">{{ $eventHistory->event->organization_nexo_name }}</dd>
+                    <dd class="col-sm-8">{{ $eventHistory->event->organization_name }}</dd>
 
                     <dt class="col-sm-4">Advisor</dt>
                     <dd class="col-sm-8">
@@ -161,6 +150,29 @@
                         </span>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        {{-- Categories --}}
+        <section class="card shadow-sm mb-4" aria-labelledby="event-categories">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 id="event-categories" class="fw-semibold mb-0">Categories</h4>
+                    @if($eventHistory->event->categories->isNotEmpty())
+                        <small class="text-muted">{{ $eventHistory->event->categories->count() }} selected</small>
+                    @endif
+                </div>
+                @if($eventHistory->event->categories->isEmpty())
+                    <p class="text-muted mb-0">No categories were associated with this event.</p>
+                @else
+                    <ul class="mb-0 ps-3">
+                        @foreach($eventHistory->event->categories as $category)
+                            <li class="mb-2">
+                                <span class="fw-semibold d-block">{{ $category->name }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </div>
         </section>
 

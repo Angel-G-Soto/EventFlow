@@ -45,7 +45,7 @@
   {{-- Page size --}}
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end mb-2">
     <div class="d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="dept_rows">Rows</label>
+      <label class="text-secondary small mb-0 text-black" for="dept_rows">Rows</label>
       <select id="dept_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>10</option>
         <option>25</option>
@@ -77,7 +77,7 @@
             <th>Department Code</th>
             <th>Director</th>
 
-            <th class="text-end" style="width:120px;">Actions</th>
+            {{-- <th class="text-end" style="width:120px;">Actions</th> --}}
           </tr>
         </thead>
         <tbody>
@@ -86,22 +86,22 @@
             <td class="fw-medium">{{ $d['name'] }}</td>
             <td>{{ $d['code'] }}</td>
             <td>{{ trim($d['director'] ?? '') }}</td>
-            <td class="text-end">
+            {{--<td class="text-end">
               <div class="btn-group btn-group-sm">
-                {{--<button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
+                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $d['id'] }})"
                   aria-label="Edit department {{ $d['name'] }}" title="Edit department {{ $d['name'] }}">
                   <i class="bi bi-pencil"></i>
-                </button>--}}
+                </button>
                 <button class="btn btn-outline-danger" wire:click="delete({{ $d['id'] }})"
                   aria-label="Delete department {{ $d['name'] }}" title="Delete department {{ $d['name'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
-            </td>
+            </td>--}}
           </tr>
           @empty
           <tr>
-            <td colspan="4" class="text-center text-secondary py-4">No departments found.</td>
+            <td colspan="3" class="text-center text-secondary py-4">No departments found.</td>
           </tr>
           @endforelse
         </tbody>

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
+use App\Services\AuditService;
 
 /**
  * Class AuthService
@@ -28,6 +29,7 @@ class AuthService
 {
     public function __construct(
         private readonly UserService $userService, // Provided by your application
+        private readonly AuditService $auditService,
     ) {}
 
     /* -----------------------------------------------------------------
@@ -170,4 +172,3 @@ class AuthService
         request()->session()->regenerateToken();
     }
 }
-

@@ -10,6 +10,7 @@ trait EventEditState
   public string $eTitle = '';
   public string $ePurpose = '';
   public string $eVenue = '';
+  public int $eVenueId = 0;
   public string $eFrom = '';
   public string $eTo = '';
   public int    $eAttendees = 0;
@@ -23,7 +24,6 @@ trait EventEditState
   public string $eOrganization = '';
   public string $eAdvisorName = '';
   public string $eAdvisorEmail = '';
-  public string $eAdvisorPhone = '';
   public string $eStudentNumber = '';
   public string $eStudentPhone = '';
 
@@ -31,8 +31,6 @@ trait EventEditState
   public string $actionType = '';
   public string $justification = '';
 
-  // Reroute target
-  public string $rerouteTo = '';
 
   // Advance target
   public string $advanceTo = '';

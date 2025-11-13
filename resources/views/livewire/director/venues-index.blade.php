@@ -167,6 +167,20 @@
                             <div id="emailError" class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        <div class="mb-3">
+                            <label for="emailConfirmation" class="form-label">Confirm email address</label>
+                            <input id="emailConfirmation"
+                                   type="email"
+                                   class="form-control @error('emailConfirmation') is-invalid @enderror"
+                                   placeholder="Repeat email address"
+                                   wire:model.defer="emailConfirmation"
+                                   required
+                                   aria-describedby="emailConfirmationHelp emailConfirmationError" />
+                            <div id="emailConfirmationHelp" class="form-text">Re-enter the email to confirm.</div>
+                            @error('emailConfirmation')
+                            <div id="emailConfirmationError" class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="modal-footer">
@@ -197,5 +211,4 @@
             bootstrap.Modal.getOrCreateInstance(el).hide();
         });
     </script>
-
 

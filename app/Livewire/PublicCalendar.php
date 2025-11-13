@@ -25,7 +25,7 @@ class PublicCalendar extends Component
     // Read-only public, approved events (mocked for now)
     protected function allApprovedPublic(): array
     {
-        return Event::where('status', 'approved')->get()->toArray();
+        return Event::whereIn('status', ['approved', 'completed'])->get()->toArray();
     }
 
     public ?array $modal = null; // {title, venue, time, summary}

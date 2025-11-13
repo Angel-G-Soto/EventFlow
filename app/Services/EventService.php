@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Event\EventCollection;
 use Illuminate\Database\Eloquent\Collection;
 use function PHPUnit\Framework\isEmpty;
+use DateTimeInterface;
 
 class EventService
 {
@@ -40,89 +41,91 @@ class EventService
 
     // Methods
 
-        // FORM
+    // FORM
 
-        public function updateOrCreateFromEventForm(array $data, User $creator, string $action, ?array $document_ids = [], ?array $categories_ids = [])
-        {
-            return DB::transaction(function () use ($data, $document_ids, $categories_ids, $creator, $action) {
-                // Validate existence of related entities
-                if (!User::where('id', $creator->id)->exists()) {
-                    abort(404, 'Author not found.');
+    public function updateOrCreateFromEventForm(array $data, User $creator, string $action, ?array $document_ids = [], ?array $categories_ids = [])
+    {
+        return DB::transaction(function () use ($data, $document_ids, $categories_ids, $creator, $action) {
+            // Validate existence of related entities
+            if (!User::where('id', $creator->id)->exists()) {
+                abort(404, 'Author not found.');
+            }
+
+            if (!isset($data['venue_id']) || !Venue::where('id', $data['venue_id'])->exists()) {
+                abort(404, 'Venue not found.');
+            }
+
+            // Determine status based on user action and advisor presence
+            $status = match ($action) {
+                'draft'   => 'draft',
+                'publish' => !empty($data['organization_advisor_email'])
+                    ? 'pending - advisor approval'
+                    : 'pending - approval', // fallback if advisor not set
+                default   => 'draft',
+            };
+
+            // Create or update the event
+            $event = Event::updateOrCreate(
+                [
+                    'id' => $data['id'] ?? null, // If provided, updates existing event
+                ],
+                [
+                    'creator_id' => $creator->id,
+                    'venue_id' => $data['venue_id'],
+
+                    'organization_name' => $data['organization_name'] ?? null,
+                    'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
+                    'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
+                    //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+
+                    'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
+                    'creator_phone_number' => $data['creator_phone_number'] ?? null,
+
+                    'title' => $data['title'],
+                    'description' => $data['description'] ?? null,
+                    'start_time' => $data['start_time'],
+                    'end_time' => $data['end_time'],
+
+                    'status' => $status,
+                    'guest_size' => $data['guest_size'] ?? null,
+                    'handles_food' => $data['handles_food'] ?? false,
+                    'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
+                    'external_guest' => $data['external_guests'] ?? false,
+                ]
+            );
+
+            if ($event->status === 'draft') {
+                return $event;
+            }
+
+            // Attach documents (hasMany)
+            if (!empty($document_ids)) {
+                Document::whereIn('id', $document_ids)
+                    ->update(['event_id' => $event->id]);
+            }
+
+            // Attach categories (many-to-many)
+            if (!empty($categories_ids)) {
+                $event->categories()->sync($categories_ids);
+            }
+
+            // Event history & status transitions
+            if (!empty($data['organization_advisor_email'])) {
+                if ($status === 'pending - advisor approval') {
+                    // Example: log event history
+                    $event->history()->create([
+                        'action' => 'pending',
+                        'approver_id' => $creator->id,
+                        'comment' => 'Event submitted for approval.',
+                        'status_when_signed' => $status,
+                    ]);
                 }
-
-                if (!isset($data['venue_id']) || !Venue::where('id', $data['venue_id'])->exists()) {
-                    abort(404, 'Venue not found.');
-                }
-
-                // Determine status based on user action and advisor presence
-                $status = match ($action) {
-                    'draft'   => 'draft',
-                    'publish' => !empty($data['organization_advisor_email'])
-                        ? 'pending - advisor approval'
-                        : 'pending - approval', // fallback if advisor not set
-                    default   => 'draft',
-                };
-
-                // Create or update the event
-                $event = Event::updateOrCreate(
-                    [
-                        'id' => $data['id'] ?? null, // If provided, updates existing event
-                    ],
-                    [
-                        'creator_id' => $creator->id,
-                        'venue_id' => $data['venue_id'],
-
-                        'organization_name' => $data['organization_name'] ?? null,
-                        'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
-                        'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
-                        //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
-
-                        'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
-                        'creator_phone_number' => $data['creator_phone_number'] ?? null,
-
-                        'title' => $data['title'],
-                        'description' => $data['description'] ?? null,
-                        'start_time' => $data['start_time'],
-                        'end_time' => $data['end_time'],
-
-                        'status' => $status,
-                        'guest_size' => $data['guest_size'] ?? null,
-                        'handles_food' => $data['handles_food'] ?? false,
-                        'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
-                        'external_guest' => $data['external_guests'] ?? false,
-                    ]
-                );
-
-                if ($event->status === 'draft') {return $event;}
-
-                // Attach documents (hasMany)
-                if (!empty($document_ids)) {
-                    Document::whereIn('id', $document_ids)
-                        ->update(['event_id' => $event->id]);
-                }
-
-                // Attach categories (many-to-many)
-                if (!empty($categories_ids)) {
-                    $event->categories()->sync($categories_ids);
-                }
-
-                // Event history & status transitions
-                if (!empty($data['organization_advisor_email'])) {
-                    if ($status === 'pending - advisor approval') {
-                        // Example: log event history
-                        $event->history()->create([
-                            'action' => 'pending',
-                            'approver_id' => $creator->id,
-                            'comment' => 'Event submitted for approval.',
-                            'status_when_signed' => $status,
-                        ]);
-                    }
-                } else {
-                    // Non-student organization flow not supported yet
-//                    if ($action === 'publish') {
-//                        abort(403, 'Event requests generated by non-student organizations are not yet supported.');
-//                    }
-                }
+            } else {
+                // Non-student organization flow not supported yet
+                //                    if ($action === 'publish') {
+                //                        abort(403, 'Event requests generated by non-student organizations are not yet supported.');
+                //                    }
+            }
 
                 if (!empty($data['organization_advisor_email'])) {
                 $eventDetails = app(NotificationService::class)->getEventDetails($event);
@@ -138,34 +141,34 @@ class EventService
 
     //  PIPELINE
 
-        /**
-        * Deny an event and set its status to 'rejected'.
-        *
-        * This method handles:
-        *   - Atomic update of the event status to 'rejected' if it is not in a terminal state.
-        *   - Updating the most recent pending history record with the approver and rejection comment.
-        *   - Triggering audit trail processes.
-        *   - Sending notifications to prior approvers and the event creator.
-        *
-        * Race conditions are prevented by using a conditional update
-        * that only succeeds if the current status is not already terminal.
-        *
-        * @param array $data Denial data (e.g., 'comment').
-        * @param Event $event The event to deny.
-        * @param User $approver The user performing the denial.
-        *
-        * @return Event The updated event with refreshed status and relationships.
-        */
-        public function denyEvent(string $justification, Event $event, User $approver): Event
-        {
-            $updated = Event::where('id', $event->id)
-                ->whereNotIn('status', ['approved', 'withdrawn', 'cancelled', 'rejected'])
-                ->update(['status' => 'rejected']);
-            if ($updated === 0) return $event; // stop if race condition occurred
+    /**
+     * Deny an event and set its status to 'rejected'.
+     *
+     * This method handles:
+     *   - Atomic update of the event status to 'rejected' if it is not in a terminal state.
+     *   - Updating the most recent pending history record with the approver and rejection comment.
+     *   - Triggering audit trail processes.
+     *   - Sending notifications to prior approvers and the event creator.
+     *
+     * Race conditions are prevented by using a conditional update
+     * that only succeeds if the current status is not already terminal.
+     *
+     * @param array $data Denial data (e.g., 'comment').
+     * @param Event $event The event to deny.
+     * @param User $approver The user performing the denial.
+     *
+     * @return Event The updated event with refreshed status and relationships.
+     */
+    public function denyEvent(string $justification, Event $event, User $approver): Event
+    {
+        $updated = Event::where('id', $event->id)
+            ->whereNotIn('status', ['approved', 'withdrawn', 'cancelled', 'rejected'])
+            ->update(['status' => 'rejected']);
+        if ($updated === 0) return $event; // stop if race condition occurred
 
-            $this->updateLastHistory($event, $approver, $data['comment'] ?? 'unjustified rejection', 'rejected');
+        $this->updateLastHistory($event, $approver, $data['comment'] ?? 'unjustified rejection', 'rejected');
 
-            // Run audit trail
+        // Run audit trail
 
             // Send rejection email to prior approvers and creator
             $creatorEmail = $event->requester->email;
@@ -180,61 +183,61 @@ class EventService
             );
 
 
-            return $event->refresh();
-        }
+        return $event->refresh();
+    }
 
-        /**
-         * Approve an event and move it to the next approval stage.
-         *
-         * This method handles:
-         *   - Atomic update of the event status to the next stage.
-         *   - Updating the most recent pending history record with the approver and action.
-         *   - Creating a new pending history record if the event is not fully approved.
-         *   - Sending notifications to the next approver(s).
-         *
-         * Race conditions are prevented by using a conditional update
-         * that only succeeds if the current status matches the expected value.
-         *
-         * @param array $data Approval data (e.g., 'comment').
-         * @param Event $event The event to approve.
-         * @param User $approver The user performing the approval.
-         *
-         * @return Event The updated event with refreshed status and relationships.
-         *
-         * @throws \InvalidArgumentException If the event has an invalid or unexpected status.
-         */
-        public function approveEvent(Event $event, User $approver): Event
-        {
-            return DB::transaction(function () use ($event, $approver) {
-                $statusFlow = [
-                    'pending - advisor approval' => 'pending - venue manager approval',
-                    'pending - venue manager approval' => 'pending - dsca approval',
-//                    'pending - dsca approval' => 'pending - deanship of administration approval',
-//                    'pending - deanship of administration approval' => 'approved',
-                    'pending - dsca approval' => 'approved',
-                ];
+    /**
+     * Approve an event and move it to the next approval stage.
+     *
+     * This method handles:
+     *   - Atomic update of the event status to the next stage.
+     *   - Updating the most recent pending history record with the approver and action.
+     *   - Creating a new pending history record if the event is not fully approved.
+     *   - Sending notifications to the next approver(s).
+     *
+     * Race conditions are prevented by using a conditional update
+     * that only succeeds if the current status matches the expected value.
+     *
+     * @param array $data Approval data (e.g., 'comment').
+     * @param Event $event The event to approve.
+     * @param User $approver The user performing the approval.
+     *
+     * @return Event The updated event with refreshed status and relationships.
+     *
+     * @throws \InvalidArgumentException If the event has an invalid or unexpected status.
+     */
+    public function approveEvent(Event $event, User $approver): Event
+    {
+        return DB::transaction(function () use ($event, $approver) {
+            $statusFlow = [
+                'pending - advisor approval' => 'pending - venue manager approval',
+                'pending - venue manager approval' => 'pending - dsca approval',
+                //                    'pending - dsca approval' => 'pending - deanship of administration approval',
+                //                    'pending - deanship of administration approval' => 'approved',
+                'pending - dsca approval' => 'approved',
+            ];
 
-                $currentStatus = $event->status;
+            $currentStatus = $event->status;
 
-                if (!isset($statusFlow[$currentStatus])) {
-                    throw new \InvalidArgumentException('Event contains an invalid status');
-                }
+            if (!isset($statusFlow[$currentStatus])) {
+                throw new \InvalidArgumentException('Event contains an invalid status');
+            }
 
-                $nextStatus = $statusFlow[$currentStatus];
+            $nextStatus = $statusFlow[$currentStatus];
 
-                // Atomic update
-                $updated = $this->updateEventStatus($event, $currentStatus, $nextStatus);
-                if ($updated === 0) return $event; // stop if race condition occurred
+            // Atomic update
+            $updated = $this->updateEventStatus($event, $currentStatus, $nextStatus);
+            if ($updated === 0) return $event; // stop if race condition occurred
 
-                // Update last history record
-                $this->updateLastHistory($event, $approver, $data['comment'] ?? null, 'approved');
+            // Update last history record
+            $this->updateLastHistory($event, $approver, $data['comment'] ?? null, 'approved');
 
-                // Run audit trail
+            // Run audit trail
 
 
-                // Create new pending history only if not final approval
-                if ($nextStatus !== 'approved') {
-                    $this->createPendingHistory($event, $nextStatus, $approver);
+            // Create new pending history only if not final approval
+            if ($nextStatus !== 'approved') {
+                $this->createPendingHistory($event, $nextStatus, $approver);
 
                     // Send notification to next approver
                 }
@@ -253,71 +256,71 @@ class EventService
             });
         }
 
-        /**
-         * Atomically update event status if current status matches
-         */
-        protected function updateEventStatus(Event $event, string $currentStatus, string $nextStatus): int
-        {
-            return Event::whereNotIn('status', ['approved', 'withdrawn', 'cancelled', 'rejected'])
-                ->where('id', $event->id)
-                ->where('status', $currentStatus)
-                ->update(['status' => $nextStatus]);
-        }
+    /**
+     * Atomically update event status if current status matches
+     */
+    protected function updateEventStatus(Event $event, string $currentStatus, string $nextStatus): int
+    {
+        return Event::whereNotIn('status', ['approved', 'withdrawn', 'cancelled', 'rejected'])
+            ->where('id', $event->id)
+            ->where('status', $currentStatus)
+            ->update(['status' => $nextStatus]);
+    }
 
-        /**
-         * Update the most recent pending history record
-         */
-        protected function updateLastHistory(Event $event, User $approver, ?string $comment = null, string $action)
-        {
+    /**
+     * Update the most recent pending history record
+     */
+    protected function updateLastHistory(Event $event, User $approver, ?string $comment = null, string $action)
+    {
+        $lastHistory = $event->history()
+            ->where('action', 'pending')
+            ->latest()
+            ->first();
+
+        if ($lastHistory) {
+            $lastHistory->update([
+                'approver_id' => $approver->id,
+                'action' => $action,
+                'comment' => $comment ?? 'Approved and forwarded to next approver.',
+            ]);
+        }
+    }
+
+    /**
+     * Create a new pending history for the next approver
+     */
+    protected function createPendingHistory(Event $event, string $nextStatus, User $approver)
+    {
+        $event->history()->create([
+            'action' => 'pending',
+            'approver_id' => $approver->id,
+            'comment' => $nextStatus,
+            'status_when_signed' => $nextStatus,
+        ]);
+    }
+
+
+    // Status related methods
+
+    // Request creator withdraws event
+    public function withdrawEvent(Event $event, User $user, $comment): Event
+    {
+        return DB::transaction(function () use ($event, $user, $comment) {
+            Event::where('id', $event->id)
+                ->where('status', 'like', '%pending%')
+                ->update(['status' => 'withdrawn']);
+
             $lastHistory = $event->history()
-                ->where('action', 'pending')
                 ->latest()
                 ->first();
 
             if ($lastHistory) {
                 $lastHistory->update([
-                    'approver_id' => $approver->id,
-                    'action' => $action,
-                    'comment' => $comment ?? 'Approved and forwarded to next approver.',
+                    'approver_id' => $user->id,
+                    'action' => 'withdrawn',
+                    'comment' => $comment ?? 'Event was withdrawn by the user.',
                 ]);
             }
-        }
-
-        /**
-         * Create a new pending history for the next approver
-         */
-        protected function createPendingHistory(Event $event, string $nextStatus, User $approver)
-        {
-            $event->history()->create([
-                'action' => 'pending',
-                'approver_id' => $approver->id,
-                'comment' => $nextStatus,
-                'status_when_signed' => $nextStatus,
-            ]);
-        }
-
-
-    // Status related methods
-
-        // Request creator withdraws event
-        public function withdrawEvent(Event $event, User $user, $comment): Event
-        {
-            return DB::transaction(function () use ($event, $user, $comment) {
-                Event::where('id', $event->id)
-                    ->where('status', 'like', '%pending%')
-                    ->update(['status' => 'withdrawn']);
-
-                $lastHistory = $event->history()
-                    ->latest()
-                    ->first();
-
-                if ($lastHistory) {
-                    $lastHistory->update([
-                        'approver_id' => $user->id,
-                        'action' => 'withdrawn',
-                        'comment' => $comment ?? 'Event was withdrawn by the user.',
-                    ]);
-                }
 
                 // Run audit trail
 
@@ -367,25 +370,28 @@ class EventService
                     justification: $comment ?? 'Event was cancelled.',
                 );
 
+                // Send email to the approvers
 
-                return $event->refresh();
-            });
-        }
+            return $event->refresh();
+        });
+    }
 
-        // Mark event as completed
-        public function markEventAsCompleted(): void
-        {
-            DB::transaction(function () {
-                // Get the start and end of yesterday
-                $yesterdayStart = Carbon::yesterday()->startOfDay();
-                $yesterdayEnd = Carbon::yesterday()->endOfDay();
+    // Request creator cancels event (older signature removed; unified below)
 
-                // Update events that ended yesterday and are approved
-                Event::where('status', 'approved')
-                    ->whereBetween('end_time', [$yesterdayStart, $yesterdayEnd])
-                    ->update(['status' => 'completed']);
-            });
-        }
+    // Mark event as completed
+    public function markEventAsCompleted()
+    {
+        return DB::transaction(function () {
+            // Get the start and end of yesterday
+            $yesterdayStart = Carbon::yesterday()->startOfDay();
+            $yesterdayEnd = Carbon::yesterday()->endOfDay();
+
+            // Update events that ended yesterday and are approved
+            Event::where('status', 'approved')
+                ->whereBetween('end_time', [$yesterdayStart, $yesterdayEnd])
+                ->update(['status' => 'completed']);
+        });
+    }
 
     // Dashboards
 
@@ -460,7 +466,6 @@ class EventService
                             break;
                     }
                 });
-
             }
         });
 
@@ -539,10 +544,10 @@ class EventService
     public function conflictingEvents(Event $event)
     {
         return Event::where(function ($query) {
-                $query->where('status', 'like', '%venue manager%')
-                    ->orWhere('status', 'like', '%dsca%')
-                    ->orWhere('status', 'like', '%approved%');
-            })
+            $query->where('status', 'like', '%venue manager%')
+                ->orWhere('status', 'like', '%dsca%')
+                ->orWhere('status', 'like', '%approved%');
+        })
             ->where('venue_id', $event->venue_id)
             ->where('id', '!=', $event->id)
             ->where(function ($query) use ($event) {
@@ -562,123 +567,375 @@ class EventService
         return $event->documents;
     }
 
-//        public function getEventsForApproverDashboard(User $user): LengthAwarePaginator
-//        {
-//            // Create table that matches role with the status
-//            $stateApprover = [
-//                'advisor' => 'pending - advisor approval',
-//                'venue-manager' => 'pending - venue manager approval',
-//                'event-approver' => 'pending - dsca approval',
-//                'deanship-of-administration-approver' => 'pending - deanship of administration approval',
-//            ];
-//
-//            // Query event by status and return it as a paginator
-//            return
+    //        public function getEventsForApproverDashboard(User $user): LengthAwarePaginator
+    //        {
+    //            // Create table that matches role with the status
+    //            $stateApprover = [
+    //                'advisor' => 'pending - advisor approval',
+    //                'venue-manager' => 'pending - venue manager approval',
+    //                'event-approver' => 'pending - dsca approval',
+    //                'deanship-of-administration-approver' => 'pending - deanship of administration approval',
+    //            ];
+    //
+    //            // Query event by status and return it as a paginator
+    //            return
 
-//        }
+    //        }
 
     // Administrator's overrides
 
-        // NOTE: REMOVE OR FOCUS IT ON VENUE MANAGER SINCE THE OTHER APPROVERS ARE NOT SPECIFIC (ROLE IS THE ONLY DETERMINING FACTOR).
-        // THE LATTER IS BASICALLY DONE BY THE DIRECTOR
-//        public function reroutePendingEventApproval(Event $event, User $old_manager, User $new_manager): Event
-//        {
-//            return DB::transaction(function () use ($event, $old_manager, $new_manager) {
-//                // Change venue manager
-//
-//                // Get pending requests on the venue manager step
-//
-//                // Email the request creator, old manager, new manager and the director. To the advisor as well if available
-//            });
-//        }
+    // NOTE: REMOVE OR FOCUS IT ON VENUE MANAGER SINCE THE OTHER APPROVERS ARE NOT SPECIFIC (ROLE IS THE ONLY DETERMINING FACTOR).
+    // THE LATTER IS BASICALLY DONE BY THE DIRECTOR
+    //        public function reroutePendingEventApproval(Event $event, User $old_manager, User $new_manager): Event
+    //        {
+    //            return DB::transaction(function () use ($event, $old_manager, $new_manager) {
+    //                // Change venue manager
+    //
+    //                // Get pending requests on the venue manager step
+    //
+    //                // Email the request creator, old manager, new manager and the director. To the advisor as well if available
+    //            });
+    //        }
 
 
     public function performManualOverride(Event $event, array $data, User $user, string $justification, string $action): Event
     {
-        return DB::transaction(function () use ($event, $data, $user, $justification) {
-            // Make changes
-            $event->update([
-                'venue_id' => $data['venue_id'],
+        return DB::transaction(function () use ($event, $data, $user, $justification, $action) {
+            // Build a filtered payload; only include provided keys and map aliases
+            $updates = [];
+            $map = [
+                'venue_id'                      => 'venue_id',
+                'organization_name'             => 'organization_name',
+                'organization_advisor_name'     => 'organization_advisor_name',
+                'organization_advisor_email'    => 'organization_advisor_email',
+                'creator_institutional_number'  => 'creator_institutional_number',
+                'creator_phone_number'          => 'creator_phone_number',
+                'title'                         => 'title',
+                'description'                   => 'description',
+                'start_time'                    => 'start_time',
+                'end_time'                      => 'end_time',
+                'status'                        => 'status',
+                // Aliases
+                'guests'                        => 'guest_size',
+                'handles_food'                  => 'handles_food',
+                'use_institutional_funds'       => 'use_institutional_funds',
+                'external_guests'               => 'external_guest',
+            ];
+            foreach ($map as $in => $col) {
+                if (array_key_exists($in, $data)) {
+                    $updates[$col] = $data[$in];
+                }
+            }
 
-                'organization_name' => $data['organization_name'] ?? null,
-                'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
-                'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
-                //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+            if (!empty($updates)) {
+                $event->update($updates);
+            }
 
-                'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
-                'creator_phone_number' => $data['creator_phone_number'] ?? null,
-
-                'title' => $data['title'],
-                'description' => $data['description'] ?? null,
-                'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'],
-
-                'status' => $data['status'] ?? 'approved',
-                'guest_size' => $data['guests'] ?? null,
-                'handles_food' => $data['handles_food'] ?? false,
-                'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
-                'external_guest' => $data['external_guests'] ?? false,
+            // Append event history with justification; keep standardized label
+            EventHistory::create([
+                'event_id' => $event->id,
+                'action'   => 'manual override',
+                'comment'  => (string) $justification,
             ]);
 
-            // Run audit trail
-            $this->auditService->logAdminAction($user->id, $user->name, 'ADMIN_OVERRIDE', $justification);
+            // Build audit context including justification and changed fields
+            $actorName = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($actorName === '') {
+                $actorName = (string)($user->name ?? ($user->email ?? ''));
+            }
+            $ctx = ['meta' => [
+                'action'        => (string) $action,
+                'justification' => (string) $justification,
+                'fields'        => array_keys($updates),
+            ]];
+            try {
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $ctx['meta']);
+                }
+            } catch (\Throwable) { /* no-http context */ }
 
-            // Add to event history
-            EventHistory::create(['event_id' => $event->id, 'action' => 'manual override', 'comment' => $justification]);
+            // Run audit trail with event id as target
+            $this->auditService->logAdminAction(
+                (int) $user->id,
+                $actorName,
+                'ADMIN_OVERRIDE',
+                (string) $event->id,
+                $ctx
+            );
 
-            return $event;
+            return $event->refresh();
         });
     }
+
+    /**
+     * Cancel an event and append audit/history. Centralizes status value to avoid UI hardcoding.
+     */
+//    public function cancelEvent(Event $event, User $user, string $justification): Event
+//    {
+//        return DB::transaction(function () use ($event, $user, $justification) {
+//            // Guard: only transition to cancelled from approved
+//            $updated = Event::where('id', $event->id)
+//                ->where('status', 'approved')
+//                ->update(['status' => 'cancelled']);
+//
+//            if ($updated === 0) {
+//                // No state change; return current model without side effects
+//                return $event;
+//            }
+//
+//            // Append history with standardized action label and justification
+//            EventHistory::create([
+//                'event_id' => $event->id,
+//                'action'   => 'cancelled',
+//                'comment'  => $justification ?: 'Event was cancelled.',
+//            ]);
+//
+//            // Audit with justification in meta
+//            $this->auditService->logAdminAction(
+//                (int) $user->id,
+//                (string) ($user->name ?? ($user->first_name . ' ' . $user->last_name)),
+//                'ADMIN_OVERRIDE',
+//                (string) $event->id,
+//                ['meta' => ['justification' => (string) $justification]]
+//            );
+//
+//            return $event->refresh();
+//        });
+//    }
 
 
     // GET
 
-        public function getBookedVenues(DateTime $startTime, DateTime $endTime): \Illuminate\Database\Eloquent\Collection|\Illuminate\Support\Collection
-        {
-            return Event::where('status', 'Approved')
+    public function getBookedVenues(DateTime $startTime, DateTime $endTime): Collection
+    {
+        return Event::where('status', 'Approved')
             ->where(function ($query) use ($startTime, $endTime) {
                 $query->where('start_time', '<', $endTime)
                     ->where('end_time', '>', $startTime);
             })->get();
     }
 
-        public function getAllEvents(array $filters = []): LengthAwarePaginator
-        {
-            return Event::all()->paginate(15);
+    public function getAllEvents(array $filters = []): LengthAwarePaginator
+    {
+        $q = Event::query()->with(['venue', 'requester', 'categories']);
+
+        if (!empty($filters['status'])) {
+            $q->where('status', (string) $filters['status']);
+        }
+        if (!empty($filters['venue_id'])) {
+            $q->where('venue_id', (int) $filters['venue_id']);
+        }
+        if (!empty($filters['organization_name'])) {
+            $q->where('organization_name', (string) $filters['organization_name']);
+        }
+        if (!empty($filters['from'])) {
+            $q->where('start_time', '>=', (string) $filters['from']);
+        }
+        if (!empty($filters['to'])) {
+            $q->where('end_time', '<=', (string) $filters['to']);
         }
 
-        // [
-        //     venue_id => [],
-        //     category_id => [],
-        //     organization_name => []
-        // ]
-        public function getApproverRequestHistory(User $user, $filters = [])
-        {
-            $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
-                ->whereHas('history', function ($query) use ($user) {
-                    $query->where('approver_id', $user->id);
-                })
-                ->with(['history' => function ($query) use ($user) {
-                    $query->select('id', 'approver_id', 'event_id')
-                        ->where('approver_id', $user->id);
-                }]);
+        return $q->orderByDesc('created_at')->paginate(15);
+    }
 
-            // Apply venue_id filter if values are provided
-            if (!empty($filters['venue_id'])) {
-                $query->whereIn('venue_id', $filters['venue_id']);
-            }
+    /**
+     * Distinct event statuses from the database, sorted case-insensitively.
+     * Service-level helper so UI does not touch models/constants.
+     *
+     * @return \Illuminate\Support\Collection<int,string>
+     */
+    public function getDistinctEventStatuses(): SupportCollection
+    {
+        return Event::query()
+            ->whereNotNull('status')
+            ->select('status')
+            ->distinct()
+            ->pluck('status')
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim((string)$v))
+            ->unique(function ($v) { return mb_strtolower($v); })
+            ->sort(function ($a, $b) { return strnatcasecmp($a, $b); })
+            ->values();
+    }
 
-            // Apply organization_name filter if values are provided
-            if (!empty($filters['organization_name'])) {
-                $query->whereIn('organization_name', $filters['organization_name']);
-            }
+    /**
+     * Distinct organization names from the database, sorted case-insensitively.
+     *
+     * @return \Illuminate\Support\Collection<int,string>
+     */
+    public function getDistinctOrganizations(): SupportCollection
+    {
+        return Event::query()
+            ->whereNotNull('organization_name')
+            ->select('organization_name')
+            ->distinct()
+            ->pluck('organization_name')
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim((string)$v))
+            ->unique(function ($v) { return mb_strtolower($v); })
+            ->sort(function ($a, $b) { return strnatcasecmp($a, $b); })
+            ->values();
+    }
 
-            // Apply category_id filter if values are provided (Many-to-Many relationship)
-            if (!empty($filters['category_id'])) {
-                $query->whereHas('categories', function ($query) use ($filters) {
-                    $query->whereIn('category_id', $filters['category_id']);
-                });
+    /**
+     * All venue names from DB, sorted by name. Exposed via EventService to keep
+     * EventIndex decoupled from models and other services.
+     *
+     * @return \Illuminate\Support\Collection<int,string>
+     */
+    public function listVenueNames(): SupportCollection
+    {
+        return Venue::query()
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->pluck('name');
+    }
+
+    /**
+     * Return normalized Event DTO rows for oversight UI, using service-only mapping.
+     *
+     * Filters: status, venue_id, organization_name, from, to
+     *
+     * @param array<string,mixed> $filters
+     * @return \Illuminate\Support\Collection<int,array<string,mixed>>
+     */
+    public function getEventRows(array $filters = []): SupportCollection
+    {
+        $q = Event::query()->with(['venue', 'requester', 'categories']);
+
+        if (!empty($filters['status'])) {
+            $q->where('status', (string) $filters['status']);
+        }
+        if (!empty($filters['venue_id'])) {
+            $q->where('venue_id', (int) $filters['venue_id']);
+        }
+        if (!empty($filters['organization_name'])) {
+            $q->where('organization_name', (string) $filters['organization_name']);
+        }
+        if (!empty($filters['from'])) {
+            $q->where('start_time', '>=', (string) $filters['from']);
+        }
+        if (!empty($filters['to'])) {
+            $q->where('end_time', '<=', (string) $filters['to']);
+        }
+
+        $events = $q->orderByDesc('created_at')->get();
+
+        return $events->map(function ($e) {
+            $from = $e->start_time instanceof DateTimeInterface ? $e->start_time->format('Y-m-d H:i') : (string)$e->start_time;
+            $to   = $e->end_time   instanceof DateTimeInterface ? $e->end_time->format('Y-m-d H:i')   : (string)$e->end_time;
+            $requestor = method_exists($e, 'requester') && $e->requester
+                ? trim(($e->requester->first_name ?? '') . ' ' . ($e->requester->last_name ?? ''))
+                : ('User ' . (string)($e->creator_id ?? ''));
+            $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
+            $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
+            return [
+                'id' => (int)$e->id,
+                'title' => (string)($e->title ?? 'Untitled'),
+                'requestor' => $requestor,
+                'organization' => (string)($e->organization_name ?? ''),
+                'organization_advisor_name' => (string)($e->organization_advisor_name ?? ''),
+                'organization_advisor_email' => (string)($e->organization_advisor_email ?? ''),
+                'venue' => (string)$venueName,
+                'venue_id' => (int)($e->venue_id ?? 0),
+                'from' => (string)$from,
+                'to' => (string)$to,
+                'status' => (string)($e->status ?? ''),
+                'category' => (string)$category,
+                'updated' => now()->format('Y-m-d H:i'),
+                'description' => (string)($e->description ?? ''),
+                'attendees' => (int)($e->guest_size ?? 0),
+                'handles_food' => (bool)($e->handles_food ?? false),
+                'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
+                'external_guest' => (bool)($e->external_guest ?? false),
+            ];
+        })->values();
+    }
+
+    /**
+     * Sync the event's category based on a provided category NAME string.
+     * If name doesn't resolve, leave categories unchanged.
+     */
+    public function syncEventCategoryByName(Event $event, string $categoryName): void
+    {
+        $name = trim($categoryName);
+        if ($name === '') return;
+        try {
+            $cat = Category::where('name', $name)->first();
+            if ($cat) {
+                $event->categories()->sync([$cat->id]);
             }
+        } catch (\Throwable) {
+            // ignore
+        }
+    }
+
+    /**
+     * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
+     *
+     * @return \Illuminate\Support\Collection<int,array{id:int,label:string}>
+     */
+    public function listVenuesForFilter(): SupportCollection
+    {
+        $venues = Venue::query()
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'code')
+            ->get();
+
+        // Count duplicates by normalized name
+        $nameCounts = $venues
+            ->groupBy(fn($v) => mb_strtolower(trim((string)($v->name ?? ''))))
+            ->map->count();
+
+        // Build label, appending code for duplicates when available
+        $options = $venues->map(function ($v) use ($nameCounts) {
+            $norm = mb_strtolower(trim((string)($v->name ?? '')));
+            $code = trim((string)($v->code ?? ''));
+            $label = (string)($v->name ?? '');
+            if ($norm !== '' && ($nameCounts[$norm] ?? 0) > 1 && $code !== '') {
+                $label .= ' (' . $code . ')';
+            }
+            return ['id' => (int)$v->id, 'label' => $label];
+        });
+
+        // Natural, case-insensitive sort by label
+        return $options
+            ->sort(fn($a, $b) => strnatcasecmp($a['label'], $b['label']))
+            ->values();
+    }
+
+    // [
+    //     venue_id => [],
+    //     category_id => [],
+    //     organization_name => []
+    // ]
+    public function getApproverRequestHistory(User $user, $filters = [])
+    {
+        $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
+            ->whereHas('history', function ($query) use ($user) {
+                $query->where('approver_id', $user->id);
+            })
+            ->with(['history' => function ($query) use ($user) {
+                $query->select('id', 'approver_id', 'event_id')
+                    ->where('approver_id', $user->id);
+            }]);
+
+        // Apply venue_id filter if values are provided
+        if (!empty($filters['venue_id'])) {
+            $query->whereIn('venue_id', $filters['venue_id']);
+        }
+
+        // Apply organization_name filter if values are provided
+        if (!empty($filters['organization_name'])) {
+            $query->whereIn('organization_name', $filters['organization_name']);
+        }
+
+        // Apply category_id filter if values are provided (Many-to-Many relationship)
+        if (!empty($filters['category_id'])) {
+            $query->whereHas('categories', function ($query) use ($filters) {
+                $query->whereIn('category_id', $filters['category_id']);
+            });
+        }
 
             return $query->paginate(15);
         }
