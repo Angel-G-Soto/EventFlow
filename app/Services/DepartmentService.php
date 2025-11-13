@@ -267,8 +267,8 @@ class DepartmentService
 
             // AUDIT: user department set/changed (best-effort)
             try {
-                /** @var \App\Services\AuditService $audit */
-                $audit = app(\App\Services\AuditService::class);
+                /** @var AuditService $audit */
+                $audit = app(AuditService::class);
 
                 $actor   = auth()->user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
