@@ -26,7 +26,8 @@
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px; max-width:600px; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
                   <!-- Header -->
                   <tr>
-                      <td style="background:#0f6b3e; padding:20px 24px;">
+{{--                      #0f6b3e--}}
+                      <td style="background:#3a5178; padding:20px 24px;">
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                               <tr>
                                   <td align="left" style="font-family:Arial, Helvetica, sans-serif; color:#e8f5ed; font-size:18px; font-weight:700;">
