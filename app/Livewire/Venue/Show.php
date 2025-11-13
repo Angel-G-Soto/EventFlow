@@ -15,7 +15,9 @@
  */
 
 namespace App\Livewire\Venue;
+
 use App\Models\Venue;
+use Carbon\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -36,6 +38,15 @@ use Livewire\Component;
  */
 class Show extends Component
 {
+    private const DAYS_OF_WEEK = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+    ];
     /** @var Venue The venue being displayed. */
     public Venue $venue;
 
@@ -53,6 +64,7 @@ class Show extends Component
         $this->venue = $venue->load([
 //            'manager' => fn ($q) => $q->select('id', 'first_name', 'last_name'),
             'department' => fn ($q) => $q->select('id', 'name'), // adjust if your departments table differs
+            'availabilities',
         ]);
     }
 
@@ -65,7 +77,16 @@ class Show extends Component
      */
     protected function fmtTime(?string $time): ?string
     {
-        return $time ? substr($time, 0, 5) : null;
+        if (!$time) {
+            return null;
+        }
+
+        $format = strlen($time) === 5 ? 'H:i' : 'H:i:s';
+        try {
+            return Carbon::createFromFormat($format, $time)->format('g:i A');
+        } catch (\Throwable) {
+            return $time;
+        }
     }
 
     /**
@@ -78,8 +99,27 @@ class Show extends Component
         $this->authorize('view-venue', $this->venue);
 
         return view('livewire.venue.show', [
-            'open'  => $this->fmtTime($this->venue->opening_time),
-            'close' => $this->fmtTime($this->venue->closing_time),
+            'schedule' => $this->formatSchedule(),
         ]);
+    }
+
+    protected function formatSchedule(): array
+    {
+        $order = array_flip(self::DAYS_OF_WEEK);
+
+        return $this->venue->availabilities
+            ->sortBy(function ($slot) use ($order) {
+                $dayIndex = $order[$slot->day] ?? 99;
+                return $dayIndex . '_' . $slot->opens_at;
+            })
+            ->map(function ($slot) {
+                return [
+                    'day' => $slot->day,
+                    'opens' => $this->fmtTime($slot->opens_at),
+                    'closes' => $this->fmtTime($slot->closes_at),
+                ];
+            })
+            ->values()
+            ->all();
     }
 }

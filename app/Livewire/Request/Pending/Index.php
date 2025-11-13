@@ -54,7 +54,10 @@ class Index extends Component
 
         // Apply search filter
         if (!empty($this->filters['searchTitle'])) {
-            $query->where('title', 'like', '%'.$this->filters['searchTitle'].'%');
+            $query->where(function($q) {
+                $q->where('title', 'like', '%'.$this->filters['searchTitle'].'%')
+                    ->orWhere('organization_name', 'like', '%'.$this->filters['searchTitle'].'%');
+            });
         }
 
         // Apply sort direction
