@@ -56,12 +56,18 @@ class EventService
 
             // Determine status based on user action and advisor presence
             $status = match ($action) {
-                'draft'   => 'draft',
                 'publish' => !empty($data['organization_advisor_email'])
                     ? 'pending - advisor approval'
                     : 'pending - approval', // fallback if advisor not set
-                default   => 'draft',
+                default   => 'created',
             };
+
+            //             if ($action !== 'publish') {
+            //     abort(400, 'Invalid action.');
+            // }
+            // $status = !empty($data['organization_advisor_email'])
+            //     ? 'pending - advisor approval'
+            //     : 'pending - approval';
 
             // Create or update the event
             $event = Event::updateOrCreate(
@@ -92,10 +98,6 @@ class EventService
                     'external_guest' => $data['external_guests'] ?? false,
                 ]
             );
-
-            if ($event->status === 'draft') {
-                return $event;
-            }
 
             // Attach documents (hasMany)
             if (!empty($document_ids)) {
@@ -144,7 +146,7 @@ class EventService
      * Race conditions are prevented by using a conditional update
      * that only succeeds if the current status is not already terminal.
      *
-     * @param array $data Denial data (e.g., 'comment').
+     * @param string $justification Rejection justification/comment.
      * @param Event $event The event to deny.
      * @param User $approver The user performing the denial.
      *
@@ -157,7 +159,7 @@ class EventService
             ->update(['status' => 'rejected']);
         if ($updated === 0) return $event; // stop if race condition occurred
 
-        $this->updateLastHistory($event, $approver, $data['comment'] ?? 'unjustified rejection', 'rejected');
+        $this->updateLastHistory($event, $approver, $justification ?: 'unjustified rejection', 'rejected');
 
         // Run audit trail
 
@@ -186,45 +188,36 @@ class EventService
      *
      * @throws \InvalidArgumentException If the event has an invalid or unexpected status.
      */
-    public function approveEvent(Event $event, User $approver): Event
+    public function approveEvent(Event $event, User $approver, ?string $comment = null): Event
     {
-        return DB::transaction(function () use ($event, $approver) {
-            $statusFlow = [
-                'pending - advisor approval' => 'pending - venue manager approval',
-                'pending - venue manager approval' => 'pending - dsca approval',
-                //                    'pending - dsca approval' => 'pending - deanship of administration approval',
-                //                    'pending - deanship of administration approval' => 'approved',
-                'pending - dsca approval' => 'approved',
-            ];
-
+        return DB::transaction(function () use ($event, $approver, $comment) {
+            $statusFlow = $this->getStatusFlow();
             $currentStatus = $event->status;
-
             if (!isset($statusFlow[$currentStatus])) {
                 throw new \InvalidArgumentException('Event contains an invalid status');
             }
 
             $nextStatus = $statusFlow[$currentStatus];
+            $result = $this->commitStatusTransition($event, $nextStatus, $approver, 'approved', $comment);
 
-            // Atomic update
-            $updated = $this->updateEventStatus($event, $currentStatus, $nextStatus);
-            if ($updated === 0) return $event; // stop if race condition occurred
-
-            // Update last history record
-            $this->updateLastHistory($event, $approver, $data['comment'] ?? null, 'approved');
-
-            // Run audit trail
-
-
-            // Create new pending history only if not final approval
             if ($nextStatus !== 'approved') {
-                $this->createPendingHistory($event, $nextStatus, $approver);
-
-                // Send notification to next approver
-            } else {
-                // Send notification to next approver
-
+                $this->createPendingHistory($result, $nextStatus, $approver);
             }
-            return $event->refresh();
+
+            return $result;
+        });
+    }
+
+    public function advanceEvent(Event $event, User $user, string $justification): Event
+    {
+        return DB::transaction(function () use ($event, $user, $justification) {
+            $statusFlow = $this->getStatusFlow();
+            $currentStatus = $event->status;
+            if (!isset($statusFlow[$currentStatus])) {
+                throw new \InvalidArgumentException('Event cannot be advanced from current status');
+            }
+
+            return $this->commitStatusTransition($event, $statusFlow[$currentStatus], $user, 'advance', $justification);
         });
     }
 
@@ -237,6 +230,17 @@ class EventService
             ->where('id', $event->id)
             ->where('status', $currentStatus)
             ->update(['status' => $nextStatus]);
+    }
+
+    protected function commitStatusTransition(Event $event, string $nextStatus, User $actor, string $action, ?string $comment = null): Event
+    {
+        $currentStatus = $event->status;
+        $updated = $this->updateEventStatus($event, $currentStatus, $nextStatus);
+        if ($updated === 0) {
+            return $event;
+        }
+        $this->updateLastHistory($event, $actor, $comment, $action);
+        return $event->refresh();
     }
 
     /**
@@ -323,7 +327,8 @@ class EventService
 
     public function getMyRequestedEvents(User $user): \Illuminate\Database\Eloquent\Builder
     {
-        return Event::where('creator_id', $user->id);
+        return Event::where('creator_id', $user->id)
+            ->whereRaw('LOWER(status) <> ?', ['draft']);
     }
 
     public function genericGetPendingRequests(User $user, Role $role): \Illuminate\Database\Eloquent\Builder
@@ -340,13 +345,14 @@ class EventService
             'deanship-of-administration-approver' => Event::query()
                 ->where('status', 'pending - deanship of administration approval'),
             default => Event::query()
-                ->where('creator_id', $user->id),
+                ->where('creator_id', $user->id)
+                ->whereRaw('LOWER(status) <> ?', ['draft']),
         };
     }
 
     public function genericGetPendingRequestsV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Event::query();
+        $query = Event::query()->whereRaw('LOWER(status) <> ?', ['draft']);
 
         // Get roles the user actually has
         $userRoles = $user->roles->pluck('name')->toArray();
@@ -403,6 +409,7 @@ class EventService
     public function genericApproverRequestHistory(User $user): \Illuminate\Database\Eloquent\Builder
     {
         return Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
+            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($query) use ($user) {
                 $query->where('approver_id', $user->id);
             })
@@ -424,6 +431,7 @@ class EventService
             'organization_name',
             'created_at'
         )
+            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($q) use ($user) {
                 $q->where('approver_id', $user->id);
             })
@@ -665,6 +673,55 @@ class EventService
     }
 
     /**
+     * Status flow mapping for approvals: current => next.
+     * Central source of truth so UI and transitions stay consistent.
+     *
+     * @return array<string,string>
+     */
+    public function getStatusFlow(): array
+    {
+        return [
+            'pending - advisor approval'        => 'pending - venue manager approval',
+            'pending - venue manager approval'  => 'pending - dsca approval',
+            // 'pending - dsca approval'        => 'pending - deanship of administration approval',
+            // 'pending - deanship of administration approval' => 'approved',
+            'pending - dsca approval'           => 'approved',
+        ];
+    }
+
+    /**
+     * All statuses from the status flow plus terminal states.
+     * Returned sorted case-insensitively and unique.
+     */
+    public function getFlowStatuses(bool $includeTerminals = true): SupportCollection
+    {
+        $flow = $this->getStatusFlow();
+        $statuses = collect(array_keys($flow))->merge(array_values($flow));
+        if ($includeTerminals) {
+            // Include terminal states except 'draft'
+            $statuses = $statuses->merge(['rejected', 'cancelled', 'withdrawn']);
+        }
+        return $statuses
+            ->map(fn($v) => trim((string) $v))
+            ->filter(fn($v) => $v !== '')
+            ->unique(fn($v) => mb_strtolower($v))
+            ->sort(fn($a, $b) => strnatcasecmp($a, $b))
+            ->values();
+    }
+
+    /**
+     * Find a single event by id with common relationships.
+     * Centralizes model access so Livewire views use services only.
+     */
+    public function findEventById(int $id): ?Event
+    {
+        if ($id <= 0) return null;
+        return Event::query()
+            ->with(['venue', 'requester', 'categories'])
+            ->find($id);
+    }
+
+    /**
      * Distinct event statuses from the database, sorted case-insensitively.
      * Service-level helper so UI does not touch models/constants.
      *
@@ -727,7 +784,8 @@ class EventService
      */
     public function getEventRows(array $filters = []): SupportCollection
     {
-        $q = Event::query()->with(['venue', 'requester', 'categories']);
+        $q = Event::query()->with(['venue', 'requester', 'categories'])
+            ->whereRaw('LOWER(status) <> ?', ['draft']);
 
         if (!empty($filters['status'])) {
             $q->where('status', (string) $filters['status']);
@@ -838,6 +896,7 @@ class EventService
     public function getApproverRequestHistory(User $user, $filters = [])
     {
         $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
+            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($query) use ($user) {
                 $query->where('approver_id', $user->id);
             })

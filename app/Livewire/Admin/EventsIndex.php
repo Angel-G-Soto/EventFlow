@@ -63,7 +63,7 @@ class EventsIndex extends Component
     {
         try {
             return app(EventService::class)
-                ->getDistinctEventStatuses()
+                ->getFlowStatuses(true)
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
@@ -386,6 +386,7 @@ class EventsIndex extends Component
 
         $this->actionType = 'advance';
         $this->advanceTo = '';
+        // First show confirmation; justification will be collected after confirm
         $this->dispatch('bs:open', id: 'oversightAdvance');
     }
 
@@ -407,50 +408,25 @@ class EventsIndex extends Component
      */
     public function confirmAction(): void
     {
-        // Apply status change based on action type
+        // Apply status change via service (no hardcoded statuses)
         $toastMsg = null;
-        if ($this->editId && in_array($this->actionType, ['approve', 'deny', 'advance'], true)) {
-            $newStatus = match ($this->actionType) {
-                'approve' => 'Approved',
-                'deny'    => 'Denied',
-                'advance' => 'Pending',
-                default   => null,
-            };
-            if ($newStatus !== null) {
-                try {
-                    $svc = app(EventService::class);
-                    $event = $this->getEventFromServiceById((int)$this->editId);
-                    if ($event) {
-                        $venueId = (int)($event->venue_id ?? 0);
-                        $payload = [
-                            'venue_id'     => $venueId,
-                            'title'        => (string)($event->title ?? 'Untitled'),
-                            'description'  => (string)($event->description ?? ''),
-                            'start_time'   => (string)($event->start_time),
-                            'end_time'     => (string)($event->end_time),
-                            'status'       => mb_strtolower($newStatus) === 'denied' ? 'rejected' : strtolower($newStatus),
-                            'guests'       => (int)($event->guest_size ?? 0),
-                            'organization_name' => (string)($event->organization_name ?? ''),
-                            'organization_advisor_name'  => (string)($event->organization_advisor_name ?? ''),
-                            'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
-                            'handles_food' => (bool)($event->handles_food ?? false),
-                            'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
-                            'external_guests' => (bool)($event->external_guest ?? false),
-                        ];
-                    $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), $this->actionType);
+        if ($this->editId && in_array($this->actionType, ['approve', 'deny'], true)) {
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    if ($this->actionType === 'approve') {
+                        $svc->approveEvent($event, Auth::user());
+                        $toastMsg = 'Event approved';
+                    } elseif ($this->actionType === 'deny') {
+                        $this->validateJustification();
+                        $svc->denyEvent((string)($this->justification ?? ''), $event, Auth::user());
+                        $toastMsg = 'Event denied';
                     }
-                } catch (\Throwable $e) {
-                    // ignore status update errors
                 }
+            } catch (\Throwable $e) {
+                // ignore service errors; UI will still close modals
             }
-
-            // More descriptive toast
-            $toastMsg = match ($this->actionType) {
-                'approve' => 'Event approved',
-                'deny'    => 'Event denied',
-                'advance' => ($this->advanceTo !== '' ? 'Advanced to ' . $this->advanceTo : 'Advanced'),
-                default   => null,
-            };
         }
         $this->dispatch('bs:close', id: 'oversightJustify');
         $this->dispatch('bs:close', id: 'oversightEdit');
@@ -470,7 +446,22 @@ class EventsIndex extends Component
             $this->confirmDelete();
             return;
         }
-        if (in_array($type, ['approve', 'deny', 'advance'], true)) {
+        if ($type === 'advance') {
+            $this->validateJustification();
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    $svc->advanceEvent($event, Auth::user(), (string)($this->justification ?? ''));
+                }
+            } catch (\Throwable) { /* ignore */ }
+            $this->dispatch('bs:close', id: 'oversightJustify');
+            $this->dispatch('bs:close', id: 'oversightEdit');
+            $this->dispatch('toast', message: 'Advance completed');
+            $this->reset('actionType', 'justification');
+            return;
+        }
+        if (in_array($type, ['approve', 'deny'], true)) {
             $this->confirmAction();
             return;
         }
@@ -485,26 +476,9 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
-        $data = $this->validate([
-            'advanceTo' => ['required', 'string', 'min:2', 'max:120'],
-        ]);
-
-        if ($this->editId) {
-            foreach ($this->requests as &$request) {
-                if ((int)($request['id'] ?? 0) === (int)$this->editId) {
-                    $request['status']     = 'Pending';
-                    $request['updated']    = now()->format('Y-m-d H:i');
-                    $request['routed_to']  = (string)($data['advanceTo'] ?? $this->advanceTo);
-                    break;
-                }
-            }
-            unset($request);
-        }
-
+        // After confirm, move to justification modal
         $this->dispatch('bs:close', id: 'oversightAdvance');
-        $this->dispatch('bs:close', id: 'oversightEdit');
-        $this->dispatch('toast', message: 'Advanced to ' . $this->advanceTo);
-        $this->reset('actionType', 'advanceTo');
+        $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
         // Reroute logic removed
@@ -619,7 +593,7 @@ class EventsIndex extends Component
                 str_contains(mb_strtolower($request['title']), $s) ||
                 str_contains(mb_strtolower($request['requestor']), $s) ||
                 str_contains(mb_strtolower((string)$orgVal), $s);
-            $statOk  = $this->status === '' || $request['status'] === $this->status;
+            $statOk  = $this->status === '' || (mb_strtolower((string)($request['status'] ?? '')) === mb_strtolower($this->status));
             // Venue filter: support either venue id (int) or venue name (string)
             $venueOk = true;
             if (!is_null($this->venue) && $this->venue !== '') {
@@ -739,9 +713,12 @@ class EventsIndex extends Component
      */
     protected function getEventFromServiceById(int $id)
     {
-    if (!isset($id) || $id <= 0) return null;
-    $list = $this->fetchEventsCollection();
-    return $list->firstWhere('id', $id) ?? null;
+        if (!isset($id) || $id <= 0) return null;
+        try {
+            return app(EventService::class)->findEventById($id);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
 

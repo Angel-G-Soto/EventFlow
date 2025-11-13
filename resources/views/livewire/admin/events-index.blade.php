@@ -18,7 +18,7 @@
             </div>
           </form>
         </div>
-        {{-- <div class="col-md-2">
+        <div class="col-md-2">
           <label class="form-label" for="ev_status">Status</label>
           <select id="ev_status" class="form-select" wire:model.live="status">
             <option value="">All</option>
@@ -26,7 +26,7 @@
             <option value="{{ $st }}">{{ $st }}</option>
             @endforeach
           </select>
-        </div> --}}
+        </div>
         <div class="col-md-3">
           <label class="form-label" for="ev_venue">Venue</label>
           <select id="ev_venue" class="form-select" wire:model.live="venue">
@@ -78,6 +78,7 @@
             <th>Requestor</th>
             <th>Organization</th>
             <th>Venue</th>
+            <th>Status</th>
             <th>Date/Time</th>
             <th class="text-end" style="width:120px;">Actions</th>
           </tr>
@@ -91,6 +92,10 @@
             <td>{{ $r['organization'] ?? ($r['organization_nexo_name'] ?? '') }}</td>
             <td>{{ $r['venue'] }}</td>
             <td>
+              @php($st = $r['status'] ?? '')
+              <span class="badge {{ $this->statusBadgeClass($st) }}">{{ $st !== '' ? $st : 'Unknown' }}</span>
+            </td>
+            <td>
               <div>{{ $r['from'] }}</div>
               <div class="text-secondary small">→ {{ Str::before($r['to'],' ') }} {{
                 Str::after($r['to'],' ') }}</div>
@@ -102,10 +107,6 @@
                   <i class="bi bi-info-lg"></i>
                 </button>
                 <button class="btn btn-outline-secondary" wire:click="openEdit({{ $r['id'] }})"
-                  @disabled(\Carbon\Carbon::parse($r['to'] ?? now())->isPast()
-                  || str_contains(strtolower($r['status'] ?? ''), 'cancel')
-                  || str_contains(strtolower($r['status'] ?? ''), 'reject')
-                  || str_contains(strtolower($r['status'] ?? ''), 'withdraw'))
                   aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -340,31 +341,26 @@
 
   {{-- Reroute disabled --}}
 
-  {{-- Advance modal --}}
-  <div class="modal fade" id="oversightAdvance" tabindex="-1" aria-hidden="true" wire:ignore.self>
-    <div class="modal-dialog">
-      <form class="modal-content" wire:submit.prevent="confirmAdvance">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-arrow-right-circle me-2"></i>Advance Request</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      {{-- Advance modal (confirmation) --}}
+      <div class="modal fade" id="oversightAdvance" tabindex="-1" aria-hidden="true" wire:ignore.self>
+        <div class="modal-dialog">
+          <form class="modal-content" wire:submit.prevent="confirmAdvance">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-arrow-right-circle me-2"></i>Confirm Advance</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-0">Are you sure you want to advance this request to the next approval step?</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
+                aria-label="Cancel and close">Cancel</button>
+              <button class="btn btn-secondary" type="submit" aria-label="Confirm advance"><i
+                  class="bi bi-arrow-right-circle me-1"></i>Confirm Advance</button>
+            </div>
+          </form>
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Advance to</label>
-            <input type="text" class="form-control" placeholder="e.g., Next approver, Advisor, Jane Doe"
-              wire:model.live="advanceTo">
-            @error('advanceTo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
-            aria-label="Cancel and close">Cancel</button>
-          <button class="btn btn-secondary" type="submit" aria-label="Confirm advance"><i
-              class="bi bi-arrow-right-circle me-1"></i>Advance</button>
-        </div>
-      </form>
-    </div>
-  </div>
+      </div>
 
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
