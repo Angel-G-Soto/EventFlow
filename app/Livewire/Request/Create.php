@@ -171,6 +171,14 @@ class Create extends Component
  * @var bool
  */
     public bool $showVenueDescriptionModal = false;
+/**
+ * @var int
+ */
+    public int $venuePage = 1;
+/**
+ * @var int
+ */
+    public int $venuePerPage = 10;
 
 
 // Part 3 (dynamic required docs)
@@ -301,7 +309,7 @@ class Create extends Component
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-//        $this->validate($this->rulesForStep($this->step));
+        $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
@@ -344,6 +352,7 @@ class Create extends Component
             $this->availableVenues = $service->getAvailableVenues($start, $end)->toArray();
             //dd($this->availableVenues);
             $this->selectedVenueDetails = $this->resolveVenueDetails($this->venue_id);
+            $this->resetVenuePagination();
         } catch (\Throwable $e) {
             $this->addError('venue_id', 'Could not load venue availability.');
         } finally {
@@ -356,9 +365,19 @@ class Create extends Component
         $this->selectedVenueDetails = $this->resolveVenueDetails((int)$value);
     }
 
-    public function showVenueDescription(): void
+    public function updatedVenueCodeSearch(): void
     {
-        $details = $this->resolveVenueDetails($this->venue_id);
+        $this->resetVenuePagination();
+    }
+
+    public function showVenueDescription(?int $venueId = null): void
+    {
+        $targetVenue = $venueId ?? $this->venue_id;
+        if (!$targetVenue) {
+            return;
+        }
+
+        $details = $this->resolveVenueDetails($targetVenue);
         if ($details) {
             $this->selectedVenueDetails = $details;
             $this->showVenueDescriptionModal = true;
@@ -580,6 +599,34 @@ class Create extends Component
     }
 
     #[Computed]
+    public function paginatedVenues(): array
+    {
+        $meta = $this->venuePagination();
+        $offset = max(0, ($meta['current'] - 1) * $meta['per']);
+        return array_slice($this->filteredVenues(), $offset, $meta['per']);
+    }
+
+    #[Computed]
+    public function venuePagination(): array
+    {
+        $total = count($this->filteredVenues());
+        $perPage = max(1, (int)$this->venuePerPage);
+        $lastPage = max(1, (int)ceil($total / $perPage));
+        $current = max(1, min($this->venuePage, $lastPage));
+        $from = $total === 0 ? 0 : (($current - 1) * $perPage) + 1;
+        $to = $total === 0 ? 0 : min($from + $perPage - 1, $total);
+
+        return [
+            'total' => $total,
+            'per' => $perPage,
+            'current' => $current,
+            'last' => $lastPage,
+            'from' => $from,
+            'to' => $to,
+        ];
+    }
+
+    #[Computed]
     public function formattedStartTime(): string
     {
         return $this->formatDisplayDate($this->start_time);
@@ -594,6 +641,33 @@ class Create extends Component
     public function selectVenue(int $id): void
     {
         $this->venue_id = $id;
+    }
+
+    public function goToVenuePage(int $page): void
+    {
+        $this->venuePage = $this->normalizeVenuePage($page);
+    }
+
+    public function previousVenuePage(): void
+    {
+        $this->venuePage = $this->normalizeVenuePage($this->venuePage - 1);
+    }
+
+    public function nextVenuePage(): void
+    {
+        $this->venuePage = $this->normalizeVenuePage($this->venuePage + 1);
+    }
+
+    protected function resetVenuePagination(): void
+    {
+        $this->venuePage = 1;
+    }
+
+    protected function normalizeVenuePage(int $page): int
+    {
+        $meta = $this->venuePagination();
+        $maxPage = max(1, $meta['last']);
+        return max(1, min($page, $maxPage));
     }
 
     protected function formatDisplayDate(?string $value): string

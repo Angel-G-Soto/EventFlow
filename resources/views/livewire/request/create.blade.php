@@ -254,17 +254,18 @@
             </div>
 
             <div class="table-responsive mb-2">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle shadow-sm">
                     <thead class="table-light">
                     <tr>
                         <th scope="col" style="width:56px">Select</th>
                         <th scope="col">Code</th>
                         <th scope="col">Name</th>
                         <th scope="col" class="text-end">Capacity</th>
+                        <th scope="col" class="text-center" style="width:120px">Details</th>
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse ($this->filteredVenues as $v)
+                    @forelse ($this->paginatedVenues as $v)
                         <tr wire:key="venue-row-{{ $v['id'] }}"
                             class="{{ (int)$venue_id === (int)($v['id'] ?? 0) ? 'table-primary' : '' }}"
                             style="cursor:pointer"
@@ -279,6 +280,15 @@
                             <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
                             <td>{{ $v['name'] ?? '—' }}</td>
                             <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
+                            <td class="text-center">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-primary"
+                                    wire:click.stop="showVenueDescription({{ $v['id'] }})"
+                                >
+                                    View
+                                </button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -287,6 +297,48 @@
                     @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2">
+                <div class="text-muted small">
+                    @if ($this->venuePagination['total'] > 0)
+                        Showing {{ $this->venuePagination['from'] }}–{{ $this->venuePagination['to'] }}
+                        of {{ $this->venuePagination['total'] }} venues
+                    @else
+                        No venues to display.
+                    @endif
+                </div>
+                @if ($this->venuePagination['last'] > 1)
+                    <nav aria-label="Venues pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item {{ $this->venuePagination['current'] === 1 ? 'disabled' : '' }}">
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="previousVenuePage"
+                                    @disabled($this->venuePagination['current'] === 1)
+                                >&laquo;</button>
+                            </li>
+                            @foreach (range(1, $this->venuePagination['last']) as $page)
+                                <li class="page-item {{ $page === $this->venuePagination['current'] ? 'active' : '' }}">
+                                    <button
+                                        type="button"
+                                        class="page-link"
+                                        wire:click="goToVenuePage({{ $page }})"
+                                        @disabled($page === $this->venuePagination['current'])
+                                    >{{ $page }}</button>
+                                </li>
+                            @endforeach
+                            <li class="page-item {{ $this->venuePagination['current'] === $this->venuePagination['last'] ? 'disabled' : '' }}">
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="nextVenuePage"
+                                    @disabled($this->venuePagination['current'] === $this->venuePagination['last'])
+                                >&raquo;</button>
+                            </li>
+                        </ul>
+                    </nav>
+                @endif
             </div>
             @error('venue_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
