@@ -74,6 +74,41 @@ class CategoryService {
 
             // Add audit trail
 
+            // AUDIT: category renamed (best-effort)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+                if ($actorId > 0) {
+                    $actorLabel = $actor
+                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+                        : 'system';
+
+                    $meta = [
+                        'category_id'   => (int) ($category->id ?? $category_id),
+                        'new_name'      => (string) $name,
+                        'source'        => 'category_update',
+                    ];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        $actorLabel,               // targetType (admin label pattern)
+                        'CATEGORY_UPDATED',        // action code
+                        (string) ($category->id ?? $category_id), // target id
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
+
+
             // Return collection of updated values
             return $category;
         }
@@ -90,16 +125,68 @@ class CategoryService {
      * @return bool
      * @throws Exception
      */
+
     public function deleteCategory(int $category_id): bool
     {
         try {
             if ($category_id < 0) throw new InvalidArgumentException('Category ID must be a positive integer.');
 
-            return Category::findOrFail($category_id)->delete();
+            $category = Category::findOrFail($category_id);
+            $deleted  = (bool) $category->delete();
+
+            // AUDIT: category deleted (best-effort)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+                if ($actorId > 0 && $deleted) {
+                    $actorLabel = $actor
+                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+                        : 'system';
+
+                    $meta = [
+                        'category_id'   => (int) ($category->id ?? $category_id),
+                        'category_name' => (string) ($category->name ?? ''),
+                        'source'        => 'category_delete',
+                    ];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        $actorLabel,
+                        'CATEGORY_DELETED',
+                        (string) ($category->id ?? $category_id),
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
+
+            return $deleted;
         }
-        catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified category.');}
+        catch (InvalidArgumentException|ModelNotFoundException $exception) { throw $exception; }
+        catch (Throwable $exception) { throw new Exception('Unable to delete the specified category.'); }
     }
 
 
+
+    /**
+    public function deleteCategory(int $category_id): bool
+    {
+    try {
+    if ($category_id < 0) throw new InvalidArgumentException('Category ID must be a positive integer.');
+
+    return Category::findOrFail($category_id)->delete();
+    }
+    catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified category.');}
+    }
+     *
+     */
     /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
 }

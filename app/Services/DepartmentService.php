@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditService;
 use Exception;
 use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -119,6 +120,45 @@ class DepartmentService
             }
 
             // Add audit trail
+            // AUDIT: batch department upsert (best-effort)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+                if ($actorId > 0) {
+                    $actorLabel = $actor
+                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+                        : 'system';
+
+                    $names = $updatedDepartments
+                        ->map(fn($d) => (string)($d->name ?? ''))
+                        ->filter()
+                        ->values()
+                        ->all();
+
+                    $meta = [
+                        'count'       => (int) $updatedDepartments->count(),
+                        'departments' => $names,
+                        'source'      => 'dept_sync',
+                    ];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        $actorLabel,             // targetType
+                        'DEPT_UPSERT_BATCH',     // actionCode
+                        'batch',                 // targetId
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
 
             // Return collection of updated values
             return $updatedDepartments;
@@ -145,7 +185,46 @@ class DepartmentService
         try {
             if ($id < 0) throw new InvalidArgumentException('Department ID must be a positive integer.');
 
-            return Department::findOrFail($id)->delete();
+            $dept = Department::findOrFail($id);
+            $deleted = $dept->delete();
+
+
+            // AUDIT: department deleted (best-effort)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+                if ($actorId > 0 && $deleted) {
+                    $actorLabel = $actor
+                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+                        : 'system';
+
+                    $meta = [
+                        'department_name' => (string) ($dept->name ?? ''),
+                        'department_code' => (string) ($dept->code ?? ''),
+                    ];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        $actorLabel,
+                        'DEPT_DELETED',
+                        (string) ($dept->id ?? $id),
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
+
+
+            return (bool) $deleted;
+
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
@@ -186,6 +265,42 @@ class DepartmentService
             $manager->department_id = $department->id;
             $manager->save();
 
+            // AUDIT: user department set/changed (best-effort)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+                if ($actorId > 0) {
+                    $actorLabel = $actor
+                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+                        : 'system';
+
+                    $meta = [
+                        'user_id'          => (int) ($manager->id ?? 0),
+                        'user_email'       => (string) ($manager->email ?? ''),
+                        'department_id'    => (int) ($department->id ?? 0),
+                        'department_name'  => (string) ($department->name ?? ''),
+                        'source'           => 'dept_assign',
+                    ];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        $actorLabel,
+                        'USER_DEPT_SET',
+                        (string) ($manager->id ?? '0'),
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
+
             return $manager;
         } catch (ModelNotFoundException $exception) {
             throw $exception;
@@ -221,6 +336,45 @@ class DepartmentService
             $manager->roles()->attach(Role::where('name', 'venue-manager')->first()->id);
             $manager->save();
 
+            // AUDIT: user added to department & role attached (best-effort)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+                if ($actorId > 0) {
+                    $actorLabel = $actor
+                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+                        : 'system';
+
+                    $vmRole = \App\Models\Role::where('name', 'venue-manager')->first();
+
+                    $meta = [
+                        'user_id'           => (int) ($manager->id ?? 0),
+                        'user_email'        => (string) ($manager->email ?? ''),
+                        'department_id'     => (int) ($department->id ?? 0),
+                        'department_name'   => (string) ($department->name ?? ''),
+                        'role_attached'     => (string) ($vmRole->name ?? 'venue-manager'),
+                        'role_id'           => (int) ($vmRole->id ?? 0),
+                        'source'            => 'dept_add_user',
+                    ];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        $actorLabel,
+                        'USER_DEPT_ADDED_ROLE',
+                        (string) ($manager->id ?? '0'),
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
             // Add venue manager role
 
             return $manager;
@@ -261,6 +415,47 @@ class DepartmentService
 
             $manager->roles()->detach(Role::where('name', 'venue-manager')->first()->id);
             $manager->save();
+
+            // AUDIT: user removed from department and/or role detached (best-effort)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+                if ($actorId > 0) {
+                    $actorLabel = $actor
+                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+                        : 'system';
+
+                    $vmRole = \App\Models\Role::where('name', 'venue-manager')->first();
+
+                    $meta = [
+                        'user_id'            => (int) ($manager->id ?? 0),
+                        'user_email'         => (string) ($manager->email ?? ''),
+                        'department_id'      => (int) ($department->id ?? 0),
+                        'department_name'    => (string) ($department->name ?? ''),
+                        'role_detached'      => (string) ($vmRole->name ?? 'venue-manager'),
+                        'role_id'            => (int) ($vmRole->id ?? 0),
+                        'cleared_department' => !$manager->getRoleNames()->contains('department-director'),
+                        'source'             => 'dept_remove_user',
+                    ];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        $actorLabel,
+                        'USER_DEPT_REMOVED_ROLE',
+                        (string) ($manager->id ?? '0'),
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
 
             return $manager;
         }
