@@ -101,3 +101,33 @@ it('includes venues with non-overlapping or unapproved events', function () {
 
     expect($result->pluck('id'))->toContain($v1->id, $v2->id);
 });
+
+it('applies optional filters when searching for available venues', function () {
+    $otherDepartment = Department::factory()->create();
+
+    $matchingVenue = Venue::factory()->create([
+        'name' => 'Grand Lecture Hall',
+        'code' => 'GLH-101',
+        'capacity' => 120,
+        'department_id' => $this->department->id,
+    ]);
+
+    Venue::factory()->create([
+        'name' => 'Science Lab',
+        'code' => 'LAB-201',
+        'capacity' => 40,
+        'department_id' => $otherDepartment->id,
+    ]);
+
+    $start = new DateTime('2025-01-02 08:00:00');
+    $end = new DateTime('2025-01-02 12:00:00');
+
+    $result = $this->venueService->getAvailableVenues($start, $end, [
+        'search' => 'GLH',
+        'capacity' => 100,
+        'department_id' => $this->department->id,
+    ]);
+
+    expect($result->count())->toBe(1)
+        ->and($result->first()->id)->toBe($matchingVenue->id);
+});

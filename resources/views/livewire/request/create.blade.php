@@ -78,8 +78,9 @@
                 </div>
 
                 <div class="col-md-12">
-                    <label class="form-label">Number of Guests</label>
+                    <label class="form-label required">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
+                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
 
                 </div>
 
@@ -164,6 +165,7 @@
                             </div>
                         </div>
                     </div>
+                    @error('category_ids') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                 </div>
 
                 <label class="form-label">General Requirements</label>
@@ -208,6 +210,7 @@
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
                     <input type="text" class="form-control" value="{{ $organization_name }}" disabled placeholder="Organization name">
+                    @error('organization_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
@@ -247,51 +250,76 @@
             @endif
 
 
-            <div class="mb-3">
-<<<<<<< HEAD
-                <label for="venueCodeSearch" class="form-label">Search by venue code</label>
-                <input id="venueCodeSearch"
-                       type="text"
-                       class="form-control"
-                       placeholder="e.g., 1098"
-                       wire:model.live.debounce.300ms="venueCodeSearch"
-                       wire:keydown.enter.prevent />
-                <div class="form-text">Type a venue code to filter the list below.</div>
-=======
-                <div class="d-flex align-items-center justify-content-between">
-                    <label class="form-label">Venue</label>
-                    @if ($selectedVenueDetails)
-                        <button
-                            type="button"
-                            class="btn btn-link btn-sm text-decoration-none"
-                            wire:click="showVenueDescription"
-                        >
-                            View details
-                        </button>
-                    @endif
+            <div class="card shadow-sm mb-3">
+                <div class="card-body" wire:keydown.enter.prevent="runVenueSearch">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5 col-lg-4">
+                            <label for="venueSearch" class="form-label">Search by name or code</label>
+                            <input id="venueSearch"
+                                   type="text"
+                                   class="form-control"
+                                   placeholder="e.g., SALON DE CLASES or AE-102"
+                                   wire:model.defer="venueSearch">
+                        </div>
+                        <div class="col-md-3 col-lg-2">
+                            <label for="venueCapacityFilter" class="form-label">Minimum capacity</label>
+                            <input id="venueCapacityFilter"
+                                   type="number"
+                                   min="0"
+                                   class="form-control"
+                                   placeholder="50"
+                                   wire:model.defer="venueCapacityFilter">
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="venueDepartmentFilter" class="form-label">Department</label>
+                            <select id="venueDepartmentFilter"
+                                    class="form-select"
+                                    wire:model.defer="venueDepartmentFilter">
+                                <option value="">All departments</option>
+                                @foreach($departments as $department)
+                                    <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-primary flex-fill"
+                                wire:click="runVenueSearch"
+                                wire:loading.attr="disabled"
+                                wire:target="runVenueSearch">
+                                @if ($loadingVenues)
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                @endif
+                                Search
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary flex-fill"
+                                wire:click="resetVenueFilters"
+                                wire:loading.attr="disabled"
+                                wire:target="resetVenueFilters">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability query.</div>
                 </div>
-                <select class="form-select" wire:model="venue_id">
-                    <option value="">— Select venue —</option>
-                    @foreach ($availableVenues as $v)
-                        <option value="{{ $v['id'] }}">{{ $v['code'] }}</option>
-                    @endforeach
-                </select>
-                @error('venue_id') <div class="text-danger small">{{ $message }}</div> @enderror
->>>>>>> origin/additional-venue-features
             </div>
 
             <div class="table-responsive mb-2">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle shadow-sm">
                     <thead class="table-light">
                     <tr>
                         <th scope="col" style="width:56px">Select</th>
                         <th scope="col">Code</th>
                         <th scope="col">Name</th>
                         <th scope="col" class="text-end">Capacity</th>
+                        <th scope="col" class="text-center" style="width:120px">Details</th>
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse ($this->filteredVenues as $v)
+                    @forelse ($this->paginatedVenues as $v)
                         <tr wire:key="venue-row-{{ $v['id'] }}"
                             class="{{ (int)$venue_id === (int)($v['id'] ?? 0) ? 'table-primary' : '' }}"
                             style="cursor:pointer"
@@ -306,14 +334,65 @@
                             <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
                             <td>{{ $v['name'] ?? '—' }}</td>
                             <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
+                            <td class="text-center">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-primary"
+                                    wire:click.stop="showVenueDescription({{ $v['id'] }})"
+                                >
+                                    View
+                                </button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">No venues match the current filter.</td>
+                            <td colspan="5" class="text-center text-muted py-4">No venues match the current filter.</td>
                         </tr>
                     @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2">
+                <div class="text-muted small">
+                    @if ($this->venuePagination['total'] > 0)
+                        Showing {{ $this->venuePagination['from'] }}–{{ $this->venuePagination['to'] }}
+                        of {{ $this->venuePagination['total'] }} venues
+                    @else
+                        No venues to display.
+                    @endif
+                </div>
+                @if ($this->venuePagination['last'] > 1)
+                    <nav aria-label="Venues pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item {{ $this->venuePagination['current'] === 1 ? 'disabled' : '' }}">
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="previousVenuePage"
+                                    @disabled($this->venuePagination['current'] === 1)
+                                >&laquo;</button>
+                            </li>
+                            @foreach (range(1, $this->venuePagination['last']) as $page)
+                                <li class="page-item {{ $page === $this->venuePagination['current'] ? 'active' : '' }}">
+                                    <button
+                                        type="button"
+                                        class="page-link"
+                                        wire:click="goToVenuePage({{ $page }})"
+                                        @disabled($page === $this->venuePagination['current'])
+                                    >{{ $page }}</button>
+                                </li>
+                            @endforeach
+                            <li class="page-item {{ $this->venuePagination['current'] === $this->venuePagination['last'] ? 'disabled' : '' }}">
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="nextVenuePage"
+                                    @disabled($this->venuePagination['current'] === $this->venuePagination['last'])
+                                >&raquo;</button>
+                            </li>
+                        </ul>
+                    </nav>
+                @endif
             </div>
             @error('venue_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
@@ -441,6 +520,9 @@
                         </li>
                     @endforeach
                 </ul>
+            @endif
+
+            @if ($this->shouldShowRequirementUploads)
                 <div class="mb-3">
                     <label for="requirementFiles" class="form-label">Upload Requirement Documents</label>
                     <input type="file"
@@ -448,16 +530,14 @@
                            id="requirementFiles"
                            wire:model="requirementFiles"
                            multiple
-{{--                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>--}}
-                            accept=".pdf"/>
+                           accept=".pdf"/>
                     <div class="form-text">
-{{--                        Upload all required documents here. Accepted formats: PDF, DOCX, JPG, PNG.--}}
                         Upload all required documents here. Accepted formats: PDF.
                     </div>
 
-                    @error('requirementFiles.*')
+                @error('requirementFiles.*')
                     <div class="text-danger">{{ $message }}</div>
-                    @enderror
+                @enderror
                 </div>
             @endif
 
@@ -471,22 +551,42 @@
 </div>
 
 <script>
-    // Flag to prevent 'beforeunload' on form submit
-    let isSubmitting = false;
-
-    // Add event listener for the form submit action
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            isSubmitting = true;
-        });
-    });
-
-    // Trigger beforeunload when the user tries to leave the page (except on form submit)
-    window.addEventListener('beforeunload', function (event) {
-        if (!isSubmitting) { // Only show the warning if it's not a form submission
-            const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
-            event.returnValue = confirmationMessage;  // For most modern browsers
-            return confirmationMessage;              // For older browsers
+    (function initializeLeaveWarning() {
+        if (window.eventFormLeaveGuardInitialized) {
+            return;
         }
-    });
+        window.eventFormLeaveGuardInitialized = true;
+
+        const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
+        let shouldWarn = true;
+
+        const handleBeforeUnload = function (event) {
+            if (!shouldWarn) {
+                return;
+            }
+
+            event.preventDefault();
+            event.returnValue = confirmationMessage;
+            return confirmationMessage;
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        const registerLivewireHandlers = () => {
+            if (!window.Livewire || typeof window.Livewire.on !== 'function') {
+                return;
+            }
+
+            window.Livewire.on('event-form-submitted', () => {
+                shouldWarn = false;
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            });
+        };
+
+        if (window.Livewire) {
+            registerLivewireHandlers();
+        } else {
+            document.addEventListener('livewire:init', registerLivewireHandlers);
+        }
+    })();
 </script>
