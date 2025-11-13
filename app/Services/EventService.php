@@ -117,6 +117,30 @@ class EventService
                 ]
             );
 
+            // AUDIT: creator created/updated event
+            try {
+                $actorId   = (int) $creator->id;
+                $actorName = trim((string)($creator->first_name ?? '').' '.(string)($creator->last_name ?? '')) ?: (string)($creator->email ?? '');
+                $meta      = ['status' => (string)$status, 'source' => 'event_form'];
+
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                }
+
+                $this->auditService->logAction(
+                    $actorId,
+                    'event',
+                    $event->wasRecentlyCreated ? 'EVENT_CREATED' : 'EVENT_UPDATED',
+                    (string) $event->id,
+                    $ctx
+                );
+            } catch (\Throwable) { /* best-effort */ }
+
+            if ($event->status === 'draft') {
+                return $event;
+            }
+
             // Attach documents (hasMany)
             if (!empty($document_ids)) {
                 Document::whereIn('id', $document_ids)
@@ -138,6 +162,25 @@ class EventService
                         'comment' => 'Event submitted for approval.',
                         'status_when_signed' => $status,
                     ]);
+
+                    // AUDIT: creator submitted event for approval
+                    try {
+                        $actorId = (int) $creator->id;
+                        $meta    = ['submitted_to' => 'advisor', 'status' => (string)$status];
+
+                        $ctx = ['meta' => $meta];
+                        if (function_exists('request') && request()) {
+                            $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                        }
+
+                        $this->auditService->logAction(
+                            $actorId,
+                            'event',
+                            'EVENT_SUBMITTED',
+                            (string) $event->id,
+                            $ctx
+                        );
+                    } catch (\Throwable) { /* best-effort */ }
                 }
             } else {
                 // Non-student organization flow not supported yet
@@ -179,18 +222,29 @@ class EventService
 
         $this->updateLastHistory($event, $approver, $justification ?: 'unjustified rejection', 'rejected');
 
-        $fresh = $event->refresh();
-        $this->auditService->logEventAdminAction(
-            $approver,
-            $fresh,
-            'EVENT_DENIED',
-            [
-                'status' => 'rejected',
-                'justification' => (string)($justification ?? ''),
-            ]
-        );
+        // Run audit trail
+        // AUDIT: approver denied event
+        try {
+            $actorId   = (int) $approver->id;
+            $actorName = trim((string)($approver->first_name ?? '').' '.(string)($approver->last_name ?? '')) ?: (string)($approver->email ?? '');
+            $meta      = ['justification' => (string) $justification];
 
-        return $fresh;
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+
+            $this->auditService->logAdminAction(
+                $actorId,
+                $actorName,              // targetType (your admin pattern)
+                'EVENT_DENIED',
+                (string) $event->id,
+                $ctx
+            );
+        } catch (\Throwable) { /* best-effort */ }
+        // Send rejection email to prior approvers and creator
+
+        return $event->refresh();
     }
 
     /**
@@ -225,6 +279,36 @@ class EventService
             $nextStatus = $statusFlow[$currentStatus];
             $result = $this->commitStatusTransition($event, $nextStatus, $approver, 'approved', $comment);
 
+            // Atomic update
+            $updated = $this->updateEventStatus($event, $currentStatus, $nextStatus);
+            if ($updated === 0) return $event; // stop if race condition occurred
+
+            // Update last history record
+            $this->updateLastHistory($event, $approver, $data['comment'] ?? null, 'approved');
+
+            // Run audit trail
+            // AUDIT: approver advanced approval stage (or final approval)
+            try {
+                $actorId   = (int) $approver->id;
+                $actorName = trim((string)($approver->first_name ?? '').' '.(string)($approver->last_name ?? '')) ?: (string)($approver->email ?? '');
+                $action    = ($nextStatus === 'approved') ? 'EVENT_APPROVED_FINAL' : 'EVENT_APPROVED_NEXT_STAGE';
+                $meta      = ['from' => (string)$currentStatus, 'to' => (string)$nextStatus];
+
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                }
+
+                $this->auditService->logAdminAction(
+                    $actorId,
+                    $actorName,             // targetType
+                    $action,
+                    (string) $event->id,
+                    $ctx
+                );
+            } catch (\Throwable) { /* best-effort */ }
+
+            // Create new pending history only if not final approval
             if ($nextStatus !== 'approved') {
                 $this->createPendingHistory($result, $nextStatus, $approver);
             }
@@ -366,6 +450,25 @@ class EventService
                     'action' => 'withdrawn',
                     'comment' => $comment ?? 'Event was withdrawn by the user.',
                 ]);
+
+                // AUDIT: requester withdrew event
+                try {
+                    $actorId = (int) $user->id;
+                    $meta    = ['comment' => (string) ($comment ?? '')];
+
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $this->auditService->logAction(
+                        $actorId,
+                        'event',
+                        'EVENT_WITHDRAWN',
+                        (string) $event->id,
+                        $ctx
+                    );
+                } catch (\Throwable) { /* best-effort */ }
             }
 
             // Run audit trail
@@ -393,12 +496,31 @@ class EventService
             // Update events that ended yesterday and are approved
             $events = Event::where('status', 'approved')
                 ->whereBetween('end_time', [$yesterdayStart, $yesterdayEnd])
-                ->get();
+                ->update(['status' => 'completed']);
 
-            foreach ($events as $event) {
-                $event->update(['status' => 'completed']);
-                $this->logAutoCompletion($event);
-            }
+            // AUDIT: system batch marked events as completed (yesterday range)
+            try {
+                $systemUserId = (int) config('eventflow.system_user_id', 0);
+                if ($systemUserId > 0) {
+                    $meta = [
+                        'range_start' => (string) $yesterdayStart,
+                        'range_end'   => (string) $yesterdayEnd,
+                    ];
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $this->auditService->logAdminAction(
+                        $systemUserId,
+                        'event',
+                        'EVENTS_COMPLETED_BATCH',
+                        'batch',
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) { /* best-effort */ }
+
         });
     }
 

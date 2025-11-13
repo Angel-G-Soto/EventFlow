@@ -56,9 +56,47 @@ class UserService
             }
             if ($default && method_exists($user, 'roles')) {
                 $user->roles()->syncWithoutDetaching([(int) $default->id]);
+                // Audit Log Write
+                try {
+                    $ctx = ['meta' => ['source' => 'saml2_login']];
+                    if (function_exists('request') && request()) {
+                        $ctx = app(\App\Services\AuditService::class)
+                            ->buildContextFromRequest(request(), $ctx['meta']);
+                    }
+                } catch (\Throwable $e) {
+                    report($e); // log but don’t block the business action
+                }
             }
         } catch (\Throwable $e) {
             // noop: default role assignment best-effort
+        }
+
+
+        // AUDIT: record SSO user bootstrap/login (created vs found)
+        try {
+            $ctx = ['meta' => ['source' => 'saml2_login']];
+            if (function_exists('request') && request()) {
+                $ctx = app(\App\Services\AuditService::class)
+                    ->buildContextFromRequest(request(), $ctx['meta']);
+            }
+        } catch (\Throwable) { /* no-http/queue */ }
+
+        if ($user->wasRecentlyCreated ?? false) {
+            $this->auditService->logAction(
+                (int) $user->id,
+                'user',                    // targetType
+                'USER_CREATED_SSO',        // actionCode
+                (string) ($user->id ?? 0), // targetId
+                $ctx
+            );
+        } else {
+            $this->auditService->logAction(
+                (int) $user->id,
+                'user',
+                'USER_LOGGED_IN_SSO',
+                (string) ($user->id ?? 0),
+                $ctx
+            );
         }
 
         return $user;
@@ -289,7 +327,7 @@ class UserService
 
     /**
      * Create a new user with the provided data.
-     * 
+     *
      * @param array $data
      * @param User|null $admin
      * @param string|null $justification Optional admin-provided justification to include in audit log.
