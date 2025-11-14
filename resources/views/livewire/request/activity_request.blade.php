@@ -92,45 +92,6 @@
     </style>
 </head>
 <body>
-@php
-    use Illuminate\Support\Carbon;
-
-    $form = $form ?? [];
-    $value = static fn (string $key, ?string $fallback = null) => trim((string) ($form[$key] ?? '')) ?: ($fallback ?? '');
-    $schedule = static function (?string $start, ?string $end): string {
-        if (!$start && !$end) {
-            return '';
-        }
-        $startLabel = $start ? Carbon::parse($start)->format('g:i A') : '—';
-        $endLabel = $end ? Carbon::parse($end)->format('g:i A') : '—';
-        return "{$startLabel} - {$endLabel}";
-    };
-    $dateSource = $form['start_time'] ?? $form['submitted_at'] ?? now();
-    $date = Carbon::parse($dateSource);
-    $currentDateDisplay = $date->copy()->locale('es')->isoFormat('D [de] MMMM [de] YYYY');
-    $applicantName = $value('requester_name') ?: trim($value('creator_first_name', '') . ' ' . $value('creator_last_name', ''));
-    $activityDateSource = $form['start_time'] ?? $dateSource;
-    $activityDate = Carbon::parse($activityDateSource)->locale('es')->isoFormat('D [de] MMMM [de] YYYY');
-    $scheduleLabel = $schedule($form['start_time'] ?? null, $form['end_time'] ?? null) ?: '—';
-    $organizationName = $value('organization_name', '—');
-    $activityTitle = $value('title', '—');
-    $activityDescription = trim((string)($form['description'] ?? ''));
-    $activityDescriptionDisplay = $activityDescription !== '' ? $activityDescription : '—';
-    $venueName = $value('venue_name', 'Por confirmar');
-    $guestSize = $value('guest_size', '—');
-    $venueCode = $value('venue_code', '—');
-    $requesterId = $value('creator_institutional_number', '—');
-    $requesterPhone = $value('creator_phone_number', '—');
-    $advisorName = $value('organization_advisor_name', '—');
-    $advisorPhone = $value('organization_advisor_phone', '—');
-    $signatureApplicant = trim((string)($form['applicant_signature'] ?? '')) ?: '—';
-    $signatureAdvisor = trim((string)($form['advisor_signature'] ?? '')) ?: '—';
-    $statusLabel = strtoupper((string)($form['status_label'] ?? $form['status'] ?? ''));
-    $statusLabel = $statusLabel !== '' ? $statusLabel : '—';
-    $observations = trim((string)($form['observations'] ?? ''));
-    $observations = $observations !== '' ? $observations : '—';
-@endphp
-
 <div class="sheet">
     <div class="letterhead">
         UNIVERSIDAD DE PUERTO RICO<br>
@@ -147,7 +108,13 @@
 
     <div class="date-box">
         Fecha:
-        <span class="date-value">{{ $currentDateDisplay }}</span>
+        <span class="date-value">
+            {{
+                \Illuminate\Support\Carbon::parse($event->start_time ?? $event->created_at ?? now())
+                    ->locale('es')
+                    ->isoFormat('D [de] MMMM [de] YYYY')
+            }}
+        </span>
     </div>
 
     <table class="form-table">
@@ -164,7 +131,7 @@
             </tr>
             <tr>
                 <td colspan="3" class="form-table__value">
-                    {{ $organizationName }}
+                    {{ $event->organization_name ?? '—' }}
                 </td>
             </tr>
             <tr>
@@ -177,10 +144,10 @@
             </tr>
             <tr>
                 <td class="form-table__value">
-                    {{ $activityTitle }}
+                    {{ $event->title ?? '—' }}
                 </td>
                 <td colspan="2" class="form-table__value">
-                    {!! nl2br(e($activityDescriptionDisplay)) !!}
+                    {!! nl2br(e(trim((string) ($event->description ?? '')) ?: '—')) !!}
                 </td>
             </tr>
             <tr>
@@ -193,10 +160,26 @@
             </tr>
             <tr>
                 <td colspan="2" class="form-table__value">
-                    {{ $activityDate }}
+                    {{
+                        \Illuminate\Support\Carbon::parse($event->start_time ?? $event->created_at ?? now())
+                            ->locale('es')
+                            ->isoFormat('D [de] MMMM [de] YYYY')
+                    }}
                 </td>
                 <td class="form-table__value">
-                    {{ $scheduleLabel }}
+                    {{
+                        ($event->start_time || $event->end_time)
+                            ? sprintf(
+                                '%s - %s',
+                                $event->start_time
+                                    ? \Illuminate\Support\Carbon::parse($event->start_time)->format('g:i A')
+                                    : '—',
+                                $event->end_time
+                                    ? \Illuminate\Support\Carbon::parse($event->end_time)->format('g:i A')
+                                    : '—'
+                            )
+                            : '—'
+                    }}
                 </td>
             </tr>
             <tr>
@@ -209,10 +192,10 @@
             </tr>
             <tr>
                 <td colspan="2" class="form-table__value">
-                    {{ $venueName }}
+                    {{ optional($event->venue)->name ?? 'Por confirmar' }}
                 </td>
                 <td class="form-table__value">
-                    {{ $guestSize }}
+                    {{ $event->guest_size ?? '—' }}
                 </td>
             </tr>
             <tr>
@@ -222,7 +205,7 @@
             </tr>
             <tr>
                 <td colspan="3" class="form-table__value">
-                    {{ $venueCode }}
+                    {{ optional($event->venue)->code ?? '—' }}
                 </td>
             </tr>
             <tr>
@@ -238,13 +221,17 @@
             </tr>
             <tr>
                 <td class="form-table__value">
-                    {{ $applicantName ?: '—' }}
+                    {{
+                        ($name = trim((optional($event->requester)->first_name ?? '') . ' ' . (optional($event->requester)->last_name ?? '')))
+                            ? $name
+                            : (optional($event->requester)->email ?? '—')
+                    }}
                 </td>
                 <td class="form-table__value">
-                    {{ $requesterId }}
+                    {{ $event->creator_institutional_number ?? '—' }}
                 </td>
                 <td class="form-table__value">
-                    {{ $requesterPhone }}
+                    {{ $event->creator_phone_number ?? '—' }}
                 </td>
             </tr>
             <tr>
@@ -257,10 +244,10 @@
             </tr>
             <tr>
                 <td colspan="2" class="form-table__value">
-                    {{ $advisorName }}
+                    {{ $event->organization_advisor_name ?? '—' }}
                 </td>
                 <td class="form-table__value">
-                    {{ $advisorPhone }}
+                    {{ $event->organization_advisor_phone ?? '—' }}
                 </td>
             </tr>
             <tr>
@@ -273,10 +260,14 @@
             </tr>
             <tr>
                 <td colspan="2" class="form-table__value">
-                    {{ $signatureApplicant }}
+                    {{
+                        ($name = trim((optional($event->requester)->first_name ?? '') . ' ' . (optional($event->requester)->last_name ?? '')))
+                            ? $name
+                            : (optional($event->requester)->email ?? '—')
+                    }}
                 </td>
                 <td class="form-table__value">
-                    {{ $signatureAdvisor }}
+                    {{ $event->organization_advisor_name ?? '—' }}
                 </td>
             </tr>
         </tbody>
@@ -298,20 +289,54 @@
                 </td>
             </tr>
             <tr>
-                <td class="form-table__value">&nbsp;</td>
-                <td class="form-table__value">&nbsp;</td>
+                <td class="form-table__value">
+                    {{
+                        ($venueHistory && $venueHistory->approver)
+                            ? (
+                                ($name = trim(($venueHistory->approver->first_name ?? '') . ' ' . ($venueHistory->approver->last_name ?? '')))
+                                    ? $name
+                                    : ($venueHistory->approver->email ?? '—')
+                            )
+                            : '—'
+                    }}
+                </td>
+                <td class="form-table__value">
+                    {{
+                        ($venueHistory && $venueHistory->approver && $venueHistory->approver->department)
+                            ? $venueHistory->approver->department->name
+                            : '—'
+                    }}
+                </td>
             </tr>
             <tr>
-                <td class="form-table__label">
-                    Fecha de firma:
-                </td>
                 <td class="form-table__label">
                     Firma del Funcionario:
                 </td>
+                <td class="form-table__label">
+                    Fecha de firma:
+                </td>
             </tr>
             <tr>
-                <td class="form-table__value">&nbsp;</td>
-                <td class="form-table__value">&nbsp;</td>
+                <td class="form-table__value">
+                    {{
+                        ($venueHistory && $venueHistory->approver)
+                            ? (
+                                ($name = trim(($venueHistory->approver->first_name ?? '') . ' ' . ($venueHistory->approver->last_name ?? '')))
+                                    ? $name
+                                    : ($venueHistory->approver->email ?? '—')
+                            )
+                            : '—'
+                    }}
+                </td>
+                <td class="form-table__value">
+                    {{
+                        $venueHistory
+                            ? \Illuminate\Support\Carbon::parse($venueHistory->updated_at ?? $venueHistory->created_at)
+                                ->locale('es')
+                                ->isoFormat('D [de] MMMM [de] YYYY')
+                            : '—'
+                    }}
+                </td>
             </tr>
         </tbody>
     </table>
@@ -328,7 +353,7 @@
                     Estado de Solicitud:
                 </td>
                 <td class="form-table__value">
-                    {{ $statusLabel }}
+                    {{ strtoupper($event ? $event->getSimpleStatus() : '—') }}
                 </td>
             </tr>
             <tr>
@@ -338,27 +363,46 @@
             </tr>
             <tr>
                 <td colspan="2" class="form-table__value">
-                    {!! nl2br(e($observations)) !!}
+                    {!! nl2br(e(trim((string) ($dscaHistory->comment ?? '')) ?: '—')) !!}
                 </td>
             </tr>
             <tr>
-                <td class="form-table__label">
-                    Fecha de firma:
-                </td>
                 <td class="form-table__label">
                     Firma del Funcionario:
                 </td>
+                <td class="form-table__label">
+                    Fecha de firma:
+                </td>
             </tr>
             <tr>
-                <td class="form-table__value">&nbsp;</td>
-                <td class="form-table__value">&nbsp;</td>
+                <td class="form-table__value">
+                    {{
+                        ($dscaHistory && $dscaHistory->approver)
+                            ? (
+                                ($name = trim(($dscaHistory->approver->first_name ?? '') . ' ' . ($dscaHistory->approver->last_name ?? '')))
+                                    ? $name
+                                    : ($dscaHistory->approver->email ?? '—')
+                            )
+                            : '—'
+                    }}
+                </td>
+                <td class="form-table__value">
+                    {{
+                        $dscaHistory
+                            ? \Illuminate\Support\Carbon::parse($dscaHistory->updated_at ?? $dscaHistory->created_at)
+                                ->locale('es')
+                                ->isoFormat('D [de] MMMM [de] YYYY')
+                            : '—'
+                    }}
+                </td>
             </tr>
         </tbody>
     </table>
 
     <div class="footer">
         Original – Departamento de Actividades Sociales y Culturales<br>
-        Copia – Encargado de las Instalaciones Físicas<br><br>
+        Copia – Encargado de las Instalaciones Físicas<br>
+        Generado a través de la plataforma de EventFlow<br><br>
         Título IX Prohíbe Discriminaciones por razón de Sexo en Programas Educativos y de Empleo en el Recinto Universitario de Mayagüez – Patrono con Igualdad de Oportunidades de Empleo M/F/V/I<br>
         DE 12/90&nbsp;&nbsp;&nbsp;&nbsp;8/2013
     </div>
