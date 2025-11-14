@@ -11,7 +11,7 @@
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
             <h1 class="h4 mb-0">Events This Week</h1>
-            @if(Auth::check() && Auth::user()->roles()->where('name', 'venue-manager')->exists())
+            @if($canFilterMyVenues)
                 <style>
                     /* Green switch toggle */
                     #filterMyVenues:checked {
@@ -20,7 +20,7 @@
                     }
                 </style>
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="filterMyVenues" wire:click="toggleFilterMyVenues">
+                    <input class="form-check-input" type="checkbox" id="filterMyVenues" wire:click="toggleFilterMyVenues" @checked($filterMyVenues)>
                     <label class="form-check-label" for="filterMyVenues">Filter By My Venues</label>
                 </div>
             @endif

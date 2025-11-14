@@ -3,14 +3,9 @@
 namespace App\Livewire;
 
 use App\Models\Event;
-use App\Services\EventHistoryService;
 use App\Services\EventService;
-use App\Services\UserService;
-use App\Services\VenueService;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -20,6 +15,8 @@ class PublicCalendar extends Component
     // Week anchor (Monday)
     public string $weekStart; // ISO date (YYYY-MM-DD)
     public bool $filterMyVenues = false;
+    public bool $canFilterMyVenues = false;
+    public array $managedVenueIds = [];
     public array $docs = [];
 
     // Read-only public, approved events (mocked for now)
@@ -33,6 +30,10 @@ class PublicCalendar extends Component
     // Toggle Filter By My Venues
     public function toggleFilterMyVenues(): void
     {
+        if (! $this->canFilterMyVenues) {
+            return;
+        }
+
         $this->filterMyVenues = !$this->filterMyVenues;
     }
 
@@ -40,6 +41,12 @@ class PublicCalendar extends Component
     {
         $monday = now()->startOfWeek(CarbonImmutable::MONDAY);
         $this->weekStart = $monday->toDateString();
+
+        if (Auth::check()) {
+            $user = Auth::user()->loadMissing('roles', 'department.venues');
+            $this->canFilterMyVenues = $user->roles->contains('name', 'venue-manager');
+            $this->managedVenueIds = $user->department?->venues->pluck('id')->all() ?? [];
+        }
     }
 
     public function goWeek(string $dir): void
@@ -59,13 +66,14 @@ class PublicCalendar extends Component
         });
 
         // Apply "Filter By My Venues" if enabled and user is venue-manager
-        if ($this->filterMyVenues && auth()->check()) {
-            $user = auth()->user();
-            $isVenueManager = $user->roles()->where('name', 'venue-manager')->exists();
-            if ($isVenueManager) {
-                $managedVenueIds = $user->department->venues->pluck('id')->toArray();
-                $events = array_filter($events, fn($e) => in_array($e['venue_id'], $managedVenueIds));
-            }
+        if ($this->filterMyVenues && $this->canFilterMyVenues && ! empty($this->managedVenueIds)) {
+            $events = array_filter(
+                $events,
+                fn ($e) => in_array($e['venue_id'], $this->managedVenueIds, true)
+            );
+        } elseif ($this->filterMyVenues && $this->canFilterMyVenues) {
+            // User is a venue manager but does not manage any venues, so the list should be empty
+            $events = [];
         }
 
         return array_values($events);
@@ -78,28 +86,19 @@ class PublicCalendar extends Component
             'event' => $event
         ];
 
-
-//        dd(app(EventHistoryService::class)->genericApproverRequestHistoryV2(Auth::user())->pluck('id'));
-
         if (!$event) return;
 
-        if(Auth::check()) {
-            $roles = Auth::user()->getRoleNames();
-//            $roles = collect(['user','event-approver']);
-            $hasRoles = $roles->intersect(['venue-manager','event-approver']);
-            $histories = app(EventHistoryService::class)->genericApproverRequestHistoryV2(Auth::user())->pluck('event_id');
+        if (Auth::check()) {
+            $canViewManagedVenueEvent = $this->canFilterMyVenues
+                && in_array($event->venue_id, $this->managedVenueIds, true);
 
-
-
-            if($hasRoles->count() >=1 &&  $histories->contains($id)) {
+            if ($canViewManagedVenueEvent) {
                 $this->dispatch('bs:open', id: 'publicEventDetails');
                 $this->docs = app(EventService::class)->getEventDocuments($event)->toArray();
-            }
-            else{
+            } else {
                 $this->dispatch('bs:open', id: 'eventDetails');
             }
-        }
-        else{
+        } else{
             $this->dispatch('bs:open', id: 'eventDetails');
         }
 
@@ -129,6 +128,7 @@ class PublicCalendar extends Component
             'days'        => $days,
             'eventsByDay' => $eventsByDay,
             'weekLabel'   => $start->format('M j') . ' – ' . $start->addDays(6)->format('M j, Y'),
+            'canFilterMyVenues' => $this->canFilterMyVenues,
         ]);
     }
 }

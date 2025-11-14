@@ -39,15 +39,28 @@
 @endphp
 
 <div class="container my-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h1 class="fw-bold">Event Details</h1>
-        <button type="button"
-                wire:click="back"
-                class="btn btn-secondary ms-auto"
-                wire:target="back"
-                aria-label="Go Back">
-            Back
-        </button>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+        <h1 class="fw-bold mb-0">Event Details</h1>
+        <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
+            @if($event->status === 'approved')
+                <button type="button"
+                        class="btn btn-primary"
+                        wire:click="downloadSummary"
+                        wire:loading.attr="disabled"
+                        wire:target="downloadSummary"
+                        aria-label="Download PDF summary">
+                    <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                    <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                </button>
+            @endif
+            <button type="button"
+                    wire:click="back"
+                    class="btn btn-secondary"
+                    wire:target="back"
+                    aria-label="Go Back">
+                Back
+            </button>
+        </div>
     </div>
 
     {{-- Event Header --}}
