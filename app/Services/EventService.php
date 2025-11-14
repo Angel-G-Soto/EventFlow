@@ -277,7 +277,6 @@ class EventService
             }
 
             $nextStatus = $statusFlow[$currentStatus];
-            $result = $this->commitStatusTransition($event, $nextStatus, $approver, 'approved', $comment);
 
             // Atomic update
             $updated = $this->updateEventStatus($event, $currentStatus, $nextStatus);
@@ -310,13 +309,13 @@ class EventService
 
             // Create new pending history only if not final approval
             if ($nextStatus !== 'approved') {
-                $this->createPendingHistory($result, $nextStatus, $approver);
+                $this->createPendingHistory($event, $nextStatus, $approver);
             }
 
-            if ($result->status === $nextStatus) {
+            if ($event->status === $nextStatus) {
                 $this->auditService->logEventAdminAction(
                     $approver,
-                    $result,
+                    $event,
                     'EVENT_APPROVED',
                     [
                         'next_status' => $nextStatus,
@@ -325,7 +324,7 @@ class EventService
                 );
             }
 
-            return $result;
+            return $event->refresh();
         });
     }
 
