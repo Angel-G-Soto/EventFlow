@@ -310,22 +310,13 @@
             </tr>
             <tr>
                 <td class="form-table__label">
-                    Fecha de firma:
+                    Firma del Funcionario:
                 </td>
                 <td class="form-table__label">
-                    Firma del Funcionario:
+                    Fecha de firma:
                 </td>
             </tr>
             <tr>
-                <td class="form-table__value">
-                    {{
-                        $venueHistory
-                            ? \Illuminate\Support\Carbon::parse($venueHistory->updated_at ?? $venueHistory->created_at)
-                                ->locale('es')
-                                ->isoFormat('D [de] MMMM [de] YYYY')
-                            : '—'
-                    }}
-                </td>
                 <td class="form-table__value">
                     {{
                         ($venueHistory && $venueHistory->approver)
@@ -334,6 +325,15 @@
                                     ? $name
                                     : ($venueHistory->approver->email ?? '—')
                             )
+                            : '—'
+                    }}
+                </td>
+                <td class="form-table__value">
+                    {{
+                        $venueHistory
+                            ? \Illuminate\Support\Carbon::parse($venueHistory->updated_at ?? $venueHistory->created_at)
+                                ->locale('es')
+                                ->isoFormat('D [de] MMMM [de] YYYY')
                             : '—'
                     }}
                 </td>
@@ -368,22 +368,13 @@
             </tr>
             <tr>
                 <td class="form-table__label">
-                    Fecha de firma:
+                    Firma del Funcionario:
                 </td>
                 <td class="form-table__label">
-                    Firma del Funcionario:
+                    Fecha de firma:
                 </td>
             </tr>
             <tr>
-                <td class="form-table__value">
-                    {{
-                        $dscaHistory
-                            ? \Illuminate\Support\Carbon::parse($dscaHistory->updated_at ?? $dscaHistory->created_at)
-                                ->locale('es')
-                                ->isoFormat('D [de] MMMM [de] YYYY')
-                            : '—'
-                    }}
-                </td>
                 <td class="form-table__value">
                     {{
                         ($dscaHistory && $dscaHistory->approver)
@@ -392,6 +383,15 @@
                                     ? $name
                                     : ($dscaHistory->approver->email ?? '—')
                             )
+                            : '—'
+                    }}
+                </td>
+                <td class="form-table__value">
+                    {{
+                        $dscaHistory
+                            ? \Illuminate\Support\Carbon::parse($dscaHistory->updated_at ?? $dscaHistory->created_at)
+                                ->locale('es')
+                                ->isoFormat('D [de] MMMM [de] YYYY')
                             : '—'
                     }}
                 </td>
