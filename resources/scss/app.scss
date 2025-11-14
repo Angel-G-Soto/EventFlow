@@ -1,7 +1,7 @@
 /*
-	Intentionally empty: Bootstrap CSS is imported from JS (resources/js/app.js)
-	to avoid Sass deprecation warnings emitted by Bootstrap's SCSS @import usage.
-	Add any project-specific SCSS below as needed.
+  Compiles Bootstrap's SCSS so overrides live in a single stylesheet.
+  Deprecation warnings from Bootstrap's internal @import usage are muted by Vite's
+  quietDeps option (see vite.config.mjs).
 */
 @use "bootstrap/scss/bootstrap";
 

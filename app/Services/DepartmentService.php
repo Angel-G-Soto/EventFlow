@@ -62,6 +62,131 @@ class DepartmentService
     }
 
     /**
+     * Paginate normalized department rows for the admin table.
+     *
+     * @param array<string,mixed> $filters
+     * @param int $perPage
+     * @param int $page
+     * @param array{field?:string|null,direction?:string|null}|null $sort
+     */
+    public function paginateDepartmentRows(array $filters = [], int $perPage = 10, int $page = 1, ?array $sort = null): LengthAwarePaginator
+    {
+        $directorRelation = $this->directorRelation();
+        $query = Department::query()
+            ->with(['employees' => $directorRelation])
+            ->whereNull('deleted_at');
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . mb_strtolower($search) . '%';
+            $query->where(function ($builder) use ($like) {
+                $builder->whereRaw('LOWER(name) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(code) LIKE ?', [$like])
+                    ->orWhereHas('employees', function ($employeeQuery) use ($like) {
+                        $employeeQuery->where(function ($userQuery) use ($like) {
+                            $userQuery->whereRaw("LOWER(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ?", [$like])
+                                ->orWhereRaw('LOWER(email) LIKE ?', [$like]);
+                        });
+                    });
+            });
+        }
+
+        if (!empty($filters['code'])) {
+            $code = strtoupper(trim((string)$filters['code']));
+            $query->whereRaw('UPPER(code) = ?', [$code]);
+        }
+
+        $direction = strtolower($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+        $field = $sort['field'] ?? null;
+        if ($field === 'code') {
+            $query->orderBy('code', $direction);
+        } else {
+            $query->orderBy('name', $direction);
+        }
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
+        $paginator->setCollection(
+            $paginator->getCollection()->map(fn(Department $department) => $this->mapDepartmentRow($department))
+        );
+
+        return $paginator;
+    }
+
+    /**
+     * Return the existing department codes in natural order for filter dropdowns.
+     *
+     * @return array<int,string>
+     */
+    public function listDepartmentCodes(): array
+    {
+        return Department::query()
+            ->whereNull('deleted_at')
+            ->whereNotNull('code')
+            ->pluck('code')
+            ->map(fn($code) => strtoupper(trim((string)$code)))
+            ->filter(fn($code) => $code !== '')
+            ->unique(function ($code) {
+                return mb_strtolower($code);
+            })
+            ->sortBy(fn($code) => mb_strtolower($code), SORT_REGULAR, false)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Resolve a single department row by id.
+     */
+    public function getDepartmentRowById(int $id): ?array
+    {
+        if ($id <= 0) {
+            return null;
+        }
+
+        $department = Department::with(['employees' => $this->directorRelation()])
+            ->whereNull('deleted_at')
+            ->find($id);
+
+        return $department ? $this->mapDepartmentRow($department) : null;
+    }
+
+    /**
+     * Normalize the department payload returned to Livewire.
+     */
+    protected function mapDepartmentRow(Department $department): array
+    {
+        $director = $department->employees->first();
+        $fullName = $director
+            ? trim(trim((string)($director->first_name ?? '')) . ' ' . trim((string)($director->last_name ?? '')))
+            : '';
+
+        if ($fullName === '' && $director) {
+            $fullName = (string)($director->email ?? '');
+        }
+
+        return [
+            'id' => (int)$department->id,
+            'name' => (string)$department->name,
+            'code' => (string)($department->code ?? ''),
+            'director' => $fullName,
+        ];
+    }
+
+    /**
+     * Shared eager-load definition for director employees.
+     */
+    protected function directorRelation(): \Closure
+    {
+        return function ($builder) {
+            $builder->select('id', 'first_name', 'last_name', 'email', 'department_id')
+                ->whereHas('roles', function ($roleQuery) {
+                    $roleQuery->where('name', 'department-director');
+                })
+                ->orderBy('first_name')
+                ->orderBy('last_name');
+        };
+    }
+
+    /**
      * Create or update multiple departments based on the provided data array.
      *
      * This method iterates through an array of department definitions, validating
