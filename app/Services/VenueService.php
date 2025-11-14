@@ -750,8 +750,8 @@ class VenueService
         if ($admin) {
             $this->auditService->logAdminAction(
                 $admin->id,
-                'VENUE_UPDATED',
                 'venue',
+                'VENUE_UPDATED',
                 (string)$venue->id,
                 ['meta' => ['fields' => array_keys($data)]]
             );
@@ -893,7 +893,7 @@ class VenueService
             if ($admin) {
                 $this->auditService->logAdminAction(
                     $admin->id,
-                    'system-admin',
+                    'venue',
                     'VENUES_IMPORTED',
                     'venues_import',
                     $ctx
@@ -1071,8 +1071,8 @@ class VenueService
                 if ($admin) {
                     $this->auditService->logAdminAction(
                         $admin->id,
-                        'VENUE_DEACTIVATED',
                         'venue',
+                        'VENUE_DEACTIVATED',
                         (string) $venue->id
                     );
                 }

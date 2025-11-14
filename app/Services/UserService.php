@@ -211,8 +211,8 @@ class UserService
             }
 
             $this->auditService->logAdminAction(
-                (int) $admin->id,
-                $actorName,
+                $admin->id,
+                'user',
                 'USER_ROLES_UPDATED',
                 (string) ($user->id ?? 0),
                 $ctx
@@ -269,8 +269,8 @@ class UserService
             }
 
             $this->auditService->logAdminAction(
-                (int) $admin->id,
-                $actorName,
+                $admin->id,
+                'department',
                 'USER_DEPT_ASSIGNED',
                 $targetId,
                 $ctx
@@ -379,10 +379,10 @@ class UserService
             }
 
             $this->auditService->logAdminAction(
-                (int) $admin->id,
-                $actorName,                 // target_type (keeps your existing pattern)
-                'USER_CREATED',             // action
-                (string) ($user->id ?? 0),  // target_id
+                $admin->id,
+                'user',
+                'USER_CREATED',
+                (string) ($user->id ?? 0),
                 $ctx
             );
         }

@@ -99,27 +99,7 @@ class ProcessCsvFileUpload implements ShouldQueue
                 ->filter(fn($d) => ($d['name'] ?? '') !== '' && ($d['code'] ?? '') !== '')
                 ->unique(fn($d) => $d['name'] . '|' . $d['code']);
 
-            foreach ($uniqueDepts as $dept) {
-                try {
-                    $byName = $deptSvc->findByName($dept['name']);
-                    $byCode = $deptSvc->findByCode($dept['code']);
-                    if (!$byName && !$byCode) {
-                        $deptSvc->updateOrCreateDepartment([
-                            ['name' => $dept['name'], 'code' => $dept['code']],
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('Unable to ensure/update department during CSV import', [
-                        'department' => $dept['name'],
-                        'code' => $dept['code'],
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            Cache::put($cacheKey, 'importing', 600);
-
-            // Strictly resolve an admin via provided ID; fail if not found
+            $adminUser = null;
             if ($this->admin_id > 0) {
                 try {
                     $adminUser = app(UserService::class)->findUserById($this->admin_id);
@@ -135,6 +115,26 @@ class ProcessCsvFileUpload implements ShouldQueue
                 Storage::disk('uploads_temp')->delete($this->file_name);
                 return;
             }
+
+            foreach ($uniqueDepts as $dept) {
+                try {
+                    $byName = $deptSvc->findByName($dept['name']);
+                    $byCode = $deptSvc->findByCode($dept['code']);
+                    if (!$byName && !$byCode) {
+                        $deptSvc->updateOrCreateDepartment([
+                            ['name' => $dept['name'], 'code' => $dept['code']],
+                        ], $adminUser);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Unable to ensure/update department during CSV import', [
+                        'department' => $dept['name'],
+                        'code' => $dept['code'],
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Cache::put($cacheKey, 'importing', 600);
 
             // Import via service
             $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser, $this->context);
