@@ -401,7 +401,8 @@
 
     <div class="footer">
         Original – Departamento de Actividades Sociales y Culturales<br>
-        Copia – Encargado de las Instalaciones Físicas<br><br>
+        Copia – Encargado de las Instalaciones Físicas<br>
+        Generado a través de la plataforma de EventFlow<br><br>
         Título IX Prohíbe Discriminaciones por razón de Sexo en Programas Educativos y de Empleo en el Recinto Universitario de Mayagüez – Patrono con Igualdad de Oportunidades de Empleo M/F/V/I<br>
         DE 12/90&nbsp;&nbsp;&nbsp;&nbsp;8/2013
     </div>
