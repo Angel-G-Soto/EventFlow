@@ -10,6 +10,7 @@ use Exception;
 use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use Throwable;
 
@@ -123,7 +124,7 @@ class DepartmentService
             // AUDIT: batch department upsert (best-effort)
             try {
                 /** @var \App\Services\AuditService $audit */
-                $audit = app(\App\Services\AuditService::class);
+                $audit = app(abstract: AuditService::class);
 
                 $actor   = auth()->user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
@@ -151,14 +152,16 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,             // targetType
-                        'DEPT_UPSERT_BATCH',     // actionCode
-                        'batch',                 // targetId
+                        $actorId,
+                        'department',
+                        'DEPT_UPSERT_BATCH',
+                        'batch',
                         $ctx
                     );
                 }
-            } catch (\Throwable) { /* best-effort */ }
+            } catch (Throwable $e) {
+                Log::error('updateOrCreateDepartment: audit log failed', ['error' => $e->getMessage()]);
+            }
 
             // Return collection of updated values
             return $updatedDepartments;
@@ -192,7 +195,7 @@ class DepartmentService
             // AUDIT: department deleted (best-effort)
             try {
                 /** @var \App\Services\AuditService $audit */
-                $audit = app(\App\Services\AuditService::class);
+                $audit = app(AuditService::class);
 
                 $actor   = auth()->user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
@@ -213,14 +216,14 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
+                        $actorId,
+                        'department',
                         'DEPT_DELETED',
                         (string) ($dept->id ?? $id),
                         $ctx
                     );
                 }
-            } catch (\Throwable) { /* best-effort */ }
+            } catch (Throwable) { /* best-effort */ }
 
 
             return (bool) $deleted;
@@ -292,14 +295,14 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
-                        'USER_DEPT_SET',
+                        $actorId,
+                        'department',
+                        'USER_DEPT_UPDATE',
                         (string) ($manager->id ?? '0'),
                         $ctx
                     );
                 }
-            } catch (\Throwable) { /* best-effort */ }
+            } catch (Throwable) { /* best-effort */ }
 
             return $manager;
         } catch (ModelNotFoundException $exception) {
@@ -338,8 +341,8 @@ class DepartmentService
 
             // AUDIT: user added to department & role attached (best-effort)
             try {
-                /** @var \App\Services\AuditService $audit */
-                $audit = app(\App\Services\AuditService::class);
+                /** @var AuditService $audit */
+                $audit = app(AuditService::class);
 
                 $actor   = auth()->user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
@@ -349,7 +352,7 @@ class DepartmentService
                         ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
                         : 'system';
 
-                    $vmRole = \App\Models\Role::where('name', 'venue-manager')->first();
+                    $vmRole = Role::where('name', 'venue-manager')->first();
 
                     $meta = [
                         'user_id'           => (int) ($manager->id ?? 0),
@@ -367,14 +370,14 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
+                        $actorId,
+                        'department',
                         'USER_DEPT_ADDED_ROLE',
                         (string) ($manager->id ?? '0'),
                         $ctx
                     );
                 }
-            } catch (\Throwable) { /* best-effort */ }
+            } catch (Throwable) { /* best-effort */ }
             // Add venue manager role
 
             return $manager;
@@ -418,8 +421,8 @@ class DepartmentService
 
             // AUDIT: user removed from department and/or role detached (best-effort)
             try {
-                /** @var \App\Services\AuditService $audit */
-                $audit = app(\App\Services\AuditService::class);
+                /** @var AuditService $audit */
+                $audit = app(AuditService::class);
 
                 $actor   = auth()->user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
@@ -429,7 +432,7 @@ class DepartmentService
                         ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
                         : 'system';
 
-                    $vmRole = \App\Models\Role::where('name', 'venue-manager')->first();
+                    $vmRole = Role::where('name', 'venue-manager')->first();
 
                     $meta = [
                         'user_id'            => (int) ($manager->id ?? 0),
@@ -448,14 +451,14 @@ class DepartmentService
                     }
 
                     $audit->logAdminAction(
-                        (int) $actorId,
-                        $actorLabel,
+                        $actorId,
+                        'department',
                         'USER_DEPT_REMOVED_ROLE',
                         (string) ($manager->id ?? '0'),
                         $ctx
                     );
                 }
-            } catch (\Throwable) { /* best-effort */ }
+            } catch (Throwable) { /* best-effort */ }
 
             return $manager;
         }

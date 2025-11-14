@@ -236,7 +236,7 @@ class EventService
 
             $this->auditService->logAdminAction(
                 $actorId,
-                $actorName,              // targetType (your admin pattern)
+                'event',
                 'EVENT_DENIED',
                 (string) $event->id,
                 $ctx
@@ -301,7 +301,7 @@ class EventService
 
                 $this->auditService->logAdminAction(
                     $actorId,
-                    $actorName,             // targetType
+                    'event',
                     $action,
                     (string) $event->id,
                     $ctx
@@ -533,7 +533,7 @@ class EventService
 
         $this->auditService->logAdminAction(
             $systemUserId,
-            'System',
+            'event',
             'EVENT_COMPLETED_AUTO',
             (string) $event->id,
             ['meta' => ['status' => 'completed']]
@@ -548,8 +548,7 @@ class EventService
      */
     public function getMyRequestedEvents(User $user): \Illuminate\Database\Eloquent\Builder
     {
-        return Event::where('creator_id', $user->id)
-            ->whereRaw('LOWER(status) <> ?', ['draft']);
+        return Event::where('creator_id', $user->id);
     }
 
     /**
@@ -573,8 +572,7 @@ class EventService
             'deanship-of-administration-approver' => Event::query()
                 ->where('status', 'pending - deanship of administration approval'),
             default => Event::query()
-                ->where('creator_id', $user->id)
-                ->whereRaw('LOWER(status) <> ?', ['draft']),
+                ->where('creator_id', $user->id),
         };
     }
 
@@ -587,7 +585,7 @@ class EventService
      */
     public function genericGetPendingRequestsV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Event::query()->whereRaw('LOWER(status) <> ?', ['draft']);
+        $query = Event::query();
 
         // Get roles the user actually has
         $userRoles = $user->roles->pluck('name')->toArray();
@@ -650,7 +648,6 @@ class EventService
     public function genericApproverRequestHistory(User $user): \Illuminate\Database\Eloquent\Builder
     {
         return Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
-            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($query) use ($user) {
                 $query->where('approver_id', $user->id);
             })
@@ -679,7 +676,6 @@ class EventService
             'organization_name',
             'created_at'
         )
-            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($q) use ($user) {
                 $q->where('approver_id', $user->id);
             })
@@ -858,8 +854,8 @@ class EventService
 
             // Run audit trail with event id as target
             $this->auditService->logAdminAction(
-                (int) $user->id,
-                $actorName,
+                $user->id,
+                'event',
                 'ADMIN_OVERRIDE',
                 (string) $event->id,
                 $ctx
@@ -899,8 +895,8 @@ class EventService
 
             // Audit with justification in meta
             $this->auditService->logAdminAction(
-                (int) $user->id,
-                (string) ($user->name ?? ($user->first_name . ' ' . $user->last_name)),
+                $user->id,
+                'event',
                 'ADMIN_OVERRIDE',
                 (string) $event->id,
                 ['meta' => ['justification' => (string) $justification]]
@@ -1057,9 +1053,7 @@ class EventService
      */
     public function getEventRows(array $filters = []): SupportCollection
     {
-        $q = Event::query()->with(['venue', 'requester', 'categories'])
-            ->whereRaw('LOWER(status) <> ?', ['draft']);
-
+        $q = Event::query()->with(['venue', 'requester', 'categories']);
         if (!empty($filters['status'])) {
             $q->where('status', (string) $filters['status']);
         }
