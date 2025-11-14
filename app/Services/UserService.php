@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Department;
 use App\Services\AuditService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -403,5 +404,96 @@ class UserService
         })
             ->with(['department', 'roles'])
             ->get();
+    }
+
+    /**
+     * Paginate normalized user rows for the admin list without exposing Eloquent models to the component.
+     *
+     * @param array<string,mixed> $filters
+     * @param int $perPage
+     * @param int $page
+     * @param array{field?:string|null,direction?:string|null}|null $sort
+     */
+    public function paginateUserRows(array $filters = [], int $perPage = 10, int $page = 1, ?array $sort = null): LengthAwarePaginator
+    {
+        $query = User::query()
+            ->with(['department', 'roles'])
+            ->whereNull('deleted_at');
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . mb_strtolower($search) . '%';
+            $query->where(function ($builder) use ($like) {
+                $builder->whereRaw('LOWER(first_name) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(last_name) LIKE ?', [$like])
+                    ->orWhereRaw("LOWER(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ?", [$like])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$like]);
+            });
+        }
+
+        $role = $filters['role'] ?? '';
+        if ($role === '__none__') {
+            $query->whereDoesntHave('roles');
+        } elseif (is_string($role) && $role !== '') {
+            $query->whereHas('roles', function ($builder) use ($role) {
+                $builder->where('name', $role);
+            });
+        }
+
+        $direction = strtolower($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+        $field = $sort['field'] ?? null;
+        if ($field === 'email') {
+            $query->orderBy('email', $direction);
+        } else {
+            // Default to natural name sorting
+            $query->orderBy('first_name', $direction)->orderBy('last_name', $direction);
+        }
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
+        $collection = $paginator->getCollection()->map(fn(User $user) => $this->mapUserToRow($user));
+        $paginator->setCollection($collection);
+
+        return $paginator;
+    }
+
+    /**
+     * Retrieve a single normalized row for the given user id.
+     */
+    public function getUserRowById(int $userId): ?array
+    {
+        $user = User::with(['department', 'roles'])->find($userId);
+        if (!$user) {
+            return null;
+        }
+
+        return $this->mapUserToRow($user);
+    }
+
+    /**
+     * Build the lightweight data structure consumed by Livewire.
+     */
+    protected function mapUserToRow(User $user): array
+    {
+        $name = trim(trim((string)($user->first_name ?? '')) . ' ' . trim((string)($user->last_name ?? '')));
+        if ($name === '') {
+            $name = (string)($user->email ?? '');
+        }
+
+        $roles = $user->roles
+            ->map(fn($role) => Str::slug(mb_strtolower((string)($role->name ?? ($role->code ?? '')))))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $departmentName = optional($user->department)->name;
+
+        return [
+            'id' => (int)($user->id ?? 0),
+            'name' => $name,
+            'email' => (string)($user->email ?? ''),
+            'department' => $departmentName !== null ? (string)$departmentName : '',
+            'roles' => $roles,
+        ];
     }
 }

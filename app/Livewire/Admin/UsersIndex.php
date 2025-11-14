@@ -3,7 +3,6 @@
 namespace App\Livewire\Admin;
 
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
@@ -49,37 +48,6 @@ class UsersIndex extends Component
      * set the page number to the maximum of 1 and the minimum of the
      * target and the last page number.
      */
-    public function goToPage(int $target): void
-    {
-        // compute bounds from current filters
-        $total = $this->filtered()->count();
-        $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
-
-        $this->page = max(1, min($target, $last));
-    }
-
-    /**
-     * Resets the current page to 1 when the search filter is updated.
-     *
-     * This function will be called whenever the search filter is updated,
-     * and will reset the current page to 1.
-     */
-    public function applySearch()
-    {
-        $this->page = 1;
-    }
-
-    /**
-     * Resets the current page to 1 when the role filter is updated.
-     *
-     * This function will be called whenever the role filter is updated,
-     * and will reset the current page to 1.
-     */
-    public function updatedRole()
-    {
-        $this->page = 1;
-    }
-
     /**
      * Toggle or set the active sort column and direction.
      */
@@ -95,24 +63,6 @@ class UsersIndex extends Component
     }
 
     // Filters: clear/reset
-    /**
-     * Resets the search filter and the current page to 1.
-     *
-     * This function is called when the user clicks the "Clear" button on the filter form.
-     */
-    public function clearFilters(): void
-    {
-        $this->search = '';
-        $this->role = '';
-        $this->page = 1;
-    }
-
-    protected function splitName(string $full): array
-    {
-        $parts = preg_split('/\s+/', trim($full), 2);
-        return [$parts[0] ?? '', $parts[1] ?? ''];
-    }
-
     // Edit/Create workflows
     /**
      * Resets the edit fields to their default values and opens the edit user modal.
@@ -141,7 +91,7 @@ class UsersIndex extends Component
     {
         $this->authorize('manage-users');
 
-        $user = $this->allUsers()->firstWhere('id', $id);
+        $user = app(UserService::class)->getUserRowById($id);
         if (!$user) return;
 
         $this->editId     = $user['id'];
@@ -176,14 +126,6 @@ class UsersIndex extends Component
     public function save(): void
     {
         $this->authorize('manage-users');
-
-        // Check email uniqueness before validation
-        $users = $this->allUsers();
-        $existingUser = $users->firstWhere('email', $this->editEmail);
-        if ($existingUser && (!$this->editId || $existingUser['id'] !== $this->editId)) {
-            $this->addError('editEmail', 'This email is already taken.');
-            return;
-        }
 
         $this->validate();
         $this->actionType = 'save';
@@ -336,95 +278,6 @@ class UsersIndex extends Component
 
     // Private/Protected Helper Methods
     /**
-     * Returns a collection of all users, both seeded and created by users.
-     * This function takes into account soft-deleted users (no hard delete), and will not include them in the collection.
-     * It also normalizes the data by ensuring each user has a 'roles' key, and optionally includes 'department_id'.
-     *
-     * @return Collection An Eloquent Collection of User objects.
-     */
-    protected function allUsers(): Collection
-    {
-        $this->authorize('manage-users');
-
-        // Fetch users via service to avoid direct model queries from the view
-        $svc = app(UserService::class);
-        $users = collect();
-
-        if ($this->role === '__none__') {
-            // Show users with no roles
-            try {
-                $users = $svc->getUsersWithNoRoles();
-            } catch (\Throwable $e) {
-                $users = collect();
-            }
-        } elseif (!empty($this->role)) {
-            try {
-                $users = $svc->getUsersWithRole($this->role);
-            } catch (\Throwable $e) {
-                $users = collect();
-            }
-        } else {
-            // Get all users with any role from the DB
-            try {
-                // Use role NAMEs as the canonical code (DB uses numeric code; names are slugs like 'venue-manager')
-                $allRoles = $svc->getAllRoles()->pluck('name')->all();
-                foreach ($allRoles as $code) {
-                    $users = $users->merge($svc->getUsersWithRole($code));
-                }
-                // Add users with no roles
-                $users = $users->merge($svc->getUsersWithNoRoles());
-                // De-duplicate by primary key (id or user_id depending on schema)
-                $users = $users->unique(function ($u) {
-                    return $u->id ?? $u->user_id ?? spl_object_id($u);
-                })->values();
-            } catch (\Throwable $e) {
-                $users = collect();
-            }
-        }
-
-        // Apply search filter in-memory to avoid coupling to schema in service
-        $s = mb_strtolower(trim((string)($this->search ?? '')));
-
-        return collect($users)
-            ->filter(function ($u) use ($s) {
-                $name = trim(trim((string)($u->first_name ?? '')) . ' ' . trim((string)($u->last_name ?? '')));
-                $hay = mb_strtolower($name . ' ' . (string)($u->email ?? ''));
-                return $s === '' || str_contains($hay, $s);
-            })
-            ->map(fn($u) => $this->mapUserToRow($u))
-            ->values();
-    }
-
-    /**
-     * Normalize a User model into the row shape used by the UI.
-     * @param object $u
-     * @return array{id:int,name:string,email:string,department:string,roles:array}
-     */
-    protected function mapUserToRow($u): array
-    {
-        $name = trim(trim((string)($u->first_name ?? '')) . ' ' . trim((string)($u->last_name ?? '')));
-        // Track roles as CODES for consistency with validation and saving
-        $roles = method_exists($u, 'roles')
-            ? $u->roles
-                // Prefer role NAME (textual slug) over numeric code
-                ->map(fn($r) => Str::slug(mb_strtolower((string)($r->name ?? ($r->code ?? '')))))
-                ->filter()
-                ->unique()
-                ->values()
-                ->all()
-            : [];
-
-        return [
-            'id' => (int)($u->id ?? $u->user_id),
-            'name' => $name,
-            'email' => (string)($u->email ?? ''),
-            'department' => (string)optional($u->department)->name ?? '—',
-            // Track roles internally as unique CODES
-            'roles' => $roles,
-        ];
-    }
-
-    /**
      * Returns an array of validation rules for the user edit form.
      */
     protected function rules(): array
@@ -458,70 +311,7 @@ class UsersIndex extends Component
         ];
     }
 
-    /**
-     * Validates only the justification length.
-     */
-    protected function validateJustification(): void
-    {
-        $this->authorize('manage-users');
-
-        $this->validate([
-            'justification' => ['required', 'string', 'min:10', 'max:200']
-        ]);
-    }
-
     // Removed legacy in-memory ID generator; DB auto-increment IDs are used
-
-    /**
-     * Returns a filtered collection of users based on the current search query and selected role.
-     */
-    protected function filtered(): Collection
-    {
-        $s = mb_strtolower(trim($this->search));
-        $selectedRole = $this->role;
-
-        return $this->allUsers()
-            ->filter(function ($user) use ($s, $selectedRole) {
-                $hit = $s === '' ||
-                    str_contains(mb_strtolower($user['name']), $s) ||
-                    str_contains(mb_strtolower($user['email']), $s);
-
-                $roles = $user['roles'] ?? [];
-                if ($selectedRole === '__none__') {
-                    $roleOk = empty($roles);
-                } else {
-                    $roleOk = $selectedRole === '' || in_array($selectedRole, $roles, true);
-                }
-                return $hit && $roleOk;
-            })
-            ->values();
-    }
-
-    /**
-     * Paginate the filtered collection of users.
-     */
-    protected function paginated(): LengthAwarePaginator
-    {
-        $data = $this->filtered();
-        // Apply sorting only after user clicks a sort header
-        if ($this->sortField !== '') {
-            // Sort using natural, case-insensitive order by the active field
-            $options = SORT_NATURAL | SORT_FLAG_CASE;
-            $data = $data->sortBy(fn($row) => $row[$this->sortField] ?? '', $options, $this->sortDirection === 'desc')->values();
-        }
-        $total = $data->count();
-        $pageSize = max(1, $this->pageSize); // Prevent division by zero
-
-        $items = $data->slice(($this->page - 1) * $pageSize, $pageSize);
-
-        return new LengthAwarePaginator(
-            $items,
-            $total,
-            $pageSize,
-            $this->page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-    }
 
     /**
      * Determine if any of the given roles do not require a department.
@@ -561,7 +351,7 @@ class UsersIndex extends Component
             return null;
         }
         $name = trim((string)$name);
-        if ($name === '' || $name === '—') {
+        if ($name === '') {
             return null;
         }
         // Ensure the department exists; create it on-the-fly if missing so it appears in the table
@@ -584,7 +374,7 @@ class UsersIndex extends Component
     {
         $this->authorize('manage-users');
 
-        $paginator = $this->paginated();
+        $paginator = $this->usersPaginator();
 
         // Load departments via service
         try {
@@ -616,6 +406,37 @@ class UsersIndex extends Component
             'allRoles'    => $allRoles, // codes used as values; labels prettified in view
         ]);
     }
+
+    protected function usersPaginator(): LengthAwarePaginator
+    {
+        $svc = app(UserService::class);
+        $sort = $this->sortField !== '' ? ['field' => $this->sortField, 'direction' => $this->sortDirection] : null;
+        $paginator = $svc->paginateUserRows(
+            [
+                'search' => $this->search,
+                'role' => $this->role,
+            ],
+            $this->pageSize,
+            $this->page,
+            $sort
+        );
+
+        $last = max(1, (int)$paginator->lastPage());
+        if ($this->page > $last) {
+            $this->page = $last;
+            if ((int)$paginator->currentPage() !== $last) {
+                $paginator = $svc->paginateUserRows(
+                    [
+                        'search' => $this->search,
+                        'role' => $this->role,
+                    ],
+                    $this->pageSize,
+                    $this->page,
+                    $sort
+                );
+            }
+        }
+
+        return $paginator;
+    }
 }
-
-
