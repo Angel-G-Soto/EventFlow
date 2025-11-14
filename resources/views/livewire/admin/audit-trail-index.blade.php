@@ -136,7 +136,6 @@ return $dt;
           <dl class="row">
             <dt class="col-sm-3">User</dt>
             <dd class="col-sm-9">
-              {{ $details['user_name'] ?? 'Unknown User' }}
               @if(!empty($details['user_id']))
               <span class="text-muted small">#{{ $details['user_id'] }}</span>
               @endif

@@ -124,10 +124,10 @@ class DepartmentService
             // AUDIT: batch department upsert (best-effort)
             try {
                 /** @var \App\Services\AuditService $audit */
-                $audit = app(AuditService::class);
+                $audit = app(abstract: AuditService::class);
 
-                $actor   = Auth::user();
-                $actorId = $actor?->id ?? null;
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {
                     $actorLabel = $actor
@@ -159,7 +159,9 @@ class DepartmentService
                         $ctx
                     );
                 }
-            } catch (Throwable) { /* best-effort */ }
+            } catch (Throwable $e) {
+                Log::error('updateOrCreateDepartment: audit log failed', ['error' => $e->getMessage()]);
+            }
 
             // Return collection of updated values
             return $updatedDepartments;
@@ -195,8 +197,8 @@ class DepartmentService
                 /** @var \App\Services\AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = Auth::user();
-                $actorId = $actor?->id ?? null;
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0 && $deleted) {
                     $actorLabel = $actor
@@ -271,8 +273,8 @@ class DepartmentService
                 /** @var AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = Auth::user();
-                $actorId = $actor?->id ?? null;
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {
                     $actorLabel = $actor
@@ -342,8 +344,8 @@ class DepartmentService
                 /** @var AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = Auth::user();
-                $actorId = $actor?->id ?? null;
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {
                     $actorLabel = $actor
@@ -422,8 +424,8 @@ class DepartmentService
                 /** @var AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = Auth::user();
-                $actorId = $actor?->id ?? null;
+                $actor   = auth()->user();
+                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {
                     $actorLabel = $actor
