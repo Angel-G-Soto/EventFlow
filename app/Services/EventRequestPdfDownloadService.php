@@ -15,7 +15,7 @@ class EventRequestPdfDownloadService
     ) {
     }
 
-    public function download(Event $event, ?string $filename = null, string $view = 'pdf.request.create'): StreamedResponse
+    public function download(Event $event, ?string $filename = null, string $view = 'livewire.request.activity_request'): StreamedResponse
     {
         Gate::authorize('downloadEventPdf', $event);
 
