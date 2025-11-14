@@ -3,7 +3,6 @@
 namespace App\Livewire\Admin;
 
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\EventFilters;
@@ -151,7 +150,7 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
-        $request = $this->filtered()->firstWhere('id', $id);
+        $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
         $this->dispatch('bs:open', id: 'oversightEdit');
@@ -166,7 +165,7 @@ class EventsIndex extends Component
     {
         $this->authorize('access-dashboard');
 
-        $request = $this->filtered()->firstWhere('id', $id);
+        $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
         $this->loadViewDocuments((int)($request['id'] ?? 0));
@@ -483,9 +482,7 @@ class EventsIndex extends Component
      */
     public function goToPage(int $target): void
     {
-    $total = $this->filtered()->count();
-    $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
-    $this->page = max(1, min($target, $last));
+        $this->page = max(1, $target);
     }
 
     /**
@@ -501,10 +498,7 @@ class EventsIndex extends Component
     {
         $this->authorize('access-dashboard');
 
-        $paginator = $this->paginated();
-        if ($this->page !== $paginator->currentPage()) {
-            $paginator = $this->paginated();
-        }
+        $paginator = $this->eventsPaginator();
         $visibleIds = $paginator->pluck('id')->all();
         // Venue options for filter (disambiguate duplicate names)
         try {
@@ -519,6 +513,55 @@ class EventsIndex extends Component
             'categories' => $this->categoryPool,
             'venues' => $venues,
         ]);
+    }
+
+    protected function eventsPaginator(): LengthAwarePaginator
+    {
+        $svc = app(EventService::class);
+        $venueValue = $this->venue;
+        $venueId = null;
+        $venueName = null;
+        if (is_int($venueValue) || (is_string($venueValue) && ctype_digit($venueValue))) {
+            $venueId = (int)$venueValue;
+        } elseif (is_string($venueValue) && trim($venueValue) !== '') {
+            $venueName = trim($venueValue);
+        }
+
+        $paginator = $svc->paginateEventRows(
+            [
+                'search' => $this->search,
+                'status' => $this->status,
+                'venue_id' => $venueId,
+                'venue_name' => $venueName,
+                'category' => $this->category,
+                'from' => $this->from,
+                'to' => $this->to,
+            ],
+            $this->pageSize,
+            $this->page
+        );
+
+        $last = max(1, (int)$paginator->lastPage());
+        if ($this->page > $last) {
+            $this->page = $last;
+            if ((int)$paginator->currentPage() !== $last) {
+                $paginator = $svc->paginateEventRows(
+                    [
+                        'search' => $this->search,
+                        'status' => $this->status,
+                        'venue_id' => $venueId,
+                        'venue_name' => $venueName,
+                        'category' => $this->category,
+                        'from' => $this->from,
+                        'to' => $this->to,
+                    ],
+                    $this->pageSize,
+                    $this->page
+                );
+            }
+        }
+
+        return $paginator;
     }
 
     // Presentation helpers
@@ -536,56 +579,6 @@ class EventsIndex extends Component
     }
 
     // Private/Protected Helper Methods
-
-    protected function allRequests(): Collection
-    {
-        $this->authorize('perform-override');
-        // Fetch and normalize live data from DB every time
-        return app(EventService::class)->getEventRows([]);
-    }
-
-    /**
-     * Applies filters to the collection of all event requests (excluding soft-deleted).
-     */
-    protected function filtered(): Collection
-    {
-        $s = mb_strtolower(trim($this->search));
-        return $this->allRequests()->filter(function ($request) use ($s) {
-            $orgVal = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
-            $hit = $s === '' ||
-                str_contains(mb_strtolower($request['title']), $s) ||
-                str_contains(mb_strtolower($request['requestor']), $s) ||
-                str_contains(mb_strtolower((string)$orgVal), $s);
-            $statOk  = $this->status === '' || (mb_strtolower((string)($request['status'] ?? '')) === mb_strtolower($this->status));
-            // Venue filter: support either venue id (int) or venue name (string)
-            $venueOk = true;
-            if (!is_null($this->venue) && $this->venue !== '') {
-                if (is_int($this->venue) || (is_string($this->venue) && ctype_digit($this->venue))) {
-                    $venueOk = (int)($request['venue_id'] ?? 0) === (int)$this->venue;
-                } else {
-                    $venueOk = (string)$request['venue'] === (string)$this->venue;
-                }
-            }
-            $catOk   = $this->category === '' || $request['category'] === $this->category;
-            // Organization is part of free-text search; org filter disabled
-            $orgOk   = true;
-
-            // Normalize date comparisons to timestamps
-            $dateOk = true;
-            $reqFromTs = strtotime(str_replace('T', ' ', (string)($request['from'] ?? '')));
-            $reqToTs   = strtotime(str_replace('T', ' ', (string)($request['to']   ?? '')));
-            $fromTs = $this->from ? strtotime(str_replace('T', ' ', (string)$this->from)) : null;
-            $toTs   = $this->to   ? strtotime(str_replace('T', ' ', (string)$this->to))   : null;
-            if ($fromTs) {
-                $dateOk = $dateOk && ($reqFromTs !== false && $reqFromTs >= $fromTs);
-            }
-            if ($toTs) {
-                $dateOk = $dateOk && ($reqToTs   !== false && $reqToTs   <= $toTs);
-            }
-
-            return $hit && $statOk && $venueOk && $dateOk && $catOk && $orgOk;
-        })->values();
-    }
 
     /**
      * Validation rules for all editable event fields.
@@ -628,16 +621,6 @@ class EventsIndex extends Component
     }
 
     /**
-     * Paginates the filtered collection of event requests.
-     */
-    protected function paginated(): LengthAwarePaginator
-    {
-        $data = $this->filtered();
-        $items = $data->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values();
-        return new LengthAwarePaginator($items, $data->count(), $this->pageSize, $this->page, ['path' => request()->url(), 'query' => request()->query()]);
-    }
-
-    /**
      * Returns an array of validation rules for the justification field.
      */
     protected function rules(): array
@@ -657,22 +640,6 @@ class EventsIndex extends Component
 
     /**
      * Fetch events via EventService without relying on undefined methods.
-     */
-    protected function fetchEventsCollection(): Collection
-    {
-        try {
-            $res = app(EventService::class)->getAllEvents([]);
-            if ($res instanceof LengthAwarePaginator) {
-                return collect($res->items());
-            }
-            if (is_iterable($res)) return collect($res);
-        } catch (\Throwable $e) { /* ignore */
-        }
-        return collect();
-    }
-
-    /**
-     * Resolve a single event by id using the service response only.
      */
     protected function getEventFromServiceById(int $id)
     {
