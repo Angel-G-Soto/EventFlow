@@ -20,6 +20,7 @@
 namespace App\Livewire\Request\History;
 
 use App\Models\EventHistory;
+use App\Services\EventRequestPdfDownloadService;
 use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -86,6 +87,17 @@ class Details extends Component
     public function back():void
     {
         $this->redirectRoute('approver.history.index');
+    }
+
+
+/**
+ * Trigger the PDF export for the approved request.
+ * @return \Symfony\Component\HttpFoundation\Response
+ */
+
+    public function downloadSummary(EventRequestPdfDownloadService $pdfDownloadService)
+    {
+        return $pdfDownloadService->download($this->eventHistory->event);
     }
 /**
  * Render the Blade view for the venue details page.

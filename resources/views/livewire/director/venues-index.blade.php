@@ -106,7 +106,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    Action for record @if($selectedEmployee){{ $selectedEmployee->first_name.' '.$selectedEmployee->last_name }}@endif
+                                    Action for user: @if($selectedEmployee){{ $selectedEmployee->first_name.' '.$selectedEmployee->last_name }}@endif
                                 </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
@@ -118,7 +118,7 @@
                             </div>
 
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
                                 <button type="button"
                                         class="btn btn-danger"
                                         wire:click="removeManager"
@@ -184,7 +184,7 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
                         <button type="submit" class="btn btn-primary" wire:click="addManager">Save Email</button>
                     </div>
                 </form>
@@ -217,10 +217,10 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button"
-                            class="btn btn-outline-secondary"
+                            class="btn btn-secondary"
                             data-bs-dismiss="modal"
                             wire:click="cancelManagerTransfer">
-                        Cancel
+                        Back
                     </button>
                     <button type="button"
                             class="btn btn-primary"

@@ -46,13 +46,13 @@ $isDirector = $roleNames->contains('department-director');
 
     <div id="navMain" class="collapse navbar-collapse">
       <ul class="navbar-nav mr-auto">
+        @if($user)
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('public.calendar') ? 'active' : '' }}"
             href="{{ route('public.calendar') }}">
             Calendar
           </a>
         </li>
-        @if($user)
 
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('user.index') ? 'active' : '' }}"

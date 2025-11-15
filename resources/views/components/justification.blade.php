@@ -12,7 +12,7 @@
         <div class="mb-3">
           <label class="form-label required">Reason</label>
           <textarea class="form-control" rows="4" required wire:model.live="{{ $model ?? 'justification' }}"
-            placeholder="Enter your justification here..."></textarea>
+            placeholder="Type at least 10 characters..."></textarea>
           @error($model ?? 'justification')
           <small class="text-danger">{{ $message }}</small>
           @enderror
@@ -20,7 +20,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-primary" type="submit">
           <i class="bi bi-check2 me-1"></i>Confirm
         </button>

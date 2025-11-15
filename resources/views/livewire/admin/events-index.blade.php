@@ -108,14 +108,14 @@
                 </button>
                 <button @class([ 'btn' , 'btn-outline-secondary'=> $r['status_is_cancelled'] || $r['status_is_denied']
                   ||
-                  $r['status_is_completed'] || $r['status_is_approved'],
+                  $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn'],
                   'btn-secondary' => !($r['status_is_cancelled'] || $r['status_is_denied'] ||
-                  $r['status_is_completed'] || $r['status_is_approved']),
+                  $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn']),
                   ]) wire:click="openEdit({{ $r['id'] }})"
                   aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}"
                   @disabled(
                   $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_completed'] ||
-                  $r['status_is_approved']
+                  $r['status_is_approved'] || $r['status_is_withdrawn']
                   )>
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -175,6 +175,8 @@
                 id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
                 id="ev_v_advisor_email" class="form-control" readonly value="{{ $eAdvisorEmail }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_phone">Advisor Phone</label><input
+                id="ev_v_advisor_phone" class="form-control" readonly value="{{ $eAdvisorPhone }}"></div>
 
             <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
                 value="{{ $eStudentNumber }}"></div>
@@ -286,6 +288,12 @@
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor_email">Advisor Email</label><input
                 id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"
                 placeholder="advisor@example.edu"></div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label>
+              <input id="ev_e_advisor_phone" class="form-control @error('eAdvisorPhone') is-invalid @enderror"
+                wire:model.live="eAdvisorPhone" placeholder="###-###-####">
+              @error('eAdvisorPhone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
                 id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber" placeholder="Student ID">
             </div>
@@ -353,13 +361,7 @@
               </div>
             </div>
 
-            {{-- Attached docs, approval history, route/step — placeholders for now --}}
-            <div class="col-12">
-              <div class="alert alert-secondary small mb-0">
-                <strong>Attachments:</strong> (links) • <strong>History:</strong> approvals/denials • <strong>Current
-                  Step:</strong> Department/Role
-              </div>
-            </div>
+            {{-- Attached docs, approval history, route/step placeholder removed --}}
           </div>
         </div>
         <div class="modal-footer d-flex justify-content-between">

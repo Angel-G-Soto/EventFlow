@@ -3,7 +3,7 @@
     <div class="alert alert-transparent text-center py-4 mb-4" style="background-color: rgba(240, 240, 240, 0.85); border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
         <h4 class="alert-heading text-dark fw-semibold">Welcome to the Eventflow!</h4>
         <p class="lead text-dark">Stay updated with all the exciting events this week. If you want to request participation or learn more, click the button below to initiate the request on the Nexo platform.</p>
-        <a href="https://www.example.com" target="_blank" class="btn btn-success mt-3" role="button" aria-label="Initiate your request on the Nexo platform">Initiate Request</a> <!-- Dark Green Button -->
+        <a href="https://www.example.com" target="_blank" class="btn btn-primary mt-3" role="button" aria-label="Initiate your request on the Nexo platform">Initiate Request</a> <!-- Dark Green Button -->
         <hr class="my-4" style="border-top: 1px solid dimgrey;">
         <p class="mb-0 text-dark">We hope you have an amazing time at the events!</p>
     </div>
@@ -11,25 +11,25 @@
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
             <h1 class="h4 mb-0">Events This Week</h1>
-            @if(Auth::check() && Auth::user()->roles()->where('name', 'venue-manager')->exists())
+            @if($canFilterMyVenues)
                 <style>
-                    /* Green switch toggle */
+                    /* Blue switch toggle */
                     #filterMyVenues:checked {
-                        background-color: #28a745;
-                        border-color: #28a745;
+                        background-color: #0d6efd;
+                        border-color: #0d6efd;
                     }
                 </style>
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="filterMyVenues" wire:click="toggleFilterMyVenues">
+                    <input class="form-check-input" type="checkbox" id="filterMyVenues" wire:click="toggleFilterMyVenues" @checked($filterMyVenues)>
                     <label class="form-check-label" for="filterMyVenues">Filter By My Venues</label>
                 </div>
             @endif
         </div>
         <div class="d-flex align-items-center gap-2">
             <div class="btn-group">
-                <button class="btn btn-success btn-sm" wire:click="goWeek('prev')" aria-label="Previous week">&laquo; Previous</button>
-                <span class="btn btn-success btn-sm disabled">{{ $weekLabel }}</span>
-                <button class="btn btn-success btn-sm" wire:click="goWeek('next')" aria-label="Next week">Next &raquo;</button>
+                <button class="btn btn-primary btn-sm" wire:click="goWeek('prev')" aria-label="Previous week">&laquo; Previous</button>
+                <span class="btn btn-primary btn-sm disabled">{{ $weekLabel }}</span>
+                <button class="btn btn-primary btn-sm" wire:click="goWeek('next')" aria-label="Next week">Next &raquo;</button>
             </div>
         </div>
     </div>
@@ -46,7 +46,7 @@
                     <ul class="list-group list-group-flush">
                         @forelse($eventsByDay[$day->toDateString()] ?? [] as $e)
                             <li class="list-group-item small d-flex justify-content-between align-items-center">
-                                <button class="btn btn-link p-0 text-start text-success flex-grow-1 text-truncate"
+                                <button class="btn btn-link p-0 text-start text-primary flex-grow-1 text-truncate"
                                         wire:click="openEvent({{ $e['id'] }})"
                                         aria-label="Open event {{ $e['title'] }} details">
                                     <div class="fw-semibold">{{ $e['title'] }}</div>
@@ -108,7 +108,7 @@
                     <p class="mb-0">{{ $modal['event']->description ?? 'No description provided' }}</p>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
-{{--                    <button class="btn btn-success" aria-label="View more details" onclick="{{route('approver.history.request')}}">View More Details</button>--}}
+{{--                    <button class="btn btn-primary" aria-label="View more details" onclick="{{route('approver.history.request')}}">View More Details</button>--}}
                     <button class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">Close</button>
                 </div>
             </div>
@@ -166,7 +166,7 @@
 
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
-                    <button class="btn btn-success" aria-label="View more details">View More Details</button>
+                    <button class="btn btn-primary" aria-label="View more details">View More Details</button>
                     <button class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">Close</button>
                 </div>
             </div>
@@ -195,21 +195,21 @@
                                     value="{{ optional($modal['event']->venue)->code ?? '' }}"></div>
                             <div class="col-md-3"><label class="form-label">From</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->start_time ? \Carbon\Carbon::parse($modal['event']->start_time)->format('Y-m-d\\TH:i') : '' }}">
+                                    value="{{ $modal['event']->start_time ? \Carbon\Carbon::parse($modal['event']->start_time)->format('D, M j, Y g:i A') : '' }}">
                             </div>
                             <div class="col-md-3"><label class="form-label">To</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->end_time ? \Carbon\Carbon::parse($modal['event']->end_time)->format('Y-m-d\\TH:i') : '' }}">
+                                    value="{{ $modal['event']->end_time ? \Carbon\Carbon::parse($modal['event']->end_time)->format('D, M j, Y g:i A') : '' }}">
                             </div>
                             <div class="col-md-3"><label class="form-label">Status</label><input
                                     class="form-control" readonly value="{{ $modal['event']->status ?? '' }}">
                             </div>
                             <div class="col-md-3"><label class="form-label">Created At</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->created_at ?? '' }}"></div>
+                                    value="{{ optional($modal['event']->created_at)->format('D, M j, Y g:i A') }}"></div>
                             <div class="col-md-3"><label class="form-label">Updated At</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->updated_at ?? '' }}"></div>
+                                    value="{{ optional($modal['event']->updated_at)->format('D, M j, Y g:i A') }}"></div>
                             <div class="col-12"><label class="form-label">Description</label><textarea
                                     class="form-control" rows="3"
                                     readonly>{{ $modal['event']->description ?? '' }}</textarea></div>

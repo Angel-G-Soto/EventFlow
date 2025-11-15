@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Department;
 use App\Services\AuditService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -145,22 +146,70 @@ class UserService
      * @param User|null $admin
      * @param string|null $justification Optional admin-provided justification to include in audit log.
      */
+    /**
+     * Synchronizes the roles for a given user to match the provided list of role codes.
+     *
+     * @param User $user
+     * @param array $roleCodes
+     * @param User $admin
+     * @param string $justification
+     * @return User
+     */
     public function updateUserRoles(User $user, array $roleCodes, User $admin, string $justification): User
     {
-        // Normalize requested role identifiers to strings and ensure default 'user' role
-        //        $existing = Role::whereIn('code', $roleCodes)->pluck('id', 'code');
-        //        $missing  = array_values(array_diff($roleCodes, $existing->keys()->all()));
+        $normalize = fn($v) => Str::slug(mb_strtolower((string) $v));
 
+        $user->loadMissing('roles');
+        $previousRoles = $this->getNormalizedRoles($user->roles, $normalize);
+        $requested = $this->getNormalizedRequestedRoles($roleCodes, $normalize);
+
+        $roleIds = $this->resolveRoleIds($requested);
+        $user->roles()->sync(array_values(array_unique($roleIds)));
+
+        $this->clearDepartmentIfNeeded($user, $previousRoles, $requested, $admin, $justification);
+        $this->logUserRoleUpdate($user, $roleCodes, $admin, $justification);
+
+        return $user->load('roles');
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection $roles
+     * @param callable $normalize
+     * @return array
+     */
+    private function getNormalizedRoles($roles, callable $normalize): array
+    {
+        return $roles
+            ->map(fn($r) => $normalize($r->name ?? $r->code ?? ''))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array $roleCodes
+     * @param callable $normalize
+     * @return array
+     */
+    private function getNormalizedRequestedRoles(array $roleCodes, callable $normalize): array
+    {
         $requested = collect($roleCodes)
-            ->map(fn($v) => mb_strtolower((string) $v))
+            ->map($normalize)
             ->filter(fn($v) => $v !== '')
             ->values()
             ->all();
         if (!in_array('user', $requested, true)) {
-            $requested[] = 'user'; // default role for all users
+            $requested[] = 'user';
         }
+        return $requested;
+    }
 
-        // Resolve existing roles case-insensitively by matching either code OR name (to handle legacy data)
+    /**
+     * @param array $requested
+     * @return array
+     */
+    private function resolveRoleIds(array $requested): array
+    {
         $roles = Role::query()
             ->whereIn(DB::raw('LOWER(code)'), $requested)
             ->orWhereIn(DB::raw('LOWER(name)'), $requested)
@@ -169,28 +218,80 @@ class UserService
         $foundIds = $roles->pluck('id')->all();
         $foundKeysLower = $roles
             ->flatMap(function ($r) {
-                return [mb_strtolower((string)$r->code) => true, mb_strtolower((string)$r->name) => true];
+                return [
+                    Str::slug(mb_strtolower((string)$r->code)) => true,
+                    Str::slug(mb_strtolower((string)$r->name)) => true,
+                ];
             })
             ->keys()
             ->all();
 
-        // Create any missing roles using the provided string as the CODE; name is prettified
         $missing = array_values(array_diff($requested, $foundKeysLower));
         foreach ($missing as $rcode) {
             $created = Role::firstOrCreate(
                 ['code' => $rcode],
                 ['name' => Str::of($rcode)->replace('-', ' ')->title()]
             );
-            //            $existing[$rcode] = $created->id;
             $foundIds[] = (int) $created->id;
         }
+        return $foundIds;
+    }
 
-        // Sync the roles in the pivot table (dedup IDs)
-        $user->roles()->sync(array_values(array_unique($foundIds)));
+    /**
+     * @param User $user
+     * @param array $previousRoles
+     * @param array $requested
+     * @param User $admin
+     * @param string $justification
+     */
+    private function clearDepartmentIfNeeded(User $user, array $previousRoles, array $requested, User $admin, string $justification): void
+    {
+        $requiresDepartment = function (array $codes) {
+            $codes = collect($codes)->map(fn($c) => Str::slug(mb_strtolower((string) $c)))->all();
+            return in_array('department-director', $codes, true) || in_array('venue-manager', $codes, true);
+        };
+        $hadDeptRole = $requiresDepartment($previousRoles);
+        $hasDeptRole = $requiresDepartment($requested);
+        if ($hadDeptRole && !$hasDeptRole && $user->department_id !== null) {
+            $user->department_id = null;
+            $user->save();
 
-        // After $user->roles()->sync(...);
+            if ($admin && $admin->id) {
+                $meta = [
+                    'user_id'    => (int) ($user->id ?? 0),
+                    'user_email' => (string) ($user->email ?? ''),
+                    'removed_department' => true,
+                    'source' => 'user_roles_update',
+                ];
+                if (($just = trim((string) $justification)) !== '') {
+                    $meta['justification'] = $just;
+                }
+                $ctx = ['meta' => $meta];
+                try {
+                    if (function_exists('request') && request()) {
+                        $ctx = app(AuditService::class)->buildContextFromRequest(request(), $meta);
+                    }
+                } catch (\Throwable) { /* best-effort */ }
 
-        // Require explicit admin for audit logging; no fallback
+                $this->auditService->logAdminAction(
+                    $admin->id,
+                    'department',
+                    'USER_DEPT_REMOVED_ROLE',
+                    (string) ($user->id ?? 0),
+                    $ctx
+                );
+            }
+        }
+    }
+
+    /**
+     * @param User $user
+     * @param array $roleCodes
+     * @param User $admin
+     * @param string $justification
+     */
+    private function logUserRoleUpdate(User $user, array $roleCodes, User $admin, string $justification): void
+    {
         if ($admin && $admin->id) {
             $actorName = trim(((string)($admin->first_name ?? '')) . ' ' . ((string)($admin->last_name ?? '')));
             if ($actorName === '') {
@@ -206,8 +307,7 @@ class UserService
                     $ctx = app(AuditService::class)
                         ->buildContextFromRequest(request(), $ctx['meta']);
                 }
-            } catch (\Throwable) { /* queue/no-http */
-            }
+            } catch (\Throwable) { /* queue/no-http */ }
 
             $this->auditService->logAdminAction(
                 $admin->id,
@@ -217,9 +317,6 @@ class UserService
                 $ctx
             );
         }
-
-        // Return the user with the fresh roles loaded
-        return $user->load('roles');
     }
 
     /**
@@ -403,5 +500,118 @@ class UserService
         })
             ->with(['department', 'roles'])
             ->get();
+    }
+
+    /**
+     * Paginate normalized user rows for the admin list without exposing Eloquent models to the component.
+     *
+     * @param array<string,mixed> $filters
+     * @param int $perPage
+     * @param int $page
+     * @param array{field?:string|null,direction?:string|null}|null $sort
+     */
+    public function paginateUserRows(array $filters = [], int $perPage = 10, int $page = 1, ?array $sort = null): LengthAwarePaginator
+    {
+        $query = User::query()
+            ->with(['department', 'roles'])
+            ->whereNull('deleted_at');
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . mb_strtolower($search) . '%';
+            $query->where(function ($builder) use ($like) {
+                $builder->whereRaw('LOWER(first_name) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(last_name) LIKE ?', [$like])
+                    ->orWhereRaw("LOWER(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ?", [$like])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$like]);
+            });
+        }
+
+        $role = $filters['role'] ?? '';
+        if ($role === '__none__') {
+            $query->whereDoesntHave('roles');
+        } elseif (is_string($role) && $role !== '') {
+            $query->whereHas('roles', function ($builder) use ($role) {
+                $builder->where('name', $role);
+            });
+        }
+
+        $direction = strtolower($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+        $field = $sort['field'] ?? null;
+        if ($field === 'email') {
+            $query->orderBy('email', $direction);
+        } elseif ($field === 'name') {
+            $query->orderBy('first_name', $direction)->orderBy('last_name', $direction);
+        } else {
+            // Default to stable id sort like venues list
+            $query->orderBy('id', 'asc');
+        }
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
+        $collection = $paginator->getCollection()->map(fn(User $user) => $this->mapUserToRow($user));
+        $paginator->setCollection($collection);
+
+        return $paginator;
+    }
+
+    /**
+     * Retrieve a single normalized row for the given user id.
+     */
+    public function getUserRowById(int $userId): ?array
+    {
+        $user = User::with(['department', 'roles'])->find($userId);
+        if (!$user) {
+            return null;
+        }
+
+        return $this->mapUserToRow($user);
+    }
+
+    /**
+     * Build the lightweight data structure consumed by Livewire.
+     */
+    protected function mapUserToRow(User $user): array
+    {
+        $name = trim(trim((string)($user->first_name ?? '')) . ' ' . trim((string)($user->last_name ?? '')));
+        if ($name === '') {
+            $name = (string)($user->email ?? '');
+        }
+
+        $roles = $user->roles
+            ->map(fn($role) => Str::slug(mb_strtolower((string)($role->name ?? ($role->code ?? '')))))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $departmentName = optional($user->department)->name;
+
+        return [
+            'id' => (int)($user->id ?? 0),
+            'name' => $name,
+            'email' => (string)($user->email ?? ''),
+            'department' => $departmentName !== null ? (string)$departmentName : '',
+            'roles' => $roles,
+        ];
+    }
+
+    /**
+     * Determine if there is exactly one admin user (soft-deletes excluded).
+     * If a user id is provided, ensure that id matches the sole admin.
+     */
+    public function isLastAdmin(?int $userId = null): bool
+    {
+        $adminIds = User::query()
+            ->whereNull('deleted_at')
+            ->whereHas('roles', fn($q) => $q->where('name', 'admin'))
+            ->pluck('id');
+
+        $count = $adminIds->count();
+        if ($count !== 1) {
+            return false;
+        }
+
+        $onlyAdminId = (int) $adminIds->first();
+        return $userId === null ? true : $onlyAdminId === (int) $userId;
     }
 }

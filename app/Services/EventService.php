@@ -14,8 +14,6 @@ use App\Models\Venue;
 use Illuminate\Support\Collection as SupportCollection;
 use Carbon\Carbon;
 use DateTime;
-use Doctrine\DBAL\Query;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Event\EventCollection;
@@ -76,8 +74,8 @@ class EventService
             $status = match ($action) {
                 'publish' => !empty($data['organization_advisor_email'])
                     ? 'pending - advisor approval'
-                    : 'pending - approval', // fallback if advisor not set
-                default   => 'created',
+                    : 'pending - approval',
+                default   => 'draft',
             };
 
             //             if ($action !== 'publish') {
@@ -99,7 +97,7 @@ class EventService
                     'organization_name' => $data['organization_name'] ?? null,
                     'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
                     'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
-                    //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+                    'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
 
                     'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
                     'creator_phone_number' => $data['creator_phone_number'] ?? null,
@@ -277,14 +275,13 @@ class EventService
             }
 
             $nextStatus = $statusFlow[$currentStatus];
-            $result = $this->commitStatusTransition($event, $nextStatus, $approver, 'approved', $comment);
 
             // Atomic update
             $updated = $this->updateEventStatus($event, $currentStatus, $nextStatus);
             if ($updated === 0) return $event; // stop if race condition occurred
 
             // Update last history record
-            $this->updateLastHistory($event, $approver, $data['comment'] ?? null, 'approved');
+            $this->updateLastHistory($event, $approver, $comment, 'approved');
 
             // Run audit trail
             // AUDIT: approver advanced approval stage (or final approval)
@@ -310,13 +307,13 @@ class EventService
 
             // Create new pending history only if not final approval
             if ($nextStatus !== 'approved') {
-                $this->createPendingHistory($result, $nextStatus, $approver);
+                $this->createPendingHistory($event, $nextStatus, $approver);
             }
 
-            if ($result->status === $nextStatus) {
+            if ($event->status === $nextStatus) {
                 $this->auditService->logEventAdminAction(
                     $approver,
-                    $result,
+                    $event,
                     'EVENT_APPROVED',
                     [
                         'next_status' => $nextStatus,
@@ -325,7 +322,7 @@ class EventService
                 );
             }
 
-            return $result;
+            return $event->refresh();
         });
     }
 
@@ -548,8 +545,7 @@ class EventService
      */
     public function getMyRequestedEvents(User $user): \Illuminate\Database\Eloquent\Builder
     {
-        return Event::where('creator_id', $user->id)
-            ->whereRaw('LOWER(status) <> ?', ['draft']);
+        return Event::where('creator_id', $user->id);
     }
 
     /**
@@ -573,8 +569,7 @@ class EventService
             'deanship-of-administration-approver' => Event::query()
                 ->where('status', 'pending - deanship of administration approval'),
             default => Event::query()
-                ->where('creator_id', $user->id)
-                ->whereRaw('LOWER(status) <> ?', ['draft']),
+                ->where('creator_id', $user->id),
         };
     }
 
@@ -587,7 +582,7 @@ class EventService
      */
     public function genericGetPendingRequestsV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Event::query()->whereRaw('LOWER(status) <> ?', ['draft']);
+        $query = Event::query();
 
         // Get roles the user actually has
         $userRoles = $user->roles->pluck('name')->toArray();
@@ -650,7 +645,6 @@ class EventService
     public function genericApproverRequestHistory(User $user): \Illuminate\Database\Eloquent\Builder
     {
         return Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
-            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($query) use ($user) {
                 $query->where('approver_id', $user->id);
             })
@@ -679,7 +673,6 @@ class EventService
             'organization_name',
             'created_at'
         )
-            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($q) use ($user) {
                 $q->where('approver_id', $user->id);
             })
@@ -802,6 +795,7 @@ class EventService
                 'organization_name'             => 'organization_name',
                 'organization_advisor_name'     => 'organization_advisor_name',
                 'organization_advisor_email'    => 'organization_advisor_email',
+                'organization_advisor_phone'    => 'organization_advisor_phone',
                 'creator_institutional_number'  => 'creator_institutional_number',
                 'creator_phone_number'          => 'creator_phone_number',
                 'title'                         => 'title',
@@ -1057,9 +1051,7 @@ class EventService
      */
     public function getEventRows(array $filters = []): SupportCollection
     {
-        $q = Event::query()->with(['venue', 'requester', 'categories'])
-            ->whereRaw('LOWER(status) <> ?', ['draft']);
-
+        $q = Event::query()->with(['venue', 'requester', 'categories']);
         if (!empty($filters['status'])) {
             $q->where('status', (string) $filters['status']);
         }
@@ -1078,64 +1070,64 @@ class EventService
 
         $events = $q->orderByDesc('created_at')->get();
 
-        return $events->map(function ($e) {
-            $from = $e->start_time instanceof DateTimeInterface ? $e->start_time->format('Y-m-d H:i') : (string)$e->start_time;
-            $to   = $e->end_time   instanceof DateTimeInterface ? $e->end_time->format('Y-m-d H:i')   : (string)$e->end_time;
-            $requestor = method_exists($e, 'requester') && $e->requester
-                ? trim(($e->requester->first_name ?? '') . ' ' . ($e->requester->last_name ?? ''))
-                : ('User ' . (string)($e->creator_id ?? ''));
-            $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
-            $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
-            $status = (string)($e->status ?? '');
-            $statusNorm = mb_strtolower(trim($status));
-            $status_is_cancelled = str_contains($statusNorm, 'cancel');
-            $status_is_denied = str_contains($statusNorm, 'reject') || str_contains($statusNorm, 'deny');
-            $status_is_withdrawn = str_contains($statusNorm, 'withdraw');
-            $status_is_completed = str_contains($statusNorm, 'completed');
-            $status_is_approved = $statusNorm === 'approved';
-            $endTime = $e->end_time;
-            $is_past_event = false;
-            try {
-                $endAt = null;
-                if ($endTime instanceof DateTimeInterface) {
-                    $endAt = Carbon::instance($endTime);
-                } elseif (!empty($endTime)) {
-                    $endAt = Carbon::parse((string)$endTime);
-                }
-                if ($endAt) {
-                    $is_past_event = $endAt->isPast();
-                }
+        return $events->map(fn($event) => $this->mapEventToRow($event))->values();
+    }
+
+    /**
+     * Paginate normalized event rows for Livewire using DB-side filtering.
+     *
+     * @param array<string,mixed> $filters
+     */
+    public function paginateEventRows(array $filters = [], int $perPage = 10, int $page = 1): LengthAwarePaginator
+    {
+        $query = Event::query()
+            ->with(['venue', 'requester', 'categories']);
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . mb_strtolower($search) . '%';
+            $query->where(function ($builder) use ($like) {
+                $builder->whereRaw('LOWER(title) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(organization_name) LIKE ?', [$like])
+                    ->orWhereHas('requester', function ($requesterQuery) use ($like) {
+                        $requesterQuery->whereRaw("LOWER(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ?", [$like])
+                            ->orWhereRaw('LOWER(email) LIKE ?', [$like]);
+                    });
+            });
+        }
+        if (!empty($filters['status'])) {
+            $query->where('status', (string)$filters['status']);
+        }
+        if (!empty($filters['venue_id'])) {
+            $query->where('venue_id', (int)$filters['venue_id']);
+        } elseif (!empty($filters['venue_name'])) {
+            $venueName = (string)$filters['venue_name'];
+            $query->whereHas('venue', function ($venueQuery) use ($venueName) {
+                $venueQuery->where('name', $venueName);
+            });
+        }
+        if (!empty($filters['category'])) {
+            $category = (string)$filters['category'];
+            $query->whereHas('categories', function ($categoryQuery) use ($category) {
+                $categoryQuery->where('name', $category);
+            });
+        }
+            if (!empty($filters['from'])) {
+                try {
+                    $from = Carbon::parse(str_replace('T', ' ', (string)$filters['from']));
+                    $query->where('start_time', '>=', $from);
+                    } catch (\Throwable) {}
+        }
+            if (!empty($filters['to'])) {
+                try {
+                $to = Carbon::parse(str_replace('T', ' ', (string)$filters['to']));
+                $query->where('end_time', '<=', $to);
             } catch (\Throwable) {
-                $is_past_event = false;
+                // ignore invalid date
             }
-            return [
-                'id' => (int)$e->id,
-                'title' => (string)($e->title ?? 'Untitled'),
-                'requestor' => $requestor,
-                'organization' => (string)($e->organization_name ?? ''),
-                'organization_advisor_name' => (string)($e->organization_advisor_name ?? ''),
-                'organization_advisor_email' => (string)($e->organization_advisor_email ?? ''),
-                'venue' => (string)$venueName,
-                'venue_id' => (int)($e->venue_id ?? 0),
-                'from' => (string)$from,
-                'to' => (string)$to,
-                'status' => $status,
-                'category' => (string)$category,
-                'updated' => now()->format('Y-m-d H:i'),
-                'description' => (string)($e->description ?? ''),
-                'attendees' => (int)($e->guest_size ?? 0),
-                'handles_food' => (bool)($e->handles_food ?? false),
-                'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
-                'external_guest' => (bool)($e->external_guest ?? false),
-                // Computed status fields for UI logic
-                'status_is_cancelled' => $status_is_cancelled,
-                'status_is_denied' => $status_is_denied,
-                'status_is_withdrawn' => $status_is_withdrawn,
-                'status_is_completed' => $status_is_completed,
-                'status_is_approved' => $status_is_approved,
-                'is_past_event' => $is_past_event,
-            ];
-        })->values();
+        }
+        $paginator = $query->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', max(1, $page));
+        $paginator->setCollection($paginator->getCollection()->map(fn($event) => $this->mapEventToRow($event)));
+        return $paginator;
     }
 
     /**
@@ -1190,11 +1182,111 @@ class EventService
             ->values();
     }
 
+    /**
+     * Normalize an Event model to the array shape used by admin views.
+     *
+     * @param \App\Models\Event $event
+     * @return array<string,mixed>
+     */
+    protected function mapEventToRow(Event $event): array
+    {
+        $formatDate = function ($value): string {
+            try {
+                if ($value instanceof DateTimeInterface) {
+                    return Carbon::instance($value)->toDayDateTimeString();
+                }
+                if (!empty($value)) {
+                    return Carbon::parse((string) $value)->toDayDateTimeString();
+                }
+            } catch (\Throwable) {
+                // fall through to raw string cast
+            }
+            return (string) ($value ?? '');
+        };
+
+        $from = $formatDate($event->start_time ?? null);
+        $to   = $formatDate($event->end_time ?? null);
+
+        $requestor = method_exists($event, 'requester') && $event->requester
+            ? trim(($event->requester->first_name ?? '') . ' ' . ($event->requester->last_name ?? ''))
+            : ('User ' . (string)($event->creator_id ?? ''));
+
+        $venueName = method_exists($event, 'venue') && $event->venue
+            ? ($event->venue->name ?? $event->venue->code ?? '')
+            : '';
+
+        $category = method_exists($event, 'categories') && $event->categories?->first()?->name
+            ? $event->categories->first()->name
+            : '';
+
+        $status = (string)($event->status ?? '');
+        $statusNorm = mb_strtolower(trim($status));
+        $statusCancelled = str_contains($statusNorm, 'cancel');
+        $statusDenied = str_contains($statusNorm, 'reject') || str_contains($statusNorm, 'deny');
+        $statusWithdrawn = str_contains($statusNorm, 'withdraw');
+        $statusCompleted = str_contains($statusNorm, 'completed');
+        $statusApproved = $statusNorm === 'approved';
+
+        $isPast = false;
+        try {
+            $endAt = null;
+            if ($event->end_time instanceof DateTimeInterface) {
+                $endAt = Carbon::instance($event->end_time);
+            } elseif (!empty($event->end_time)) {
+                $endAt = Carbon::parse((string)$event->end_time);
+            }
+            if ($endAt) {
+                $isPast = $endAt->isPast();
+            }
+        } catch (\Throwable) {
+            $isPast = false;
+        }
+
+        return [
+            'id' => (int)($event->id ?? 0),
+            'title' => (string)($event->title ?? 'Untitled'),
+            'requestor' => $requestor,
+            'organization' => (string)($event->organization_name ?? ''),
+            'organization_advisor_name' => (string)($event->organization_advisor_name ?? ''),
+            'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
+            'venue' => $venueName,
+            'venue_id' => (int)($event->venue_id ?? 0),
+            'from' => $from,
+            'to' => $to,
+            'status' => $status,
+            'category' => $category,
+            'updated' => now()->format('Y-m-d H:i'),
+            'description' => (string)($event->description ?? ''),
+            'attendees' => (int)($event->guest_size ?? 0),
+            'handles_food' => (bool)($event->handles_food ?? false),
+            'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
+            'external_guest' => (bool)($event->external_guest ?? false),
+            'status_is_cancelled' => $statusCancelled,
+            'status_is_denied' => $statusDenied,
+            'status_is_withdrawn' => $statusWithdrawn,
+            'status_is_completed' => $statusCompleted,
+            'status_is_approved' => $statusApproved,
+            'is_past_event' => $isPast,
+        ];
+    }
+
+    /**
+     * Return a single normalized row for the admin views.
+     */
+    public function getEventRowById(int $id): ?array
+    {
+        if ($id <= 0) {
+            return null;
+        }
+
+        $event = Event::with(['venue', 'requester', 'categories'])->find($id);
+
+        return $event ? $this->mapEventToRow($event) : null;
+    }
+
+
+    
     // [
-    //     venue_id => [],
-    //     category_id => [],
-    //     organization_name => []
-    // ]
     /**
      * Fetch paginated history for an approver with optional filters.
      *
@@ -1205,7 +1297,6 @@ class EventService
     public function getApproverRequestHistory(User $user, $filters = [])
     {
         $query = Event::select('id', 'title', 'description', 'start_time', 'end_time', 'venue_id', 'organization_name', 'created_at')
-            ->whereRaw('LOWER(status) <> ?', ['draft'])
             ->whereHas('history', function ($query) use ($user) {
                 $query->where('approver_id', $user->id);
             })

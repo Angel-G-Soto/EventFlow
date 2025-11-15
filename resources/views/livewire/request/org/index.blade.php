@@ -67,7 +67,7 @@
                     <tr>
                         <td class="fw-medium">{{$event->title ?? '—' }}</td>
                         <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
-                        <td class="fw-medium">{{\Carbon\Carbon::parse($event->created_at)->toDayDateTimeString()}}</td>
+                        <td class="fw-medium">{{ \Carbon\Carbon::parse($event->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium">
                         @if($event->status === 'cancelled' || $event->status === 'withdrawn' || $event->status === 'rejected')
                                 <span class="badge rounded-pill bg-danger">{{$event->getSimpleStatus()}}</span>
@@ -79,7 +79,7 @@
                         @endif
                         </td>
                         <td class="fw-medium text-end">
-                            <button class="btn btn-outline-secondary text-end" style="text-align: right"
+                            <button class="btn btn-secondary text-end" style="text-align: right"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
                                     onclick="window.location='{{ route('user.request',['event'=>$event]) }}'">
                                 <i class="bi bi-eye me-1"></i> View details
@@ -99,4 +99,3 @@
         {{ $events->withQueryString()->onEachSide(1)->links() }}
     </div>
 </div>
-

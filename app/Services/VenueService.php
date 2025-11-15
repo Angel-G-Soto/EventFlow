@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Event;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
+use Illuminate\Support\Str;
 
 class VenueService
 {
@@ -131,12 +133,100 @@ class VenueService
                     }
                 }
             }
-            return $query->orderBy('name')->paginate(10);
+            return $query->orderBy('id', 'asc')->paginate(10);
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
             throw new Exception('Unable to fetch the venues.');
         }
+    }
+
+    /**
+     * Paginate venues with filtering and lightweight rows for the admin component.
+     *
+     * @param array<string,mixed> $filters
+     * @param int $perPage
+     * @param int $page
+     * @param array{field?:string|null,direction?:string|null}|null $sort
+     */
+    public function paginateVenueRows(array $filters = [], int $perPage = 10, int $page = 1, ?array $sort = null): LengthAwarePaginator
+    {
+        $query = Venue::query()
+            ->with(['department'])
+            ->whereNull('deleted_at');
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $query->where(function ($builder) use ($like) {
+                $builder->where('name', 'like', $like)
+                    ->orWhere('code', 'like', $like);
+            });
+        }
+
+        if (!empty($filters['department_name'])) {
+            $departmentName = (string)$filters['department_name'];
+            $query->whereHas('department', function ($deptQuery) use ($departmentName) {
+                $deptQuery->where('name', $departmentName);
+            });
+        }
+
+        if (isset($filters['cap_min']) && $filters['cap_min'] !== null && $filters['cap_min'] !== '') {
+            $query->where('capacity', '>=', (int)$filters['cap_min']);
+        }
+        if (isset($filters['cap_max']) && $filters['cap_max'] !== null && $filters['cap_max'] !== '') {
+            $query->where('capacity', '<=', (int)$filters['cap_max']);
+        }
+
+        $direction = strtolower($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+        $field = $sort['field'] ?? null;
+        if ($field === 'capacity') {
+            $query->orderBy('capacity', $direction);
+        } elseif ($field === 'name') {
+            $query->orderBy('name', $direction);
+        } else {
+            $query->orderBy('id', 'asc');
+        }
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
+        $paginator->setCollection(
+            $paginator->getCollection()->map(function (Venue $venue) {
+                return [
+                    'id' => (int)$venue->id,
+                    'name' => (string)$venue->name,
+                    'room' => (string)($venue->code ?? ''),
+                    'capacity' => (int)($venue->capacity ?? 0),
+                    'department' => (string)(optional($venue->department)->name ?? ''),
+                    'opening' => $venue->opening_time ? substr((string)$venue->opening_time, 0, 5) : null,
+                    'closing' => $venue->closing_time ? substr((string)$venue->closing_time, 0, 5) : null,
+                ];
+            })
+        );
+
+        return $paginator;
+    }
+
+    /**
+     * Distinct list of departments that currently own at least one active venue.
+     *
+     * @return array<int,string>
+     */
+    public function listVenueDepartments(): array
+    {
+        return Department::query()
+            ->whereNull('deleted_at')
+            ->whereHas('venues', function ($builder) {
+                $builder->whereNull('deleted_at');
+            })
+            ->pluck('name')
+            ->map(fn($name) => trim((string)$name))
+            ->filter(fn($name) => $name !== '')
+            ->unique(function ($name) {
+                return mb_strtolower($name);
+            })
+            ->sortBy(fn($name) => mb_strtolower($name))
+            ->values()
+            ->all();
     }
 
     /**
@@ -334,8 +424,12 @@ class VenueService
 
             // CALL EVENT SERVICE METHOD // MOCK IT // reroutePendingVenueApprovals($venue->venue_id, $oldManagerId, $newManager->user_id);
 
-            // Assign to the manager the venue
-            $venue->manager()->associate($manager);
+            // Assign to the manager the venue when the schema supports it
+            $schema = $venue->getConnection()->getSchemaBuilder();
+            if ($schema->hasColumn($venue->getTable(), 'manager_id')) {
+                $venue->forceFill(['manager_id' => $manager->id]);
+                $venue->save();
+            }
 
             // Audit: director assigns manager to venue
             $directorLabel = $director->name ?? trim(((string)($director->first_name ?? '')) . ' ' . ((string)($director->last_name ?? '')));
@@ -471,6 +565,9 @@ class VenueService
                         throw new InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
                     }
                 }
+
+                $doc['hyperlink'] = $this->normalizeHyperlink((string) $doc['hyperlink']);
+                $trimmedData[$i] = $doc;
             }
 
             // Remove all requirements
@@ -809,8 +906,8 @@ class VenueService
                 );
             }
 
-            // Return collection of updated values
-            return $updatedVenues;
+            // Return collection sorted by numeric id for deterministic ordering
+            return $updatedVenues->sortBy('id', SORT_NUMERIC)->values();
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -991,5 +1088,23 @@ class VenueService
         } catch (\Throwable) {
             throw new Exception('Unable to remove the venues.');
         }
+    }
+
+    /**
+     * Guarantee hyperlinks include a scheme so browsers treat them as absolute URLs.
+     */
+    protected function normalizeHyperlink(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return $url;
+        }
+
+        $lower = Str::lower($url);
+        if (! Str::startsWith($lower, ['http://', 'https://'])) {
+            return 'https://' . ltrim($url, '/');
+        }
+
+        return $url;
     }
 }

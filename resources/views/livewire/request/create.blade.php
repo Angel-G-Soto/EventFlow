@@ -209,20 +209,30 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
-                    <input type="text" class="form-control" value="{{ $organization_name }}" disabled placeholder="Organization name">
+                    <input type="text" class="form-control" value="{{ $organization_name }}"
+                           disabled placeholder="Organization name">
                     @error('organization_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" {{--wire:model.defer="organization_advisor_name"--}} disabled placeholder="Enter advisor's name">
+                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" wire:model.defer="organization_advisor_name"
+                    disabled placeholder="Enter advisor's name">
                     @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" {{--wire:model.defer="organization_advisor_email"--}}  disabled placeholder="Enter advisor's email">
+                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" wire:model.defer="organization_advisor_email"
+{{--                    disabled --}}
+                           placeholder="Enter advisor's email"
+                    >
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">Advisor phone</label>
+                    <input type="text" class="form-control" wire:model.defer="organization_advisor_phone" placeholder="Enter advisor's phone number">
+                    @error('organization_advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
@@ -295,7 +305,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="btn btn-outline-secondary flex-fill"
+                                class="btn btn-secondary flex-fill"
                                 wire:click="resetVenueFilters"
                                 wire:loading.attr="disabled"
                                 wire:target="resetVenueFilters">
@@ -399,7 +409,7 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
                 <button
                     type="submit"
                     class="btn btn-primary"
@@ -543,7 +553,7 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
                 <button type="submit" class="btn btn-success">Submit Event</button>
             </div>
         </form>

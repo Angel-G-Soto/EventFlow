@@ -26,15 +26,28 @@
 
 <div>
     <div class="container my-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-            <h1 class="fw-bold mb-4">Approval Details</h1>
-            <button type="button"
-                    wire:click="back"
-                    class="btn btn-secondary ms-auto"
-                    wire:target="back"
-                    aria-label="Go Back">
-                Back
-            </button>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+            <h1 class="fw-bold mb-0">Approval Details</h1>
+            <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
+                @if($eventHistory->event->status === 'approved')
+                    <button type="button"
+                            class="btn btn-primary"
+                            wire:click="downloadSummary"
+                            wire:loading.attr="disabled"
+                            wire:target="downloadSummary"
+                            aria-label="Download PDF summary">
+                        <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                        <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                    </button>
+                @endif
+                <button type="button"
+                        wire:click="back"
+                        class="btn btn-secondary"
+                        wire:target="back"
+                        aria-label="Go Back">
+                    Back
+                </button>
+            </div>
         </div>
 
         {{-- Approver Action & Comment --}}
@@ -126,15 +139,25 @@
                     <dt class="col-sm-4">Organization</dt>
                     <dd class="col-sm-8">{{ $eventHistory->event->organization_name }}</dd>
 
-                    <dt class="col-sm-4">Advisor</dt>
-                    <dd class="col-sm-8">
-                        <a href="mailto:{{ $eventHistory->event->organization_advisor_email }}">
-                            {{ $eventHistory->event->organization_advisor_name }}
+                <dt class="col-sm-4">Advisor</dt>
+                <dd class="col-sm-8">
+                    <a href="mailto:{{ $eventHistory->event->organization_advisor_email }}">
+                        {{ $eventHistory->event->organization_advisor_name }}
+                    </a>
+                </dd>
+                <dt class="col-sm-4">Advisor Phone</dt>
+                <dd class="col-sm-8">
+                    @if($eventHistory->event->organization_advisor_phone)
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $eventHistory->event->organization_advisor_phone) }}">
+                            {{ $eventHistory->event->organization_advisor_phone }}
                         </a>
-                    </dd>
+                    @else
+                        —
+                    @endif
+                </dd>
 
                     <dt class="col-sm-4">Date Submitted</dt>
-                    <dd class="col-sm-8">{{ $eventHistory->event->created_at->format('M j, Y g:i A') }}</dd>
+                    <dd class="col-sm-8">{{ $eventHistory->event->created_at->format('D, M j, Y g:i A') }}</dd>
                 </dl>
             </div>
         </section>

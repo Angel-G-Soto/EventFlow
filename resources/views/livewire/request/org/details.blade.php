@@ -39,15 +39,28 @@
 @endphp
 
 <div class="container my-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h1 class="fw-bold">Event Details</h1>
-        <button type="button"
-                wire:click="back"
-                class="btn btn-secondary ms-auto"
-                wire:target="back"
-                aria-label="Go Back">
-            Back
-        </button>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+        <h1 class="fw-bold mb-0">Event Details</h1>
+        <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
+            @if($event->status === 'approved')
+                <button type="button"
+                        class="btn btn-primary"
+                        wire:click="downloadSummary"
+                        wire:loading.attr="disabled"
+                        wire:target="downloadSummary"
+                        aria-label="Download PDF summary">
+                    <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                    <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                </button>
+            @endif
+            <button type="button"
+                    wire:click="back"
+                    class="btn btn-secondary"
+                    wire:target="back"
+                    aria-label="Go Back">
+                Back
+            </button>
+        </div>
     </div>
 
     {{-- Event Header --}}
@@ -120,9 +133,19 @@
                         {{ $event->organization_advisor_name }}
                     </a>
                 </dd>
+                <dt class="col-sm-4">Advisor Phone</dt>
+                <dd class="col-sm-8">
+                    @if($event->organization_advisor_phone)
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $event->organization_advisor_phone) }}">
+                            {{ $event->organization_advisor_phone }}
+                        </a>
+                    @else
+                        —
+                    @endif
+                </dd>
 
                 <dt class="col-sm-4">Date Submitted</dt>
-                <dd class="col-sm-8">{{ $event->created_at->format('M j, Y g:i A') }}</dd>
+                <dd class="col-sm-8">{{ $event->created_at->format('D, M j, Y g:i A') }}</dd>
             </dl>
         </div>
     </section>
@@ -192,16 +215,16 @@
     <div class="d-flex gap-2 mb-3 container-fluid">
 
         @if($event->status === 'approved')
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
                 Cancel
             </button>
         @elseif(str_contains($event->status,'pending'))
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
                 Withdraw
             </button>
         @endif
 
-        <button type="button" wire:click="back" class="btn btn-outline-secondary ms-auto"
+        <button type="button" wire:click="back" class="btn btn-secondary ms-auto"
                 wire:target="back">
             Back
         </button>
@@ -232,7 +255,7 @@
 
                 <div class="modal-footer">
                     @if($event->status === 'approved')
-                        <button class="btn btn-outline-danger"
+                        <button class="btn btn-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
@@ -240,7 +263,7 @@
                         </button>
                     @elseif(str_contains($event->status,'pending'))
 
-                        <button class="btn btn-outline-danger"
+                        <button class="btn btn-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
