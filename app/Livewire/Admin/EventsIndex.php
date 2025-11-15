@@ -202,6 +202,7 @@ class EventsIndex extends Component
         $this->eOrganization   = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
         $this->eAdvisorName    = $request['organization_advisor_name']  ?? '';
         $this->eAdvisorEmail   = $request['organization_advisor_email'] ?? '';
+        $this->eAdvisorPhone   = $request['organization_advisor_phone'] ?? '';
         // Map to DB-backed creator fields
         $this->eStudentNumber  = $request['creator_institutional_number'] ?? '';
         $this->eStudentPhone   = $request['creator_phone_number'] ?? '';
@@ -259,6 +260,7 @@ class EventsIndex extends Component
                         'organization_name' => (string)$this->eOrganization,
                         'organization_advisor_name'  => (string)$this->eAdvisorName,
                         'organization_advisor_email' => (string)$this->eAdvisorEmail,
+                        'organization_advisor_phone' => (string)$this->eAdvisorPhone,
                         'creator_institutional_number' => (string)$this->eStudentNumber,
                         'creator_phone_number'          => (string)$this->eStudentPhone,
                         'handles_food' => (bool)$this->eHandlesFood,
@@ -608,7 +610,7 @@ class EventsIndex extends Component
             'eOrganization' => ['required', 'string', 'min:2', 'max:120', 'not_regex:/^\s*$/'],
             'eAdvisorName' => ['nullable', 'string', 'max:120'],
             'eAdvisorEmail' => ['nullable', 'email', 'max:120'],
-            // Advisor phone removed; no backing column in schema
+            'eAdvisorPhone' => ['nullable', 'string', 'max:30'],
             'eStudentNumber' => ['nullable', 'string', 'max:50'],
             'eStudentPhone' => ['nullable', 'string', 'max:50'],
         ];

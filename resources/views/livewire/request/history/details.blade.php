@@ -150,12 +150,22 @@
                     <dt class="col-sm-4">Organization</dt>
                     <dd class="col-sm-8">{{ $eventHistory->event->organization_name }}</dd>
 
-                    <dt class="col-sm-4">Advisor</dt>
-                    <dd class="col-sm-8">
-                        <a href="mailto:{{ $eventHistory->event->organization_advisor_email }}">
-                            {{ $eventHistory->event->organization_advisor_name }}
+                <dt class="col-sm-4">Advisor</dt>
+                <dd class="col-sm-8">
+                    <a href="mailto:{{ $eventHistory->event->organization_advisor_email }}">
+                        {{ $eventHistory->event->organization_advisor_name }}
+                    </a>
+                </dd>
+                <dt class="col-sm-4">Advisor Phone</dt>
+                <dd class="col-sm-8">
+                    @if($eventHistory->event->organization_advisor_phone)
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $eventHistory->event->organization_advisor_phone) }}">
+                            {{ $eventHistory->event->organization_advisor_phone }}
                         </a>
-                    </dd>
+                    @else
+                        —
+                    @endif
+                </dd>
 
                     <dt class="col-sm-4">Date Submitted</dt>
                     <dd class="col-sm-8">{{ $eventHistory->event->created_at->format('M j, Y g:i A') }}</dd>

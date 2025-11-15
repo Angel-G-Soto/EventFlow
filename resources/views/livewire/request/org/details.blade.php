@@ -133,6 +133,16 @@
                         {{ $event->organization_advisor_name }}
                     </a>
                 </dd>
+                <dt class="col-sm-4">Advisor Phone</dt>
+                <dd class="col-sm-8">
+                    @if($event->organization_advisor_phone)
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $event->organization_advisor_phone) }}">
+                            {{ $event->organization_advisor_phone }}
+                        </a>
+                    @else
+                        —
+                    @endif
+                </dd>
 
                 <dt class="col-sm-4">Date Submitted</dt>
                 <dd class="col-sm-8">{{ $event->created_at->format('M j, Y g:i A') }}</dd>
