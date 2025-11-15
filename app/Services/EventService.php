@@ -1189,12 +1189,22 @@ class EventService
      */
     protected function mapEventToRow(Event $event): array
     {
-        $from = $event->start_time instanceof DateTimeInterface
-            ? $event->start_time->format('Y-m-d H:i')
-            : (string)($event->start_time ?? '');
-        $to = $event->end_time instanceof DateTimeInterface
-            ? $event->end_time->format('Y-m-d H:i')
-            : (string)($event->end_time ?? '');
+        $formatDate = function ($value): string {
+            try {
+                if ($value instanceof DateTimeInterface) {
+                    return Carbon::instance($value)->toDayDateTimeString();
+                }
+                if (!empty($value)) {
+                    return Carbon::parse((string) $value)->toDayDateTimeString();
+                }
+            } catch (\Throwable) {
+                // fall through to raw string cast
+            }
+            return (string) ($value ?? '');
+        };
+
+        $from = $formatDate($event->start_time ?? null);
+        $to   = $formatDate($event->end_time ?? null);
 
         $requestor = method_exists($event, 'requester') && $event->requester
             ? trim(($event->requester->first_name ?? '') . ' ' . ($event->requester->last_name ?? ''))
