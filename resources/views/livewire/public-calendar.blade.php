@@ -13,10 +13,10 @@
             <h1 class="h4 mb-0">Events This Week</h1>
             @if($canFilterMyVenues)
                 <style>
-                    /* Green switch toggle */
+                    /* Blue switch toggle */
                     #filterMyVenues:checked {
-                        background-color: #28a745;
-                        border-color: #28a745;
+                        background-color: #0d6efd;
+                        border-color: #0d6efd;
                     }
                 </style>
                 <div class="form-check form-switch">
