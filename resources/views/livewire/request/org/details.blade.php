@@ -215,16 +215,16 @@
     <div class="d-flex gap-2 mb-3 container-fluid">
 
         @if($event->status === 'approved')
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
                 Cancel
             </button>
         @elseif(str_contains($event->status,'pending'))
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
                 Withdraw
             </button>
         @endif
 
-        <button type="button" wire:click="back" class="btn btn-outline-secondary ms-auto"
+        <button type="button" wire:click="back" class="btn btn-secondary ms-auto"
                 wire:target="back">
             Back
         </button>
@@ -255,7 +255,7 @@
 
                 <div class="modal-footer">
                     @if($event->status === 'approved')
-                        <button class="btn btn-outline-danger"
+                        <button class="btn btn-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
@@ -263,7 +263,7 @@
                         </button>
                     @elseif(str_contains($event->status,'pending'))
 
-                        <button class="btn btn-outline-danger"
+                        <button class="btn btn-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">

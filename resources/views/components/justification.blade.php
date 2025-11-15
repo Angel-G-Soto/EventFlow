@@ -20,7 +20,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-primary" type="submit">
           <i class="bi bi-check2 me-1"></i>Confirm
         </button>

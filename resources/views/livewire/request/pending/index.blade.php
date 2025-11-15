@@ -75,7 +75,7 @@
                                     @endif
                                 </td>
                                 <td class="fw-medium text-end">
-                                    <button class="btn btn-outline-secondary text-end" style="text-align: right"
+                                    <button class="btn btn-secondary text-end" style="text-align: right"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
                                             onclick="window.location='{{ route('approver.pending.request',['event'=>$event]) }}'">
                                         <i class="bi bi-eye me-1"></i> View details

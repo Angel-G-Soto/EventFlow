@@ -305,7 +305,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="btn btn-outline-secondary flex-fill"
+                                class="btn btn-secondary flex-fill"
                                 wire:click="resetVenueFilters"
                                 wire:loading.attr="disabled"
                                 wire:target="resetVenueFilters">
@@ -409,7 +409,7 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
                 <button
                     type="submit"
                     class="btn btn-primary"
@@ -553,7 +553,7 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
                 <button type="submit" class="btn btn-success">Submit Event</button>
             </div>
         </form>

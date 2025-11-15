@@ -72,7 +72,7 @@
                         </td>
                         <td class="fw-medium">{{ \Carbon\Carbon::parse($history->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium text-end">
-                            <button class="btn btn-outline-secondary text-end" style="text-align: right"
+                            <button class="btn btn-secondary text-end" style="text-align: right"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
                                     onclick="window.location='{{ route('approver.history.request',['eventHistory'=>$history]) }}'">
                                 <i class="bi bi-eye me-1"></i> View details
