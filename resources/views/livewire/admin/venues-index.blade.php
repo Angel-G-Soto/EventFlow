@@ -278,7 +278,7 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
-            aria-label="Cancel and close">Cancel</button>
+            aria-label="Back to venues"><i class="bi bi-arrow-left me-1"></i>Back</button>
           <button class="btn btn-primary" type="submit" aria-label="Upload CSV" @disabled(!$csvFile)
             wire:loading.attr="disabled" wire:target="csvFile,uploadCsv">
             <i class="bi bi-upload me-1"></i>Upload
