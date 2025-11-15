@@ -25,19 +25,6 @@ class UsersIndex extends Component
     public string $sortField = '';
     public string $sortDirection = 'asc';
 
-    // Accessors and Mutators
-    /**
-     * Returns true if the current user has a role that does not require a department to be associated with them.
-     *
-     * This property is used to conditionally render a department select input for users who are being edited.
-     *
-     * @return bool True if the current user has a role that does not require a department, false otherwise.
-     */
-
-
-    // Lifecycle
-    // No mount preload required when querying directly from the DB
-
     // Pagination & filter reactions
     /**
      * Navigates to a given page number.
