@@ -153,7 +153,7 @@ class UsersIndex extends Component
 
         $svc = app(UserService::class);
         if ($this->editId) {
-            // try {
+            try {
                 $user = $svc->findUserById((int)$this->editId);
                 [$first, $last] = $this->splitName($this->editName);
                 // $svc->updateUserProfile($user, [
@@ -169,10 +169,10 @@ class UsersIndex extends Component
                     $svc->assignUserToDepartment($user, (int) $deptId, Auth::user(), (string) $this->justification);
                 }
                 $this->toast('User updated');
-            // } catch (\Throwable $e) {
-            //     $this->addError('editEmail', 'Unable to update user.');
-            //     return;
-            // }
+            } catch (\Throwable $e) {
+                $this->addError('editEmail', 'Unable to update user.');
+                return;
+            }
         } else {
             try {
                 [$first, $last] = $this->splitName($this->editName);
