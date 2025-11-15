@@ -12,7 +12,7 @@
         <div class="mb-3">
           <label class="form-label required">Reason</label>
           <textarea class="form-control" rows="4" required wire:model.live="{{ $model ?? 'justification' }}"
-            placeholder="Enter your justification here..."></textarea>
+            placeholder="Type at least 10 characters..."></textarea>
           @error($model ?? 'justification')
           <small class="text-danger">{{ $message }}</small>
           @enderror
