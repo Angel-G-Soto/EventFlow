@@ -407,6 +407,14 @@ class UsersIndex extends Component
         ]);
     }
 
+    /**
+     * Keep pagination controls working with the shared pagination partial.
+     */
+    public function goToPage(int $target): void
+    {
+        $this->page = max(1, $target);
+    }
+
     protected function usersPaginator(): LengthAwarePaginator
     {
         $svc = app(UserService::class);

@@ -108,14 +108,14 @@
                 </button>
                 <button @class([ 'btn' , 'btn-outline-secondary'=> $r['status_is_cancelled'] || $r['status_is_denied']
                   ||
-                  $r['status_is_completed'] || $r['status_is_approved'],
+                  $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn'],
                   'btn-secondary' => !($r['status_is_cancelled'] || $r['status_is_denied'] ||
-                  $r['status_is_completed'] || $r['status_is_approved']),
+                  $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn']),
                   ]) wire:click="openEdit({{ $r['id'] }})"
                   aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}"
                   @disabled(
                   $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_completed'] ||
-                  $r['status_is_approved']
+                  $r['status_is_approved'] || $r['status_is_withdrawn']
                   )>
                   <i class="bi bi-pencil"></i>
                 </button>

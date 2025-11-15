@@ -2,10 +2,7 @@
 
 namespace App\Livewire\Admin;
 
-use App\Models\AuditTrail;
-use Carbon\CarbonImmutable;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;

@@ -28,24 +28,6 @@ class EventsIndex extends Component
      */
     public array $categoryPool = [];
 
-    // Accessors and Mutators
-    /**
-     * Organizations list from DB via service (distinct), no hardcoding.
-     *
-     * @return array<int,string>
-     */
-    public function getOrganizationsProperty(): array
-    {
-        try {
-            return app(EventService::class)
-                ->getDistinctOrganizations()
-                ->values()
-                ->all();
-        } catch (\Throwable $e) {
-            return [];
-        }
-    }
-
     /**
      * Status list from DB via service (distinct), no hardcoding.
      *
@@ -490,7 +472,7 @@ class EventsIndex extends Component
      *
      * The page is re-paginated if the current page number is not the same as the paginator's current page number.
      * The visible IDs are obtained from the paginator.
-     * The view is rendered with the paginator, visible IDs, and organizations.
+     * The view is rendered with the paginator, visible IDs, statuses, and venues.
      *
      * @return \Illuminate\Contracts\View\View
      */
