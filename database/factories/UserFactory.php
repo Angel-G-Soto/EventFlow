@@ -24,10 +24,17 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // Ensure names satisfy UI validation (letters/spaces only)
+        $first = preg_replace('/[^A-Za-z]/', '', fake()->firstName()) ?: 'User';
+        $last  = preg_replace('/[^A-Za-z]/', '', fake()->lastName()) ?: 'Example';
+        $domain = fake()->randomElement(['upr.edu', 'uprm.edu']);
+        $emailLocal = Str::slug($first . '.' . $last);
+        $email = $emailLocal . '+' . fake()->unique()->numberBetween(1000, 9999) . '@' . $domain;
+
         return [
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
-            'email' => fake()->unique()->safeEmail(),
+            'first_name' => $first,
+            'last_name' => $last,
+            'email' => $email,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

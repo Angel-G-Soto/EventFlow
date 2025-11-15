@@ -13,6 +13,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class DepartmentService
 {
@@ -101,8 +102,11 @@ class DepartmentService
         $field = $sort['field'] ?? null;
         if ($field === 'code') {
             $query->orderBy('code', $direction);
-        } else {
+        } elseif ($field === 'name') {
             $query->orderBy('name', $direction);
+        } else {
+            // Default to stable id sorting to match venues
+            $query->orderBy('id', 'asc');
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
@@ -251,7 +255,7 @@ class DepartmentService
                 /** @var \App\Services\AuditService $audit */
                 $audit = app(abstract: AuditService::class);
 
-                $actor   = auth()->user();
+                $actor   = Auth::user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {
@@ -322,7 +326,7 @@ class DepartmentService
                 /** @var \App\Services\AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = auth()->user();
+                $actor   = Auth::user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0 && $deleted) {
@@ -398,7 +402,7 @@ class DepartmentService
                 /** @var AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = auth()->user();
+                $actor   = Auth::user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {
@@ -469,7 +473,7 @@ class DepartmentService
                 /** @var AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = auth()->user();
+                $actor   = Auth::user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {
@@ -549,7 +553,7 @@ class DepartmentService
                 /** @var AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $actor   = auth()->user();
+                $actor   = Auth::user();
                 $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
                 if ($actorId > 0) {

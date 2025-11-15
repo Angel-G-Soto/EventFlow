@@ -290,11 +290,8 @@
                 placeholder="advisor@example.edu"></div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label>
-              <input
-                id="ev_e_advisor_phone"
-                class="form-control @error('eAdvisorPhone') is-invalid @enderror"
-                wire:model.live="eAdvisorPhone"
-                placeholder="###-###-####">
+              <input id="ev_e_advisor_phone" class="form-control @error('eAdvisorPhone') is-invalid @enderror"
+                wire:model.live="eAdvisorPhone" placeholder="###-###-####">
               @error('eAdvisorPhone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
@@ -364,13 +361,7 @@
               </div>
             </div>
 
-            {{-- Attached docs, approval history, route/step — placeholders for now --}}
-            <div class="col-12">
-              <div class="alert alert-secondary small mb-0">
-                <strong>Attachments:</strong> (links) • <strong>History:</strong> approvals/denials • <strong>Current
-                  Step:</strong> Department/Role
-              </div>
-            </div>
+            {{-- Attached docs, approval history, route/step placeholder removed --}}
           </div>
         </div>
         <div class="modal-footer d-flex justify-content-between">

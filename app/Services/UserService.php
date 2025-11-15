@@ -540,9 +540,11 @@ class UserService
         $field = $sort['field'] ?? null;
         if ($field === 'email') {
             $query->orderBy('email', $direction);
-        } else {
-            // Default to natural name sorting
+        } elseif ($field === 'name') {
             $query->orderBy('first_name', $direction)->orderBy('last_name', $direction);
+        } else {
+            // Default to stable id sort like venues list
+            $query->orderBy('id', 'asc');
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
@@ -591,5 +593,25 @@ class UserService
             'department' => $departmentName !== null ? (string)$departmentName : '',
             'roles' => $roles,
         ];
+    }
+
+    /**
+     * Determine if there is exactly one admin user (soft-deletes excluded).
+     * If a user id is provided, ensure that id matches the sole admin.
+     */
+    public function isLastAdmin(?int $userId = null): bool
+    {
+        $adminIds = User::query()
+            ->whereNull('deleted_at')
+            ->whereHas('roles', fn($q) => $q->where('name', 'admin'))
+            ->pluck('id');
+
+        $count = $adminIds->count();
+        if ($count !== 1) {
+            return false;
+        }
+
+        $onlyAdminId = (int) $adminIds->first();
+        return $userId === null ? true : $onlyAdminId === (int) $userId;
     }
 }

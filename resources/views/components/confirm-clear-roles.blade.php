@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">
-          <i class="bi bi-exclamation-triangle me-2 text-warning"></i>{{ $title ?? 'Clear user roles' }}
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ $title ?? 'Clear user roles' }}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>

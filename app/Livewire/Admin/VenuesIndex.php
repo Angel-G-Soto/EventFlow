@@ -205,6 +205,27 @@ class VenuesIndex extends Component
         }
     }
 
+            /**
+         * Validate CSV file for duplicate names/IDs before import.
+         */
+        protected function validateCsvFile($csvRows): void
+        {
+            $names = [];
+            $ids = [];
+            foreach ($csvRows as $row) {
+                $name = trim($row['name'] ?? '');
+                $id = $row['id'] ?? null;
+                if ($name === '' || $id === null) {
+                    throw new \Exception('CSV contains missing name or ID.');
+                }
+                if (in_array($id, $ids, true)) {
+                    throw new \Exception('CSV contains duplicate venue IDs: ' . $id);
+                }
+                $names[] = $name;
+                $ids[] = $id;
+            }
+        }
+
     /**
      * Poll for background CSV import status via cache
      */

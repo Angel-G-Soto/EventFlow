@@ -126,6 +126,9 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
@@ -140,6 +143,9 @@ class EventsIndex extends Component
     public function openView(int $id): void
     {
         $this->authorize('access-dashboard');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
@@ -192,6 +198,9 @@ class EventsIndex extends Component
     public function save(): void
     {
         $this->authorize('perform-override');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         // Validate fields before asking for justification
         $this->validate($this->eventFieldRules());
@@ -269,6 +278,9 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $this->editId = isset($id) && is_int($id) ? $id : null;
         $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'oversightConfirm');
@@ -280,6 +292,9 @@ class EventsIndex extends Component
     public function proceedDelete(): void
     {
         $this->authorize('perform-override');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         $this->dispatch('bs:close', id: 'oversightConfirm');
         $this->dispatch('bs:open', id: 'oversightJustify');
@@ -330,6 +345,9 @@ class EventsIndex extends Component
         $this->authorize('perform-override');
 
         $this->actionType = 'approve';
+        $this->justification = '';
+        $this->resetErrorBag();
+        $this->resetValidation();
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
@@ -338,11 +356,14 @@ class EventsIndex extends Component
      *
      * This function is used to deny an event request that has been flagged for oversight.
      * It will open the justification modal with the action type set to 'deny', allowing the user to enter a justification for the denial.
-     */    public function deny(): void
+     */
+    public function deny(): void
     {
         $this->authorize('perform-override');
 
         $this->actionType = 'deny';
+        $this->resetErrorBag();
+        $this->resetValidation();
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
@@ -356,19 +377,14 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $this->actionType = 'advance';
         $this->advanceTo = '';
         // First show confirmation; justification will be collected after confirm
         $this->dispatch('bs:open', id: 'oversightAdvance');
     }
-
-    /**
-     * Opens the justification modal with the action type set to 'reroute'.
-     *
-     * This function is used to re-route an event request that has been flagged for oversight.
-     * It will open the justification modal with the action type set to 'reroute', allowing the user to enter a justification for the re-routing.
-     */
-    // reroute removed
 
     // Confirm action flows
     /**
@@ -477,7 +493,7 @@ class EventsIndex extends Component
         $this->authorize('access-dashboard');
 
         // Keep category options aligned with DB state
-        $categories = $this->refreshCategoryPool();
+        $categories = !empty($this->categoryPool) ? $this->categoryPool : $this->refreshCategoryPool();
 
         $paginator = $this->eventsPaginator();
         $visibleIds = $paginator->pluck('id')->all();
@@ -568,17 +584,46 @@ class EventsIndex extends Component
      */
     protected function eventFieldRules(): array
     {
-        // Refresh categories from DB so validation stays in sync
-        $this->refreshCategoryPool();
-
+        if (empty($this->categoryPool)) {
+            $this->refreshCategoryPool();
+        }
+        $today = now()->format('Y-m-d H:i');
         return [
             'eTitle' => ['required', 'string', 'min:3', 'max:120', 'not_regex:/^\s*$/'],
             'ePurpose' => ['required', 'string', 'min:3', 'max:2000', 'not_regex:/^\s*$/'],
             'eVenueId' => ['required', 'integer', 'min:1'],
-            'eFrom' => ['required', 'string'], // validated as date in datesInOrder()
-            'eTo' => ['required', 'string'],   // validated as date in datesInOrder()
-            'eAttendees' => ['required', 'integer', 'min:1', 'max:50000'],
-            'eCategory' => ['required', 'string', Rule::in($this->categoryPool)],
+            'eFrom' => [
+                'required', 'string',
+                function ($attribute, $value, $fail) use ($today) {
+                    if (strtotime($value) < strtotime($today)) {
+                        $fail('Start date/time cannot be in the past.');
+                    }
+                }
+            ],
+            'eTo' => [
+                'required', 'string',
+                function ($attribute, $value, $fail) use ($today) {
+                    if (strtotime($value) < strtotime($today)) {
+                        $fail('End date/time cannot be in the past.');
+                    }
+                }
+            ],
+            'eAttendees' => [
+                'required', 'integer', 'min:1', 'max:50000',
+                function ($attribute, $value, $fail) {
+                    if ($value > 10000) {
+                        $fail('Attendee count seems unusually high.');
+                    }
+                }
+            ],
+            'eCategory' => [
+                'required', 'string', Rule::in($this->categoryPool),
+                function ($attribute, $value, $fail) {
+                    if (empty($this->categoryPool)) {
+                        $fail('No categories are available. Please contact an administrator.');
+                    }
+                }
+            ],
             'eHandlesFood' => ['boolean'],
             'eUseInstitutionalFunds' => ['boolean'],
             'eExternalGuest' => ['boolean'],

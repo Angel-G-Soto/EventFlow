@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class RoleFactory extends Factory
 {
@@ -22,11 +21,21 @@ class RoleFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake()->unique()->jobTitle();
+        // Keep role seeds aligned with the allowed roles in the app
+        $roles = [
+            ['name' => 'user', 'code' => 1],
+            ['name' => 'advisor', 'code' => 2],
+            ['name' => 'venue-manager', 'code' => 3],
+            ['name' => 'event-approver', 'code' => 4],
+            ['name' => 'system-admin', 'code' => 5],
+            ['name' => 'department-director', 'code' => 6],
+        ];
+
+        $role = $this->faker->randomElement($roles);
 
         return [
-            'name' => $name,
-            'code' => Str::slug($name), // e.g., "Lead Developer" becomes "lead-developer"
+            'name' => $role['name'],           // slug-lower identifier consumed by UI validation
+            'code' => (string)$role['code'],   // stored as string in schema
         ];
     }
 }
