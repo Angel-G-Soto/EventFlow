@@ -126,6 +126,9 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
@@ -140,6 +143,9 @@ class EventsIndex extends Component
     public function openView(int $id): void
     {
         $this->authorize('access-dashboard');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
@@ -192,6 +198,9 @@ class EventsIndex extends Component
     public function save(): void
     {
         $this->authorize('perform-override');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         // Validate fields before asking for justification
         $this->validate($this->eventFieldRules());
@@ -269,6 +278,9 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $this->editId = isset($id) && is_int($id) ? $id : null;
         $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'oversightConfirm');
@@ -280,6 +292,9 @@ class EventsIndex extends Component
     public function proceedDelete(): void
     {
         $this->authorize('perform-override');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         $this->dispatch('bs:close', id: 'oversightConfirm');
         $this->dispatch('bs:open', id: 'oversightJustify');
@@ -330,6 +345,9 @@ class EventsIndex extends Component
         $this->authorize('perform-override');
 
         $this->actionType = 'approve';
+        $this->justification = '';
+        $this->resetErrorBag();
+        $this->resetValidation();
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
@@ -338,11 +356,14 @@ class EventsIndex extends Component
      *
      * This function is used to deny an event request that has been flagged for oversight.
      * It will open the justification modal with the action type set to 'deny', allowing the user to enter a justification for the denial.
-     */    public function deny(): void
+     */
+    public function deny(): void
     {
         $this->authorize('perform-override');
 
         $this->actionType = 'deny';
+        $this->resetErrorBag();
+        $this->resetValidation();
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
@@ -356,19 +377,14 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $this->actionType = 'advance';
         $this->advanceTo = '';
         // First show confirmation; justification will be collected after confirm
         $this->dispatch('bs:open', id: 'oversightAdvance');
     }
-
-    /**
-     * Opens the justification modal with the action type set to 'reroute'.
-     *
-     * This function is used to re-route an event request that has been flagged for oversight.
-     * It will open the justification modal with the action type set to 'reroute', allowing the user to enter a justification for the re-routing.
-     */
-    // reroute removed
 
     // Confirm action flows
     /**

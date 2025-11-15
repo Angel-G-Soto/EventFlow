@@ -336,6 +336,26 @@ class UsersIndex extends Component
         $this->dispatch('toast', message: $message);
     }
 
+    /**
+     * Split a full name string into first and last name components.
+     *
+     * @return array{0:string,1:string}
+     */
+    protected function splitName(string $fullName): array
+    {
+        $fullName = trim($fullName);
+        if ($fullName === '') {
+            return ['', ''];
+        }
+
+        // Collapse extra spaces and split into first + remainder (as last)
+        $parts = preg_split('/\s+/', $fullName, 2, PREG_SPLIT_NO_EMPTY) ?: [];
+        $first = $parts[0] ?? '';
+        $last = $parts[1] ?? '';
+
+        return [$first, $last];
+    }
+
 
 
 
