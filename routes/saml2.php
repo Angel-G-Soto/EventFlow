@@ -66,6 +66,6 @@ Route::any('/auth/callback', function (Request $request) {
 
 Route::get('/auth/saml/metadata', function () {
 
-return Socialite::driver('saml2')->getServiceProviderMetadata();
+    return Socialite::driver('saml2')->getServiceProviderMetadata();
 
 })->name("saml.metadata");
