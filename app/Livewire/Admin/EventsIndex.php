@@ -51,13 +51,7 @@ class EventsIndex extends Component
     // Lifecycle
     public function mount(): void
     {
-        // Load categories for the edit dropdown and validation rules via service
-        try {
-            $categories = app(CategoryService::class)->getAllCategories();
-            $this->categoryPool = $categories->pluck('name')->sort()->values()->all();
-        } catch (\Throwable $e) {
-            $this->categoryPool = [];
-        }
+        $this->refreshCategoryPool();
     }
 
     // Filters: search update reaction
@@ -482,6 +476,9 @@ class EventsIndex extends Component
     {
         $this->authorize('access-dashboard');
 
+        // Keep category options aligned with DB state
+        $categories = $this->refreshCategoryPool();
+
         $paginator = $this->eventsPaginator();
         $visibleIds = $paginator->pluck('id')->all();
         // Venue options for filter (disambiguate duplicate names)
@@ -494,7 +491,7 @@ class EventsIndex extends Component
             'rows' => $paginator,
             'visibleIds' => $visibleIds,
             'statuses' => $this->statuses,
-            'categories' => $this->categoryPool,
+            'categories' => $categories,
             'venues' => $venues,
         ]);
     }
@@ -571,6 +568,9 @@ class EventsIndex extends Component
      */
     protected function eventFieldRules(): array
     {
+        // Refresh categories from DB so validation stays in sync
+        $this->refreshCategoryPool();
+
         return [
             'eTitle' => ['required', 'string', 'min:3', 'max:120', 'not_regex:/^\s*$/'],
             'ePurpose' => ['required', 'string', 'min:3', 'max:2000', 'not_regex:/^\s*$/'],
@@ -665,5 +665,21 @@ class EventsIndex extends Component
         }
     }
 
+    /**
+     * Refresh categories from the database for oversight UI and validation.
+     *
+     * @return array<int,string>
+     */
+    protected function refreshCategoryPool(): array
+    {
+        try {
+            $categories = app(CategoryService::class)->getAllCategories();
+            $this->categoryPool = $categories->pluck('name')->sort()->values()->all();
+        } catch (\Throwable $e) {
+            $this->categoryPool = [];
+        }
+
+        return $this->categoryPool;
+    }
 
 }
