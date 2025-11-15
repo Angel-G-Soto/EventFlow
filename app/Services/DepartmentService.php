@@ -102,8 +102,11 @@ class DepartmentService
         $field = $sort['field'] ?? null;
         if ($field === 'code') {
             $query->orderBy('code', $direction);
-        } else {
+        } elseif ($field === 'name') {
             $query->orderBy('name', $direction);
+        } else {
+            // Default to stable id sorting to match venues
+            $query->orderBy('id', 'asc');
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
