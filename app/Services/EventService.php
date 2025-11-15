@@ -281,7 +281,7 @@ class EventService
             if ($updated === 0) return $event; // stop if race condition occurred
 
             // Update last history record
-            $this->updateLastHistory($event, $approver, $data['comment'] ?? null, 'approved');
+            $this->updateLastHistory($event, $approver, $comment, 'approved');
 
             // Run audit trail
             // AUDIT: approver advanced approval stage (or final approval)
