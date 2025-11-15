@@ -14,8 +14,6 @@ use App\Models\Venue;
 use Illuminate\Support\Collection as SupportCollection;
 use Carbon\Carbon;
 use DateTime;
-use Doctrine\DBAL\Query;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Event\EventCollection;

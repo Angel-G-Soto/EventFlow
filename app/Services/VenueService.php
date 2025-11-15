@@ -132,7 +132,7 @@ class VenueService
                     }
                 }
             }
-            return $query->orderBy('name')->paginate(10);
+            return $query->orderBy('id', 'asc')->paginate(10);
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -181,8 +181,10 @@ class VenueService
         $field = $sort['field'] ?? null;
         if ($field === 'capacity') {
             $query->orderBy('capacity', $direction);
-        } else {
+        } elseif ($field === 'name') {
             $query->orderBy('name', $direction);
+        } else {
+            $query->orderBy('id', 'asc');
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
@@ -900,8 +902,8 @@ class VenueService
                 );
             }
 
-            // Return collection of updated values
-            return $updatedVenues;
+            // Return collection sorted by numeric id for deterministic ordering
+            return $updatedVenues->sortBy('id', SORT_NUMERIC)->values();
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {

@@ -146,22 +146,70 @@ class UserService
      * @param User|null $admin
      * @param string|null $justification Optional admin-provided justification to include in audit log.
      */
+    /**
+     * Synchronizes the roles for a given user to match the provided list of role codes.
+     *
+     * @param User $user
+     * @param array $roleCodes
+     * @param User $admin
+     * @param string $justification
+     * @return User
+     */
     public function updateUserRoles(User $user, array $roleCodes, User $admin, string $justification): User
     {
-        // Normalize requested role identifiers to strings and ensure default 'user' role
-        //        $existing = Role::whereIn('code', $roleCodes)->pluck('id', 'code');
-        //        $missing  = array_values(array_diff($roleCodes, $existing->keys()->all()));
+        $normalize = fn($v) => Str::slug(mb_strtolower((string) $v));
 
+        $user->loadMissing('roles');
+        $previousRoles = $this->getNormalizedRoles($user->roles, $normalize);
+        $requested = $this->getNormalizedRequestedRoles($roleCodes, $normalize);
+
+        $roleIds = $this->resolveRoleIds($requested);
+        $user->roles()->sync(array_values(array_unique($roleIds)));
+
+        $this->clearDepartmentIfNeeded($user, $previousRoles, $requested, $admin, $justification);
+        $this->logUserRoleUpdate($user, $roleCodes, $admin, $justification);
+
+        return $user->load('roles');
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection $roles
+     * @param callable $normalize
+     * @return array
+     */
+    private function getNormalizedRoles($roles, callable $normalize): array
+    {
+        return $roles
+            ->map(fn($r) => $normalize($r->name ?? $r->code ?? ''))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array $roleCodes
+     * @param callable $normalize
+     * @return array
+     */
+    private function getNormalizedRequestedRoles(array $roleCodes, callable $normalize): array
+    {
         $requested = collect($roleCodes)
-            ->map(fn($v) => mb_strtolower((string) $v))
+            ->map($normalize)
             ->filter(fn($v) => $v !== '')
             ->values()
             ->all();
         if (!in_array('user', $requested, true)) {
-            $requested[] = 'user'; // default role for all users
+            $requested[] = 'user';
         }
+        return $requested;
+    }
 
-        // Resolve existing roles case-insensitively by matching either code OR name (to handle legacy data)
+    /**
+     * @param array $requested
+     * @return array
+     */
+    private function resolveRoleIds(array $requested): array
+    {
         $roles = Role::query()
             ->whereIn(DB::raw('LOWER(code)'), $requested)
             ->orWhereIn(DB::raw('LOWER(name)'), $requested)
@@ -170,28 +218,80 @@ class UserService
         $foundIds = $roles->pluck('id')->all();
         $foundKeysLower = $roles
             ->flatMap(function ($r) {
-                return [mb_strtolower((string)$r->code) => true, mb_strtolower((string)$r->name) => true];
+                return [
+                    Str::slug(mb_strtolower((string)$r->code)) => true,
+                    Str::slug(mb_strtolower((string)$r->name)) => true,
+                ];
             })
             ->keys()
             ->all();
 
-        // Create any missing roles using the provided string as the CODE; name is prettified
         $missing = array_values(array_diff($requested, $foundKeysLower));
         foreach ($missing as $rcode) {
             $created = Role::firstOrCreate(
                 ['code' => $rcode],
                 ['name' => Str::of($rcode)->replace('-', ' ')->title()]
             );
-            //            $existing[$rcode] = $created->id;
             $foundIds[] = (int) $created->id;
         }
+        return $foundIds;
+    }
 
-        // Sync the roles in the pivot table (dedup IDs)
-        $user->roles()->sync(array_values(array_unique($foundIds)));
+    /**
+     * @param User $user
+     * @param array $previousRoles
+     * @param array $requested
+     * @param User $admin
+     * @param string $justification
+     */
+    private function clearDepartmentIfNeeded(User $user, array $previousRoles, array $requested, User $admin, string $justification): void
+    {
+        $requiresDepartment = function (array $codes) {
+            $codes = collect($codes)->map(fn($c) => Str::slug(mb_strtolower((string) $c)))->all();
+            return in_array('department-director', $codes, true) || in_array('venue-manager', $codes, true);
+        };
+        $hadDeptRole = $requiresDepartment($previousRoles);
+        $hasDeptRole = $requiresDepartment($requested);
+        if ($hadDeptRole && !$hasDeptRole && $user->department_id !== null) {
+            $user->department_id = null;
+            $user->save();
 
-        // After $user->roles()->sync(...);
+            if ($admin && $admin->id) {
+                $meta = [
+                    'user_id'    => (int) ($user->id ?? 0),
+                    'user_email' => (string) ($user->email ?? ''),
+                    'removed_department' => true,
+                    'source' => 'user_roles_update',
+                ];
+                if (($just = trim((string) $justification)) !== '') {
+                    $meta['justification'] = $just;
+                }
+                $ctx = ['meta' => $meta];
+                try {
+                    if (function_exists('request') && request()) {
+                        $ctx = app(AuditService::class)->buildContextFromRequest(request(), $meta);
+                    }
+                } catch (\Throwable) { /* best-effort */ }
 
-        // Require explicit admin for audit logging; no fallback
+                $this->auditService->logAdminAction(
+                    $admin->id,
+                    'department',
+                    'USER_DEPT_REMOVED_ROLE',
+                    (string) ($user->id ?? 0),
+                    $ctx
+                );
+            }
+        }
+    }
+
+    /**
+     * @param User $user
+     * @param array $roleCodes
+     * @param User $admin
+     * @param string $justification
+     */
+    private function logUserRoleUpdate(User $user, array $roleCodes, User $admin, string $justification): void
+    {
         if ($admin && $admin->id) {
             $actorName = trim(((string)($admin->first_name ?? '')) . ' ' . ((string)($admin->last_name ?? '')));
             if ($actorName === '') {
@@ -207,8 +307,7 @@ class UserService
                     $ctx = app(AuditService::class)
                         ->buildContextFromRequest(request(), $ctx['meta']);
                 }
-            } catch (\Throwable) { /* queue/no-http */
-            }
+            } catch (\Throwable) { /* queue/no-http */ }
 
             $this->auditService->logAdminAction(
                 $admin->id,
@@ -218,9 +317,6 @@ class UserService
                 $ctx
             );
         }
-
-        // Return the user with the fresh roles loaded
-        return $user->load('roles');
     }
 
     /**
