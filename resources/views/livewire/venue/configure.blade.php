@@ -163,6 +163,11 @@
         <h1 class="h4 mb-0">Requirements for: {{ $venue->name }}</h1>
 
         <div class="d-flex gap-2">
+            <button class="btn btn-danger" type="button"
+                    onclick="if(!confirm('Clear all requirements for this venue?')) return false;"
+                    wire:click="clearRequirements">
+                <i class="bi bi-trash"></i> Clear requirements
+            </button>
             <button class="btn btn-secondary" type="button" wire:click="addRow">
                 <i class="bi bi-plus-lg"></i> Add requirement
             </button>

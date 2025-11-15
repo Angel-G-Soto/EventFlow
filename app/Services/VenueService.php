@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use InvalidArgumentException;
+use Illuminate\Support\Str;
 
 class VenueService
 {
@@ -564,6 +565,9 @@ class VenueService
                         throw new InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
                     }
                 }
+
+                $doc['hyperlink'] = $this->normalizeHyperlink((string) $doc['hyperlink']);
+                $trimmedData[$i] = $doc;
             }
 
             // Remove all requirements
@@ -1084,5 +1088,23 @@ class VenueService
         } catch (\Throwable) {
             throw new Exception('Unable to remove the venues.');
         }
+    }
+
+    /**
+     * Guarantee hyperlinks include a scheme so browsers treat them as absolute URLs.
+     */
+    protected function normalizeHyperlink(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return $url;
+        }
+
+        $lower = Str::lower($url);
+        if (! Str::startsWith($lower, ['http://', 'https://'])) {
+            return 'https://' . ltrim($url, '/');
+        }
+
+        return $url;
     }
 }
