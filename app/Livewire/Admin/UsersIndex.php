@@ -22,7 +22,7 @@ class UsersIndex extends Component
 
 
     // Sorting
-    public string $sortField = '';
+    public string $sortField = 'id';
     public string $sortDirection = 'asc';
 
     // Pagination & filter reactions
@@ -286,12 +286,20 @@ class UsersIndex extends Component
 
         return [
             'editName'       => [
-                'required', 'string', 'max:255', 'regex:/^[a-zA-Z\s]+$/', 'not_regex:/^\s*$/',
+                'required', 'string', 'min:2', 'max:255', 'regex:/^[A-Za-z\s\'\.-]+$/', 'not_regex:/^\s*$/',
             ],
             'editEmail'      => [
                 'required', 'email', 'regex:/@(uprm|upr)\.edu$/i', 'not_regex:/^\s*$/', 'unique:users,email,' . ($this->editId ?? 'NULL') . ',id',
             ],
-            'editRoles'      => ['array', 'min:1'],
+            'editRoles'      => [ 'required', 'array', 'min:1',                
+            function ($attribute, $value, $fail) {
+                    // Prevent removal of the only admin account
+                    $targetId = $this->editId ?? null;
+                    $adminKept = in_array('admin', $value, true);
+                    if ($targetId && !$adminKept && app(UserService::class)->isLastAdmin($targetId)) {
+                        $fail('You cannot remove the last admin user.');
+                    }
+                }],
             'editRoles.*'    => ['string', 'in:' . implode(',', $allowedRoleCodes)], // validate by ROLE CODE
             'editDepartment' => $deptRequired ? ['required', 'string', 'in:' . implode(',', $allowedDepartments)] : ['nullable', 'string'],
             'justification'  => ['nullable', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],

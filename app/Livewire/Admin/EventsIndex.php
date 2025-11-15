@@ -493,7 +493,7 @@ class EventsIndex extends Component
         $this->authorize('access-dashboard');
 
         // Keep category options aligned with DB state
-        $categories = $this->refreshCategoryPool();
+        $categories = !empty($this->categoryPool) ? $this->categoryPool : $this->refreshCategoryPool();
 
         $paginator = $this->eventsPaginator();
         $visibleIds = $paginator->pluck('id')->all();
@@ -584,17 +584,46 @@ class EventsIndex extends Component
      */
     protected function eventFieldRules(): array
     {
-        // Refresh categories from DB so validation stays in sync
-        $this->refreshCategoryPool();
-
+        if (empty($this->categoryPool)) {
+            $this->refreshCategoryPool();
+        }
+        $today = now()->format('Y-m-d H:i');
         return [
             'eTitle' => ['required', 'string', 'min:3', 'max:120', 'not_regex:/^\s*$/'],
             'ePurpose' => ['required', 'string', 'min:3', 'max:2000', 'not_regex:/^\s*$/'],
             'eVenueId' => ['required', 'integer', 'min:1'],
-            'eFrom' => ['required', 'string'], // validated as date in datesInOrder()
-            'eTo' => ['required', 'string'],   // validated as date in datesInOrder()
-            'eAttendees' => ['required', 'integer', 'min:1', 'max:50000'],
-            'eCategory' => ['required', 'string', Rule::in($this->categoryPool)],
+            'eFrom' => [
+                'required', 'string',
+                function ($attribute, $value, $fail) use ($today) {
+                    if (strtotime($value) < strtotime($today)) {
+                        $fail('Start date/time cannot be in the past.');
+                    }
+                }
+            ],
+            'eTo' => [
+                'required', 'string',
+                function ($attribute, $value, $fail) use ($today) {
+                    if (strtotime($value) < strtotime($today)) {
+                        $fail('End date/time cannot be in the past.');
+                    }
+                }
+            ],
+            'eAttendees' => [
+                'required', 'integer', 'min:1', 'max:50000',
+                function ($attribute, $value, $fail) {
+                    if ($value > 10000) {
+                        $fail('Attendee count seems unusually high.');
+                    }
+                }
+            ],
+            'eCategory' => [
+                'required', 'string', Rule::in($this->categoryPool),
+                function ($attribute, $value, $fail) {
+                    if (empty($this->categoryPool)) {
+                        $fail('No categories are available. Please contact an administrator.');
+                    }
+                }
+            ],
             'eHandlesFood' => ['boolean'],
             'eUseInstitutionalFunds' => ['boolean'],
             'eExternalGuest' => ['boolean'],
