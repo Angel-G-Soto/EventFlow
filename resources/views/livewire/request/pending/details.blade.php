@@ -161,7 +161,7 @@
                 </dd>
 
                 <dt class="col-sm-4">Date Submitted</dt>
-                <dd class="col-sm-8">{{ $event->created_at->format('M j, Y g:i A') }}</dd>
+                <dd class="col-sm-8">{{ $event->created_at->format('D, M j, Y g:i A') }}</dd>
             </dl>
         </div>
     </section>

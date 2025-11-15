@@ -1,12 +1,12 @@
 {{-- resources/views/livewire/admin/audit-trail-index.blade.php --}}
-{{-- Local helper for 12-hour time formatting (display only) --}}
+{{-- Local helper for audit timestamp formatting --}}
 @php
 $fmtAudit = function ($dt) {
 if (empty($dt)) return '—';
 try {
 return \Carbon\Carbon::parse($dt)
 ->timezone(config('app.timezone'))
-->format('M j, Y • g:i A T');
+->format('D, M j, Y g:i A');
 } catch (\Exception $e) {
 return $dt;
 }

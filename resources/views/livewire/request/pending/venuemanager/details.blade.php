@@ -72,7 +72,7 @@
             Description: {{$event->description}}
             <br>
             <br>
-            Day Submitted: {{$event->created_at}}
+            Day Submitted: {{ optional($event->created_at)->format('D, M j, Y g:i A') }}
             <br>
             Event Start Time : {{$event->start_time}}
             <br>

@@ -70,7 +70,7 @@
                         <td class="fw-medium">
                             <span class="badge rounded-pill bg-secondary">{{$history->getSimpleStatus()}}</span>
                         </td>
-                        <td class="fw-medium">{{\Carbon\Carbon::parse($history->created_at)->toDayDateTimeString()}}</td>
+                        <td class="fw-medium">{{ \Carbon\Carbon::parse($history->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium text-end">
                             <button class="btn btn-outline-secondary text-end" style="text-align: right"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
