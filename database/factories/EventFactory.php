@@ -33,11 +33,11 @@ class EventFactory extends Factory
             'start_time' => fake()->dateTimeBetween('-1 month', '+1 month'),
             'end_time' => fake()->dateTimeBetween('+1 hour', '+2 months'),
             'status' => fake()->randomElement([
-                'draft',
+                // 'draft',
                 'pending - advisor approval',
                 'pending - venue manager approval',
                 'pending - dsca approval',
-                'pending - deanship of administration approval',
+                // 'pending - deanship of administration approval',
                 'approved',
                 'rejected',
                 'cancelled',
