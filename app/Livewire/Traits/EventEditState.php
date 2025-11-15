@@ -24,6 +24,7 @@ trait EventEditState
   public string $eOrganization = '';
   public string $eAdvisorName = '';
   public string $eAdvisorEmail = '';
+  public string $eAdvisorPhone = '';
   public string $eStudentNumber = '';
   public string $eStudentPhone = '';
   public string $eStatus = '';

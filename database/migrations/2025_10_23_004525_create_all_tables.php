@@ -101,6 +101,7 @@ return new class extends Migration {
             $table->string('organization_advisor_email')->nullable();
             $table->index('organization_advisor_email');
             $table->string('organization_advisor_name')->nullable();
+            $table->string('organization_advisor_phone')->nullable();
             $table->string('creator_institutional_number')->nullable();
             //$table->string('student_number')->nullable();
             $table->string('creator_phone_number')->nullable();

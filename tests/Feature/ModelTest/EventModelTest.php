@@ -58,7 +58,7 @@ it('allows mass assignment of fillable fields', function () {
         'organization_name' => 'Order of the Phoenix',
         'organization_advisor_name' => 'Prof. Dumbledore',
         'organization_advisor_email' => 'albus.dumbledore@hogwarts.com',
-        //'organization_advisor_phone' => '787-832-4040', // uncommented and renamed
+        'organization_advisor_phone' => '787-832-4040',
         'title' => 'Phoenix Feathers',
         'description' => 'Discussion on phoenix feathers.',
         'status' => 'pending',

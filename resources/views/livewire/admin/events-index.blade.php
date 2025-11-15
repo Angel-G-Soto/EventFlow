@@ -175,6 +175,8 @@
                 id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
             <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
                 id="ev_v_advisor_email" class="form-control" readonly value="{{ $eAdvisorEmail }}"></div>
+            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_phone">Advisor Phone</label><input
+                id="ev_v_advisor_phone" class="form-control" readonly value="{{ $eAdvisorPhone }}"></div>
 
             <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
                 value="{{ $eStudentNumber }}"></div>
@@ -286,6 +288,15 @@
             <div class="col-md-3"><label class="form-label" for="ev_e_advisor_email">Advisor Email</label><input
                 id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"
                 placeholder="advisor@example.edu"></div>
+            <div class="col-md-3">
+              <label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label>
+              <input
+                id="ev_e_advisor_phone"
+                class="form-control @error('eAdvisorPhone') is-invalid @enderror"
+                wire:model.live="eAdvisorPhone"
+                placeholder="###-###-####">
+              @error('eAdvisorPhone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
                 id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber" placeholder="Student ID">
             </div>

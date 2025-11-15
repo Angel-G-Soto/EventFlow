@@ -25,7 +25,7 @@ class EventFactory extends Factory
             'organization_name' => fake()->unique()->company(),
             'organization_advisor_name' => fake()->unique()->name(),
             'organization_advisor_email' => fake()->unique()->safeEmail(),
-            //'organization_advisor_phone' => fake()->unique()->phoneNumber(),
+            'organization_advisor_phone' => fake()->unique()->phoneNumber(),
             'creator_institutional_number' => '802' . fake()->numberBetween(1, 25) . str_pad(fake()->numberBetween(1, 9999), 4, '0', STR_PAD_LEFT),
             'creator_phone_number' => fake()->unique()->phoneNumber(),
             'title' => fake()->sentence(),

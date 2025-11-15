@@ -74,8 +74,8 @@ class EventService
             $status = match ($action) {
                 'publish' => !empty($data['organization_advisor_email'])
                     ? 'pending - advisor approval'
-                    : 'pending - approval', // fallback if advisor not set
-                default   => 'created',
+                    : 'pending - approval',
+                default   => 'draft',
             };
 
             //             if ($action !== 'publish') {
@@ -97,7 +97,7 @@ class EventService
                     'organization_name' => $data['organization_name'] ?? null,
                     'organization_advisor_name' => $data['organization_advisor_name'] ?? null,
                     'organization_advisor_email' => $data['organization_advisor_email'] ?? null,
-                    //'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
+                    'organization_advisor_phone' => $data['organization_advisor_phone'] ?? null,
 
                     'creator_institutional_number' => $data['creator_institutional_number'] ?? null,
                     'creator_phone_number' => $data['creator_phone_number'] ?? null,
@@ -795,6 +795,7 @@ class EventService
                 'organization_name'             => 'organization_name',
                 'organization_advisor_name'     => 'organization_advisor_name',
                 'organization_advisor_email'    => 'organization_advisor_email',
+                'organization_advisor_phone'    => 'organization_advisor_phone',
                 'creator_institutional_number'  => 'creator_institutional_number',
                 'creator_phone_number'          => 'creator_phone_number',
                 'title'                         => 'title',
