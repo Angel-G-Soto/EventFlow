@@ -1082,8 +1082,7 @@ class EventService
     public function paginateEventRows(array $filters = [], int $perPage = 10, int $page = 1): LengthAwarePaginator
     {
         $query = Event::query()
-            ->with(['venue', 'requester', 'categories'])
-            ->whereRaw('LOWER(status) <> ?', ['draft']);
+            ->with(['venue', 'requester', 'categories']);
         $search = trim((string)($filters['search'] ?? ''));
         if ($search !== '') {
             $like = '%' . mb_strtolower($search) . '%';
