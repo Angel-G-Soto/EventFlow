@@ -63,3 +63,9 @@ Route::any('/auth/callback', function (Request $request) {
 
     return redirect()->intended($fallback);
 })->name("saml.callback");
+
+Route::get('/auth/saml/metadata', function () {
+
+return Socialite::driver('saml2')->getServiceProviderMetadata();
+
+})->name("saml.metadata");
