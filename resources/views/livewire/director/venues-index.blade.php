@@ -154,7 +154,7 @@
                 <form wire:submit.prevent="addManager" novalidate>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email address</label>
+                            <label for="emailInput" class="form-label">Email address</label>
                             <input id="emailInput"
                                    type="email"
                                    class="form-control @error('email') is-invalid @enderror"
@@ -162,7 +162,7 @@
                                    wire:model.defer="email"
                                    required
                                    aria-describedby="emailHelp emailError" />
-                            <div id="emailHelp" class="form-text">Add email for new manager.</div>
+                            <div id="emailHelp" class="form-text visually-hidden">Add email for new manager.</div>
                             @error('email')
                             <div id="emailError" class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -176,7 +176,7 @@
                                    wire:model.defer="emailConfirmation"
                                    required
                                    aria-describedby="emailConfirmationHelp emailConfirmationError" />
-                            <div id="emailConfirmationHelp" class="form-text">Re-enter the email to confirm.</div>
+                            <div id="emailConfirmationHelp" class="form-text visually-hidden">Re-enter the email to confirm.</div>
                             @error('emailConfirmation')
                             <div id="emailConfirmationError" class="invalid-feedback">{{ $message }}</div>
                             @enderror
