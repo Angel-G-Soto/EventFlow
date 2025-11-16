@@ -80,6 +80,10 @@
         .status-indicator--success {
             color: #146c43;
         }
+
+        .status-indicator--warning {
+            color: #856404;
+        }
     </style>
 
     {{-- Event Header --}}
@@ -87,8 +91,15 @@
         <div class="card-body">
             <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
 
+            @php
+                $statusVariant = match (true) {
+                    in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
+                    in_array($event->status, ['approved', 'completed']) => 'success',
+                    default => 'warning',
+                };
+            @endphp
             <p>
-                <span class="status-indicator status-indicator--neutral" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
+                <span class="status-indicator status-indicator--{{ $statusVariant }}" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
                     <span class="status-dot" aria-hidden="true"></span>
                     <span>{{ 'Status: '. $event->getSimpleStatus() }}</span>
                 </span>
