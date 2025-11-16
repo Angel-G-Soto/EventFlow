@@ -29,7 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
 
             '/auth/callback',
-
+            'livewire/*',
+            '/livewire/update',
         ]);
         //
     })
