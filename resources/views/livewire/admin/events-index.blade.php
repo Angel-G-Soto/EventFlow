@@ -23,7 +23,7 @@
           <select id="ev_status" class="form-select" wire:model.live="status">
             <option value="">All</option>
             @foreach($statuses as $st)
-            <option value="{{ $st }}">{{ $st }}</option>
+            <option value="{{ $st }}">{{ ucwords($st) }}</option>
             @endforeach
           </select>
         </div>
@@ -93,7 +93,7 @@
             <td>{{ $r['venue'] }}</td>
             <td>
               @php($st = $r['status'] ?? '')
-              <span class="badge {{ $this->statusBadgeClass($st) }}">{{ $st !== '' ? $st : 'Unknown' }}</span>
+              <span class="badge {{ $this->statusBadgeClass($st) }}">{{ $st !== '' ? ucwords($st) : 'Unknown' }}</span>
             </td>
             <td>
               <div>{{ $r['from'] }}</div>

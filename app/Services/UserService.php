@@ -61,7 +61,7 @@ class UserService
                 try {
                     $ctx = ['meta' => ['source' => 'saml2_login']];
                     if (function_exists('request') && request()) {
-                        $ctx = app(\App\Services\AuditService::class)
+                        $ctx = app(AuditService::class)
                             ->buildContextFromRequest(request(), $ctx['meta']);
                     }
                 } catch (\Throwable $e) {
@@ -77,7 +77,7 @@ class UserService
         try {
             $ctx = ['meta' => ['source' => 'saml2_login']];
             if (function_exists('request') && request()) {
-                $ctx = app(\App\Services\AuditService::class)
+                $ctx = app(AuditService::class)
                     ->buildContextFromRequest(request(), $ctx['meta']);
             }
         } catch (\Throwable) { /* no-http/queue */ }
@@ -103,12 +103,14 @@ class UserService
         return $user;
     }
 
-    /**
-     * Retrieves a single user by their primary key.
-     *
-     * @param int $userId The primary key (user_id) of the user to find.
-     * @return User|Error The Eloquent User object or Excemption if not found.
-     */
+
+/**
+ * Retrieves a single user by their ID.
+ *
+ * @param int $userId The ID of the user to retrieve.
+ * @return User|null The user with the given ID, or null if not found.
+ * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the user is not found.
+ */
     public function findUserById(int $userId): ?User
     {
         return User::findOrFail($userId);
