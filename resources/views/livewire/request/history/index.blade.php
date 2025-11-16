@@ -46,6 +46,36 @@
         <livewire:request.history.filters/>
     </div>
 
+    <style>
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator .status-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: currentColor;
+        }
+
+        .status-indicator--success {
+            color: #146c43;
+        }
+
+        .status-indicator--danger {
+            color: #b02a37;
+        }
+
+        .status-indicator--neutral {
+            color: #495057;
+        }
+    </style>
+
     <div class="card shadow-sm">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -70,13 +100,16 @@
                         <td class="fw-medium">
                             @php
                                 $stepStatus = strtolower($history->getSimpleStatus());
-                                $badgeClass = match (true) {
-                                    in_array($stepStatus, ['rejected', 'declined', 'cancelled', 'withdrawn']) => 'text-bg-danger',
-                                    in_array($stepStatus, ['approved', 'completed', 'accepted']) => 'text-bg-success',
-                                    default => 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
+                                $indicatorVariant = match (true) {
+                                    in_array($stepStatus, ['rejected', 'declined', 'cancelled', 'withdrawn']) => 'danger',
+                                    in_array($stepStatus, ['approved', 'completed', 'accepted']) => 'success',
+                                    default => 'neutral'
                                 };
                             @endphp
-                            <span class="badge rounded-pill {{ $badgeClass }}">{{$history->getSimpleStatus()}}</span>
+                            <span class="status-indicator status-indicator--{{ $indicatorVariant }}">
+                                <span class="status-dot" aria-hidden="true"></span>
+                                <span>{{ $history->getSimpleStatus() }}</span>
+                            </span>
                         </td>
                         <td class="fw-medium">{{ \Carbon\Carbon::parse($history->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium text-end">

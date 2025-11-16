@@ -44,6 +44,36 @@
             <livewire:request.pending.filters/>
         </div>
 
+        <style>
+            .status-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+
+            .status-indicator .status-dot {
+                width: 0.5rem;
+                height: 0.5rem;
+                border-radius: 50%;
+                display: inline-block;
+                background-color: currentColor;
+            }
+
+            .status-indicator--success {
+                color: #146c43;
+            }
+
+            .status-indicator--danger {
+                color: #b02a37;
+            }
+
+            .status-indicator--warning {
+                color: #856404;
+            }
+        </style>
+
         <div class="card shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -66,13 +96,16 @@
                                 <td class="fw-medium">{{ \Carbon\Carbon::parse($event->created_at)->format('D, M j, Y g:i A') }}</td>
                                 <td class="fw-medium">
                                     @php
-                                        $statusClass = match (true) {
-                                            in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'text-bg-danger',
-                                            in_array($event->status, ['approved', 'completed']) => 'text-bg-success',
-                                            default => 'bg-warning text-dark border border-warning-subtle'
+                                        $statusVariant = match (true) {
+                                            in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
+                                            in_array($event->status, ['approved', 'completed']) => 'success',
+                                            default => 'warning'
                                         };
                                     @endphp
-                                    <span class="badge rounded-pill {{ $statusClass }}">{{ $event->getSimpleStatus() }}</span>
+                                    <span class="status-indicator status-indicator--{{ $statusVariant }}">
+                                        <span class="status-dot" aria-hidden="true"></span>
+                                        <span>{{ $event->getSimpleStatus() }}</span>
+                                    </span>
                                 </td>
                                 <td class="fw-medium text-end">
                                     <button type="button"

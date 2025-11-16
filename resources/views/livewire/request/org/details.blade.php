@@ -52,15 +52,45 @@
         </div>
     </div>
 
+    <style>
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .status-indicator .status-dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: currentColor;
+        }
+
+        .status-indicator--neutral {
+            color: #495057;
+        }
+
+        .status-indicator--danger {
+            color: #b02a37;
+        }
+
+        .status-indicator--success {
+            color: #146c43;
+        }
+    </style>
+
     {{-- Event Header --}}
     <section class="card shadow-sm mb-3" aria-labelledby="event-header" role="region">
         <div class="card-body">
             <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
 
-            <!-- Status as a tag (badge) with appropriate styles and ARIA labeling -->
             <p>
-                <span class="badge bg-secondary" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
-                    {{ 'Status: '. $event->getSimpleStatus() }}
+                <span class="status-indicator status-indicator--neutral" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span>{{ 'Status: '. $event->getSimpleStatus() }}</span>
                 </span>
             </p>
 
@@ -155,38 +185,27 @@
     {{-- Event Attributes --}}
     <section class="card shadow-sm mb-4" aria-labelledby="event-attributes">
         <div class="card-body">
-            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
-                <h3 id="event-attributes" class="fw-semibold mb-0 flex-grow-1">Event Attributes</h3>
-                @if($event->status === 'approved')
-                    <button type="button"
-                            class="btn btn-primary"
-                            wire:click="downloadSummary"
-                            wire:loading.attr="disabled"
-                            wire:target="downloadSummary"
-                            >
-                        <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
-                        <span wire:loading wire:target="downloadSummary">Preparing...</span>
-                    </button>
-                @endif
-            </div>
-            <hr>
+            <h3 id="event-attributes" class="fw-semibold border-bottom pb-2 mb-3">Event Attributes</h3>
             <div class="d-flex flex-column gap-2">
                 <div>
                     <span class="fw-semibold me-2">Handles Food:</span>
-                    <span class="badge bg-{{ $event->handles_food ? 'success' : 'secondary' }}">
-                        {{ $event->handles_food ? 'Yes' : 'No' }}
+                    <span class="status-indicator status-indicator--{{ $event->handles_food ? 'success' : 'danger' }}">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>{{ $event->handles_food ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
                 <div>
                     <span class="fw-semibold me-2">Uses Institutional Funds:</span>
-                    <span class="badge bg-{{ $event->use_institutional_funds ? 'success' : 'secondary' }}">
-                        {{ $event->use_institutional_funds ? 'Yes' : 'No' }}
+                    <span class="status-indicator status-indicator--{{ $event->use_institutional_funds ? 'success' : 'danger' }}">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>{{ $event->use_institutional_funds ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
                 <div>
                     <span class="fw-semibold me-2">Invites External Guests:</span>
-                    <span class="badge bg-{{ $event->external_guests ? 'success' : 'secondary' }}">
-                        {{ $event->external_guests ? 'Yes' : 'No' }}
+                    <span class="status-indicator status-indicator--{{ $event->external_guests ? 'success' : 'danger' }}">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>{{ $event->external_guests ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
             </div>
