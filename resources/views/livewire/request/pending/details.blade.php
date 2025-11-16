@@ -70,29 +70,49 @@
     @endif
 
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h1 class="fw-bold">Event Details</h1>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+        <h1 class="fw-bold mb-0">Event Details</h1>
+        <button type="button"
+                class="btn btn-secondary"
+                wire:click="back"
+                wire:target="back">
+            Back
+        </button>
     </div>
 
-    {{-- Event Header --}}
-    <section class="card shadow-sm mb-4" aria-labelledby="event-header" role="region">
-        <div class="card-body">
-            <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
+{{-- Event Header --}}
+<section class="card shadow-sm mb-4" aria-labelledby="event-header" role="region">
+    <div class="card-body">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+            <div>
+                <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
 
-            <!-- Status as a tag (badge) with appropriate styles and ARIA labeling -->
-            <p>
-                <span class="badge bg-secondary" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
-                    {{ 'Status: '. $event->getSimpleStatus() }}
-                </span>
-            </p>
+                <!-- Status as a tag (badge) with appropriate styles and ARIA labeling -->
+                <p class="mb-2">
+                    <span class="badge bg-secondary" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
+                        {{ 'Status: '. $event->getSimpleStatus() }}
+                    </span>
+                </p>
 
-            <p class="text-muted mb-1">
-                <span class="sr-only">Event Start Date: </span>{{ $start->format('M j, Y') }}
-                at <span class="sr-only">From: </span>{{ $start->format('g:i A') }} –
-                <span class="sr-only">To: </span>{{ $end->format('g:i A') }}
-            </p>
+                <p class="text-muted mb-0">
+                    <span class="sr-only">Event Start Date: </span>{{ $start->format('M j, Y') }}
+                    at <span class="sr-only">From: </span>{{ $start->format('g:i A') }} –
+                    <span class="sr-only">To: </span>{{ $end->format('g:i A') }}
+                </p>
+            </div>
+            @if(method_exists($this, 'downloadSummary') && $event->status === 'approved')
+                <button type="button"
+                        class="btn btn-primary"
+                        wire:click="downloadSummary"
+                        wire:loading.attr="disabled"
+                        wire:target="downloadSummary">
+                    <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                    <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                </button>
+            @endif
         </div>
-    </section>
+    </div>
+</section>
 
     {{-- Description & Guest Size --}}
     <section class="card shadow-sm mb-4" aria-labelledby="event-description">
@@ -219,10 +239,18 @@
 
     {{-- Action Buttons --}}
     <div class="d-flex gap-2 mb-5">
-        <button type="button" wire:click="approve" class="btn btn-success" wire:target="approve">
+        <button type="button"
+                wire:click="approve"
+                class="btn btn-success"
+                wire:target="approve"
+                aria-label="Approve {{ $event->title }}">
             Approve
         </button>
-        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#denyModal">
+        <button type="button"
+                class="btn btn-danger"
+                data-bs-toggle="modal"
+                data-bs-target="#denyModal"
+                aria-label="Reject {{ $event->title }}">
             Reject
         </button>
     </div>

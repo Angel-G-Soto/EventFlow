@@ -61,38 +61,33 @@
 {{--        @endif--}}
 
         {{-- Event Header --}}
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-            <h1 class="fw-bold mb-0">Event Details</h1>
-            @if($eventHistory->event->status === 'approved')
-                <button type="button"
-                        class="btn btn-primary ms-md-auto"
-                        wire:click="downloadSummary"
-                        wire:loading.attr="disabled"
-                        wire:target="downloadSummary"
-                        aria-label="Download PDF summary">
-                    <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
-                    <span wire:loading wire:target="downloadSummary">Preparing...</span>
-                </button>
-            @endif
-        </div>
-
         <section class="card shadow-sm mb-4" aria-labelledby="event-header">
             <div class="card-body">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
-                    <div>
-                        <h3 id="event-header" class="fw-semibold mb-1">{{ $eventHistory->event->title }}</h3>
-                        <p class="text-muted mb-1">
-                            {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
-                        </p>
-                        @if($eventHistory->event->status === 'cancelled' || $eventHistory->event->status === 'withdrawn' || $eventHistory->event->status === 'rejected')
-                            <span class="badge rounded-pill bg-danger">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
-                        @elseif($eventHistory->event->status === 'approved' || $eventHistory->event->status === 'completed')
-                            <span class="badge rounded-pill bg-success">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
-                        @else
-                            <span class="badge rounded-pill bg-warning">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
-                        @endif
+                <h1 class="fw-bold mb-2">Event Details</h1>
+                <h3 id="event-header" class="fw-semibold mb-1">{{ $eventHistory->event->title }}</h3>
+                <p class="text-muted mb-1">
+                    {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
+                </p>
+                @if($eventHistory->event->status === 'cancelled' || $eventHistory->event->status === 'withdrawn' || $eventHistory->event->status === 'rejected')
+                    <span class="badge rounded-pill bg-danger">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                @elseif($eventHistory->event->status === 'approved' || $eventHistory->event->status === 'completed')
+                    <span class="badge rounded-pill bg-success">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                @else
+                    <span class="badge rounded-pill bg-warning">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
+                @endif
+
+                @if($eventHistory->event->status === 'approved')
+                    <div class="mt-3">
+                        <button type="button"
+                                class="btn btn-primary"
+                                wire:click="downloadSummary"
+                                wire:loading.attr="disabled"
+                                wire:target="downloadSummary">
+                            <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                            <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                        </button>
                     </div>
-                </div>
+                @endif
             </div>
         </section>
 

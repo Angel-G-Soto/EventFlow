@@ -53,8 +53,7 @@
     </div>
 
     {{-- Event Header --}}
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-        <section class="card shadow-sm flex-grow-1 mb-0" aria-labelledby="event-header" role="region">
+    <section class="card shadow-sm mb-3" aria-labelledby="event-header" role="region">
         <div class="card-body">
             <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
 
@@ -70,20 +69,21 @@
                 at <span class="sr-only">From: </span>{{ $start->format('g:i A') }} –
                 <span class="sr-only">To: </span>{{ $end->format('g:i A') }}
             </p>
+
+            @if($event->status === 'approved')
+                <div class="mt-3">
+                    <button type="button"
+                            class="btn btn-primary"
+                            wire:click="downloadSummary"
+                            wire:loading.attr="disabled"
+                            wire:target="downloadSummary">
+                        <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                        <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                    </button>
+                </div>
+            @endif
         </div>
     </section>
-        @if($event->status === 'approved')
-            <button type="button"
-                    class="btn btn-primary align-self-start"
-                    wire:click="downloadSummary"
-                    wire:loading.attr="disabled"
-                    wire:target="downloadSummary"
-                    aria-label="Download PDF summary">
-                <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
-                <span wire:loading wire:target="downloadSummary">Preparing...</span>
-            </button>
-        @endif
-    </div>
 
 
 
@@ -155,7 +155,21 @@
     {{-- Event Attributes --}}
     <section class="card shadow-sm mb-4" aria-labelledby="event-attributes">
         <div class="card-body">
-            <h3 id="event-attributes" class="fw-semibold border-bottom pb-2 mb-3">Event Attributes</h3>
+            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                <h3 id="event-attributes" class="fw-semibold mb-0 flex-grow-1">Event Attributes</h3>
+                @if($event->status === 'approved')
+                    <button type="button"
+                            class="btn btn-primary"
+                            wire:click="downloadSummary"
+                            wire:loading.attr="disabled"
+                            wire:target="downloadSummary"
+                            >
+                        <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                        <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                    </button>
+                @endif
+            </div>
+            <hr>
             <div class="d-flex flex-column gap-2">
                 <div>
                     <span class="fw-semibold me-2">Handles Food:</span>
@@ -213,20 +227,30 @@
         </div>
     </section>
 
-    {{--Buttons--}}
+    {{-- Buttons --}}
     <div class="d-flex gap-2 mb-3 container-fluid">
 
         @if($event->status === 'approved')
-            <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button"
+                    class="btn btn-danger d-flex"
+                    data-bs-toggle="modal"
+                    data-bs-target="#denyModal"
+                    aria-label="Cancel {{ $event->title }}">
                 Cancel
             </button>
         @elseif(str_contains($event->status,'pending'))
-            <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button"
+                    class="btn btn-danger d-flex"
+                    data-bs-toggle="modal"
+                    data-bs-target="#denyModal"
+                    aria-label="Withdraw {{ $event->title }}">
                 Withdraw
             </button>
         @endif
 
-        <button type="button" wire:click="back" class="btn btn-secondary ms-auto"
+        <button type="button"
+                wire:click="back"
+                class="btn btn-secondary ms-auto"
                 wire:target="back">
             Back
         </button>
