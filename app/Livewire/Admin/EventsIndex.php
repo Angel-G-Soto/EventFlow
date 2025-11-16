@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\Auth;
 #[Layout('layouts.app')]
 class EventsIndex extends Component
 {
+    // For category search in modal
+    public string $categorySearch = '';
+    // For displaying selected category labels
+    public array $selectedCategoryLabels = [];
+    // For filtered categories in modal
+    public array $filteredCategories = [];
     // Traits / shared state
     use EventFilters, EventEditState;
 
@@ -52,6 +58,57 @@ class EventsIndex extends Component
     public function mount(): void
     {
         $this->refreshCategoryPool();
+        $this->filteredCategories = $this->getFilteredCategories();
+    }
+    public function updatedCategorySearch()
+    {
+        $this->filteredCategories = $this->getFilteredCategories();
+    }
+
+    public function updatedECategoryIds()
+    {
+        $this->updateSelectedCategoryLabels();
+    }
+
+    public function clearCategories()
+    {
+        $this->eCategoryIds = [];
+        $this->updateSelectedCategoryLabels();
+    }
+
+    protected function getFilteredCategories(): array
+    {
+        $categories = app(CategoryService::class)->getAllCategories();
+        $search = trim($this->categorySearch);
+        if ($search === '') {
+            return $categories->map(fn($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'description' => $cat->description ?? null,
+            ])->all();
+        }
+        return $categories->filter(function ($cat) use ($search) {
+            return str_contains(strtolower($cat->name), strtolower($search));
+        })->map(fn($cat) => [
+            'id' => $cat->id,
+            'name' => $cat->name,
+            'description' => $cat->description ?? null,
+        ])->all();
+    }
+
+    protected function updateSelectedCategoryLabels(): void
+    {
+        $categories = app(CategoryService::class)->getAllCategories();
+        $this->selectedCategoryLabels = collect($categories)
+            ->whereIn('id', $this->eCategoryIds)
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    public function removeCategory($id)
+    {
+        $this->eCategoryIds = array_values(array_diff($this->eCategoryIds, [(int)$id]));
+        $this->updateSelectedCategoryLabels();
     }
 
     // Filters: search update reaction
@@ -173,6 +230,15 @@ class EventsIndex extends Component
         $this->eTo   = substr($request['to'], 0, 16);
         $this->eAttendees = $request['attendees'] ?? 0;
         $this->eCategory  = $request['category'] ?? '';
+        // If categories are available as array/ids, set eCategoryIds
+        if (!empty($request['category_ids']) && is_array($request['category_ids'])) {
+            $this->eCategoryIds = $request['category_ids'];
+        } elseif (!empty($request['category_id'])) {
+            $this->eCategoryIds = [(int)$request['category_id']];
+        } else {
+            $this->eCategoryIds = [];
+        }
+        $this->updateSelectedCategoryLabels();
         $this->eStatus    = (string)($request['status'] ?? '');
         // Policies
         $this->eHandlesFood = (bool)($request['handles_food'] ?? false);
@@ -253,9 +319,9 @@ class EventsIndex extends Component
                     ];
                     // Route edits through performManualOverride (service-only, no model access here)
                     $saved = $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
-                    // Sync category by name (if provided)
-                    if (trim((string)$this->eCategory) !== '') {
-                        try { $svc->syncEventCategoryByName($saved, (string)$this->eCategory); } catch (\Throwable) { /* noop */ }
+                    // Sync categories by IDs (multiselect)
+                    if (!empty($this->eCategoryIds)) {
+                        try { $svc->syncEventCategoriesByIds($saved, $this->eCategoryIds); } catch (\Throwable) { /* noop */ }
                     }
                 }
             } catch (\Throwable $e) {
@@ -616,8 +682,8 @@ class EventsIndex extends Component
                     }
                 }
             ],
-            'eCategory' => [
-                'required', 'string', Rule::in($this->categoryPool),
+            'eCategoryIds' => [
+                'required', 'array', 'min:1',
                 function ($attribute, $value, $fail) {
                     if (empty($this->categoryPool)) {
                         $fail('No categories are available. Please contact an administrator.');

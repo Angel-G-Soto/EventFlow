@@ -44,6 +44,19 @@ class EventService
         $this->auditService = $auditService;
     }
 
+
+        /**
+         * Sync event categories by IDs (for admin edit modal multiselect)
+         *
+         * @param Event $event
+         * @param array $categoryIds
+         * @return void
+         */
+        public function syncEventCategoriesByIds(Event $event, array $categoryIds): void
+        {
+            $event->categories()->sync($categoryIds);
+        }
+
     // Methods
 
     // FORM

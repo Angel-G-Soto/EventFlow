@@ -318,15 +318,94 @@
                 min="1" wire:model.live="eAttendees" placeholder="0+">
               @error('eAttendees')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-3">
-              <label class="form-label" for="ev_e_category">Category</label>
-              <select id="ev_e_category" class="form-select @error('eCategory') is-invalid @enderror"
-                wire:model.live="eCategory">
-                @foreach($categories as $cat)
-                <option value="{{ $cat }}">{{ $cat }}</option>
-                @endforeach
-              </select>
-              @error('eCategory')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="col-md-6">
+              <style>
+                .compact-multiselect {
+                  font-size: 0.92rem;
+                  padding: 0.15rem 0.5rem;
+                }
+
+                .compact-multiselect .badge,
+                .compact-multiselect .btn,
+                .compact-multiselect input,
+                .compact-multiselect .form-control {
+                  font-size: 0.85rem;
+                  padding: 0.12rem 0.4rem;
+                  height: 1.7rem;
+                }
+
+                .compact-multiselect .card,
+                .compact-multiselect .card-body {
+                  padding: 0.4rem;
+                }
+
+                .compact-multiselect .row,
+                .compact-multiselect .col {
+                  margin-bottom: 0.18rem;
+                }
+
+                .compact-multiselect .badge {
+                  margin-bottom: 0.1rem;
+                }
+              </style>
+              <div class="compact-multiselect">
+                <div class="d-flex justify-content-between align-items-baseline">
+                  <label class="form-label mb-1">Event Categories</label>
+                  <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories"
+                    @disabled(empty($eCategoryIds))>
+                    Clear selection
+                  </button>
+                </div>
+                <div class="card border shadow-sm">
+                  <div class="card-body">
+                    <div class="row g-2 align-items-center mb-2">
+                      <div class="col-md-8">
+                        <input type="search" class="form-control"
+                          placeholder="Search categories (e.g., Workshop, Fundraiser)"
+                          wire:model.live.debounce.300ms="categorySearch">
+                      </div>
+                      <div class="col-md-4 text-md-end">
+                        <small class="text-muted">
+                          {{ count($eCategoryIds) }} selected
+                        </small>
+                      </div>
+                    </div>
+                    @if (!empty($selectedCategoryLabels))
+                    <div class="mb-2">
+                      <small class="text-muted d-block mb-1">Selected</small>
+                      @foreach ($selectedCategoryLabels as $id => $label)
+                      <span class="badge rounded-pill text-bg-light border me-1 mb-1">
+                        {{ $label }}
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none ps-1"
+                          wire:click="removeCategory({{ (int) $id }})" aria-label="Remove {{ $label }}">&times;</button>
+                      </span>
+                      @endforeach
+                    </div>
+                    @endif
+                    <div class="row row-cols-1 row-cols-md-2 g-2">
+                      @forelse ($filteredCategories as $cat)
+                      <div class="col">
+                        <label class="border rounded p-2 h-100 d-flex gap-2 align-items-center shadow-sm">
+                          <input type="checkbox" class="form-check-input-md mt-1" value="{{ $cat['id'] }}"
+                            wire:model.live="eCategoryIds">
+                          <span>
+                            <span class="fw-semibold d-block">{{ $cat['name'] }}</span>
+                            @if (!empty($cat['description'] ?? null))
+                            <small class="text-muted">{{ $cat['description'] }}</small>
+                            @endif
+                          </span>
+                        </label>
+                      </div>
+                      @empty
+                      <div class="col">
+                        <p class="text-muted mb-0">No categories match your search.</p>
+                      </div>
+                      @endforelse
+                    </div>
+                  </div>
+                </div>
+                @error('eCategoryIds') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
+              </div>
             </div>
             <div class="col-12">
               <label class="form-label" for="ev_e_purpose">Description</label>

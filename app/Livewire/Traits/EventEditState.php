@@ -15,6 +15,7 @@ trait EventEditState
   public string $eTo = '';
   public int    $eAttendees = 0;
   public string $eCategory = '';
+  public array $eCategoryIds = [];
   // Policies
   public bool   $eHandlesFood = false;
   public bool   $eUseInstitutionalFunds = false;
