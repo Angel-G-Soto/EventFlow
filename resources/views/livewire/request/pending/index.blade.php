@@ -74,14 +74,14 @@
 
                                     @endif
                                 </td>
-                                <td class="fw-medium text-end" style="min-width: 170px;">
+                                <td class="fw-medium text-end">
                                     <button type="button"
-                                            class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap"
-                                            style="min-width: 150px;"
+                                            class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="View details"
+                                            aria-label="View details"
                                             onclick="window.location='{{ route('approver.pending.request',['event'=>$event]) }}'">
                                         <i class="bi bi-eye" aria-hidden="true"></i>
-                                        <span>View details</span>
+                                        <span class="d-none d-sm-inline">View details</span>
                                     </button>
                                 </td>
                             </tr>

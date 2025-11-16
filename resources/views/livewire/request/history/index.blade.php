@@ -72,10 +72,15 @@
                         </td>
                         <td class="fw-medium">{{ \Carbon\Carbon::parse($history->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium text-end">
-                            <button class="btn btn-secondary text-end" style="text-align: right"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
+                            <button type="button"
+                                    class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="View details"
+                                    aria-label="View details"
                                     onclick="window.location='{{ route('approver.history.request',['eventHistory'=>$history]) }}'">
-                                <i class="bi bi-eye me-1"></i> View details
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                <span class="d-none d-sm-inline">View details</span>
                             </button>
                         </td>
                     </tr>
