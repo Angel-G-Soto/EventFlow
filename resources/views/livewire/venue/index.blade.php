@@ -67,7 +67,7 @@
                 <th>Room</th>
                 <th >Capacity</th>
 
-                <th class="text-end">Actions</th>
+                <th class="text-center text-sm-end" style="width: 120px;">Actions</th>
             </tr>
 
             </thead>
@@ -77,11 +77,11 @@
                 <td class="fw-medium">{{ $v['name'] }}</td>
                 <td class="fw-medium">{{ $v['code'] }}</td>
                 <td class="fw-medium">{{ $v['capacity'] }}</td>
-                <td class="fw-medium text-end" style="min-width: 220px;">
-                    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-end align-items-stretch align-items-sm-center">
+                <td class="fw-medium text-center text-sm-end" style="width: 120px;">
+                    <div class="d-inline-flex flex-column flex-sm-row gap-2 justify-content-center justify-content-sm-end align-items-center w-100">
                         <button type="button"
                                 wire:click="configure({{ $v['id'] }})"
-                                class="btn btn-secondary d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
+                                class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
                                 data-bs-toggle="tooltip"
                                 data-bs-placement="top"
                                 title="Configure {{ $v['name'] }}"
@@ -90,7 +90,7 @@
                             <span class="d-none d-sm-inline">Configure</span>
                         </button>
                         <button type="button"
-                                class="btn btn-secondary d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
+                                class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
                                 data-bs-toggle="tooltip"
                                 data-bs-placement="top"
                                 title="View details for {{ $v['name'] }}"

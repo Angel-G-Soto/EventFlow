@@ -42,17 +42,6 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
         <h1 class="fw-bold mb-0">Event Details</h1>
         <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
-            @if($event->status === 'approved')
-                <button type="button"
-                        class="btn btn-primary"
-                        wire:click="downloadSummary"
-                        wire:loading.attr="disabled"
-                        wire:target="downloadSummary"
-                        aria-label="Download PDF summary">
-                    <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
-                    <span wire:loading wire:target="downloadSummary">Preparing...</span>
-                </button>
-            @endif
             <button type="button"
                     wire:click="back"
                     class="btn btn-secondary"
@@ -64,7 +53,8 @@
     </div>
 
     {{-- Event Header --}}
-    <section class="card shadow-sm mb-4" aria-labelledby="event-header" role="region">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+        <section class="card shadow-sm flex-grow-1 mb-0" aria-labelledby="event-header" role="region">
         <div class="card-body">
             <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
 
@@ -82,6 +72,18 @@
             </p>
         </div>
     </section>
+        @if($event->status === 'approved')
+            <button type="button"
+                    class="btn btn-primary align-self-start"
+                    wire:click="downloadSummary"
+                    wire:loading.attr="disabled"
+                    wire:target="downloadSummary"
+                    aria-label="Download PDF summary">
+                <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                <span wire:loading wire:target="downloadSummary">Preparing...</span>
+            </button>
+        @endif
+    </div>
 
 
 

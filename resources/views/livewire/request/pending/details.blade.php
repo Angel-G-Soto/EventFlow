@@ -72,13 +72,6 @@
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <h1 class="fw-bold">Event Details</h1>
-        <button type="button"
-                wire:click="back"
-                class="btn btn-secondary ms-auto"
-                wire:target="back"
-                aria-label="Go Back">
-            Back
-        </button>
     </div>
 
     {{-- Event Header --}}

@@ -29,17 +29,6 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
             <h1 class="fw-bold mb-0">Approval Details</h1>
             <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
-                @if($eventHistory->event->status === 'approved')
-                    <button type="button"
-                            class="btn btn-primary"
-                            wire:click="downloadSummary"
-                            wire:loading.attr="disabled"
-                            wire:target="downloadSummary"
-                            aria-label="Download PDF summary">
-                        <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
-                        <span wire:loading wire:target="downloadSummary">Preparing...</span>
-                    </button>
-                @endif
                 <button type="button"
                         wire:click="back"
                         class="btn btn-secondary"
@@ -72,7 +61,20 @@
 {{--        @endif--}}
 
         {{-- Event Header --}}
-        <h1 class="fw-bold mb-4">Event Details</h1>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+            <h1 class="fw-bold mb-0">Event Details</h1>
+            @if($eventHistory->event->status === 'approved')
+                <button type="button"
+                        class="btn btn-primary ms-md-auto"
+                        wire:click="downloadSummary"
+                        wire:loading.attr="disabled"
+                        wire:target="downloadSummary"
+                        aria-label="Download PDF summary">
+                    <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                    <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                </button>
+            @endif
+        </div>
 
         <section class="card shadow-sm mb-4" aria-labelledby="event-header">
             <div class="card-body">
