@@ -83,6 +83,9 @@ class ProcessCsvFileUpload implements ShouldQueue
             $parsed = new VenueCsvParser()->parse($filePath);
             $normalized = $this->normalizeCsvRows($parsed);
 
+            // Validate normalized content (duplicate codes, empty result, capacities)
+            $this->validateNormalizedRows($normalized);
+
             // Build name=>code map from parsed rows (department_name_raw => department_code_raw)
             $deptMap = collect($parsed)
                 ->mapWithKeys(function ($r) {
@@ -191,5 +194,46 @@ class ProcessCsvFileUpload implements ShouldQueue
             ];
         }
         return $out;
+    }
+
+    /**
+     * Basic content validation for normalized CSV rows.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     * @throws \RuntimeException
+     */
+    protected function validateNormalizedRows(array $rows): void
+    {
+        if (empty($rows)) {
+            throw new \RuntimeException('CSV did not contain any valid venue rows.');
+        }
+
+        $seenCodes = [];
+        $duplicateCodes = [];
+
+        foreach ($rows as $r) {
+            $code = trim((string)($r['code'] ?? ''));
+            $capacity = (int)($r['capacity'] ?? 0);
+            $testCapacity = (int)($r['test_capacity'] ?? 0);
+
+            if ($code === '') {
+                throw new \RuntimeException('CSV contains a row with a missing venue code.');
+            }
+
+            if (isset($seenCodes[$code])) {
+                $duplicateCodes[$code] = true;
+            } else {
+                $seenCodes[$code] = true;
+            }
+
+            if ($capacity < 0 || $testCapacity < 0) {
+                throw new \RuntimeException('CSV contains a row with negative capacity values.');
+            }
+        }
+
+        if (!empty($duplicateCodes)) {
+            $codes = implode(', ', array_keys($duplicateCodes));
+            throw new \RuntimeException('CSV contains duplicate venue codes: ' . $codes);
+        }
     }
 }

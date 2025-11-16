@@ -38,10 +38,20 @@
         </div>
         {{-- Category filter removed intentionally --}}
         {{-- Organization filter removed; included in search --}}
-        <div class="col-md-4"><label class="form-label" for="ev_from">From</label><input id="ev_from"
-            type="datetime-local" class="form-control" wire:model.defer="from"></div>
-        <div class="col-md-4"><label class="form-label" for="ev_to">To</label><input id="ev_to" type="datetime-local"
-            class="form-control" wire:model.defer="to"></div>
+        <div class="col-md-4">
+          <label class="form-label" for="ev_from">From</label>
+          <input id="ev_from" type="datetime-local"
+            class="form-control @error('from') is-invalid @enderror"
+            wire:model.defer="from">
+          @error('from')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="ev_to">To</label>
+          <input id="ev_to" type="datetime-local"
+            class="form-control @error('to') is-invalid @enderror"
+            wire:model.defer="to">
+          @error('to')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-primary w-100" wire:click="applyDateRange" type="button" aria-label="Apply date range">
             Apply Date Range
@@ -103,7 +113,7 @@
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-info" wire:click="openView({{ $r['id'] }})"
-                  aria-label="View request {{ $r['id'] }}">
+                  aria-label="View request {{ $r['id'] }}" title="View request #{{ $r['id'] }}">
                   <i class="bi bi-info-circle"></i>
                 </button>
                 <button @class([ 'btn' , 'btn-outline-secondary'=> $r['status_is_cancelled'] || $r['status_is_denied']

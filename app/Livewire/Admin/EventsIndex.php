@@ -136,6 +136,15 @@ class EventsIndex extends Component
      */
     public function applyDateRange(): void
     {
+        $this->validate([
+            'from' => ['nullable', 'string', 'date_format:Y-m-d\TH:i'],
+            'to' => [
+                'nullable',
+                'string',
+                'date_format:Y-m-d\TH:i',
+                'after_or_equal:from',
+            ],
+        ]);
         $this->page = 1;
     }
 
