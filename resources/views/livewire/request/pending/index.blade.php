@@ -54,7 +54,7 @@
                         <th>Date Submitted</th>
                         <th>Status</th>
 
-                        <th class="text-end">Actions</th>
+                        <th class="text-end text-nowrap" style="width: 170px;">Actions</th>
                     </tr>
                     </thead>
 
@@ -74,11 +74,14 @@
 
                                     @endif
                                 </td>
-                                <td class="fw-medium text-end">
-                                    <button class="btn btn-secondary text-end" style="text-align: right"
-                                            data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
+                                <td class="fw-medium text-end" style="min-width: 170px;">
+                                    <button type="button"
+                                            class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap"
+                                            style="min-width: 150px;"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="View details"
                                             onclick="window.location='{{ route('approver.pending.request',['event'=>$event]) }}'">
-                                        <i class="bi bi-eye me-1"></i> View details
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                        <span>View details</span>
                                     </button>
                                 </td>
                             </tr>

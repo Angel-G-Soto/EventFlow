@@ -34,8 +34,13 @@
                     </select>
                 </div>
                 <div class="col-6 col-md-2">
-                    <x-tooltip-button type="button" class="btn btn-secondary w-100" wire:click="clearFilters" aria-label="Clear filters" text="Reset filters">
-                        Clear
+                    <x-tooltip-button type="button"
+                        class="btn btn-secondary w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
+                        wire:click="clearFilters"
+                        aria-label="Clear filters"
+                        text="Reset filters">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i>
+                        <span>Clear</span>
                     </x-tooltip-button>
                 </div>
             </form>
