@@ -54,7 +54,7 @@ class AdminController extends Controller
     $this->authorize('accessDashboard', User::class);
 
     // Eager load department and manager relations
-    $venues = Venue::with(['department', 'manager'])->paginate(15);
+    $venues = Venue::with(['department'])->paginate(15);
 
     return view('admin.venues.index', compact('venues'));
   }
