@@ -6,6 +6,7 @@ use App\Jobs\SendApprovalRequiredEmailJob;
 use App\Jobs\SendCancellationEmailJob;
 use App\Jobs\SendRejectionEmailJob;
 use App\Jobs\SendSanctionedEmailJob;
+use App\Jobs\SendUpdateEmailJob;
 use App\Jobs\SendWithdrawalEmailJob;
 use App\Models\Event;
 use App\Models\User;
@@ -47,7 +48,9 @@ class NotificationService
         string $approverEmail,
         array $eventDetails
     ): void {
-        SendApprovalRequiredEmailJob::dispatch($approverEmail, $eventDetails);
+        SendApprovalRequiredEmailJob::dispatch(
+            $approverEmail,
+            $eventDetails);
     }
 
     /**
@@ -67,7 +70,11 @@ class NotificationService
         array $eventDetails,
         string $justification
     ): void {
-        SendRejectionEmailJob::dispatch($creatorEmail, $recipientEmails,$eventDetails, $justification);
+        SendRejectionEmailJob::dispatch(
+            $creatorEmail,
+            $recipientEmails,
+            $eventDetails,
+            $justification);
     }
 
     /**
@@ -82,9 +89,13 @@ class NotificationService
      */
     public function dispatchSanctionedNotification(
         string $creatorEmail,
+        array $recipientEmails,
         array $eventDetails
     ): void {
-        SendSanctionedEmailJob::dispatch($creatorEmail, $eventDetails);
+        SendSanctionedEmailJob::dispatch(
+            $creatorEmail,
+            $recipientEmails,
+            $eventDetails);
     }
 
     /**
@@ -104,7 +115,11 @@ class NotificationService
         array $eventDetails,
         string $justification
     ): void {
-        SendCancellationEmailJob::dispatch($creatorEmail, $recipientEmails, $eventDetails, $justification);
+        SendCancellationEmailJob::dispatch(
+            $creatorEmail,
+            $recipientEmails,
+            $eventDetails,
+            $justification);
     }
 
     /**
@@ -119,13 +134,34 @@ class NotificationService
      * @see SendWithdrawalEmailJob
      */
     public function dispatchWithdrawalNotifications(
+        string $creatorEmail,
         array $recipientEmails,
         array $eventDetails,
         string $justification
     ): void {
-        SendWithdrawalEmailJob::dispatch($recipientEmails, $eventDetails, $justification);
+        SendWithdrawalEmailJob::dispatch(
+            $creatorEmail,
+            $recipientEmails,
+            $eventDetails,
+            $justification);
     }
-    public function getEventDetails(Event $event)
+
+
+    public function dispatchUpdateNotification(
+        string $creatorEmail,
+        array $eventDetails,
+        string $approverName,
+        string $role){
+
+        SendUpdateEmailJob::dispatch(
+            $creatorEmail,
+            $approverName,
+            $eventDetails,
+            $role);
+
+
+    }
+    public function getEventDetails(Event $event):array
     {
         $venue = app(VenueService::class)->getVenueById($event->venue_id);
         $user = app(UserService::class)->findUserById($event->creator_id);
@@ -142,5 +178,6 @@ class NotificationService
             'venue_name' => $venue->name,
             ];
     }
+
 
 }

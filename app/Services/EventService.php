@@ -250,6 +250,8 @@ class EventService
 //                        eventDetails: $eventDetails,
 //                    );
                 }
+                $approverName = $approver->first_name . ' ' . $approver->last_name;
+                $this->sendCreatorUpdateEmail($event, $approverName, $currentStatus);
 
                 $this->sendApproverEmails($event);
                 return $event->refresh();
@@ -325,9 +327,11 @@ class EventService
                 // Run audit trail
 
                 // Send email to the approvers
+                $creatorEmail = $event->requester->email;
                 $eventDetails = app(NotificationService::class)->getEventDetails($event);
                 $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
                 app(NotificationService::class)->dispatchWithdrawalNotifications(
+                    creatorEmail: $creatorEmail,
                     recipientEmails: $approverEmails,
                     eventDetails: $eventDetails,
                     justification: $comment,
@@ -943,6 +947,9 @@ class EventService
         public function sendApproverEmails(Event $event){
 //            pending - venue manager approval' => 'pending - dsca approval',
             $eventDetails = app(NotificationService::class)->getEventDetails($event);
+
+
+
             switch ($event->status)
             {
                 case 'pending - venue manager approval':
@@ -966,15 +973,74 @@ class EventService
                             $approverEmail, $eventDetails);
                     }
                     break;
-                case 'approved':
-                    $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
-
-                    app(NotificationService::class)->dispatchSanctionedNotification(
-                        $creatorEmail, $eventDetails
-                    );
+//                case 'approved':
+//                    $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
+//                    $eventApproverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+//
+//                    app(NotificationService::class)->dispatchSanctionedNotification(
+//                        creatorEmail:$creatorEmail,
+//                        recipientEmails: $eventApproverEmails,
+//                        eventDetails: $eventDetails
+//                    );
+//                    break;
 
             }
 
         }
+
+
+    public function sendCreatorUpdateEmail(Event $event, string $approverName, string $statusWhenApproved){
+//            pending - venue manager approval' => 'pending - dsca approval',
+
+//        $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
+
+
+        $creatorEmail = $event->requester->email;
+        $eventDetails = app(NotificationService::class)->getEventDetails($event);
+
+
+        switch ($statusWhenApproved)
+        {
+            case 'pending - advisor approval':
+                app(NotificationService::class)->dispatchUpdateNotification(
+                    creatorEmail: $creatorEmail,
+                    eventDetails: $eventDetails,
+                    approverName: $approverName,
+                    role: 'Advisor'
+                );
+
+                break;
+
+            case 'pending - venue manager approval':
+
+                app(NotificationService::class)->dispatchUpdateNotification(
+                    creatorEmail: $creatorEmail,
+                    eventDetails: $eventDetails,
+                    approverName: $approverName,
+                    role: 'Venue Manager'
+                );
+
+                break;
+            case 'pending - dsca approval':
+                app(NotificationService::class)->dispatchUpdateNotification(
+                    creatorEmail: $creatorEmail,
+                    eventDetails: $eventDetails,
+                    approverName: $approverName,
+                    role: 'DSCA Staff'
+                );
+
+                break;
+            case 'approved':
+                $eventApproverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+
+                app(NotificationService::class)->dispatchSanctionedNotification(
+                    creatorEmail:$creatorEmail,
+                    recipientEmails: $eventApproverEmails,
+                    eventDetails: $eventDetails
+                );
+
+        }
+
+    }
 
 }

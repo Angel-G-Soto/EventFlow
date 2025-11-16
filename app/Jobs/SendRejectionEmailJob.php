@@ -74,16 +74,10 @@ class SendRejectionEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Mail::to($this->creatorEmail)->send(
-            new RejectionEmail($this->eventData, $this->justification)
+        Mail::to($this->creatorEmail)
+            ->cc($this->recipientEmails)
+            ->send(new RejectionEmail($this->eventData, $this->justification)
         );
-
-
-        foreach ($this->recipientEmails as $recipientEmail) {
-            Mail::to($recipientEmail)->send(
-                new RejectionEmail($this->eventData, $this->justification)
-            );
-        }
 
 
     }

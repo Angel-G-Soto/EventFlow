@@ -77,13 +77,14 @@ class SendCancellationEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Mail::to($this->creatorEmail)->send(
-            new CancellationEmail($this->eventData, $this->justification)
-        );
-        foreach ($this->recipientEmails as $recipientEmail) {
-            Mail::to($recipientEmail)->send(
-                new CancellationEmail($this->eventData, $this->justification)
-            );
-        }
+        Mail::to($this->creatorEmail)
+            ->cc($this->recipientEmails)
+            ->send(new CancellationEmail($this->eventData, $this->justification));
+
+//        foreach ($this->recipientEmails as $recipientEmail) {
+//            Mail::to($recipientEmail)->send(
+//                new CancellationEmail($this->eventData, $this->justification)
+//            );
+//        }
     }
 }

@@ -24,6 +24,8 @@ class SendWithdrawalEmailJob implements ShouldQueue
 {
     use Queueable, SerializesModels, Dispatchable, InteractsWithQueue;
 
+    public string $creatorEmail;
+
     /**
      * Email addresses of recipients that should be notified.
      *
@@ -53,10 +55,12 @@ class SendWithdrawalEmailJob implements ShouldQueue
      * @param string              $justification   Reason for the withdrawal.
      */
     public function __construct(
+        string $creatorEmail,
         array $recipientEmails,
         array $eventData,
         string $justification
     ) {
+        $this->creatorEmail = $creatorEmail;
         $this->recipientEmails = $recipientEmails;
         $this->eventData = $eventData;
         $this->justification = $justification;
@@ -73,10 +77,9 @@ class SendWithdrawalEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        foreach ($this->recipientEmails as $recipientEmail) {
-            Mail::to($recipientEmail)->send(
-                new WithdrawalEmail($this->eventData, $this->justification)
-            );
-        }
+        Mail::to($this->creatorEmail)
+            ->cc($this->recipientEmails)
+            ->send(new WithdrawalEmail($this->eventData, $this->justification));
+
     }
 }
