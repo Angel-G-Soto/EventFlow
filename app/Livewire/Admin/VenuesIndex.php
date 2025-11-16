@@ -389,6 +389,22 @@ class VenuesIndex extends Component
     {
         $this->authorize('manage-venues');
 
+        try {
+            $this->validate();
+        } catch (\Throwable $e) {
+            $empty = collect();
+            $paginator = new LengthAwarePaginator($empty, 0, $this->pageSize, 1, [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]);
+            $visibleIds = [];
+            return view('livewire.admin.venues-index', [
+                'rows' => $paginator,
+                'visibleIds' => $visibleIds,
+                'departments' => $this->departments,
+            ]);
+        }
+
         $paginator = $this->venuesPaginator();
         $visibleIds = $paginator->pluck('id')->all();
         return view('livewire.admin.venues-index', [
@@ -431,11 +447,20 @@ class VenuesIndex extends Component
         return $paginator;
     }
     /**
-     * Resets the edit form properties to their default values.
+     * Validation rules for venue list filters and pagination.
+     *
+     * @return array<string, array<int,string>>
      */
-    /**
-     * Map a list of feature labels to storage string like "1010" in order [online, multimedia, computers, teaching].
-     */
+    protected function rules(): array
+    {
+        return [
+            'search' => ['nullable', 'string', 'max:255'],
+            'department' => ['nullable', 'string', 'max:255'],
+            'capMin' => ['nullable', 'integer', 'min:0'],
+            'capMax' => ['nullable', 'integer', 'min:0', 'gte:capMin'],
+            'pageSize' => ['integer', 'in:10,25,50'],
+        ];
+    }
     /**
      * Map a features storage string like "1010" to human labels expected by the UI.
      */

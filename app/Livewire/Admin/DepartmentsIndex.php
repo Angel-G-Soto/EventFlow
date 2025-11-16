@@ -107,6 +107,22 @@ class DepartmentsIndex extends Component
   {
       $this->authorize('access-dashboard');
 
+    try {
+      $this->validate();
+    } catch (\Throwable $e) {
+      $empty = collect();
+      $paginator = new LengthAwarePaginator($empty, 0, $this->pageSize, 1, [
+        'path'  => request()->url(),
+        'query' => request()->query(),
+      ]);
+      $visibleIds = [];
+      return view('livewire.admin.departments-index', [
+        'rows' => $paginator,
+        'visibleIds' => $visibleIds,
+        'codes' => $this->codes,
+      ]);
+    }
+
     $paginator = $this->departmentsPaginator();
     $visibleIds = $paginator->pluck('id')->all();
     return view('livewire.admin.departments-index', [
@@ -147,6 +163,20 @@ class DepartmentsIndex extends Component
     }
 
     return $paginator;
+  }
+
+  /**
+   * Validation rules for department filters and pagination.
+   *
+   * @return array<string, array<int,string>>
+   */
+  protected function rules(): array
+  {
+    return [
+      'search'   => ['nullable', 'string', 'max:255'],
+      'code'     => ['nullable', 'string', 'max:50'],
+      'pageSize' => ['integer', 'in:10,25,50'],
+    ];
   }
 
 }
