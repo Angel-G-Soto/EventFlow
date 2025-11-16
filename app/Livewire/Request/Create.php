@@ -101,6 +101,7 @@ class Create extends Component
  */
     public array $category_ids = [];
     public string $categorySearch = '';
+    public string $categorySearchInput = '';
 
  /**
   * @var int[]
@@ -598,6 +599,12 @@ class Create extends Component
             $this->category_ids,
             fn ($id) => (int) $id !== (int) $categoryId
         ));
+    }
+
+    public function runCategorySearch(): void
+    {
+        $this->categorySearchInput = trim($this->categorySearchInput);
+        $this->categorySearch = $this->categorySearchInput;
     }
 
     /**

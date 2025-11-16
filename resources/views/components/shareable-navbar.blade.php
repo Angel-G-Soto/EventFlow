@@ -101,7 +101,7 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isAdmin)
         <li class="nav-item dropdown">
-          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.categories') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
             href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Administrator
           </a>
@@ -112,6 +112,8 @@ $isDirector = $roleNames->contains('department-director');
                 href="{{ route('admin.departments') }}">Departments</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.venues') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.venues') }}">Venues</a></li>
+            <li><a class="dropdown-item {{ Route::is('admin.categories') ? 'active fw-bold bg-accent' : '' }}"
+                href="{{ route('admin.categories') }}">Categories</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.events') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.events') }}">Events</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.audit') ? 'active fw-bold bg-accent' : '' }}"
