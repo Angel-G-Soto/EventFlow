@@ -10,9 +10,13 @@
         <p class="mb-0">{{ $message ?? 'Are you sure you want to delete this item? This action cannot be undone.' }}</p>
       </div>
       <div class="modal-footer">
+<<<<<<< HEAD
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+=======
         <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" aria-label="Back">
           <i class="bi bi-arrow-left me-1"></i>Back
         </button>
+>>>>>>> Full_integration-admin_events
         <button class="btn btn-danger" type="button" wire:click="{{ $confirm ?? 'proceedDelete' }}">
           <i class="bi bi-trash3 me-1"></i>Delete
         </button>

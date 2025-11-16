@@ -332,8 +332,7 @@
                     {{
                         $venueHistory
                             ? \Illuminate\Support\Carbon::parse($venueHistory->updated_at ?? $venueHistory->created_at)
-                                ->locale('es')
-                                ->isoFormat('D [de] MMMM [de] YYYY')
+                                ->format('D, M j, Y g:i A')
                             : '—'
                     }}
                 </td>
@@ -390,8 +389,7 @@
                     {{
                         $dscaHistory
                             ? \Illuminate\Support\Carbon::parse($dscaHistory->updated_at ?? $dscaHistory->created_at)
-                                ->locale('es')
-                                ->isoFormat('D [de] MMMM [de] YYYY')
+                                ->format('D, M j, Y g:i A')
                             : '—'
                     }}
                 </td>

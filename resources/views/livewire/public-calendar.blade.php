@@ -13,10 +13,10 @@
             <h1 class="h4 mb-0">Events This Week</h1>
             @if($canFilterMyVenues)
                 <style>
-                    /* Green switch toggle */
+                    /* Blue switch toggle */
                     #filterMyVenues:checked {
-                        background-color: #28a745;
-                        border-color: #28a745;
+                        background-color: #0d6efd;
+                        border-color: #0d6efd;
                     }
                 </style>
                 <div class="form-check form-switch">
@@ -195,21 +195,21 @@
                                     value="{{ optional($modal['event']->venue)->code ?? '' }}"></div>
                             <div class="col-md-3"><label class="form-label">From</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->start_time ? \Carbon\Carbon::parse($modal['event']->start_time)->format('Y-m-d\\TH:i') : '' }}">
+                                    value="{{ $modal['event']->start_time ? \Carbon\Carbon::parse($modal['event']->start_time)->format('D, M j, Y g:i A') : '' }}">
                             </div>
                             <div class="col-md-3"><label class="form-label">To</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->end_time ? \Carbon\Carbon::parse($modal['event']->end_time)->format('Y-m-d\\TH:i') : '' }}">
+                                    value="{{ $modal['event']->end_time ? \Carbon\Carbon::parse($modal['event']->end_time)->format('D, M j, Y g:i A') : '' }}">
                             </div>
                             <div class="col-md-3"><label class="form-label">Status</label><input
                                     class="form-control" readonly value="{{ $modal['event']->status ?? '' }}">
                             </div>
                             <div class="col-md-3"><label class="form-label">Created At</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->created_at ?? '' }}"></div>
+                                    value="{{ optional($modal['event']->created_at)->format('D, M j, Y g:i A') }}"></div>
                             <div class="col-md-3"><label class="form-label">Updated At</label><input
                                     class="form-control" readonly
-                                    value="{{ $modal['event']->updated_at ?? '' }}"></div>
+                                    value="{{ optional($modal['event']->updated_at)->format('D, M j, Y g:i A') }}"></div>
                             <div class="col-12"><label class="form-label">Description</label><textarea
                                     class="form-control" rows="3"
                                     readonly>{{ $modal['event']->description ?? '' }}</textarea></div>

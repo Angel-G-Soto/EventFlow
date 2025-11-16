@@ -113,7 +113,7 @@
         {{-- Apply Button --}}
         <div class="col-md-1 col-sm-6">
             <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
-            <button type="button" class="btn btn-success btn-sm w-100" wire:click="apply" style="font-size: 1.05rem;">
+            <button type="button" class="btn btn-primary btn-sm w-100" wire:click="apply" style="font-size: 1.05rem;">
                 <i class="bi bi-arrow-right-circle me-1"></i> Apply
             </button>
         </div>
@@ -134,5 +134,3 @@
     });
 </script>
 @endscript
-
-

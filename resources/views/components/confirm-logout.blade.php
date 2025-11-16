@@ -19,7 +19,7 @@
         <p class="mb-0">{{ $message }}</p>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-warning" type="button"
           onclick="(function(){var f=document.getElementById('{{ $formId }}'); if(f){ f.submit(); }})();">
           <i class="bi bi-box-arrow-right me-1"></i>{{ $confirmLabel }}

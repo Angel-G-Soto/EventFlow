@@ -166,10 +166,10 @@ class Configure extends Component
             $this->addRow();
         }
     }
-/**
- * Validate input and persist configuration changes.
- * @return void
- */
+    /**
+     * Validate input and persist configuration changes.
+     * @return void
+     */
 
     public function save(): void
     {
@@ -238,6 +238,25 @@ class Configure extends Component
         session()->flash('success', 'Venue requirements saved.');
         // Optional: refresh from DB to get cleaned state
         $this->mount($this->venue);
+    }
+
+    /**
+     * Remove every requirement associated with the current venue.
+     *
+     * @return void
+     */
+    public function clearRequirements(): void
+    {
+        $this->authorize('update-requirements', $this->venue);
+
+        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, [], Auth::user());
+
+        $this->rows = [];
+        $this->deleted = [];
+        $this->addRow();
+
+        session()->flash('success', 'All requirements for this venue have been cleared.');
+        $this->dispatch('notify', type: 'success', message: 'All requirements have been cleared.');
     }
 /**
  * ReplaceUuidWithId action.

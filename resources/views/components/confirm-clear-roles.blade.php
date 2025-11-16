@@ -12,7 +12,7 @@
           but lose all assigned permissions.' }}</p>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-warning" type="button" wire:click="{{ $confirm ?? 'proceedClearRoles' }}">
           <i class="bi bi-person-x me-1"></i>{{ $confirmLabel ?? 'Clear roles' }}
         </button>

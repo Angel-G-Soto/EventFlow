@@ -27,7 +27,7 @@
 <div>
     <div class="container my-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
-            <h1 class="fw-bold mb-0">Event Details</h1>
+            <h1 class="fw-bold mb-0">Approval Details</h1>
             <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
                 @if($eventHistory->event->status === 'approved')
                     <button type="button"
@@ -48,17 +48,6 @@
                     Back
                 </button>
             </div>
-        </div>
-
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-            <h1 class="fw-bold mb-4">Approval Details</h1>
-            <button type="button"
-                    wire:click="back"
-                    class="btn btn-secondary ms-auto"
-                    wire:target="back"
-                    aria-label="Go Back">
-                Back
-            </button>
         </div>
 
         {{-- Approver Action & Comment --}}
@@ -168,7 +157,7 @@
                 </dd>
 
                     <dt class="col-sm-4">Date Submitted</dt>
-                    <dd class="col-sm-8">{{ $eventHistory->event->created_at->format('M j, Y g:i A') }}</dd>
+                    <dd class="col-sm-8">{{ $eventHistory->event->created_at->format('D, M j, Y g:i A') }}</dd>
                 </dl>
             </div>
         </section>
