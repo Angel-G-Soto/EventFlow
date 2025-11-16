@@ -1173,17 +1173,12 @@ class EventService
             ->select('id', 'name', 'code')
             ->get();
 
-        // Count duplicates by normalized name
-        $nameCounts = $venues
-            ->groupBy(fn($v) => mb_strtolower(trim((string)($v->name ?? ''))))
-            ->map->count();
-
-        // Build label, appending code for duplicates when available
-        $options = $venues->map(function ($v) use ($nameCounts) {
-            $norm = mb_strtolower(trim((string)($v->name ?? '')));
+        // Build label, always appending code in parentheses if available
+        $options = $venues->map(function ($v) {
+            $name = (string)($v->name ?? '');
             $code = trim((string)($v->code ?? ''));
-            $label = (string)($v->name ?? '');
-            if ($norm !== '' && ($nameCounts[$norm] ?? 0) > 1 && $code !== '') {
+            $label = $name;
+            if ($code !== '') {
                 $label .= ' (' . $code . ')';
             }
             return ['id' => (int)$v->id, 'label' => $label];
