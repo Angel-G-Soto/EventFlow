@@ -1,22 +1,21 @@
+{{--    View: Create (Livewire) --}}
+{{--    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5) --}}
+{{--    Date: 2025-11-01 --}}
 
-{{--    View: Create (Livewire)--}}
-{{--    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5)--}}
-{{--    Date: 2025-11-01--}}
+{{--    Description: --}}
+{{--    - Presents an accessible form to create a new resource (e.g., Event, Venue, Requirement). --}}
+{{--    - Works with a Livewire component that validates and persists data. --}}
 
-{{--    Description:--}}
-{{--    - Presents an accessible form to create a new resource (e.g., Event, Venue, Requirement).--}}
-{{--    - Works with a Livewire component that validates and persists data.--}}
+{{--    Variables (typical): --}}
+{{--    - array<string,mixed> $form                   Reactive form state --}}
+{{--    - \Illuminate\Support\Collection|array $venues      Options for venue select --}}
+{{--    - \Illuminate\Support\Collection|array $categories  Options for categories --}}
+{{--    - bool $isBusy                                Optional loading flag --}}
 
-{{--    Variables (typical):--}}
-{{--    - array<string,mixed> $form                   Reactive form state--}}
-{{--    - \Illuminate\Support\Collection|array $venues      Options for venue select--}}
-{{--    - \Illuminate\Support\Collection|array $categories  Options for categories--}}
-{{--    - bool $isBusy                                Optional loading flag--}}
-
-{{--    Accessibility notes:--}}
-{{--    - Use <label for> for each input; include required asterisks via ::after and aria-required="true".--}}
-{{--    - Announce validation errors near inputs with role="alert" and aria-describedby.--}}
-{{--    - Ensure the primary submit <button> has type="submit" and discernible text.--}}
+{{--    Accessibility notes: --}}
+{{--    - Use <label for> for each input; include required asterisks via ::after and aria-required="true". --}}
+{{--    - Announce validation errors near inputs with role="alert" and aria-describedby. --}}
+{{--    - Ensure the primary submit <button> has type="submit" and discernible text. --}}
 
 
 
@@ -58,48 +57,68 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label required">Student Phone</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_phone_number" placeholder="787-777-7777">
-                    @error('creator_phone_number') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="text" class="form-control" wire:model.defer="creator_phone_number"
+                        placeholder="787-777-7777">
+                    @error('creator_phone_number')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="col-md-4">
                     <label class="form-label required">Student ID / Number</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number" placeholder="802201234">
-                    @error('creator_institutional_number') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number"
+                        placeholder="802201234">
+                    @error('creator_institutional_number')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event Title</label>
                     <input type="text" class="form-control" wire:model.defer="title" placeholder="Enter event title">
-                    @error('title') <div class="text-danger small">{{ $message }}</div> @enderror
+                    @error('title')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="Enter a brief description of the event"></textarea>
-                    @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <textarea class="form-control" rows="4" wire:model.defer="description"
+                        placeholder="Enter a brief description of the event"></textarea>
+                    @error('description')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="col-md-12">
                     <label class="form-label required">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
-                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
+                    @error('guest_size')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
 
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Start time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="start_time" placeholder="Select start time">
-                    @error('start_time') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="datetime-local" class="form-control" wire:model.live="start_time"
+                        placeholder="Select start time">
+                    @error('start_time')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">End time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="end_time" placeholder="Select end time">
-                    @error('end_time') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="datetime-local" class="form-control" wire:model.live="end_time"
+                        placeholder="Select end time">
+                    @error('end_time')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-baseline">
                         <label class="form-label">Event Categories</label>
-                        <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories" @disabled(empty($category_ids))>
+                        <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories"
+                            @disabled(empty($category_ids))>
                             Clear selection
                         </button>
                     </div>
@@ -108,12 +127,9 @@
                         <div class="card-body">
                             <div class="row g-2 align-items-center mb-3">
                                 <div class="col-md-8">
-                                    <input
-                                        type="search"
-                                        class="form-control"
+                                    <input type="search" class="form-control"
                                         placeholder="Search categories (e.g., Workshop, Fundraiser)"
-                                        wire:model.debounce.300ms="categorySearch"
-                                    >
+                                        wire:model.debounce.300ms="categorySearch">
                                 </div>
                                 <div class="col-md-4 text-md-end">
                                     <small class="text-muted">
@@ -128,12 +144,9 @@
                                     @foreach ($selectedCategoryLabels as $id => $label)
                                         <span class="badge rounded-pill text-bg-light border me-1 mb-1">
                                             {{ $label }}
-                                            <button
-                                                type="button"
-                                                class="btn btn-link btn-sm text-decoration-none ps-1"
+                                            <button type="button" class="btn btn-link btn-sm text-decoration-none ps-1"
                                                 wire:click="removeCategory({{ (int) $id }})"
-                                                aria-label="Remove {{ $label }}"
-                                            >&times;</button>
+                                                aria-label="Remove {{ $label }}">&times;</button>
                                         </span>
                                     @endforeach
                                 </div>
@@ -142,13 +155,10 @@
                             <div class="row row-cols-1 row-cols-md-2 g-2">
                                 @forelse ($filteredCategories as $cat)
                                     <div class="col">
-                                        <label class="border rounded p-3 h-100 d-flex gap-3 align-items-start shadow-sm">
-                                            <input
-                                                type="checkbox"
-                                                class="form-check-input mt-1"
-                                                value="{{ $cat['id'] }}"
-                                                wire:model.live="category_ids"
-                                            >
+                                        <label
+                                            class="border rounded p-3 h-100 d-flex gap-3 align-items-start shadow-sm">
+                                            <input type="checkbox" class="form-check-input mt-1"
+                                                value="{{ $cat['id'] }}" wire:model.live="category_ids">
                                             <span>
                                                 <span class="fw-semibold d-block">{{ $cat['name'] }}</span>
                                                 @if (!empty($cat['description'] ?? null))
@@ -165,64 +175,60 @@
                             </div>
                         </div>
                     </div>
-                    @error('category_ids') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
+                    @error('category_ids')
+                        <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <label class="form-label">General Requirements</label>
                 {{-- Check box for food handling --}}
                 <div class="form-check">
-                    <input
-                        id="handles_food"
-                        type="checkbox"
-                        class="form-check-input"
-                        wire:model.live="handles_food"
-                        aria-describedby="handles_food"
-                    >
+                    <input id="handles_food" type="checkbox" class="form-check-input" wire:model.live="handles_food"
+                        aria-describedby="handles_food">
                     <label class="form-check-label" for="handles_food">This event is to sell food</label>
                     <div id="handles_food" class="form-text"></div>
                 </div>
 
                 {{-- Check box for institutional funds --}}
                 <div class="form-check">
-                    <input
-                        id="has_funds"
-                        type="checkbox"
-                        class="form-check-input"
-                        wire:model.live="use_institutional_funds"
-                        aria-describedby="hasFunds"
-                    >
+                    <input id="has_funds" type="checkbox" class="form-check-input"
+                        wire:model.live="use_institutional_funds" aria-describedby="hasFunds">
                     <label class="form-check-label" for="has_funds">This event uses institutional funds</label>
                     <div id="hasFunds" class="form-text"></div>
                 </div>
 
                 {{-- Check box for external guest --}}
                 <div class="form-check">
-                    <input
-                        id="external_guest"
-                        type="checkbox"
-                        class="form-check-input"
-                        wire:model.live="external_guest"
-                        aria-describedby="externalGuest"
-                    >
+                    <input id="external_guest" type="checkbox" class="form-check-input"
+                        wire:model.live="external_guest" aria-describedby="externalGuest">
                     <label class="form-check-label" for="external_guest">This event has an external guest</label>
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
-                    <input type="text" class="form-control" value="{{ $organization_name }}" disabled placeholder="Organization name">
-                    @error('organization_name') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="text" class="form-control" value="{{ $organization_name }}" disabled
+                        placeholder="Organization name">
+                    @error('organization_name')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" {{--wire:model.defer="organization_advisor_name"--}} disabled placeholder="Enter advisor's name">
-                    @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="text" value="{{ $organization_advisor_name }}" class="form-control"
+                        {{-- wire:model.defer="organization_advisor_name" --}} disabled placeholder="Enter advisor's name">
+                    @error('organization_advisor_name')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" {{--wire:model.defer="organization_advisor_email"--}}  disabled placeholder="Enter advisor's email">
-                    @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
+                    <input type="email" value="{{ $organization_advisor_email }}" class="form-control"
+                        {{-- wire:model.defer="organization_advisor_email" --}} disabled placeholder="Enter advisor's email">
+                    @error('organization_advisor_email')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
@@ -255,100 +261,82 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5 col-lg-4">
                             <label for="venueSearch" class="form-label">Search by name or code</label>
-                            <input id="venueSearch"
-                                   type="text"
-                                   class="form-control"
-                                   placeholder="e.g., SALON DE CLASES or AE-102"
-                                   wire:model.defer="venueSearch">
+                            <input id="venueSearch" type="text" class="form-control"
+                                placeholder="e.g., SALON DE CLASES or AE-102" wire:model.defer="venueSearch">
                         </div>
                         <div class="col-md-3 col-lg-2">
                             <label for="venueCapacityFilter" class="form-label">Minimum capacity</label>
-                            <input id="venueCapacityFilter"
-                                   type="number"
-                                   min="0"
-                                   class="form-control"
-                                   placeholder="50"
-                                   wire:model.defer="venueCapacityFilter">
+                            <input id="venueCapacityFilter" type="number" min="0" class="form-control"
+                                placeholder="50" wire:model.defer="venueCapacityFilter">
                         </div>
                         <div class="col-md-4 col-lg-3">
                             <label for="venueDepartmentFilter" class="form-label">Department</label>
-                            <select id="venueDepartmentFilter"
-                                    class="form-select"
-                                    wire:model.defer="venueDepartmentFilter">
+                            <select id="venueDepartmentFilter" class="form-select"
+                                wire:model.defer="venueDepartmentFilter">
                                 <option value="">All departments</option>
-                                @foreach($departments as $department)
+                                @foreach ($departments as $department)
                                     <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-12 col-lg-3 d-flex gap-2">
-                            <button
-                                type="button"
-                                class="btn btn-primary flex-fill"
-                                wire:click="runVenueSearch"
-                                wire:loading.attr="disabled"
-                                wire:target="runVenueSearch">
+                            <button type="button" class="btn btn-primary flex-fill" wire:click="runVenueSearch"
+                                wire:loading.attr="disabled" wire:target="runVenueSearch">
                                 @if ($loadingVenues)
-                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span class="spinner-border spinner-border-sm" role="status"
+                                        aria-hidden="true"></span>
                                 @endif
                                 Search
                             </button>
-                            <button
-                                type="button"
-                                class="btn btn-outline-secondary flex-fill"
-                                wire:click="resetVenueFilters"
-                                wire:loading.attr="disabled"
+                            <button type="button" class="btn btn-outline-secondary flex-fill"
+                                wire:click="resetVenueFilters" wire:loading.attr="disabled"
                                 wire:target="resetVenueFilters">
                                 Reset
                             </button>
                         </div>
                     </div>
-                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability query.</div>
+                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability
+                        query.</div>
                 </div>
             </div>
 
             <div class="table-responsive mb-2">
                 <table class="table table-hover align-middle shadow-sm">
                     <thead class="table-light">
-                    <tr>
-                        <th scope="col" style="width:56px">Select</th>
-                        <th scope="col">Code</th>
-                        <th scope="col">Name</th>
-                        <th scope="col" class="text-end">Capacity</th>
-                        <th scope="col" class="text-center" style="width:120px">Details</th>
-                    </tr>
+                        <tr>
+                            <th scope="col" style="width:56px">Select</th>
+                            <th scope="col">Code</th>
+                            <th scope="col">Name</th>
+                            <th scope="col" class="text-end">Capacity</th>
+                            <th scope="col" class="text-center" style="width:120px">Details</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    @forelse ($this->paginatedVenues as $v)
-                        <tr wire:key="venue-row-{{ $v['id'] }}"
-                            class="{{ (int)$venue_id === (int)($v['id'] ?? 0) ? 'table-primary' : '' }}"
-                            style="cursor:pointer"
-                            wire:click="selectVenue({{ $v['id'] }})">
-                            <td>
-                                <input type="radio"
-                                       class="form-check-input"
-                                       wire:model.live="venue_id"
-                                       value="{{ $v['id'] }}"
-                                       aria-label="Select {{ $v['code'] ?? ('Venue #'.$v['id']) }}" />
-                            </td>
-                            <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
-                            <td>{{ $v['name'] ?? '—' }}</td>
-                            <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
-                            <td class="text-center">
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-primary"
-                                    wire:click.stop="showVenueDescription({{ $v['id'] }})"
-                                >
-                                    View
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No venues match the current filter.</td>
-                        </tr>
-                    @endforelse
+                        @forelse ($this->paginatedVenues as $v)
+                            <tr wire:key="venue-row-{{ $v['id'] }}"
+                                class="{{ (int) $venue_id === (int) ($v['id'] ?? 0) ? 'table-primary' : '' }}"
+                                style="cursor:pointer" wire:click="selectVenue({{ $v['id'] }})">
+                                <td>
+                                    <input type="radio" class="form-check-input" wire:model.live="venue_id"
+                                        value="{{ $v['id'] }}"
+                                        aria-label="Select {{ $v['code'] ?? 'Venue #' . $v['id'] }}" />
+                                </td>
+                                <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
+                                <td>{{ $v['name'] ?? '—' }}</td>
+                                <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        wire:click.stop="showVenueDescription({{ $v['id'] }})">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No venues match the current
+                                    filter.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -365,59 +353,42 @@
                     <nav aria-label="Venues pagination">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item {{ $this->venuePagination['current'] === 1 ? 'disabled' : '' }}">
-                                <button
-                                    type="button"
-                                    class="page-link"
-                                    wire:click="previousVenuePage"
-                                    @disabled($this->venuePagination['current'] === 1)
-                                >&laquo;</button>
+                                <button type="button" class="page-link" wire:click="previousVenuePage"
+                                    @disabled($this->venuePagination['current'] === 1)>&laquo;</button>
                             </li>
                             @foreach (range(1, $this->venuePagination['last']) as $page)
-                                <li class="page-item {{ $page === $this->venuePagination['current'] ? 'active' : '' }}">
-                                    <button
-                                        type="button"
-                                        class="page-link"
+                                <li
+                                    class="page-item {{ $page === $this->venuePagination['current'] ? 'active' : '' }}">
+                                    <button type="button" class="page-link"
                                         wire:click="goToVenuePage({{ $page }})"
-                                        @disabled($page === $this->venuePagination['current'])
-                                    >{{ $page }}</button>
+                                        @disabled($page === $this->venuePagination['current'])>{{ $page }}</button>
                                 </li>
                             @endforeach
-                            <li class="page-item {{ $this->venuePagination['current'] === $this->venuePagination['last'] ? 'disabled' : '' }}">
-                                <button
-                                    type="button"
-                                    class="page-link"
-                                    wire:click="nextVenuePage"
-                                    @disabled($this->venuePagination['current'] === $this->venuePagination['last'])
-                                >&raquo;</button>
+                            <li
+                                class="page-item {{ $this->venuePagination['current'] === $this->venuePagination['last'] ? 'disabled' : '' }}">
+                                <button type="button" class="page-link" wire:click="nextVenuePage"
+                                    @disabled($this->venuePagination['current'] === $this->venuePagination['last'])>&raquo;</button>
                             </li>
                         </ul>
                     </nav>
                 @endif
             </div>
-            @error('venue_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            @error('venue_id')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
 
 
 
             <div class="d-flex justify-content-between mt-4">
                 <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                    wire:loading.attr="disabled"
-                    wire:target="next"
-                    @disabled(!$venue_id)
-                >Next</button>
+                <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="next"
+                    @disabled(!$venue_id)>Next</button>
             </div>
         </form>
     @endif
     @if ($showVenueDescriptionModal && $selectedVenueDetails)
-        <div
-            class="modal fade show d-block"
-            tabindex="-1"
-            aria-modal="true"
-            role="dialog"
-            style="background: rgba(0,0,0,0.35);"
-        >
+        <div class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog"
+            style="background: rgba(0,0,0,0.35);">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -425,7 +396,8 @@
                             {{ $selectedVenueDetails['name'] ?? 'Venue details' }}
                             <small class="text-muted ms-2">{{ $selectedVenueDetails['code'] ?? '' }}</small>
                         </h5>
-                        <button type="button" class="btn-close" aria-label="Close" wire:click="closeVenueDescription"></button>
+                        <button type="button" class="btn-close" aria-label="Close"
+                            wire:click="closeVenueDescription"></button>
                     </div>
                     <div class="modal-body">
                         <p class="text-muted mb-3">
@@ -452,7 +424,8 @@
                         @endif
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="closeVenueDescription">Close</button>
+                        <button type="button" class="btn btn-secondary"
+                            wire:click="closeVenueDescription">Close</button>
                     </div>
                 </div>
             </div>
@@ -473,7 +446,8 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
+                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food
+                                Handling Details</a>
                         </li>
                     </ul>
                 </div>
@@ -484,7 +458,8 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                            <a href="#" class="text-primary"
+                                wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
                         </li>
                     </ul>
                 </div>
@@ -495,7 +470,8 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                            <a href="#" class="text-primary"
+                                wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
                         </li>
                     </ul>
                 </div>
@@ -505,7 +481,6 @@
             @if (empty($requiredDocuments))
                 <div class="alert alert-secondary">No documents required for this venue.</div>
             @else
-
                 <div class="mb-3">
                     <div class="form-text">Upload the documents required for this venue.</div>
                 </div>
@@ -513,30 +488,77 @@
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
-                                <a href="{{$doc['hyperlink']}}" target="_blank">
-                                    {{ $doc['name'] . ": "}}
-                                </a>
-                                {{$doc['description']}}
+                            <a href="{{ $doc['hyperlink'] }}" target="_blank">
+                                {{ $doc['name'] . ': ' }}
+                            </a>
+                            {{ $doc['description'] }}
                         </li>
                     @endforeach
                 </ul>
                 <div class="mb-3">
-                    <label for="requirementFiles" class="form-label">Upload Requirement Documents</label>
-                    <input type="file"
-                           class="form-control"
-                           id="requirementFiles"
-                           wire:model="requirementFiles"
-                           multiple
-{{--                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>--}}
-                            accept=".pdf"/>
-                    <div class="form-text">
-{{--                        Upload all required documents here. Accepted formats: PDF, DOCX, JPG, PNG.--}}
-                        Upload all required documents here. Accepted formats: PDF.
+                    <label for="requirementFiles" class="form-label fw-semibold">
+                        Upload Requirement Documents
+                        <span class="text-muted">(PDF, max 10MB each)</span>
+                    </label>
+
+                    <div class="position-relative">
+                        {{-- Visible dropzone UI --}}
+                        <div class="w-100 d-flex flex-column align-items-center justify-content-center rounded-3 p-4 text-center bg-light border border-2"
+                            style="border-style: dashed;">
+                            {{-- If you have Bootstrap Icons, this will show a nice cloud icon --}}
+                            <i class="bi bi-cloud-arrow-up fs-1 mb-2"></i>
+
+                            <span class="fw-semibold">Click to choose files</span>
+                            <span class="text-muted small">or drag and drop them here</span>
+                        </div>
+
+                        {{-- Actual file input overlay (handles click + drag/drop) --}}
+                        <input id="newRequirementFiles" type="file" wire:model="newRequirementFiles" multiple
+                            accept=".pdf" class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                            style="cursor: pointer;">
                     </div>
 
-                    @error('requirementFiles.*')
-                    <div class="text-danger">{{ $message }}</div>
+                    <div class="form-text mt-2">
+                        Upload all required documents here. Accepted formats: PDF. Maximum size 10MB per document.
+                    </div>
+
+                    {{-- Top-level error: no documents at all (if you add that rule later) --}}
+                    @error('requirementFiles')
+                    <div class="text-danger small mt-2">{{ $message }}</div>
                     @enderror
+
+                    {{-- Deduped per-file errors for newRequirementFiles.* --}}
+                    @foreach (collect($errors->get('newRequirementFiles.*', []))->flatten()->unique() as $message)
+                        <div class="text-danger small mt-2">{{ $message }}</div>
+                    @endforeach
+                </div>
+
+                {{-- Preview list of all selected files --}}
+                @if ($requirementFiles)
+                    <ul class="list-group mb-3">
+                        @foreach ($requirementFiles as $index => $file)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-semibold">
+                                        {{ $file->getClientOriginalName() }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        ~ {{ number_format($file->getSize() / 1024 / 1024, 2) }} MB
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                    wire:click="removeRequirementFile({{ $index }})">
+                                    Remove
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                {{-- Small “uploading” hint when Livewire is handling a new batch --}}
+                <div wire:loading wire:target="newRequirementFiles" class="mt-2 small text-muted">
+                    Uploading… please wait.
                 </div>
             @endif
 
@@ -561,11 +583,11 @@
     });
 
     // Trigger beforeunload when the user tries to leave the page (except on form submit)
-    window.addEventListener('beforeunload', function (event) {
+    window.addEventListener('beforeunload', function(event) {
         if (!isSubmitting) { // Only show the warning if it's not a form submission
             const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
-            event.returnValue = confirmationMessage;  // For most modern browsers
-            return confirmationMessage;              // For older browsers
+            event.returnValue = confirmationMessage; // For most modern browsers
+            return confirmationMessage; // For older browsers
         }
     });
 </script>

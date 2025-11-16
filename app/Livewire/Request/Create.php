@@ -192,6 +192,48 @@ class Create extends Component
  */
     public array $uploads = []; // key => TemporaryUploadedFile
 
+/**
+ * Files from the most recent drag/drop or “browse” interaction.
+ *
+ * Livewire will set this each time the user chooses/drops new files.
+ * We’ll merge it into $requirementFiles and then clear it.
+ *
+ * @var array<int,\Livewire\Features\SupportFileUploads\TemporaryUploadedFile>
+ */
+    public array $newRequirementFiles = [];
+
+
+/**
+ * Custom validation messages.
+ *
+ * @var array<string,string>
+ */
+    public array $messages = [
+        'requirementFiles.required' => 'Please upload at least one document.',
+        'requirementFiles.array'    => 'Please upload at least one document.',
+        'requirementFiles.min'      => 'Please upload at least one document.',
+        // // New batch (before merge)
+        'newRequirementFiles.*.file'  => 'Each document must be a valid file.',
+        'newRequirementFiles.*.mimes' => 'Each document must be a PDF file.',
+        'newRequirementFiles.*.max'   => 'Each document must be 10MB or smaller.',
+    ];
+
+/**
+ * Human-friendly names for validation errors.
+ *
+ * @var array<string,string>
+ */
+    public array $validationAttributes = [
+        'requirementFiles'   => 'documents',
+        'requirementFiles.*' => 'document',
+        'newRequirementFiles.*' => 'document',
+
+    ];
+
+
+
+
+
 
     public string $venueSearch = '';
     public ?int $venueCapacityFilter = null;
@@ -219,6 +261,13 @@ class Create extends Component
         $this->docs = $docs;
     }
 
+    // public function messages(): array
+    // {
+    //     return [
+    //         'newRequirementFiles.*.mimes'  => 'Each document must be a PDF file.',
+    //         'newRequirementFiles.*.max'    => 'Each document must be 10MB or smaller.',
+    //     ];
+    // }
 
     /**
      * Return validation rules that apply *only* to the provided wizard step.
@@ -260,10 +309,13 @@ class Create extends Component
         }
 
 //        Step 3
-        return [
-            'requirementFiles'   => ['array'],
-            'requirementFiles.*' => ['file', 'mimes:pdf', 'max:10240'], // 10 MB each
-        ];
+        return
+            [
+                'requirementFiles'   => ['required','array','min:1'],
+                'requirementFiles.*' => ['file', 'mimes:pdf', 'max:10240'],
+            ];
+
+
 
 
 //// Step 3: dynamic files
@@ -278,6 +330,13 @@ class Create extends Component
 //            $fileRules["uploads.$key"] = $doc['required'] ? array_merge(['required'], $base) : array_merge(['nullable'], $base);
 //        }
 //        return $fileRules;
+    }
+
+    public function uploadValidation(){
+        return
+            [
+                'newRequirementFiles.*' => ['file', 'mimes:pdf', 'max:10240']
+            ]; // 10 MB each
     }
 
     // Reactivity: if time window changes, refresh venues if we are on step 2
@@ -306,6 +365,54 @@ class Create extends Component
         }
     }
 
+
+
+
+/**
+ * Every time the user selects or drops new files, Livewire updates
+ * $newRequirementFiles. We merge them into $requirementFiles so
+ * previous files are preserved.
+ */
+public function updatedNewRequirementFiles(): void
+{
+    if (!is_array($this->newRequirementFiles)) {
+        $this->newRequirementFiles = [];
+        return;
+    }
+    $this->validate(
+        $this->uploadValidation(),
+        $this->messages,
+        $this->validationAttributes
+    );
+    // Append newly selected files to the existing list
+    $this->requirementFiles = array_values(array_merge(
+        $this->requirementFiles,
+        $this->newRequirementFiles,
+    ));
+
+    // Clear the temp holder so we don’t re-merge them again
+    $this->newRequirementFiles = [];
+
+    // Optionally validate Step 3 immediately so the user sees errors right away
+//    if ($this->step === 3) {
+//            $this->validate(
+//        $this->rulesForStep(3),
+//        $this->messages,
+//        $this->validationAttributes
+//    );
+//    }
+}
+
+/**
+ * Remove a single file from the aggregated list.
+ */
+public function removeRequirementFile(int $index): void
+{
+    unset($this->requirementFiles[$index]);
+    $this->requirementFiles = array_values($this->requirementFiles);
+}
+
+
     /**
      * Move to the next step after validating the current one.
      * Also performs side‑effects needed before entering the next step
@@ -313,7 +420,7 @@ class Create extends Component
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-        //$this->validate($this->rulesForStep($this->step));
+//        $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
@@ -499,10 +606,16 @@ class Create extends Component
 //        $data['external_guests']
 
 // Validate step 3 (dynamic files)
-        $this->validate($this->rulesForStep(3));
 
-        // Roadmap
+         $this->validate($this->rulesForStep($this->step));
+         // Roadmap
             //create event
+
+//                $this->validate(
+//        $this->rulesForStep(3),
+//        $this->messages,
+//        $this->validationAttributes
+//    );
 
         $userService = app(UserService::class);
         $user = Auth::user();

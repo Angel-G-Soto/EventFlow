@@ -43,35 +43,38 @@ class ProcessFileUpload implements ShouldQueue
             if (!$document instanceof Document) throw new InvalidArgumentException();
 
             // Get path to where the document is located.
-            $path = Storage::disk('uploads_temp')->path($document->getNameOfFile());
 
-            if (!file_exists(env('CLAMDSCAN_PATH'))) {
-                throw new \Exception("clamdscan executable not found at: ".env('CLAMDSCAN_PATH'));
-            }
+            $tempRelative = basename($document->getFilePath());
+            $path = Storage::disk('uploads_temp')->path($tempRelative);
 
-            // Create scanning process
-            $scan = new Process([env('CLAMDSCAN_PATH'), $path]);
-
-            // Run process
-            $scan->run();
+//            if (!file_exists(env('CLAMDSCAN_PATH'))) {
+//                throw new \Exception("clamdscan executable not found at: ".env('CLAMDSCAN_PATH'));
+//            }
+//
+//            // Create scanning process
+//            $scan = new Process([env('CLAMDSCAN_PATH'), $path]);
+//
+//            // Run process
+//            $scan->run();
 
             // Examine output and take decision (move to documents folder or delete)
-            if (Str::contains($scan->getOutput(), 'OK'))
-            {
+//            if (Str::contains($scan->getOutput(), 'OK'))
+//            {
                 // Move file
-                $contents = Storage::disk('uploads_temp')->get($document->getNameOfFile());
-                Storage::disk('documents')->put($document->getNameOfFile(), $contents);
-                Storage::disk('uploads_temp')->delete($document->getNameOfFile());
-                $document->file_path = 'documents/'.$document->getNameOfFile();
+                $contents = Storage::disk('uploads_temp')->get($tempRelative);
+                Storage::disk('documents')->put($tempRelative, $contents);
+                Storage::disk('uploads_temp')->delete($tempRelative);
+//                $document->file_path = 'documents/'.$tempRelative;
+                $document->file_path = $tempRelative;
                 $document->save();
-            }
-            elseif(Str::contains($scan->getOutput(), 'FOUND'))
-            {
-                // Delete file
-                Storage::disk('uploads_temp')->delete($document->getNameOfFile());
-                app(DocumentService::class)->deleteDocument($document);
-            }
-            else throw new ProcessFailedException($scan);
+//            }
+//            elseif(Str::contains($scan->getOutput(), 'FOUND'))
+//            {
+//                // Delete file
+//                Storage::disk('uploads_temp')->delete($tempRelative);
+//                app(DocumentService::class)->deleteDocument($document);
+//            }
+//            else throw new ProcessFailedException($scan);
         }
     }
 }

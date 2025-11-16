@@ -45,11 +45,28 @@ class DocumentService
             );
         }
 
+        // Original name
+        $originalName = $file->getClientOriginalName();
+
+        // 1) Trim whitespace
+        $cleanName = trim($originalName);
+
+        // 2) Remove control characters
+        $cleanName = preg_replace('/[\x00-\x1F\x7F]/u', '', $cleanName);
+
+        // 3) Hard limit length (avoid DB truncation)
+        $maxLen = 150;
+        if (mb_strlen($cleanName) > $maxLen) {
+            $ext = pathinfo($cleanName, PATHINFO_EXTENSION);
+            $base = mb_substr(pathinfo($cleanName, PATHINFO_FILENAME), 0, $maxLen - 5);
+            $cleanName = $ext ? "{$base}.{$ext}" : $base;
+        }
+
         // 2) Create DB record
         $doc = Document::create([
             'event_id' => $eventId,
-            'name' => $tmpRelativePath,
-            'file_path' => '',
+            'name' => $cleanName,
+            'file_path' => $tmpRelativePath,
         ]);
 
         // 3) Queue virus scan & move to final storage
