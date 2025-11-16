@@ -320,32 +320,11 @@
             </div>
             <div class="col-md-6">
               <style>
-                .compact-multiselect {
-                  font-size: 0.92rem;
-                  padding: 0.15rem 0.5rem;
-                }
-
                 .compact-multiselect .badge,
-                .compact-multiselect .btn,
                 .compact-multiselect input,
                 .compact-multiselect .form-control {
                   font-size: 0.85rem;
                   padding: 0.12rem 0.4rem;
-                  height: 1.7rem;
-                }
-
-                .compact-multiselect .card,
-                .compact-multiselect .card-body {
-                  padding: 0.4rem;
-                }
-
-                .compact-multiselect .row,
-                .compact-multiselect .col {
-                  margin-bottom: 0.18rem;
-                }
-
-                .compact-multiselect .badge {
-                  margin-bottom: 0.1rem;
                 }
               </style>
               <div class="compact-multiselect">
