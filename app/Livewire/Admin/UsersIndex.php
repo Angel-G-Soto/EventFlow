@@ -50,6 +50,16 @@ class UsersIndex extends Component
     }
 
     // Filters: clear/reset
+    /**
+     * Clears all user filters and resets pagination.
+     */
+    public function clearFilters(): void
+    {
+        $this->search = '';
+        $this->role = '';
+        $this->page = 1;
+    }
+
     // Edit/Create workflows
     /**
      * Resets the edit fields to their default values and opens the edit user modal.
