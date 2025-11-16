@@ -219,49 +219,50 @@
                 <div class="modal-body">
                     @php
                         $event = data_get($modal, 'event');
+                        $eventId = data_get($event, 'id', 'preview');
                     @endphp
 
                     @if($event)
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Title</label>
-                                <input class="form-control" readonly value="{{ $event->title ?? '' }}">
+                                <label class="form-label" for="publicEventTitle-{{ $eventId }}">Title</label>
+                                <input id="publicEventTitle-{{ $eventId }}" class="form-control" readonly value="{{ $event->title ?? '' }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Organization</label>
-                                <input class="form-control" readonly value="{{ $event->organization_name ?? '' }}">
+                                <label class="form-label" for="publicEventOrg-{{ $eventId }}">Organization</label>
+                                <input id="publicEventOrg-{{ $eventId }}" class="form-control" readonly value="{{ $event->organization_name ?? '' }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Venue</label>
-                                <input class="form-control" readonly value="{{ optional($event->venue)->code ?? '' }}">
+                                <label class="form-label" for="publicEventVenue-{{ $eventId }}">Venue</label>
+                                <input id="publicEventVenue-{{ $eventId }}" class="form-control" readonly value="{{ optional($event->venue)->code ?? '' }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">From</label>
-                                <input class="form-control" readonly
+                                <label class="form-label" for="publicEventFrom-{{ $eventId }}">From</label>
+                                <input id="publicEventFrom-{{ $eventId }}" class="form-control" readonly
                                        value="{{ $event->start_time ? \Carbon\Carbon::parse($event->start_time)->format('D, M j, Y g:i A') : '' }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">To</label>
-                                <input class="form-control" readonly
+                                <label class="form-label" for="publicEventTo-{{ $eventId }}">To</label>
+                                <input id="publicEventTo-{{ $eventId }}" class="form-control" readonly
                                        value="{{ $event->end_time ? \Carbon\Carbon::parse($event->end_time)->format('D, M j, Y g:i A') : '' }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Status</label>
-                                <input class="form-control" readonly value="{{ $event->status ?? '' }}">
+                                <label class="form-label" for="publicEventStatus-{{ $eventId }}">Status</label>
+                                <input id="publicEventStatus-{{ $eventId }}" class="form-control" readonly value="{{ $event->status ?? '' }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Created At</label>
-                                <input class="form-control" readonly
+                                <label class="form-label" for="publicEventCreated-{{ $eventId }}">Created At</label>
+                                <input id="publicEventCreated-{{ $eventId }}" class="form-control" readonly
                                        value="{{ optional($event->created_at)->format('D, M j, Y g:i A') }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Updated At</label>
-                                <input class="form-control" readonly
+                                <label class="form-label" for="publicEventUpdated-{{ $eventId }}">Updated At</label>
+                                <input id="publicEventUpdated-{{ $eventId }}" class="form-control" readonly
                                        value="{{ optional($event->updated_at)->format('D, M j, Y g:i A') }}">
                             </div>
                             <div class="col-12">
-                                <label class="form-label">Description</label>
-                                <textarea class="form-control" rows="3" readonly>{{ $event->description ?? '' }}</textarea>
+                                <label class="form-label" for="publicEventDescription-{{ $eventId }}">Description</label>
+                                <textarea id="publicEventDescription-{{ $eventId }}" class="form-control" rows="3" readonly>{{ $event->description ?? '' }}</textarea>
                             </div>
                         </div>
                     @else
