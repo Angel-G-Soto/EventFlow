@@ -39,4 +39,12 @@ class AdminPolicy
     {
         return $user->getRoleNames()->contains('system-admin');
     }
+
+    /**
+     * Determine whether the user can manage event categories.
+     */
+    public function manageCategories(User $user): bool
+    {
+        return $user->getRoleNames()->contains('system-admin');
+    }
 }

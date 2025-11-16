@@ -53,7 +53,7 @@
             <span class="visually-hidden">required</span>
             Fields marked with an asterisk are required.
         </p>
-        <form wire:submit.prevent="next">
+        <form wire:submit.prevent="next" data-prevent-enter-submit>
 
             <div class="row g-3">
                 <div class="col-md-4">
@@ -107,15 +107,35 @@
                     <div class="card border shadow-sm">
                         <div class="card-body">
                             <div class="row g-2 align-items-center mb-3">
-                                <div class="col-md-8">
-                                    <input
-                                        type="search"
-                                        class="form-control"
-                                        placeholder="Search categories (e.g., Workshop, Fundraiser)"
-                                        wire:model.debounce.300ms="categorySearch"
-                                    >
+                                <div class="col-md-8 col-lg-9">
+                                    <div class="input-group">
+                                        <input
+                                            type="search"
+                                            class="form-control"
+                                            placeholder="Search categories (e.g., Workshop, Fundraiser)"
+                                            wire:model.defer="categorySearchInput"
+                                            wire:keydown.enter.prevent="runCategorySearch"
+                                            data-allow-enter-submit="true"
+                                        >
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary"
+                                            wire:click="runCategorySearch"
+                                            wire:loading.attr="disabled"
+                                            wire:target="runCategorySearch"
+                                        >
+                                            <span
+                                                wire:loading
+                                                wire:target="runCategorySearch"
+                                                class="spinner-border spinner-border-sm me-1"
+                                                role="status"
+                                                aria-hidden="true"
+                                            ></span>
+                                            Search
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-md-end">
+                                <div class="col-md-4 col-lg-3 text-md-end">
                                     <small class="text-muted">
                                         {{ count($category_ids) }} selected
                                     </small>
@@ -244,7 +264,7 @@
 
     @if ($step === 2)
 
-        <form wire:submit.prevent="next">
+        <form wire:submit.prevent="next" data-prevent-enter-submit>
             <div class="mb-3">
                 <div class="form-text">
                     Showing venues available between
@@ -472,7 +492,7 @@
 
     {{-- STEP 3 --}}
     @if ($step === 3)
-        <form wire:submit.prevent="submit">
+        <form wire:submit.prevent="submit" data-prevent-enter-submit>
 
             <div class="mb-3">
                 <div class="form-text">Upload the documents required due to the nature of the event.</div>
@@ -598,5 +618,43 @@
         } else {
             document.addEventListener('livewire:init', registerLivewireHandlers);
         }
+    })();
+
+    (function preventEnterFormSubmissions() {
+        if (window.eventFormEnterGuardInitialized) {
+            return;
+        }
+        window.eventFormEnterGuardInitialized = true;
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+
+            if (target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            if (target.closest('[data-allow-enter-submit]')) {
+                return;
+            }
+
+            const form = target.closest('form[data-prevent-enter-submit]');
+            if (!form) {
+                return;
+            }
+
+            const selector = 'input:not([type=\"button\"]):not([type=\"submit\"]):not([type=\"reset\"]), select, [contenteditable=\"true\"]';
+            if (!target.matches(selector)) {
+                return;
+            }
+
+            event.preventDefault();
+        });
     })();
 </script>
