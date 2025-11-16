@@ -152,9 +152,9 @@ class VenuesIndex extends Component
         $this->authorize('manage-venues');
 
         // Validate only the CSV file; accept common CSV MIME types and extensions
-        $this->validate([
-            'csvFile' => 'required|file|max:25600 |mimes:csv,txt', // 25 MB
-        ]);
+            $this->validate([
+                'csvFile' => 'required|file|max:25600|mimes:csv,txt', // 25 MB (max in kilobytes)
+                ]);
 
         try {
             // Clear any prior error message on new upload
@@ -201,6 +201,7 @@ class VenuesIndex extends Component
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+            $this->resetErrorBag('csvFile');
             $this->addError('csvFile', 'Unable to upload CSV: ' . $e->getMessage());
         }
     }
