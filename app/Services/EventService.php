@@ -1215,17 +1215,47 @@ class EventService
         $from = $formatDate($event->start_time ?? null);
         $to   = $formatDate($event->end_time ?? null);
 
+        $fromEdit = '';
+        $toEdit = '';
+        try {
+            if ($event->start_time instanceof DateTimeInterface) {
+                $fromEdit = Carbon::instance($event->start_time)->format('Y-m-d\TH:i');
+            } elseif (!empty($event->start_time)) {
+                $fromEdit = Carbon::parse((string)$event->start_time)->format('Y-m-d\TH:i');
+            }
+        } catch (\Throwable) {
+            $fromEdit = '';
+        }
+        try {
+            if ($event->end_time instanceof DateTimeInterface) {
+                $toEdit = Carbon::instance($event->end_time)->format('Y-m-d\TH:i');
+            } elseif (!empty($event->end_time)) {
+                $toEdit = Carbon::parse((string)$event->end_time)->format('Y-m-d\TH:i');
+            }
+        } catch (\Throwable) {
+            $toEdit = '';
+        }
+
         $requestor = method_exists($event, 'requester') && $event->requester
             ? trim(($event->requester->first_name ?? '') . ' ' . ($event->requester->last_name ?? ''))
             : ('User ' . (string)($event->creator_id ?? ''));
 
-        $venueName = method_exists($event, 'venue') && $event->venue
-            ? ($event->venue->name ?? $event->venue->code ?? '')
-            : '';
+        $venueName = '';
+        if (method_exists($event, 'venue') && $event->venue) {
+            $name = (string)($event->venue->name ?? '');
+            $code = trim((string)($event->venue->code ?? ''));
+            $venueName = $name;
+            if ($code !== '') {
+                $venueName .= ' (' . $code . ')';
+            }
+        }
 
         $category = method_exists($event, 'categories') && $event->categories?->first()?->name
             ? $event->categories->first()->name
             : '';
+        $categoryIds = method_exists($event, 'categories') && $event->categories
+            ? $event->categories->pluck('id')->map(fn($id) => (int) $id)->all()
+            : [];
 
         $status = (string)($event->status ?? '');
         $statusNorm = mb_strtolower(trim($status));
@@ -1257,18 +1287,24 @@ class EventService
             'organization' => (string)($event->organization_name ?? ''),
             'organization_advisor_name' => (string)($event->organization_advisor_name ?? ''),
             'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
+            'organization_advisor_phone' => (string)($event->organization_advisor_phone ?? ''),
             'venue' => $venueName,
             'venue_id' => (int)($event->venue_id ?? 0),
             'from' => $from,
             'to' => $to,
+            'from_edit' => $fromEdit,
+            'to_edit' => $toEdit,
             'status' => $status,
             'category' => $category,
+            'category_ids' => $categoryIds,
             'updated' => now()->format('Y-m-d H:i'),
             'description' => (string)($event->description ?? ''),
             'attendees' => (int)($event->guest_size ?? 0),
             'handles_food' => (bool)($event->handles_food ?? false),
             'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
             'external_guest' => (bool)($event->external_guest ?? false),
+            'creator_institutional_number' => (string)($event->creator_institutional_number ?? ''),
+            'creator_phone_number' => (string)($event->creator_phone_number ?? ''),
             'status_is_cancelled' => $statusCancelled,
             'status_is_denied' => $statusDenied,
             'status_is_withdrawn' => $statusWithdrawn,

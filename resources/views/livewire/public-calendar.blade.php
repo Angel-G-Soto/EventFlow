@@ -178,61 +178,92 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Event Details</h5>
+                    <div>
+                        <h5 class="modal-title mb-0">
+                            <i class="bi bi-eye me-2"></i>{{ optional($modal['event'] ?? null)->title ?: 'Event Details' }}
+                        </h5>
+                        @if(isset($modal['event']) && $modal['event'])
+                            <small class="text-muted">Event #{{ $modal['event']->id }}</small>
+                        @endif
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     @if(isset($modal['event']) && $modal['event'])
-                        <div class="row g-3">
-                            <div class="col-md-6"><label class="form-label">Title</label><input
-                                    class="form-control" readonly value="{{ $modal['event']->title ?? '' }}">
+                        @php
+                            $ev = $modal['event'];
+                            $from = $ev->start_time ? \Carbon\Carbon::parse($ev->start_time)->format('M j, Y g:i A') : null;
+                            $to = $ev->end_time ? \Carbon\Carbon::parse($ev->end_time)->format('M j, Y g:i A') : null;
+                            $venueName = optional($ev->venue)->name;
+                            $venueCode = trim((string) optional($ev->venue)->code);
+                            if ($venueName && $venueCode) {
+                                $venueLabel = $venueName.' ('.$venueCode.')';
+                            } elseif ($venueName) {
+                                $venueLabel = $venueName;
+                            } else {
+                                $venueLabel = $venueCode ?: 'No venue selected';
+                            }
+                        @endphp
+                        <div class="row g-4">
+                            {{-- Summary --}}
+                            <div class="col-12">
+                                <div class="d-flex flex-wrap align-items-baseline gap-2">
+                                    <h5 class="mb-0">{{ $ev->title ?? 'Untitled event' }}</h5>
+                                    @if($ev->status)
+                                        <span class="badge bg-secondary">{{ ucwords($ev->status) }}</span>
+                                    @endif
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    Organization: {{ $ev->organization_name ?? 'N/A' }}
+                                </div>
                             </div>
-                            <div class="col-md-3"><label class="form-label">Organization</label><input
-                                    class="form-control" readonly
-                                    value="{{ $modal['event']->organization_name ?? '' }}"></div>
-                            <div class="col-md-3"><label class="form-label">Venue</label><input
-                                    class="form-control" readonly
-                                    value="{{ optional($modal['event']->venue)->code ?? '' }}"></div>
-                            <div class="col-md-3"><label class="form-label">From</label><input
-                                    class="form-control" readonly
-                                    value="{{ $modal['event']->start_time ? \Carbon\Carbon::parse($modal['event']->start_time)->format('D, M j, Y g:i A') : '' }}">
+
+                            {{-- When & Where --}}
+                            <div class="col-md-6">
+                                <h6 class="text-uppercase text-muted small mb-2">When</h6>
+                                <div class="border rounded p-3">
+                                    <div class="mb-2">
+                                        <span class="fw-semibold">From:</span>
+                                        <span class="ms-1">{{ $from ?? 'Not set' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="fw-semibold">To:</span>
+                                        <span class="ms-1">{{ $to ?? 'Not set' }}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-3"><label class="form-label">To</label><input
-                                    class="form-control" readonly
-                                    value="{{ $modal['event']->end_time ? \Carbon\Carbon::parse($modal['event']->end_time)->format('D, M j, Y g:i A') : '' }}">
+                            <div class="col-md-6">
+                                <h6 class="text-uppercase text-muted small mb-2">Where</h6>
+                                <div class="border rounded p-3">
+                                    <div class="fw-semibold mb-1">{{ $venueLabel }}</div>
+                                </div>
                             </div>
-                            <div class="col-md-3"><label class="form-label">Status</label><input
-                                    class="form-control" readonly value="{{ $modal['event']->status ?? '' }}">
+
+                            {{-- Description --}}
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-muted small mb-2">Description</h6>
+                                <div class="border rounded p-3 bg-light-subtle">
+                                    <p class="mb-0">{{ $ev->description ?? 'No description provided.' }}</p>
+                                </div>
                             </div>
-                            <div class="col-md-3"><label class="form-label">Created At</label><input
-                                    class="form-control" readonly
-                                    value="{{ optional($modal['event']->created_at)->format('D, M j, Y g:i A') }}"></div>
-                            <div class="col-md-3"><label class="form-label">Updated At</label><input
-                                    class="form-control" readonly
-                                    value="{{ optional($modal['event']->updated_at)->format('D, M j, Y g:i A') }}"></div>
-                            <div class="col-12"><label class="form-label">Description</label><textarea
-                                    class="form-control" rows="3"
-                                    readonly>{{ $modal['event']->description ?? '' }}</textarea></div>
+
+                            {{-- Documents --}}
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-muted small mb-2">Documents</h6>
+                                <section class="card shadow-sm mb-0" aria-labelledby="event-documents">
+                                    <div class="card-body">
+                                        <h3 id="event-documents" class="fw-semibold border-bottom pb-2 mb-3">Documents</h3>
+                                        <livewire:documents.list-with-preview
+                                            :docs="$docs"
+                                            :key=\"'docs-'.($ev->id ?? '0')\" />
+                                    </div>
+                                </section>
+                            </div>
                         </div>
                     @else
-                        <div class="alert alert-warning">No event details available.</div>
+                        <div class="alert alert-warning mb-0">No event details available.</div>
                     @endif
                 </div>
-
-                {{-- Documents --}}
-                <div class="container">
-                <section class="card shadow-sm mb-4" aria-labelledby="event-documents">
-                    <div class="card-body">
-                        <h3 id="event-documents" class="fw-semibold border-bottom pb-2 mb-3">Documents</h3>
-
-                            <livewire:documents.list-with-preview     :docs="$docs"
-                                                                  :key="'docs-'.($modal['event']->id ?? '0')" />
-                        </div>
-
-
-                </section>
-                </div>
-
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
                             aria-label="Close details">Close</button>

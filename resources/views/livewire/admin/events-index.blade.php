@@ -73,14 +73,14 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Requestor</th>
-            <th>Organization</th>
-            <th>Venue</th>
-            <th>Status</th>
-            <th>Date/Time</th>
-            <th class="text-end" style="width:120px;">Actions</th>
+            <th scope="col">ID</th>
+            <th scope="col">Title</th>
+            <th scope="col">Requestor</th>
+            <th scope="col">Organization</th>
+            <th scope="col">Venue</th>
+            <th scope="col">Status</th>
+            <th scope="col">Date/Time</th>
+            <th scope="col" class="text-end" style="width:120px;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -158,68 +158,139 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-eye me-2"></i>View Request #{{ $editId }}</h5>
+          <div>
+            <h5 class="modal-title mb-0"><i class="bi bi-eye me-2"></i>{{ $eTitle ?: 'View Request' }}</h5>
+            <small class="text-muted">Request #{{ $editId }}</small>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6"><label class="form-label" for="ev_v_title">Title</label><input id="ev_v_title"
-                class="form-control" readonly value="{{ $eTitle }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_org">Organization</label><input id="ev_v_org"
-                class="form-control" readonly value="{{ $eOrganization }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_venue">Venue</label><input id="ev_v_venue"
-                class="form-control" readonly value="{{ $eVenue }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_status">Status</label><input id="ev_v_status"
-                class="form-control" readonly value="{{ $eStatus ?: 'Unknown' }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_advisor">Advisor Name</label><input
-                id="ev_v_advisor" class="form-control" readonly value="{{ $eAdvisorName }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_email">Advisor Email</label><input
-                id="ev_v_advisor_email" class="form-control" readonly value="{{ $eAdvisorEmail }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_advisor_phone">Advisor Phone</label><input
-                id="ev_v_advisor_phone" class="form-control" readonly value="{{ $eAdvisorPhone }}"></div>
-
-            <div class="col-md-3"><label class="form-label">Student Number</label><input class="form-control" readonly
-                value="{{ $eStudentNumber }}"></div>
-            <div class="col-md-3"><label class="form-label">Student Phone</label><input class="form-control" readonly
-                value="{{ $eStudentPhone }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_from">From</label><input id="ev_v_from"
-                type="datetime-local" class="form-control" readonly value="{{ $eFrom }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_to">To</label><input id="ev_v_to"
-                type="datetime-local" class="form-control" readonly value="{{ $eTo }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_attendees">Attendees</label><input
-                id="ev_v_attendees" type="number" class="form-control" readonly value="{{ $eAttendees }}"></div>
-            <div class="col-md-3"><label class="form-label" for="ev_v_category">Category</label><input
-                id="ev_v_category" class="form-control" readonly value="{{ $eCategory }}"></div>
-            <div class="col-12"><label class="form-label" for="ev_v_purpose">Description</label><textarea
-                id="ev_v_purpose" class="form-control" rows="3" readonly>{{ $ePurpose }}</textarea></div>
+          <div class="row g-4">
+            {{-- Summary --}}
             <div class="col-12">
-              <label class="form-label">Policies</label>
-              <div class="row g-2">
-                <div class="col-12 col-md-4">
-                  <div class="form-check">
-                    <input id="ev_v_handles_food" class="form-check-input" type="checkbox" disabled {{ $eHandlesFood
-                      ? 'checked' : '' }}>
-                    <label class="form-check-label" for="ev_v_handles_food">Handles food</label>
-                  </div>
+              <div class="d-flex flex-wrap align-items-baseline gap-2">
+                <h5 class="mb-0">{{ $eTitle ?: 'Untitled event' }}</h5>
+                <span class="text-muted">Request #{{ $editId }}</span>
+              </div>
+              <div class="text-muted mt-1">
+                <span class="fw-bold">Attendees:</span>
+                {{ $eAttendees ?: 0 }} • <span class="fw-bold">Status:</span> {{ ucwords($eStatus) ?: 'Unknown' }}
+              </div>
+            </div>
+
+            {{-- When & Where --}}
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2">When</h6>
+              <div class="border rounded p-3">
+                <div class="mb-2">
+                  <span class="fw-semibold">From:</span>
+                  <span class="ms-1">
+                    @if($eFrom)
+                    {{ \Carbon\Carbon::parse(str_replace('T',' ', $eFrom))->format('M j, Y g:i A') }}
+                    @else
+                    Not set
+                    @endif
+                  </span>
                 </div>
-                <div class="col-12 col-md-4">
-                  <div class="form-check">
-                    <input id="ev_v_use_funds" class="form-check-input" type="checkbox" disabled {{
-                      $eUseInstitutionalFunds ? 'checked' : '' }}>
-                    <label class="form-check-label" for="ev_v_use_funds">Uses institutional funds</label>
-                  </div>
-                </div>
-                <div class="col-12 col-md-4">
-                  <div class="form-check">
-                    <input id="ev_v_external_guest" class="form-check-input" type="checkbox" disabled {{ $eExternalGuest
-                      ? 'checked' : '' }}>
-                    <label class="form-check-label" for="ev_v_external_guest">External guests</label>
-                  </div>
+                <div>
+                  <span class="fw-semibold">To:</span>
+                  <span class="ms-1">
+                    @if($eTo)
+                    {{ \Carbon\Carbon::parse(str_replace('T',' ', $eTo))->format('M j, Y g:i A') }}
+                    @else
+                    Not set
+                    @endif
+                  </span>
                 </div>
               </div>
             </div>
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2">Where</h6>
+              <div class="border rounded p-3">
+                <div class="fw-semibold mb-1">{{ $eVenue ?: 'No venue selected' }}</div>
+              </div>
+            </div>
+
+            {{-- People & Organization --}}
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2">Organization & Advisor</h6>
+              <div class="border rounded p-3">
+                <div class="mb-2">
+                  <span class="fw-semibold">Organization:</span>
+                  <span class="ms-1">{{ $eOrganization ?: 'N/A' }}</span>
+                </div>
+                <div class="mb-1">
+                  <span class="fw-semibold">Advisor:</span>
+                  <span class="ms-1">{{ $eAdvisorName ?: 'N/A' }}</span>
+                </div>
+                <div class="text-muted small">
+                  @if($eAdvisorEmail)
+                  <span class="me-2"><i class="bi bi-envelope me-1"></i>{{ $eAdvisorEmail }}</span>
+                  @endif
+                  @if($eAdvisorPhone)
+                  <span><i class="bi bi-telephone me-1"></i>{{ $eAdvisorPhone }}</span>
+                  @endif
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2">Student</h6>
+              <div class="border rounded p-3">
+                <div class="mb-1">
+                  <span class="fw-semibold">Student Number:</span>
+                  <span class="ms-1">{{ $eStudentNumber ?: 'N/A' }}</span>
+                </div>
+                <div class="mb-0">
+                  <span class="fw-semibold">Student Phone:</span>
+                  <span class="ms-1">{{ $eStudentPhone ?: 'N/A' }}</span>
+                </div>
+              </div>
+            </div>
+
+            {{-- Categories & Policies --}}
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2">Categories</h6>
+              <div class="border rounded p-3">
+                @php($viewCategories = !empty($selectedCategoryLabels) ? $selectedCategoryLabels : ($eCategory ?
+                [$eCategory] : []))
+                @if(!empty($viewCategories))
+                @foreach($viewCategories as $label)
+                <span class="badge text-bg-light border me-1 mb-1">{{ $label }}</span>
+                @endforeach
+                @else
+                <span class="text-muted small">No categories selected.</span>
+                @endif
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2">Policies</h6>
+              <div class="border rounded p-3">
+                <div class="small mb-2">
+                  <i class="{{ $eHandlesFood ? 'bi-check-circle-fill' : 'bi-circle text-muted' }} me-1"></i>
+                  Handles food: <strong>{{ $eHandlesFood ? 'Yes' : 'No' }}</strong>
+                </div>
+                <div class="small mb-2">
+                  <i class="{{ $eUseInstitutionalFunds ? 'bi-check-circle-fill' : 'bi-circle text-muted' }} me-1"></i>
+                  Uses institutional funds: <strong>{{ $eUseInstitutionalFunds ? 'Yes' : 'No' }}</strong>
+                </div>
+                <div class="small">
+                  <i class="{{ $eExternalGuest ? 'bi-check-circle-fill' : 'bi-circle text-muted' }} me-1"></i>
+                  External guests: <strong>{{ $eExternalGuest ? 'Yes' : 'No' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            {{-- Description --}}
             <div class="col-12">
-              <label class="form-label">Documents</label>
+              <h6 class="text-uppercase text-muted small mb-2">Description</h6>
+              <div class="border rounded p-3 bg-light-subtle">
+                <p class="mb-0">{{ $ePurpose ?: 'No description provided.' }}</p>
+              </div>
+            </div>
+
+            {{-- Documents --}}
+            <div class="col-12">
+              <h6 class="text-uppercase text-muted small mb-2">Documents</h6>
               <div class="border rounded px-3 py-2 bg-light">
                 @if(count($eDocuments))
                 <ul class="list-unstyled mb-0 small">
@@ -255,7 +326,7 @@
       <form class="modal-content" wire:submit.prevent="save">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-journal-text me-2"></i>Request #{{ $editId }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="row g-3">

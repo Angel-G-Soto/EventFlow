@@ -226,8 +226,8 @@ class EventsIndex extends Component
         $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
         $this->eVenue = $request['venue'];
         $this->eVenueId = (int)($request['venue_id'] ?? 0);
-        $this->eFrom = substr($request['from'], 0, 16);
-        $this->eTo   = substr($request['to'], 0, 16);
+        $this->eFrom = (string)($request['from_edit'] ?? $request['from'] ?? '');
+        $this->eTo   = (string)($request['to_edit'] ?? $request['to'] ?? '');
         $this->eAttendees = $request['attendees'] ?? 0;
         $this->eCategory  = $request['category'] ?? '';
         // If categories are available as array/ids, set eCategoryIds
@@ -638,7 +638,7 @@ class EventsIndex extends Component
         if (str_contains($s, 'approve')) return 'text-bg-success';
         if (str_contains($s, 'deny') || str_contains($s, 'reject') || str_contains($s, 'cancel') || str_contains($s, 'withdraw')) return 'text-bg-danger';
         if (str_contains($s, 'pending')) return 'text-bg-primary';
-        return 'text-bg-secondary';
+        return 'text-bg-light';
     }
 
     // Private/Protected Helper Methods
