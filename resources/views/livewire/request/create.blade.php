@@ -40,7 +40,40 @@
     @csrf
 
     {{-- Step pills --}}
-    <ul class="nav nav-pills mb-4">
+    <style>
+        .request-step-nav .nav-link {
+            font-weight: 600;
+            border: none;
+            color: #0a214a;
+            background-color: transparent;
+        }
+
+        .request-step-nav .nav-link:not(.active) {
+            background-color: transparent;
+        }
+
+        .request-step-nav .nav-link:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(10, 33, 74, 0.35);
+        }
+
+        .request-step-nav .nav-link.active {
+            background-color: #0a214a;
+            color: #fff;
+        }
+
+        .event-form-link-btn {
+            color: #1557b0;
+            text-decoration: none;
+        }
+
+        .event-form-link-btn:hover,
+        .event-form-link-btn:focus-visible {
+            color: #0d3f7a;
+            text-decoration: underline;
+        }
+    </style>
+    <ul class="nav nav-pills mb-4 request-step-nav" aria-label="Event creation steps">
         <li class="nav-item"><span class="nav-link {{ $step === 1 ? 'active' : '' }}">1. Event</span></li>
         <li class="nav-item"><span class="nav-link {{ $step === 2 ? 'active' : '' }}">2. Venue</span></li>
         <li class="nav-item"><span class="nav-link {{ $step === 3 ? 'active' : '' }}">3. Documents</span></li>
@@ -48,12 +81,13 @@
     {{-- STEP 1 --}}
     @if ($step === 1)
 
+        <h2 id="eventRequestStep1Heading" class="visually-hidden">Event details</h2>
         <p class="text-muted small">
             <span class="text-danger" aria-hidden="true">*</span>
             <span class="visually-hidden">required</span>
             Fields marked with an asterisk are required.
         </p>
-        <form wire:submit.prevent="next" data-prevent-enter-submit>
+        <form wire:submit.prevent="next" data-prevent-enter-submit aria-labelledby="eventRequestStep1Heading">
 
             <div class="row g-3">
                 <div class="col-md-4">
@@ -99,7 +133,7 @@
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-baseline">
                         <label class="form-label">Event Categories</label>
-                        <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories" @disabled(empty($category_ids))>
+                        <button type="button" class="btn btn-link btn-sm p-0 event-form-link-btn" wire:click="clearCategories" @disabled(empty($category_ids))>
                             Clear selection
                         </button>
                     </div>
@@ -196,10 +230,11 @@
                         type="checkbox"
                         class="form-check-input"
                         wire:model.live="handles_food"
-                        aria-describedby="handles_food"
+                        aria-describedby="handles_food_help"
                     >
                     <label class="form-check-label" for="handles_food">This event is to sell food</label>
-                    <div id="handles_food" class="form-text"></div>
+                    <div id="handles_food_help" class="form-text">Select if you'll serve or sell food so we can
+                        request the proper permits.</div>
                 </div>
 
                 {{-- Check box for institutional funds --}}
@@ -212,7 +247,8 @@
                         aria-describedby="hasFunds"
                     >
                     <label class="form-check-label" for="has_funds">This event uses institutional funds</label>
-                    <div id="hasFunds" class="form-text"></div>
+                    <div id="hasFunds" class="form-text">Choose this if institutional or university funds will cover
+                        the request.</div>
                 </div>
 
                 {{-- Check box for external guest --}}
@@ -225,6 +261,8 @@
                         aria-describedby="externalGuest"
                     >
                     <label class="form-check-label" for="external_guest">This event has an external guest</label>
+                    <div id="externalGuest" class="form-text">Let us know if you'll host speakers or guests from
+                        outside the institution.</div>
                 </div>
 
                 <div class="col-md-6">
@@ -264,7 +302,8 @@
 
     @if ($step === 2)
 
-        <form wire:submit.prevent="next" data-prevent-enter-submit>
+        <h2 id="eventRequestStep2Heading" class="visually-hidden">Venue selection</h2>
+        <form wire:submit.prevent="next" data-prevent-enter-submit aria-labelledby="eventRequestStep2Heading">
             <div class="mb-3">
                 <div class="form-text">
                     Showing venues available between
@@ -492,7 +531,8 @@
 
     {{-- STEP 3 --}}
     @if ($step === 3)
-        <form wire:submit.prevent="submit" data-prevent-enter-submit>
+        <h2 id="eventRequestStep3Heading" class="visually-hidden">Document uploads and submission</h2>
+        <form wire:submit.prevent="submit" data-prevent-enter-submit aria-labelledby="eventRequestStep3Heading">
 
             <div class="mb-3">
                 <div class="form-text">Upload the documents required due to the nature of the event.</div>
@@ -503,7 +543,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
                         </li>
                     </ul>
                 </div>
@@ -514,7 +554,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
                         </li>
                     </ul>
                 </div>
@@ -525,7 +565,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
                         </li>
                     </ul>
                 </div>
@@ -543,7 +583,7 @@
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
-                                <a href="{{$doc['hyperlink']}}" target="_blank">
+                                <a href="{{$doc['hyperlink']}}" target="_blank" class="event-form-link-btn">
                                     {{ $doc['name'] . ": "}}
                                 </a>
                                 {{$doc['description']}}

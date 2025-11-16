@@ -136,7 +136,8 @@ $isDirector = $roleNames->contains('department-director');
         </div>
         <div class="ms-auto ms-lg-0">
           @if(Auth::check())
-          <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0">
+          <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0"
+            aria-label="Log out form">
             @csrf
             <button class="btn p-2 d-flex align-items-center text-white fw-bold" type="button" title="Log out"
               aria-label="Log out" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
@@ -150,7 +151,7 @@ $isDirector = $roleNames->contains('department-director');
             message="Are you sure you want to log out?"
             formId="navbarLogoutForm" confirmLabel="Log out" />
           @else
-          <form method="GET" action="{{ route('saml.login') }}" class="m-0">
+          <form method="GET" action="{{ route('saml.login') }}" class="m-0" aria-label="Log in form">
             @csrf
             <button class="btn p-2 d-flex align-items-center text-white fw-bold" title="Log in" aria-label="Log in"
               style="border: none; outline: none; transition: all 0.3s ease;">
