@@ -81,11 +81,11 @@ return $dt;
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>When</th>
-            <th>User</th>
-            <th>Action</th>
-            <th>Target</th>
-            <th class="text-end">Details</th>
+            <th scope="col">When</th>
+            <th scope="col">User</th>
+            <th scope="col">Action</th>
+            <th scope="col">Target</th>
+            <th scope="col" class="text-end">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -129,7 +129,7 @@ return $dt;
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Audit Details #{{ $details['id'] ?? '' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           @if(!empty($details))

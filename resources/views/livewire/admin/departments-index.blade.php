@@ -54,7 +54,13 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th scope="col">
+            <th scope="col"
+              @if(($sortField ?? '') === 'name')
+                aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}"
+              @else
+                aria-sort="none"
+              @endif
+            >
               <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
@@ -69,8 +75,8 @@
                 @endif
               </button>
             </th>
-            <th>Department Code</th>
-            <th>Director</th>
+            <th scope="col">Department Code</th>
+            <th scope="col">Director</th>
 
             {{-- <th class="text-end" style="width:120px;">Actions</th> --}}
           </tr>
