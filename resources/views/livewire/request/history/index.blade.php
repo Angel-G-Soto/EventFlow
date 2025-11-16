@@ -68,7 +68,15 @@
                         <td class="fw-medium">{{$history->event->organization_name  ?? '—' }}</td>
                         <td class="fw-medium">{{$history->action  ?? '—' }}</td>
                         <td class="fw-medium">
-                            <span class="badge rounded-pill bg-secondary">{{$history->getSimpleStatus()}}</span>
+                            @php
+                                $stepStatus = strtolower($history->getSimpleStatus());
+                                $badgeClass = match (true) {
+                                    in_array($stepStatus, ['rejected', 'declined', 'cancelled', 'withdrawn']) => 'text-bg-danger',
+                                    in_array($stepStatus, ['approved', 'completed', 'accepted']) => 'text-bg-success',
+                                    default => 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle'
+                                };
+                            @endphp
+                            <span class="badge rounded-pill {{ $badgeClass }}">{{$history->getSimpleStatus()}}</span>
                         </td>
                         <td class="fw-medium">{{ \Carbon\Carbon::parse($history->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium text-end">

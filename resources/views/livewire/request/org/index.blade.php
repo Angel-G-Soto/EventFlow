@@ -69,14 +69,14 @@
                         <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
                         <td class="fw-medium">{{ \Carbon\Carbon::parse($event->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium">
-                        @if($event->status === 'cancelled' || $event->status === 'withdrawn' || $event->status === 'rejected')
-                                <span class="badge rounded-pill bg-danger">{{$event->getSimpleStatus()}}</span>
-                            @elseif($event->status === 'approved' || $event->status === 'completed')
-                                <span class="badge rounded-pill bg-success">{{$event->getSimpleStatus()}}</span>
-                            @else
-                                <span class="badge rounded-pill bg-warning">{{$event->getSimpleStatus()}}</span>
-
-                        @endif
+                            @php
+                                $statusClass = match (true) {
+                                    in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'text-bg-danger',
+                                    in_array($event->status, ['approved', 'completed']) => 'text-bg-success',
+                                    default => 'bg-warning text-dark border border-warning-subtle'
+                                };
+                            @endphp
+                            <span class="badge rounded-pill {{ $statusClass }}">{{ $event->getSimpleStatus() }}</span>
                         </td>
                         <td class="fw-medium text-end">
                             <button type="button"

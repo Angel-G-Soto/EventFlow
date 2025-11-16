@@ -44,7 +44,11 @@
                        wire:model.defer="searchTitle"
                        wire:keydown.enter="apply"
                        style="font-size: 1.05rem;">
-                <button class="btn btn-secondary" wire:click="apply" style="font-size: 1.05rem;">
+                <button type="button"
+                        class="btn btn-secondary"
+                        wire:click="apply"
+                        aria-label="Search pending requests"
+                        style="font-size: 1.05rem;">
                     <i class="bi bi-search"></i>
                 </button>
             </div>
@@ -84,7 +88,7 @@
 
         {{-- Clear Button --}}
         <div class="col-6 col-md-2 col-lg-1">
-            <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
+            <div class="form-label mb-0 small text-muted d-block" aria-hidden="true">&nbsp;</div>
             <button type="button"
                     class="btn btn-secondary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
                     wire:click="resetFilters" style="font-size: 1.05rem;">
@@ -95,7 +99,7 @@
 
         {{-- Apply Button --}}
         <div class="col-6 col-md-2 col-lg-1">
-            <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
+            <div class="form-label mb-0 small text-muted d-block" aria-hidden="true">&nbsp;</div>
             <button type="button"
                     class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
                     wire:click="apply" style="font-size: 1.05rem;">

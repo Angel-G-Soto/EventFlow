@@ -32,20 +32,28 @@
     </ul>
 </x-slot:pageActions>
 
-<div class="card-body py-2" style="font-size: 1.05rem;">
+<div class="card-body py-2" style="font-size: 1.05rem;" aria-labelledby="orgFiltersHeading">
+    <div class="visually-hidden">
+        <h2 id="orgFiltersHeading" class="h6 text-uppercase text-muted mb-0">Filter my requests</h2>
+        <p class="mb-0 small text-muted">Update the fields and press Apply to refresh your queue.</p>
+    </div>
     <div class="row align-items-end g-2">
 
         {{-- Search by Title --}}
         <div class="col-md-7 col-sm-12">
-            <label for="searchTitle" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Search</label>
+            <label for="searchTitle" class="form-label mb-0 small text-muted fw-semibold" style="font-size: 1.05rem;">Search requests</label>
             <div class="input-group input-group-sm">
                 <input id="searchTitle" type="text" class="form-control"
                        placeholder="Search by title or organization..."
                        wire:model.defer="searchTitle"
                        wire:keydown.enter="apply"
                        style="font-size: 1.05rem;">
-                <button class="btn btn-secondary" wire:click="apply" style="font-size: 1.05rem;">
-                    <i class="bi bi-search"></i>
+                <button type="button"
+                        class="btn btn-secondary d-inline-flex align-items-center gap-1"
+                        wire:click="apply"
+                        style="font-size: 1.05rem;">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <span>Search</span>
                 </button>
             </div>
         </div>
@@ -84,7 +92,7 @@
 
         {{-- Clear Button --}}
         <div class="col-6 col-md-2 col-lg-1">
-            <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
+            <div class="form-label mb-0 small text-muted d-block" aria-hidden="true">&nbsp;</div>
             <button type="button"
                     class="btn btn-secondary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
                     wire:click="resetFilters" style="font-size: 1.05rem;">
@@ -95,7 +103,7 @@
 
         {{-- Apply Button --}}
         <div class="col-6 col-md-2 col-lg-1">
-            <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
+            <div class="form-label mb-0 small text-muted d-block" aria-hidden="true">&nbsp;</div>
             <button type="button"
                     class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
                     wire:click="apply" style="font-size: 1.05rem;">

@@ -11,6 +11,7 @@ $isDirector = $roleNames->contains('department-director');
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark"
+  aria-label="Primary site navigation"
   style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
     <a class="navbar-brand fw-semibold" href="#">
