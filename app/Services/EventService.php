@@ -5,7 +5,6 @@ namespace App\Services;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\Category;
-use App\Models\Document;
 use App\Models\Event;
 use App\Models\EventHistory;
 use App\Models\Role;
@@ -29,6 +28,7 @@ class EventService
     protected $venueService;
     protected $categoryService;
     protected $auditService;
+    protected $documentService;
 
     /**
      * Create a new EventService instance.
@@ -37,11 +37,12 @@ class EventService
      * @param CategoryService $categoryService
      * @param AuditService $auditService
      */
-    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService)
+    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService)
     {
         $this->venueService = $venueService;
         $this->categoryService = $categoryService;
         $this->auditService = $auditService;
+        $this->documentService = $documentService;
     }
 
 
@@ -79,7 +80,7 @@ class EventService
                 abort(404, 'Author not found.');
             }
 
-            if (!isset($data['venue_id']) || !Venue::where('id', $data['venue_id'])->exists()) {
+            if (!isset($data['venue_id']) || !$this->venueService->findByID($data['venue_id'])->exists()) {
                 abort(404, 'Venue not found.');
             }
 
@@ -90,13 +91,6 @@ class EventService
                     : 'pending - approval',
                 default   => 'draft',
             };
-
-            //             if ($action !== 'publish') {
-            //     abort(400, 'Invalid action.');
-            // }
-            // $status = !empty($data['organization_advisor_email'])
-            //     ? 'pending - advisor approval'
-            //     : 'pending - approval';
 
             // Create or update the event
             $event = Event::updateOrCreate(
@@ -153,10 +147,7 @@ class EventService
             }
 
             // Attach documents (hasMany)
-            if (!empty($document_ids)) {
-                Document::whereIn('id', $document_ids)
-                    ->update(['event_id' => $event->id]);
-            }
+            $this->documentService->assignDocumentsToEvent($document_ids ?? [], (int) $event->id);
 
             // Attach categories (many-to-many)
             if (!empty($categories_ids)) {
@@ -1293,7 +1284,7 @@ class EventService
     }
 
 
-    
+
     // [
     /**
      * Fetch paginated history for an approver with optional filters.
