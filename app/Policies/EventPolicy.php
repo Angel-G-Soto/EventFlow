@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Document;
 use App\Models\Event;
 use App\Models\EventHistory;
 use App\Models\User;
@@ -74,5 +75,19 @@ class EventPolicy
             // Default case: returns false if the event status does not match any of the above conditions
             default => false,
         };
+    }
+
+    public function viewMyDocument(User $user, Event $event): bool
+    {
+        $isVenueManager = $user->roles->contains('name', 'venue-manager') &&
+            in_array($event->venue_id, $user->department->venues()->pluck('id')->toArray());
+        $isAdvisor = $user->roles->contains('name', 'advisor') &&
+            $event->organization_advisor_email === $user->email;
+        $isDscaApprover = $user->roles->contains('name', 'event-approver');
+
+        $isCreator = $user->id === $event->creator_id;
+        
+
+        return $isVenueManager || $isAdvisor || $isDscaApprover || $isCreator;
     }
 }

@@ -5,10 +5,15 @@ namespace App\Services;
 use App\Exceptions\StorageException;
 use App\Models\Document;
 use App\Jobs\ProcessFileUpload;
+
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
+
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * DocumentService
@@ -156,9 +161,42 @@ class DocumentService
         return 'uploads_temp';
     }
 
+    public function showPDF(Document $document): BinaryFileResponse
+    {
+        //
+
+        // (Optional) enforce policies
+        // $this->authorize('view', $document);
+
+        // Use your existing accessor if you prefer:
+        // $filePath = $document->getFilePath();
+
+
+        $filePath = $document->file_path;
+
+        // Make sure the file exists on the "documents" disk
+        abort_unless(Storage::disk('documents')->exists($filePath), 404);
+
+        $path = Storage::disk('documents')->path($filePath);
+
+        // Use ?name=... if provided, otherwise use document name or basename
+        $downloadName = $document->name ?? 'requestFile'.$document->id;
+
+        return Response::file($path, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $downloadName . '"',
+            'Cache-Control'       => 'private, max-age=3600',
+        ]);
+    }
+
     private function finalDisk(): string
     {
         return 'documents';
+    }
+
+    public function getDocument(int $id): Document
+    {
+        return Document::findOrFail($id);
     }
 
     /*private function safeTempDelete(string $tmpRelativePath): void

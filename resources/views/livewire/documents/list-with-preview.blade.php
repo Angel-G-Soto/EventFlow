@@ -31,7 +31,8 @@
 {{--                    <a class="btn btn-outline-primary" href="{{ $doc['file_path'] }}" target="_blank" rel="noopener">Open</a>--}}
                     <a
                         class="btn btn-primary"
-                        href="{{ route('documents.show', $doc['file_path']) }}"
+                        href="{{ route('documents.show',$doc['id']
+                            ) }}"
                         target="_blank"
                         rel="noopener"
                     >

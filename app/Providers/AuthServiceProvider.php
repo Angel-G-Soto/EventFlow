@@ -53,6 +53,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-department', [DepartmentPolicy::class, 'view']);
         Gate::define('assign-manager', [DepartmentPolicy::class, 'assignManager']);
 
+        //Document
+        Gate::define('viewMyDocument', [EventPolicy::class, 'viewMyDocument']);
+
         // System Administration
         Gate::define('access-dashboard', [AdminPolicy::class, 'accessDashboard']);
         Gate::define('perform-override', [AdminPolicy::class, 'performOverride']);
