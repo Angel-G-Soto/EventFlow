@@ -8,4 +8,12 @@ export default defineConfig({
       refresh: true,
     }),
   ],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Suppress deprecation warnings coming from dependencies like Bootstrap's SCSS.
+        quietDeps: true,
+      },
+    },
+  },
 })
