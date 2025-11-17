@@ -210,6 +210,7 @@
                     @if(isset($modal['event']) && $modal['event'])
                     @php
                     $ev = $modal['event'];
+                    $eventId = $ev->id ?? 'preview';
                     $from = $ev->start_time ? \Carbon\Carbon::parse($ev->start_time)->format('M j, Y g:i A') : null;
                     $to = $ev->end_time ? \Carbon\Carbon::parse($ev->end_time)->format('M j, Y g:i A') : null;
                     $venueName = optional($ev->venue)->name;
@@ -268,9 +269,11 @@
                         {{-- Documents --}}
                         <div class="col-12">
                             <h6 class="text-uppercase text-muted small mb-2">Documents</h6>
-                            <section class="card shadow-sm mb-0" aria-labelledby="event-documents">
+                            <section class="card shadow-sm mb-0" aria-labelledby="event-documents-{{ $eventId }}">
                                 <div class="card-body">
-                                    <h3 id="event-documents" class="fw-semibold border-bottom pb-2 mb-3">Documents</h3>
+                                    <h3 id="event-documents-{{ $eventId }}" class="fw-semibold border-bottom pb-2 mb-3">
+                                        Documents
+                                    </h3>
                                     <livewire:documents.list-with-preview :docs="$docs" :key=\"'docs-'.($ev->id ??
                                         '0')\" />
                                 </div>
