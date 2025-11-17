@@ -9,12 +9,15 @@ use App\Models\Event;
 use App\Models\UseRequirement;
 use App\Models\Venue;
 use App\Models\VenueAvailability;
+use App\Jobs\ProcessCsvFileUpload;
 use Carbon\Carbon;
 use DateTime;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
 
@@ -383,6 +386,47 @@ class VenueService
             throw new InvalidArgumentException('Venue id must be greater than zero.');
         }
         return Venue::findOrFail($venue_id)->requirements;
+    }
+
+    /**
+     * Store a CSV file for venue import and dispatch the background processing job.
+     *
+     * @param UploadedFile $file
+     * @param int $adminId
+     * @param array<string,mixed> $context
+     * @return string Safe filename used for import and status tracking.
+     */
+    public function queueCsvUpload(UploadedFile $file, int $adminId, array $context = []): string
+    {
+        if ($adminId <= 0) {
+            throw new InvalidArgumentException('Admin id must be greater than zero.');
+        }
+
+        $original = (string) ($file->getClientOriginalName() ?? 'venues.csv');
+        $ext = pathinfo($original, PATHINFO_EXTENSION) ?: 'csv';
+        $safe = 'venues_' . now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $ext;
+
+        try {
+            $rootPath = Storage::disk('uploads_temp')->path('');
+            if (!\is_dir($rootPath)) {
+                @\mkdir($rootPath, 0775, true);
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: Storage::path should normally create on put; continue
+        }
+
+        $file->storeAs('', $safe, 'uploads_temp');
+
+        if (empty($context) && function_exists('request') && request()) {
+            $context = [
+                'ip' => request()->ip(),
+                'ua' => request()->userAgent(),
+            ];
+        }
+
+        ProcessCsvFileUpload::dispatch($safe, $adminId, $context);
+
+        return $safe;
     }
 
     /*

@@ -12,11 +12,8 @@ use App\Services\VenueService;
 use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\WithFileUploads;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use App\Jobs\ProcessCsvFileUpload;
 
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
@@ -152,41 +149,17 @@ class VenuesIndex extends Component
         $this->authorize('manage-venues');
 
         // Validate only the CSV file; accept common CSV MIME types and extensions
-            $this->validate([
-                'csvFile' => 'required|file|max:25600|mimes:csv,txt', // 25 MB (max in kilobytes)
-                ]);
+        $this->validate([
+            'csvFile' => 'required|file|max:25600|mimes:csv,txt', // 25 MB (max in kilobytes)
+        ]);
 
         try {
             // Clear any prior error message on new upload
             $this->importErrorMsg = null;
-            $original = (string) ($this->csvFile->getClientOriginalName() ?? 'venues.csv');
-            $ext = pathinfo($original, PATHINFO_EXTENSION) ?: 'csv';
-            $safe = 'venues_' . now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $ext;
-
-            // Ensure the temp uploads root exists (Windows-friendly)
-            try {
-                $rootPath = Storage::disk('uploads_temp')->path('');
-                if (!\is_dir($rootPath)) {
-                    @\mkdir($rootPath, 0775, true);
-                }
-            } catch (\Throwable $e) {
-                // Non-fatal: Storage::path should normally create on put; continue
-            }
-
-            // Store on the temporary uploads disk
-            $this->csvFile->storeAs('', $safe, 'uploads_temp');
-
-            // Dispatch async processing job (scan + parse + import)
             $admin = Auth::user();
             $adminId = is_object($admin) ? (int) $admin->id : 0;
-            $context = [];
-            if (function_exists('request') && request()) {
-                $context = [
-                    'ip' => request()->ip(),
-                    'ua' => request()->userAgent(),
-                ];
-            }
-            ProcessCsvFileUpload::dispatch($safe, $adminId, $context);
+
+            $safe = app(VenueService::class)->queueCsvUpload($this->csvFile, $adminId);
 
             // Track status key for polling in the UI
             $this->importKey = $safe;
