@@ -46,6 +46,36 @@
         <livewire:request.history.filters/>
     </div>
 
+    <style>
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator .status-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: currentColor;
+        }
+
+        .status-indicator--success {
+            color: #146c43;
+        }
+
+        .status-indicator--danger {
+            color: #b02a37;
+        }
+
+        .status-indicator--neutral {
+            color: #495057;
+        }
+    </style>
+
     <div class="card shadow-sm">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -68,14 +98,30 @@
                         <td class="fw-medium">{{$history->event->organization_name  ?? '—' }}</td>
                         <td class="fw-medium">{{$history->action  ?? '—' }}</td>
                         <td class="fw-medium">
-                            <span class="badge rounded-pill bg-secondary">{{$history->getSimpleStatus()}}</span>
+                            @php
+                                $stepStatus = strtolower($history->getSimpleStatus());
+                                $indicatorVariant = match (true) {
+                                    in_array($stepStatus, ['rejected', 'declined', 'cancelled', 'withdrawn']) => 'danger',
+                                    in_array($stepStatus, ['approved', 'completed', 'accepted']) => 'success',
+                                    default => 'neutral'
+                                };
+                            @endphp
+                            <span class="status-indicator status-indicator--{{ $indicatorVariant }}">
+                                <span class="status-dot" aria-hidden="true"></span>
+                                <span>{{ $history->getSimpleStatus() }}</span>
+                            </span>
                         </td>
                         <td class="fw-medium">{{ \Carbon\Carbon::parse($history->created_at)->format('D, M j, Y g:i A') }}</td>
                         <td class="fw-medium text-end">
-                            <button class="btn btn-secondary text-end" style="text-align: right"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
+                            <button type="button"
+                                    class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="View details"
+                                    aria-label="View details"
                                     onclick="window.location='{{ route('approver.history.request',['eventHistory'=>$history]) }}'">
-                                <i class="bi bi-eye me-1"></i> View details
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                <span class="d-none d-sm-inline">View details</span>
                             </button>
                         </td>
                     </tr>

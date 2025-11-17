@@ -5,6 +5,17 @@
 */
 @use "bootstrap/scss/bootstrap";
 
+.table-action-btn {
+  min-width: 160px;
+}
+
+@media (max-width: 576px) {
+  .table-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* Admin forms: show red asterisk on required labels */
 .form-label.required::after,
 .form-check-label.required::after {

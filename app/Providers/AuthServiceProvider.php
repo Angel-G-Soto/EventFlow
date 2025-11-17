@@ -59,5 +59,6 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('perform-override', [AdminPolicy::class, 'performOverride']);
         Gate::define('manage-users', [AdminPolicy::class, 'manageUsers']);
         Gate::define('manage-venues', [AdminPolicy::class, 'manageVenues']);
+        Gate::define('manage-categories', [AdminPolicy::class, 'manageCategories']);
     }
 }

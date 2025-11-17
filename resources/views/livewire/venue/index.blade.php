@@ -67,7 +67,7 @@
                 <th>Room</th>
                 <th >Capacity</th>
 
-                <th class="text-end">Actions</th>
+                <th class="text-center text-sm-end" style="width: 120px;">Actions</th>
             </tr>
 
             </thead>
@@ -77,16 +77,29 @@
                 <td class="fw-medium">{{ $v['name'] }}</td>
                 <td class="fw-medium">{{ $v['code'] }}</td>
                 <td class="fw-medium">{{ $v['capacity'] }}</td>
-                <td class="fw-medium text-end">
-                    <button  wire:click="configure({{$v['id']}})" class="btn btn-secondary text-end" style="text-align: right" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure">
-                        <i class="bi bi-pencil"></i> Configure
-                    </button>
-                    <button class="btn btn-secondary text-end" style="text-align: right"
-                            data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Configure" onclick="window.location='{{ route('venue.show',['venue'=>$v]) }}'">
-                        <i class="bi bi-eye me-1"></i> View details
-                    </button>
-
+                <td class="fw-medium text-center text-sm-end" style="width: 120px;">
+                    <div class="d-inline-flex flex-column flex-sm-row gap-2 justify-content-center justify-content-sm-end align-items-center w-100">
+                        <button type="button"
+                                wire:click="configure({{ $v['id'] }})"
+                                class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="Configure {{ $v['name'] }}"
+                                aria-label="Configure {{ $v['name'] }}">
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">Configure</span>
+                        </button>
+                        <button type="button"
+                                class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="View details for {{ $v['name'] }}"
+                                aria-label="View details"
+                                onclick="window.location='{{ route('venue.show', ['venue' => $v]) }}'">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">View details</span>
+                        </button>
+                    </div>
                 </td>
             </tr>
             @empty
