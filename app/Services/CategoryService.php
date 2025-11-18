@@ -104,11 +104,15 @@ class CategoryService {
 
             $category = Category::create(['name' => $name]);
 
-            $this->logAudit('CATEGORY_CREATED', $category->id, [
-                'category_id' => (int)$category->id,
-                'category_name' => (string)$category->name,
-                'source' => 'category_create',
-            ]);
+            app(AuditService::class)->logCategoryAdminAction(
+                'CATEGORY_CREATED',
+                $category->id,
+                [
+                    'category_id' => (int) $category->id,
+                    'category_name' => (string) $category->name,
+                    'source' => 'category_create',
+                ]
+            );
 
             return $category;
         } catch (InvalidArgumentException $exception) {
@@ -267,42 +271,6 @@ class CategoryService {
         catch (InvalidArgumentException|ModelNotFoundException $exception) { throw $exception; }
         catch (Throwable $exception) { throw new Exception('Unable to delete the specified category.'); }
     }
-
-    /**
-     * Helper to log audit events for category changes.
-     *
-     * @param array<string,mixed> $meta
-     */
-    protected function logAudit(string $action, int $resourceId, array $meta = []): void
-    {
-        try {
-            /** @var \App\Services\AuditService $audit */
-            $audit = app(\App\Services\AuditService::class);
-            $actor = Auth::user();
-            $actorId = $actor?->id ?? null;
-
-            if (!$actorId) {
-                return;
-            }
-
-            $ctx = ['meta' => $meta];
-            if (function_exists('request') && request()) {
-                $ctx = $audit->buildContextFromRequest(request(), $meta);
-            }
-
-            $audit->logAdminAction(
-                (int)$actorId,
-                'category',
-                $action,
-                (string)$resourceId,
-                $ctx
-            );
-        } catch (Throwable) {
-            // best-effort
-        }
-    }
-
-
 
     // /**
     // public function deleteCategory(int $category_id): bool

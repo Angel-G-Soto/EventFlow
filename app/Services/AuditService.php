@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Service responsible for writing and reading audit log entries.
@@ -280,6 +281,41 @@ class AuditService
             ->get()
             ->pluck('target_type', 'user_id')
             ->toArray();
+    }
+
+    /**
+     * Convenience helper: log a category-related admin action using the
+     * currently authenticated user as the actor (best-effort).
+     *
+     * @param string                $actionCode
+     * @param int|string            $resourceId
+     * @param array<string,mixed>   $meta
+     */
+    public function logCategoryAdminAction(string $actionCode, int|string $resourceId, array $meta = []): void
+    {
+        try {
+            $actor = Auth::user();
+            $actorId = $actor?->id ?? null;
+
+            if (! $actorId) {
+                return;
+            }
+
+            $context = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $context = $this->buildContextFromRequest(request(), $meta);
+            }
+
+            $this->logAdminAction(
+                (int) $actorId,
+                'category',
+                $actionCode,
+                (string) $resourceId,
+                $context
+            );
+        } catch (\Throwable) {
+            // best-effort
+        }
     }
 
     /**
