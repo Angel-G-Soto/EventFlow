@@ -5,7 +5,7 @@
 
   <div class="dropdown w-100" x-data
     x-on:dropdown\:close.window="$el.querySelector('[data-bs-toggle=dropdown]')?.dispatchEvent(new Event('click'))">
-    <button class="btn btn-outline-secondary w-100 text-start dropdown-toggle" type="button" data-bs-toggle="dropdown"
+    <button class="btn btn-secondary w-100 text-start dropdown-toggle" type="button" data-bs-toggle="dropdown"
       aria-expanded="false">
       @if($this->selectedName)
       {{ $this->selectedName }}

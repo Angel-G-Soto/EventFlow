@@ -44,6 +44,7 @@ class AuditTrail extends Model
         'target_type',
         'target_id',
         // HTTP context and extra metadata
+        'ip',
         'ua',
         'meta',
     ];

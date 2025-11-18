@@ -49,8 +49,8 @@
           <label class="form-label" for="venue_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
-              <input id="venue_search" type="text" class="form-control"
-                placeholder="Search by name, code, or manager..." wire:model.defer="search">
+              <input id="venue_search" type="text" class="form-control" placeholder="Search by name or code..."
+                wire:model.defer="search">
               <button class="btn btn-secondary" type="submit" aria-label="Search">
                 <i class="bi bi-search"></i>
               </button>
@@ -105,7 +105,13 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th scope="col">
+            <th scope="col"
+              @if(($sortField ?? '') === 'name')
+                aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}"
+              @else
+                aria-sort="none"
+              @endif
+            >
               <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
@@ -120,9 +126,15 @@
                 @endif
               </button>
             </th>
-            <th>Department</th>
-            <th>Venue Code</th>
-            <th>
+            <th scope="col">Department</th>
+            <th scope="col">Venue Code</th>
+            <th scope="col"
+              @if(($sortField ?? '') === 'capacity')
+                aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}"
+              @else
+                aria-sort="none"
+              @endif
+            >
               <button class="btn btn-link p-0 text-decoration-none text-black text-nowrap fw-bold"
                 wire:click="sortBy('capacity')" aria-label="Sort by capacity">
                 <span class="d-inline-flex align-items-center gap-1">
@@ -139,8 +151,6 @@
                 </span>
               </button>
             </th>
-            {{--<th>Manager</th>--}}
-            <th>Availability</th>
             <th class="text-end" style="width:140px;">Actions</th>
           </tr>
         </thead>
@@ -152,8 +162,7 @@
             <td>{{ $v['department'] }}</td>
             <td>{{ $v['room'] }}</td>
             <td>{{ $v['capacity'] }}</td>
-            {{-- <td> {{ $v['manager'] }} </td> --}}
-            <td class="text-truncate" style="max-width:220px;">
+            {{-- <td class="text-truncate" style="max-width:220px;">
               @php $hasOC = !empty($v['opening'] ?? '') || !empty($v['closing'] ?? ''); @endphp
               @if ($hasOC)
               <div class="small">{{ $fmtTime($v['opening'] ?? '') }} – {{ $fmtTime($v['closing'] ?? '') }}</div>
@@ -169,18 +178,14 @@
               @else
               <span class="text-muted small">No availability</span>
               @endif
-            </td>
+            </td> --}}
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="showDetails({{ $v['id'] }})"
+                <button class="btn btn-info" wire:click="showDetails({{ $v['id'] }})"
                   aria-label="Show details for venue {{ $v['name'] }}" title="Show details">
                   <i class="bi bi-info-circle"></i>
                 </button>
-                {{--<button class="btn btn-outline-secondary" wire:click="openEdit({{ $v['id'] }})"
-                  aria-label="Edit venue {{ $v['name'] }}" title="Edit venue {{ $v['name'] }}">
-                  <i class="bi bi-pencil"></i>
-                </button>--}}
-                <button class="btn btn-outline-danger" wire:click="delete({{ $v['id'] }})"
+                <button class="btn btn-danger" wire:click="delete({{ $v['id'] }})"
                   aria-label="Delete venue {{ $v['name'] }}" title="Delete venue {{ $v['name'] }}">
                   <i class="bi bi-trash3"></i>
                 </button>
@@ -189,7 +194,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="6" class="text-center text-secondary py-4">No venues found.</td>
+            <td colspan="5" class="text-center text-secondary py-4">No venues found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -205,7 +210,6 @@
     </div>
   </div>
 
-  {{-- Create/Edit Venue Modal with inline Availability editor --}}
   {{-- CSV Upload Modal --}}
   <div class="modal fade" id="csvModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
     <div class="modal-dialog modal-dialog-centered">
@@ -285,8 +289,8 @@
           @error('csvFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
-            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" aria-label="Back to venues"><i
+              class="bi bi-arrow-left me-1"></i>Back</button>
           <button class="btn btn-primary" type="submit" aria-label="Upload CSV" @disabled(!$csvFile)
             wire:loading.attr="disabled" wire:target="csvFile,uploadCsv">
             <i class="bi bi-upload me-1"></i>Upload
@@ -295,132 +299,9 @@
       </form>
     </div>
   </div>
-  <div class="modal fade" id="venueModal" tabindex="-1" aria-hidden="true" wire:ignore.self>
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <form class="modal-content" wire:submit.prevent="save">
-        <div class="modal-header">
-          <h5 class="modal-title">{{ $editId ? 'Edit Venue' : 'New Venue' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label required" for="v_name">Name</label>
-              <input id="v_name" class="form-control" required wire:model.live="vName"
-                placeholder="Venue name (e.g., Main Auditorium)">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label required" for="v_department">Department</label>
-              <select id="v_department" class="form-select" wire:model.live="vDepartment" required>
-                <option value="">Select department</option>
-                @foreach($departments as $dept)
-                <option value="{{ $dept }}">{{ $dept }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label required" for="v_room">Venue Code</label>
-              <input id="v_room" class="form-control" required wire:model.live="vRoom"
-                placeholder="Code (e.g., EN-101)">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label required" for="v_capacity">Capacity</label>
-              <input id="v_capacity" type="number" min="0" class="form-control" required wire:model.live="vCapacity"
-                placeholder="0+">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label" for="v_manager">Manager</label>
-              <input id="v_manager" class="form-control" wire:model.live="vManager" placeholder="username/email">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label" for="v_status">Status</label>
-              <select id="v_status" class="form-select" wire:model.live="vStatus">
-                <option>Active</option>
-                <option>Inactive</option>
-              </select>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label">Features/Resources</label>
-              <div class="row g-2">
-                @php $features = ['Allow Teaching Online','Allow Teaching With Multimedia','Allow Teaching with
-                computer','Allow Teaching']; @endphp
-                @foreach($features as $f)
-                <div class="col-6 col-md-4 col-lg-3">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" value="{{ $f }}" wire:model.live="vFeatures"
-                      id="feat_{{ $loop->index }}">
-                    <label class="form-check-label" for="feat_{{ $loop->index }}">{{ $f }}</label>
-                  </div>
-                </div>
-                @endforeach
-              </div>
-            </div>
-
-            <div class="col-12">
-              <div class="d-flex align-items-center justify-content-between">
-                <h6 class="mb-2">Availability dates</h6>
-                <button class="btn btn-outline-secondary btn-sm" type="button" wire:click="addTimeRange">
-                  <i class="bi bi-plus-lg me-1"></i>Add
-                </button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-sm align-middle">
-                  <thead>
-                    <tr>
-                      <th style="width:180px;">From</th>
-                      <th style="width:180px;">To</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @forelse($timeRanges as $i=>$b)
-                    <tr>
-                      <td><input type="time" class="form-control form-control-sm" aria-label="From time"
-                          wire:model.live="timeRanges.{{ $i }}.from"></td>
-                      <td><input type="time" class="form-control form-control-sm" aria-label="To time"
-                          wire:model.live="timeRanges.{{ $i }}.to">
-                      </td>
-                      <td class="align-top">
-                        @error('timeRanges.'.$i.'.from')
-                        <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                        @error('timeRanges.'.$i.'.to')
-                        <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                      </td>
-                      <td>
-                        <button type="button" class="btn btn-outline-danger btn-sm"
-                          aria-label="Remove time range {{ $i }}" wire:click="removeTimeRange({{ $i }})">
-                          <i class="bi bi-x-lg"></i>
-                        </button>
-                      </td>
-                    </tr>
-                    @empty
-                    <tr>
-                      <td colspan="4" class="text-secondary">No Availability dates.</td>
-                    </tr>
-                    @endforelse
-                  </tbody>
-                </table>
-                <div class="form-text">
-                  Enter availability times as 24-hour HH:MM. End time must be after start time.
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
-            aria-label="Cancel and close">Cancel</button>
-          <button class="btn btn-primary" type="submit" aria-label="Save venue"><i class="bi me-1"></i>Save</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="venueJustify" submit="confirmJustify" model="justification" />
+  <x-justification id="venueJustify" submit="confirmDelete" model="justification" />
 
   {{-- Confirm delete --}}
   <x-confirm-delete id="venueConfirm" title="Delete venue" message="Are you sure you want to delete this venue?"
@@ -459,9 +340,6 @@
             <dt class="col-sm-3">Capacity</dt>
             <dd class="col-sm-9">{{ $details['capacity'] ?? '—' }}</dd>
 
-            <dt class="col-sm-3">Manager</dt>
-            <dd class="col-sm-9">{{ $details['manager'] ?? '—' }}</dd>
-
             <dt class="col-sm-3">Features</dt>
             <dd class="col-sm-9">
               @php($fs = $details['features'] ?? [])
@@ -478,19 +356,25 @@
 
             <dt class="col-sm-3">Availability</dt>
             <dd class="col-sm-9">
-              @php($open = $details['opening'] ?? null)
-              @php($close = $details['closing'] ?? null)
-              @if($open || $close)
-              <span>{{ $fmtTime($open ?? '') }} – {{ $fmtTime($close ?? '') }}</span>
+              @php($availabilitySlots = $details['availabilities'] ?? [])
+              @if(!empty($availabilitySlots))
+              <ul class="list-unstyled mb-0">
+                @foreach($availabilitySlots as $slot)
+                <li class="d-flex justify-content-between border-bottom py-1">
+                  <span class="fw-semibold">{{ $slot['day'] }}</span>
+                  <span>{{ $fmtTime($slot['opens']) }} – {{ $fmtTime($slot['closes']) }}</span>
+                </li>
+                @endforeach
+              </ul>
               @else
-              <span class="text-muted">No availability</span>
+              <span class="text-muted">No availability configured.</span>
               @endif
             </dd>
           </dl>
           @endif
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>

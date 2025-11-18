@@ -1,21 +1,22 @@
-{{--    View: Create (Livewire) --}}
-{{--    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5) --}}
-{{--    Date: 2025-11-01 --}}
 
-{{--    Description: --}}
-{{--    - Presents an accessible form to create a new resource (e.g., Event, Venue, Requirement). --}}
-{{--    - Works with a Livewire component that validates and persists data. --}}
+{{--    View: Create (Livewire)--}}
+{{--    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5)--}}
+{{--    Date: 2025-11-01--}}
 
-{{--    Variables (typical): --}}
-{{--    - array<string,mixed> $form                   Reactive form state --}}
-{{--    - \Illuminate\Support\Collection|array $venues      Options for venue select --}}
-{{--    - \Illuminate\Support\Collection|array $categories  Options for categories --}}
-{{--    - bool $isBusy                                Optional loading flag --}}
+{{--    Description:--}}
+{{--    - Presents an accessible form to create a new resource (e.g., Event, Venue, Requirement).--}}
+{{--    - Works with a Livewire component that validates and persists data.--}}
 
-{{--    Accessibility notes: --}}
-{{--    - Use <label for> for each input; include required asterisks via ::after and aria-required="true". --}}
-{{--    - Announce validation errors near inputs with role="alert" and aria-describedby. --}}
-{{--    - Ensure the primary submit <button> has type="submit" and discernible text. --}}
+{{--    Variables (typical):--}}
+{{--    - array<string,mixed> $form                   Reactive form state--}}
+{{--    - \Illuminate\Support\Collection|array $venues      Options for venue select--}}
+{{--    - \Illuminate\Support\Collection|array $categories  Options for categories--}}
+{{--    - bool $isBusy                                Optional loading flag--}}
+
+{{--    Accessibility notes:--}}
+{{--    - Use <label for> for each input; include required asterisks via ::after and aria-required="true".--}}
+{{--    - Announce validation errors near inputs with role="alert" and aria-describedby.--}}
+{{--    - Ensure the primary submit <button> has type="submit" and discernible text.--}}
 
 
 
@@ -39,7 +40,40 @@
     @csrf
 
     {{-- Step pills --}}
-    <ul class="nav nav-pills mb-4">
+    <style>
+        .request-step-nav .nav-link {
+            font-weight: 600;
+            border: none;
+            color: #0a214a;
+            background-color: transparent;
+        }
+
+        .request-step-nav .nav-link:not(.active) {
+            background-color: transparent;
+        }
+
+        .request-step-nav .nav-link:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(10, 33, 74, 0.35);
+        }
+
+        .request-step-nav .nav-link.active {
+            background-color: #0a214a;
+            color: #fff;
+        }
+
+        .event-form-link-btn {
+            color: #1557b0;
+            text-decoration: none;
+        }
+
+        .event-form-link-btn:hover,
+        .event-form-link-btn:focus-visible {
+            color: #0d3f7a;
+            text-decoration: underline;
+        }
+    </style>
+    <ul class="nav nav-pills mb-4 request-step-nav" aria-label="Event creation steps">
         <li class="nav-item"><span class="nav-link {{ $step === 1 ? 'active' : '' }}">1. Event</span></li>
         <li class="nav-item"><span class="nav-link {{ $step === 2 ? 'active' : '' }}">2. Venue</span></li>
         <li class="nav-item"><span class="nav-link {{ $step === 3 ? 'active' : '' }}">3. Documents</span></li>
@@ -47,44 +81,34 @@
     {{-- STEP 1 --}}
     @if ($step === 1)
 
+        <h2 id="eventRequestStep1Heading" class="visually-hidden">Event details</h2>
         <p class="text-muted small">
             <span class="text-danger" aria-hidden="true">*</span>
             <span class="visually-hidden">required</span>
             Fields marked with an asterisk are required.
         </p>
-        <form wire:submit.prevent="next">
+        <form wire:submit.prevent="next" data-prevent-enter-submit aria-labelledby="eventRequestStep1Heading">
 
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label required">Student Phone</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_phone_number"
-                        placeholder="787-777-7777">
-                    @error('creator_phone_number')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <input type="text" class="form-control" wire:model.defer="creator_phone_number" placeholder="787-777-7777">
+                    @error('creator_phone_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
                     <label class="form-label required">Student ID / Number</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number"
-                        placeholder="802201234">
-                    @error('creator_institutional_number')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number" placeholder="802201234">
+                    @error('creator_institutional_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event Title</label>
                     <input type="text" class="form-control" wire:model.defer="title" placeholder="Enter event title">
-                    @error('title')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    @error('title') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="4" wire:model.defer="description"
-                        placeholder="Enter a brief description of the event"></textarea>
-                    @error('description')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="Enter a brief description of the event"></textarea>
+                    @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-12">
@@ -98,27 +122,20 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Start time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="start_time"
-                        placeholder="Select start time">
-                    @error('start_time')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <input type="datetime-local" class="form-control" wire:model.live="start_time" placeholder="Select start time">
+                    @error('start_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">End time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="end_time"
-                        placeholder="Select end time">
-                    @error('end_time')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <input type="datetime-local" class="form-control" wire:model.live="end_time" placeholder="Select end time">
+                    @error('end_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-baseline">
                         <label class="form-label">Event Categories</label>
-                        <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories"
-                            @disabled(empty($category_ids))>
+                        <button type="button" class="btn btn-link btn-sm p-0 event-form-link-btn" wire:click="clearCategories" @disabled(empty($category_ids))>
                             Clear selection
                         </button>
                     </div>
@@ -126,12 +143,35 @@
                     <div class="card border shadow-sm">
                         <div class="card-body">
                             <div class="row g-2 align-items-center mb-3">
-                                <div class="col-md-8">
-                                    <input type="search" class="form-control"
-                                        placeholder="Search categories (e.g., Workshop, Fundraiser)"
-                                        wire:model.debounce.300ms="categorySearch">
+                                <div class="col-md-8 col-lg-9">
+                                    <div class="input-group">
+                                        <input
+                                            type="search"
+                                            class="form-control"
+                                            placeholder="Search categories (e.g., Workshop, Fundraiser)"
+                                            wire:model.defer="categorySearchInput"
+                                            wire:keydown.enter.prevent="runCategorySearch"
+                                            data-allow-enter-submit="true"
+                                        >
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary"
+                                            wire:click="runCategorySearch"
+                                            wire:loading.attr="disabled"
+                                            wire:target="runCategorySearch"
+                                        >
+                                            <span
+                                                wire:loading
+                                                wire:target="runCategorySearch"
+                                                class="spinner-border spinner-border-sm me-1"
+                                                role="status"
+                                                aria-hidden="true"
+                                            ></span>
+                                            Search
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-md-end">
+                                <div class="col-md-4 col-lg-3 text-md-end">
                                     <small class="text-muted">
                                         {{ count($category_ids) }} selected
                                     </small>
@@ -144,9 +184,12 @@
                                     @foreach ($selectedCategoryLabels as $id => $label)
                                         <span class="badge rounded-pill text-bg-light border me-1 mb-1">
                                             {{ $label }}
-                                            <button type="button" class="btn btn-link btn-sm text-decoration-none ps-1"
+                                            <button
+                                                type="button"
+                                                class="btn btn-link btn-sm text-decoration-none ps-1"
                                                 wire:click="removeCategory({{ (int) $id }})"
-                                                aria-label="Remove {{ $label }}">&times;</button>
+                                                aria-label="Remove {{ $label }}"
+                                            >&times;</button>
                                         </span>
                                     @endforeach
                                 </div>
@@ -155,10 +198,13 @@
                             <div class="row row-cols-1 row-cols-md-2 g-2">
                                 @forelse ($filteredCategories as $cat)
                                     <div class="col">
-                                        <label
-                                            class="border rounded p-3 h-100 d-flex gap-3 align-items-start shadow-sm">
-                                            <input type="checkbox" class="form-check-input mt-1"
-                                                value="{{ $cat['id'] }}" wire:model.live="category_ids">
+                                        <label class="border rounded p-3 h-100 d-flex gap-3 align-items-start shadow-sm">
+                                            <input
+                                                type="checkbox"
+                                                class="form-check-input mt-1"
+                                                value="{{ $cat['id'] }}"
+                                                wire:model.live="category_ids"
+                                            >
                                             <span>
                                                 <span class="fw-semibold d-block">{{ $cat['name'] }}</span>
                                                 @if (!empty($cat['description'] ?? null))
@@ -175,60 +221,78 @@
                             </div>
                         </div>
                     </div>
-                    @error('category_ids')
-                        <div class="text-danger small mt-2">{{ $message }}</div>
-                    @enderror
+                    @error('category_ids') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                 </div>
 
                 <label class="form-label">General Requirements</label>
                 {{-- Check box for food handling --}}
                 <div class="form-check">
-                    <input id="handles_food" type="checkbox" class="form-check-input" wire:model.live="handles_food"
-                        aria-describedby="handles_food">
+                    <input
+                        id="handles_food"
+                        type="checkbox"
+                        class="form-check-input"
+                        wire:model.live="handles_food"
+                        aria-describedby="handles_food_help"
+                    >
                     <label class="form-check-label" for="handles_food">This event is to sell food</label>
-                    <div id="handles_food" class="form-text"></div>
+                    <div id="handles_food_help" class="form-text">Select if you'll serve or sell food so we can
+                        request the proper permits.</div>
                 </div>
 
                 {{-- Check box for institutional funds --}}
                 <div class="form-check">
-                    <input id="has_funds" type="checkbox" class="form-check-input"
-                        wire:model.live="use_institutional_funds" aria-describedby="hasFunds">
+                    <input
+                        id="has_funds"
+                        type="checkbox"
+                        class="form-check-input"
+                        wire:model.live="use_institutional_funds"
+                        aria-describedby="hasFunds"
+                    >
                     <label class="form-check-label" for="has_funds">This event uses institutional funds</label>
-                    <div id="hasFunds" class="form-text"></div>
+                    <div id="hasFunds" class="form-text">Choose this if institutional or university funds will cover
+                        the request.</div>
                 </div>
 
                 {{-- Check box for external guest --}}
                 <div class="form-check">
-                    <input id="external_guest" type="checkbox" class="form-check-input"
-                        wire:model.live="external_guest" aria-describedby="externalGuest">
+                    <input
+                        id="external_guest"
+                        type="checkbox"
+                        class="form-check-input"
+                        wire:model.live="external_guest"
+                        aria-describedby="externalGuest"
+                    >
                     <label class="form-check-label" for="external_guest">This event has an external guest</label>
+                    <div id="externalGuest" class="form-text">Let us know if you'll host speakers or guests from
+                        outside the institution.</div>
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
-                    <input type="text" class="form-control" value="{{ $organization_name }}" disabled
-                        placeholder="Organization name">
-                    @error('organization_name')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <input type="text" class="form-control" value="{{ $organization_name }}"
+                           disabled placeholder="Organization name">
+                    @error('organization_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" value="{{ $organization_advisor_name }}" class="form-control"
-                        {{-- wire:model.defer="organization_advisor_name" --}} disabled placeholder="Enter advisor's name">
-                    @error('organization_advisor_name')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" wire:model.defer="organization_advisor_name"
+                    disabled placeholder="Enter advisor's name">
+                    @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" value="{{ $organization_advisor_email }}" class="form-control"
-                        {{-- wire:model.defer="organization_advisor_email" --}} disabled placeholder="Enter advisor's email">
-                    @error('organization_advisor_email')
-                        <div class="text-danger small">{{ $message }}</div>
-                    @enderror
+                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" wire:model.defer="organization_advisor_email"
+{{--                    disabled --}}
+                           placeholder="Enter advisor's email"
+                    >
+                    @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">Advisor phone</label>
+                    <input type="text" class="form-control" wire:model.defer="organization_advisor_phone" placeholder="Enter advisor's phone number">
+                    @error('organization_advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
@@ -240,7 +304,8 @@
 
     @if ($step === 2)
 
-        <form wire:submit.prevent="next">
+        <h2 id="eventRequestStep2Heading" class="visually-hidden">Venue selection</h2>
+        <form wire:submit.prevent="next" data-prevent-enter-submit aria-labelledby="eventRequestStep2Heading">
             <div class="mb-3">
                 <div class="form-text">
                     Showing venues available between
@@ -261,35 +326,49 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5 col-lg-4">
                             <label for="venueSearch" class="form-label">Search by name or code</label>
-                            <input id="venueSearch" type="text" class="form-control"
-                                placeholder="e.g., SALON DE CLASES or AE-102" wire:model.defer="venueSearch">
+                            <input id="venueSearch"
+                                   type="text"
+                                   class="form-control"
+                                   placeholder="e.g., SALON DE CLASES or AE-102"
+                                   wire:model.defer="venueSearch">
                         </div>
                         <div class="col-md-3 col-lg-2">
                             <label for="venueCapacityFilter" class="form-label">Minimum capacity</label>
-                            <input id="venueCapacityFilter" type="number" min="0" class="form-control"
-                                placeholder="50" wire:model.defer="venueCapacityFilter">
+                            <input id="venueCapacityFilter"
+                                   type="number"
+                                   min="0"
+                                   class="form-control"
+                                   placeholder="50"
+                                   wire:model.defer="venueCapacityFilter">
                         </div>
                         <div class="col-md-4 col-lg-3">
                             <label for="venueDepartmentFilter" class="form-label">Department</label>
-                            <select id="venueDepartmentFilter" class="form-select"
-                                wire:model.defer="venueDepartmentFilter">
+                            <select id="venueDepartmentFilter"
+                                    class="form-select"
+                                    wire:model.defer="venueDepartmentFilter">
                                 <option value="">All departments</option>
-                                @foreach ($departments as $department)
+                                @foreach($departments as $department)
                                     <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-12 col-lg-3 d-flex gap-2">
-                            <button type="button" class="btn btn-primary flex-fill" wire:click="runVenueSearch"
-                                wire:loading.attr="disabled" wire:target="runVenueSearch">
+                            <button
+                                type="button"
+                                class="btn btn-primary flex-fill"
+                                wire:click="runVenueSearch"
+                                wire:loading.attr="disabled"
+                                wire:target="runVenueSearch">
                                 @if ($loadingVenues)
-                                    <span class="spinner-border spinner-border-sm" role="status"
-                                        aria-hidden="true"></span>
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 @endif
                                 Search
                             </button>
-                            <button type="button" class="btn btn-outline-secondary flex-fill"
-                                wire:click="resetVenueFilters" wire:loading.attr="disabled"
+                            <button
+                                type="button"
+                                class="btn btn-secondary flex-fill"
+                                wire:click="resetVenueFilters"
+                                wire:loading.attr="disabled"
                                 wire:target="resetVenueFilters">
                                 Reset
                             </button>
@@ -353,21 +432,30 @@
                     <nav aria-label="Venues pagination">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item {{ $this->venuePagination['current'] === 1 ? 'disabled' : '' }}">
-                                <button type="button" class="page-link" wire:click="previousVenuePage"
-                                    @disabled($this->venuePagination['current'] === 1)>&laquo;</button>
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="previousVenuePage"
+                                    @disabled($this->venuePagination['current'] === 1)
+                                >&laquo;</button>
                             </li>
                             @foreach (range(1, $this->venuePagination['last']) as $page)
-                                <li
-                                    class="page-item {{ $page === $this->venuePagination['current'] ? 'active' : '' }}">
-                                    <button type="button" class="page-link"
+                                <li class="page-item {{ $page === $this->venuePagination['current'] ? 'active' : '' }}">
+                                    <button
+                                        type="button"
+                                        class="page-link"
                                         wire:click="goToVenuePage({{ $page }})"
-                                        @disabled($page === $this->venuePagination['current'])>{{ $page }}</button>
+                                        @disabled($page === $this->venuePagination['current'])
+                                    >{{ $page }}</button>
                                 </li>
                             @endforeach
-                            <li
-                                class="page-item {{ $this->venuePagination['current'] === $this->venuePagination['last'] ? 'disabled' : '' }}">
-                                <button type="button" class="page-link" wire:click="nextVenuePage"
-                                    @disabled($this->venuePagination['current'] === $this->venuePagination['last'])>&raquo;</button>
+                            <li class="page-item {{ $this->venuePagination['current'] === $this->venuePagination['last'] ? 'disabled' : '' }}">
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="nextVenuePage"
+                                    @disabled($this->venuePagination['current'] === $this->venuePagination['last'])
+                                >&raquo;</button>
                             </li>
                         </ul>
                     </nav>
@@ -380,15 +468,25 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
-                <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="next"
-                    @disabled(!$venue_id)>Next</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    wire:loading.attr="disabled"
+                    wire:target="next"
+                    @disabled(!$venue_id)
+                >Next</button>
             </div>
         </form>
     @endif
     @if ($showVenueDescriptionModal && $selectedVenueDetails)
-        <div class="modal fade show d-block" tabindex="-1" aria-modal="true" role="dialog"
-            style="background: rgba(0,0,0,0.35);">
+        <div
+            class="modal fade show d-block"
+            tabindex="-1"
+            aria-modal="true"
+            role="dialog"
+            style="background: rgba(0,0,0,0.35);"
+        >
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -424,8 +522,7 @@
                         @endif
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary"
-                            wire:click="closeVenueDescription">Close</button>
+                        <button type="button" class="btn btn-secondary" wire:click="closeVenueDescription">Close</button>
                     </div>
                 </div>
             </div>
@@ -435,7 +532,8 @@
 
     {{-- STEP 3 --}}
     @if ($step === 3)
-        <form wire:submit.prevent="submit">
+        <h2 id="eventRequestStep3Heading" class="visually-hidden">Document uploads and submission</h2>
+        <form wire:submit.prevent="submit" data-prevent-enter-submit aria-labelledby="eventRequestStep3Heading">
 
             <div class="mb-3">
                 <div class="form-text">Upload the documents required due to the nature of the event.</div>
@@ -446,8 +544,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food
-                                Handling Details</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
                         </li>
                     </ul>
                 </div>
@@ -458,8 +555,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary"
-                                wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
                         </li>
                     </ul>
                 </div>
@@ -470,8 +566,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary"
-                                wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
                         </li>
                     </ul>
                 </div>
@@ -481,6 +576,7 @@
             @if (empty($requiredDocuments))
                 <div class="alert alert-secondary">No documents required for this venue.</div>
             @else
+
                 <div class="mb-3">
                     <div class="form-text">Upload the documents required for this venue.</div>
                 </div>
@@ -488,13 +584,16 @@
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
-                            <a href="{{ $doc['hyperlink'] }}" target="_blank">
-                                {{ $doc['name'] . ': ' }}
-                            </a>
-                            {{ $doc['description'] }}
+                                <a href="{{$doc['hyperlink']}}" target="_blank" class="event-form-link-btn">
+                                    {{ $doc['name'] . ": "}}
+                                </a>
+                                {{$doc['description']}}
                         </li>
                     @endforeach
                 </ul>
+            @endif
+
+            @if ($this->shouldShowRequirementUploads)
                 <div class="mb-3">
                     <label for="requirementFiles" class="form-label fw-semibold">
                         Upload Requirement Documents
@@ -564,7 +663,7 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
                 <button type="submit" class="btn btn-success">Submit Event</button>
             </div>
         </form>
@@ -572,22 +671,100 @@
 </div>
 
 <script>
-    // Flag to prevent 'beforeunload' on form submit
-    let isSubmitting = false;
-
-    // Add event listener for the form submit action
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            isSubmitting = true;
-        });
-    });
-
-    // Trigger beforeunload when the user tries to leave the page (except on form submit)
-    window.addEventListener('beforeunload', function(event) {
-        if (!isSubmitting) { // Only show the warning if it's not a form submission
-            const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
-            event.returnValue = confirmationMessage; // For most modern browsers
-            return confirmationMessage; // For older browsers
+    (function initializeLeaveWarning() {
+        if (window.eventFormLeaveGuardInitialized) {
+            return;
         }
-    });
+        window.eventFormLeaveGuardInitialized = true;
+
+        const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
+        let shouldWarn = true;
+
+        const handleBeforeUnload = function (event) {
+            if (!shouldWarn) {
+                return;
+            }
+
+            event.preventDefault();
+            event.returnValue = confirmationMessage;
+            return confirmationMessage;
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        const registerLivewireHandlers = () => {
+            if (!window.Livewire || typeof window.Livewire.on !== 'function') {
+                return;
+            }
+
+            window.Livewire.on('event-form-submitted', () => {
+                shouldWarn = false;
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            });
+        };
+
+        if (window.Livewire) {
+            registerLivewireHandlers();
+        } else {
+            document.addEventListener('livewire:init', registerLivewireHandlers);
+        }
+    })();
+
+    (function preventEnterFormSubmissions() {
+        if (window.eventFormEnterGuardInitialized) {
+            return;
+        }
+        window.eventFormEnterGuardInitialized = true;
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+
+            if (target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            if (target.closest('[data-allow-enter-submit]')) {
+                return;
+            }
+
+            const form = target.closest('form[data-prevent-enter-submit]');
+            if (!form) {
+                return;
+            }
+
+            const selector = 'input:not([type=\"button\"]):not([type=\"submit\"]):not([type=\"reset\"]), select, [contenteditable=\"true\"]';
+            if (!target.matches(selector)) {
+                return;
+            }
+
+            event.preventDefault();
+        });
+    })();
 </script>
+
+
+{{--// Flag to prevent 'beforeunload' on form submit--}}
+{{--let isSubmitting = false;--}}
+
+{{--// Add event listener for the form submit action--}}
+{{--document.querySelectorAll('form').forEach(function(form) {--}}
+{{--form.addEventListener('submit', function() {--}}
+{{--isSubmitting = true;--}}
+{{--});--}}
+{{--});--}}
+
+{{--// Trigger beforeunload when the user tries to leave the page (except on form submit)--}}
+{{--window.addEventListener('beforeunload', function(event) {--}}
+{{--if (!isSubmitting) { // Only show the warning if it's not a form submission--}}
+{{--const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";--}}
+{{--event.returnValue = confirmationMessage; // For most modern browsers--}}
+{{--return confirmationMessage; // For older browsers--}}
+{{--}--}}
+{{--});--}}

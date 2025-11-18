@@ -101,6 +101,7 @@ class Create extends Component
  */
     public array $category_ids = [];
     public string $categorySearch = '';
+    public string $categorySearchInput = '';
 
  /**
   * @var int[]
@@ -140,13 +141,13 @@ class Create extends Component
  */
     public string $organization_advisor_name = '';
 
-///**
-// * @var string
-// */
-//    public string $advisor_phone = '';
-
 /**
  * @var string
+ */
+    public string $organization_advisor_phone = '';
+
+/**
+ * @var string|null
  */
     public ?string $organization_advisor_email = '';
 
@@ -251,7 +252,7 @@ class Create extends Component
         $this->organization_id   = $organization['id']            ?? null;  // optional
         $this->organization_name = $organization['name']          ?? '';
         $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
-//        $this->advisor_phone     = $organization['advisor_phone'] ?? '';
+        $this->organization_advisor_phone     = $organization['advisor_phone'] ?? '';
         $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
     }
 
@@ -292,7 +293,7 @@ class Create extends Component
                 'organization_name' => ['required','string','max:255'],
                 'organization_id' => ['nullable','integer'],
                 'organization_advisor_name' => ['required','string','max:150'],
-//                'advisor_phone' => ['required','string','max:20'],
+                'organization_advisor_phone' => ['required','string','max:30'],
                 'organization_advisor_email' => ['required','email','max:150'],
                 'handles_food' => ['boolean'],
                 'external_guest' => ['boolean'],
@@ -633,6 +634,7 @@ public function removeRequirementFile(int $index): void
             'end_time' => $this->end_time,
             'organization_advisor_name' => $this->organization_advisor_name,
             'organization_advisor_email' => $this->organization_advisor_email,
+            'organization_advisor_phone' => $this->organization_advisor_phone,
             'handles_food' => $this->handles_food,
             'external_guest' => $this->external_guest,
             'use_institutional_funds' => $this->use_institutional_funds,
@@ -694,6 +696,8 @@ public function removeRequirementFile(int $index): void
 
 
         session()->flash('success', 'Event submitted successfully.');
+        $this->dispatch('event-form-submitted');
+
         redirect()->route('public.calendar'); // or to a details/thanks page
     }
 
@@ -708,6 +712,12 @@ public function removeRequirementFile(int $index): void
             $this->category_ids,
             fn ($id) => (int) $id !== (int) $categoryId
         ));
+    }
+
+    public function runCategorySearch(): void
+    {
+        $this->categorySearchInput = trim($this->categorySearchInput);
+        $this->categorySearch = $this->categorySearchInput;
     }
 
     /**
@@ -832,5 +842,16 @@ public function removeRequirementFile(int $index): void
         } catch (\Throwable $e) {
             return (string)$value;
         }
+    }
+
+    #[Computed]
+    public function shouldShowRequirementUploads(): bool
+    {
+        $hasVenueRequirements = !empty($this->requiredDocuments);
+
+        return $hasVenueRequirements
+            || (bool) $this->handles_food
+            || (bool) $this->use_institutional_funds
+            || (bool) $this->external_guest;
     }
 }

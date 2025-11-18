@@ -39,6 +39,7 @@ class AuthServiceProvider extends ServiceProvider
         // Pending Requests to Approve
         Gate::define('viewMyPendingRequests', [EventPolicy::class, 'viewMyPendingRequests']);
         Gate::define('manageMyPendingRequests', [EventPolicy::class, 'manageMyPendingRequests']);
+        Gate::define('downloadEventPdf', [EventPolicy::class, 'downloadEventPdf']);
 
         // History of Approval
         Gate::define('viewMyApprovalHistory', [EventHistoryPolicy::class, 'viewMyApprovalHistory']);
@@ -61,5 +62,6 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('perform-override', [AdminPolicy::class, 'performOverride']);
         Gate::define('manage-users', [AdminPolicy::class, 'manageUsers']);
         Gate::define('manage-venues', [AdminPolicy::class, 'manageVenues']);
+        Gate::define('manage-categories', [AdminPolicy::class, 'manageCategories']);
     }
 }

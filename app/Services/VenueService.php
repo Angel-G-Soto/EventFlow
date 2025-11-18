@@ -2,19 +2,24 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Event;
 use App\Models\UseRequirement;
 use App\Models\Venue;
 use App\Models\VenueAvailability;
+use App\Jobs\ProcessCsvFileUpload;
 use Carbon\Carbon;
 use DateTime;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use Illuminate\Support\Str;
 
 class VenueService
 {
@@ -131,12 +136,100 @@ class VenueService
                     }
                 }
             }
-            return $query->orderBy('name')->paginate(10);
+            return $query->orderBy('id', 'asc')->paginate(10);
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
             throw new Exception('Unable to fetch the venues.');
         }
+    }
+
+    /**
+     * Paginate venues with filtering and lightweight rows for the admin component.
+     *
+     * @param array<string,mixed> $filters
+     * @param int $perPage
+     * @param int $page
+     * @param array{field?:string|null,direction?:string|null}|null $sort
+     */
+    public function paginateVenueRows(array $filters = [], int $perPage = 10, int $page = 1, ?array $sort = null): LengthAwarePaginator
+    {
+        $query = Venue::query()
+            ->with(['department'])
+            ->whereNull('deleted_at');
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $query->where(function ($builder) use ($like) {
+                $builder->where('name', 'like', $like)
+                    ->orWhere('code', 'like', $like);
+            });
+        }
+
+        if (!empty($filters['department_name'])) {
+            $departmentName = (string)$filters['department_name'];
+            $query->whereHas('department', function ($deptQuery) use ($departmentName) {
+                $deptQuery->where('name', $departmentName);
+            });
+        }
+
+        if (isset($filters['cap_min']) && $filters['cap_min'] !== null && $filters['cap_min'] !== '') {
+            $query->where('capacity', '>=', (int)$filters['cap_min']);
+        }
+        if (isset($filters['cap_max']) && $filters['cap_max'] !== null && $filters['cap_max'] !== '') {
+            $query->where('capacity', '<=', (int)$filters['cap_max']);
+        }
+
+        $direction = strtolower($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+        $field = $sort['field'] ?? null;
+        if ($field === 'capacity') {
+            $query->orderBy('capacity', $direction);
+        } elseif ($field === 'name') {
+            $query->orderBy('name', $direction);
+        } else {
+            $query->orderBy('id', 'asc');
+        }
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page));
+        $paginator->setCollection(
+            $paginator->getCollection()->map(function (Venue $venue) {
+                return [
+                    'id' => (int)$venue->id,
+                    'name' => (string)$venue->name,
+                    'room' => (string)($venue->code ?? ''),
+                    'capacity' => (int)($venue->capacity ?? 0),
+                    'department' => (string)(optional($venue->department)->name ?? ''),
+                    'opening' => $venue->opening_time ? substr((string)$venue->opening_time, 0, 5) : null,
+                    'closing' => $venue->closing_time ? substr((string)$venue->closing_time, 0, 5) : null,
+                ];
+            })
+        );
+
+        return $paginator;
+    }
+
+    /**
+     * Distinct list of departments that currently own at least one active venue.
+     *
+     * @return array<int,string>
+     */
+    public function listVenueDepartments(): array
+    {
+        return Department::query()
+            ->whereNull('deleted_at')
+            ->whereHas('venues', function ($builder) {
+                $builder->whereNull('deleted_at');
+            })
+            ->pluck('name')
+            ->map(fn($name) => trim((string)$name))
+            ->filter(fn($name) => $name !== '')
+            ->unique(function ($name) {
+                return mb_strtolower($name);
+            })
+            ->sortBy(fn($name) => mb_strtolower($name))
+            ->values()
+            ->all();
     }
 
     /**
@@ -295,6 +388,47 @@ class VenueService
         return Venue::findOrFail($venue_id)->requirements;
     }
 
+    /**
+     * Store a CSV file for venue import and dispatch the background processing job.
+     *
+     * @param UploadedFile $file
+     * @param int $adminId
+     * @param array<string,mixed> $context
+     * @return string Safe filename used for import and status tracking.
+     */
+    public function queueCsvUpload(UploadedFile $file, int $adminId, array $context = []): string
+    {
+        if ($adminId <= 0) {
+            throw new InvalidArgumentException('Admin id must be greater than zero.');
+        }
+
+        $original = (string) ($file->getClientOriginalName() ?? 'venues.csv');
+        $ext = pathinfo($original, PATHINFO_EXTENSION) ?: 'csv';
+        $safe = 'venues_' . now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $ext;
+
+        try {
+            $rootPath = Storage::disk('uploads_temp')->path('');
+            if (!\is_dir($rootPath)) {
+                @\mkdir($rootPath, 0775, true);
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: Storage::path should normally create on put; continue
+        }
+
+        $file->storeAs('', $safe, 'uploads_temp');
+
+        if (empty($context) && function_exists('request') && request()) {
+            $context = [
+                'ip' => request()->ip(),
+                'ua' => request()->userAgent(),
+            ];
+        }
+
+        ProcessCsvFileUpload::dispatch($safe, $adminId, $context);
+
+        return $safe;
+    }
+
     /*
 
                                              ____ ___ ____  _____ ____ _____ ___  ____
@@ -334,8 +468,12 @@ class VenueService
 
             // CALL EVENT SERVICE METHOD // MOCK IT // reroutePendingVenueApprovals($venue->venue_id, $oldManagerId, $newManager->user_id);
 
-            // Assign to the manager the venue
-            $venue->manager()->associate($manager);
+            // Assign to the manager the venue when the schema supports it
+            $schema = $venue->getConnection()->getSchemaBuilder();
+            if ($schema->hasColumn($venue->getTable(), 'manager_id')) {
+                $venue->forceFill(['manager_id' => $manager->id]);
+                $venue->save();
+            }
 
             // Audit: director assigns manager to venue
             $directorLabel = $director->name ?? trim(((string)($director->first_name ?? '')) . ' ' . ((string)($director->last_name ?? '')));
@@ -471,6 +609,9 @@ class VenueService
                         throw new InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
                     }
                 }
+
+                $doc['hyperlink'] = $this->normalizeHyperlink((string) $doc['hyperlink']);
+                $trimmedData[$i] = $doc;
             }
 
             // Remove all requirements
@@ -659,8 +800,8 @@ class VenueService
         if ($admin) {
             $this->auditService->logAdminAction(
                 $admin->id,
-                'VENUE_UPDATED',
                 'venue',
+                'VENUE_UPDATED',
                 (string)$venue->id,
                 ['meta' => ['fields' => array_keys($data)]]
             );
@@ -713,17 +854,18 @@ class VenueService
      * @return Collection
      * @throws Exception
      */
-    public function updateOrCreateFromImportData(array $venueData, User $admin): Collection
+    public function updateOrCreateFromImportData(array $venueData, User $admin, array $context = []): Collection
     {
         try {
             // Iterate through the array
             $updatedVenues = new Collection();
 
+            $allowedImportExtras = ['department', 'department_code', 'department_code_raw', 'department_name_raw', 'availabilities'];
             foreach ($venueData as $venue) {
                 // Verify that the requirementsData structure is met
 
                 // Check for invalid keys
-                $invalidKeys = array_diff(array_keys($venue), new Venue()->getFillable(), ['department']);
+                $invalidKeys = array_diff(array_keys($venue), new Venue()->getFillable(), $allowedImportExtras);
                 if (!empty($invalidKeys)) {
                     throw new InvalidArgumentException(
                         'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
@@ -742,6 +884,13 @@ class VenueService
             }
 
             foreach ($venueData as $venue) {
+                $availabilityPayload = null;
+                if (array_key_exists('availabilities', $venue)) {
+                    if (!is_array($venue['availabilities'])) {
+                        throw new InvalidArgumentException('Availabilities must be listed as an array of entries.');
+                    }
+                    $availabilityPayload = $this->normalizeAvailabilityPayload($venue['availabilities']);
+                }
                 // Try to resolve department by code first, then by name
                 $deptCode = $venue['department_code'] ?? $venue['department_code_raw'] ?? null;
                 $deptNameOrCode = $venue['department'] ?? null;
@@ -776,7 +925,9 @@ class VenueService
 
                 $updatedVenues->add($venueModel);
 
-                if (
+                if ($availabilityPayload !== null) {
+                    $this->syncAvailabilityRecords($venueModel, $availabilityPayload);
+                } elseif (
                     $venueModel->wasRecentlyCreated
                     || !$venueModel->availabilities()->exists()
                 ) {
@@ -785,17 +936,22 @@ class VenueService
             }
 
             // Audit import action when admin context is available (auth-less supported)
+            $ctx = $context;
+            if (empty($ctx) && function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request());
+            }
             if ($admin) {
                 $this->auditService->logAdminAction(
                     $admin->id,
-                    'system-admin',
+                    'venue',
                     'VENUES_IMPORTED',
-                    'venues_import'
+                    'venues_import',
+                    $ctx
                 );
             }
 
-            // Return collection of updated values
-            return $updatedVenues;
+            // Return collection sorted by numeric id for deterministic ordering
+            return $updatedVenues->sortBy('id', SORT_NUMERIC)->values();
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -965,8 +1121,8 @@ class VenueService
                 if ($admin) {
                     $this->auditService->logAdminAction(
                         $admin->id,
-                        'VENUE_DEACTIVATED',
                         'venue',
+                        'VENUE_DEACTIVATED',
                         (string) $venue->id
                     );
                 }
@@ -976,5 +1132,23 @@ class VenueService
         } catch (\Throwable) {
             throw new Exception('Unable to remove the venues.');
         }
+    }
+
+    /**
+     * Guarantee hyperlinks include a scheme so browsers treat them as absolute URLs.
+     */
+    protected function normalizeHyperlink(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return $url;
+        }
+
+        $lower = Str::lower($url);
+        if (! Str::startsWith($lower, ['http://', 'https://'])) {
+            return 'https://' . ltrim($url, '/');
+        }
+
+        return $url;
     }
 }

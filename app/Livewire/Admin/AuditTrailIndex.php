@@ -2,10 +2,7 @@
 
 namespace App\Livewire\Admin;
 
-use App\Models\AuditTrail;
-use Carbon\CarbonImmutable;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -67,7 +64,14 @@ class AuditTrailIndex extends Component
       'userId'    => ['nullable', 'integer', 'min:1'],
       'action'    => ['nullable', 'string', 'max:100', 'not_regex:/^\s*$/'],
       'from'      => ['nullable', 'date_format:Y-m-d'],
-      'to'        => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+      'to'        => [
+        'nullable', 'date_format:Y-m-d', 'after_or_equal:from',
+        function ($attribute, $value, $fail) {
+          if (!empty($this->from) && !empty($value) && strtotime($value) < strtotime($this->from)) {
+            $fail('The end date must be after the start date.');
+          }
+        }
+      ],
       'adminOnly' => ['boolean'],
       'perPage'   => ['integer', 'in:10,25,50,100'],
       'detailsId' => ['nullable', 'integer', 'min:1'],
@@ -103,16 +107,6 @@ class AuditTrailIndex extends Component
   }
 
 
-  /**
-   * Close the details modal and clear state (optional helper, matches Venues pattern).
-   */
-  public function closeDetails(): void
-  {
-    $this->dispatch('bs:close', id: 'auditDetails');
-    $this->detailsId = null;
-    $this->details = [];
-  }
-
   private function mapAuditToDetails(object $log): array
   {
     // robust meta parsing
@@ -139,6 +133,7 @@ class AuditTrailIndex extends Component
       'target'   => $target,
 
       'ua'         => $log->user_agent ?? ($log->ua ?? '—'),
+      'ip'         => (string) ($log->ip ?? 'Unknown'),
       'created_at' => optional($log->created_at ?? null)->format('Y-m-d H:i:s')
         ?: (is_string($log->created_at ?? null) ? $log->created_at : ''),
 
@@ -148,22 +143,6 @@ class AuditTrailIndex extends Component
   }
 
   // Filtering helper
-  /**
-   * Apply all filters to the audit trail query.
-   */
-  public function filterAuditTrail($query)
-  {
-    if (!empty($this->searchTerm)) {
-      $query->where('action', 'like', '%' . $this->searchTerm . '%')
-        ->orWhere('user_name', 'like', '%' . $this->searchTerm . '%');
-    }
-
-    if (!empty($this->dateRange)) {
-      $query->whereBetween('created_at', $this->dateRange);
-    }
-
-    return $query;
-  }
 
   // Render
   /**
@@ -174,11 +153,23 @@ class AuditTrailIndex extends Component
 
       $this->authorize('access-dashboard');
 
-    $filters = [];
-    if ($this->userId)   $filters['user_id'] = (int)$this->userId;
-    if ($this->action)   $filters['action']  = $this->action;
-    if ($this->from)     $filters['date_from'] = $this->from;
-    if ($this->to)       $filters['date_to']   = $this->to;
+      try {
+        $this->validate();
+      } catch (\Throwable $e) {
+        // If validation fails, return an empty paginator with errors surfaced
+        $empty = collect();
+        $rows = new LengthAwarePaginator($empty, 0, $this->perPage, 1, [
+          'path' => request()->url(),
+          'query' => request()->query(),
+        ]);
+        return view('livewire.admin.audit-trail-index', compact('rows'));
+      }
+
+      $filters = [];
+      if ($this->userId)   $filters['user_id'] = (int)$this->userId;
+      if ($this->action)   $filters['action']  = $this->action;
+      if ($this->from)     $filters['date_from'] = $this->from;
+      if ($this->to)       $filters['date_to']   = $this->to;
     try {
       $rows = app(AuditService::class)->getPaginatedLogs($filters, $this->perPage);
     } catch (\Throwable $e) {
@@ -192,17 +183,4 @@ class AuditTrailIndex extends Component
     }
     return view('livewire.admin.audit-trail-index', compact('rows'));
   }
-
-  // Private/Protected Helper Methods
-  // Schema helpers
-  /**
-   * Resolve the primary key column name for the audit_trail table.
-   *
-   * @return string|null The column name if found, otherwise null.
-   */
-  private function resolveIdColumn(): ?string
-  {
-    return 'id';
-  }
-
 }

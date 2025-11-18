@@ -77,6 +77,29 @@ class EventPolicy
         };
     }
 
+    /**
+     * Determine whether the user can download a PDF summary for the event.
+     *
+     * Only the original requester or an approver role can download once the event is approved.
+     */
+    public function downloadEventPdf(User $user, Event $event): bool
+    {
+        if ($event->status !== 'approved') {
+            return false;
+        }
+
+        if ($user->id === $event->creator_id) {
+            return true;
+        }
+
+        $user->loadMissing('roles');
+
+        return $user->roles
+            ->pluck('name')
+            ->intersect(['advisor', 'venue-manager', 'event-approver'])
+            ->isNotEmpty();
+    }
+
     public function viewMyDocument(User $user, Event $event): bool
     {
         $isVenueManager = $user->roles->contains('name', 'venue-manager') &&
@@ -86,7 +109,7 @@ class EventPolicy
         $isDscaApprover = $user->roles->contains('name', 'event-approver');
 
         $isCreator = $user->id === $event->creator_id;
-        
+
 
         return $isVenueManager || $isAdvisor || $isDscaApprover || $isCreator;
     }

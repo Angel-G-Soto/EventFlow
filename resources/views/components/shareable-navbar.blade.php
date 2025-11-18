@@ -11,6 +11,7 @@ $isDirector = $roleNames->contains('department-director');
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark"
+  aria-label="Primary site navigation"
   style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
     <a class="navbar-brand fw-semibold" href="#">
@@ -46,13 +47,13 @@ $isDirector = $roleNames->contains('department-director');
 
     <div id="navMain" class="collapse navbar-collapse">
       <ul class="navbar-nav mr-auto">
+        @if($user)
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('public.calendar') ? 'active' : '' }}"
             href="{{ route('public.calendar') }}">
             Calendar
           </a>
         </li>
-        @if($user)
 
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('user.index') ? 'active' : '' }}"
@@ -101,7 +102,7 @@ $isDirector = $roleNames->contains('department-director');
 
         @if($isAdmin)
         <li class="nav-item dropdown">
-          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.categories') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
             href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Administrator
           </a>
@@ -112,6 +113,8 @@ $isDirector = $roleNames->contains('department-director');
                 href="{{ route('admin.departments') }}">Departments</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.venues') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.venues') }}">Venues</a></li>
+            <li><a class="dropdown-item {{ Route::is('admin.categories') ? 'active fw-bold bg-accent' : '' }}"
+                href="{{ route('admin.categories') }}">Categories</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.events') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.events') }}">Events</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.audit') ? 'active fw-bold bg-accent' : '' }}"
@@ -133,7 +136,8 @@ $isDirector = $roleNames->contains('department-director');
         </div>
         <div class="ms-auto ms-lg-0">
           @if(Auth::check())
-          <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0">
+          <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0"
+            aria-label="Log out form">
             @csrf
             <button class="btn p-2 d-flex align-items-center text-white fw-bold" type="button" title="Log out"
               aria-label="Log out" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
@@ -147,7 +151,7 @@ $isDirector = $roleNames->contains('department-director');
             message="Are you sure you want to log out?"
             formId="navbarLogoutForm" confirmLabel="Log out" />
           @else
-          <form method="GET" action="{{ route('saml.login') }}" class="m-0">
+          <form method="GET" action="{{ route('saml.login') }}" class="m-0" aria-label="Log in form">
             @csrf
             <button class="btn p-2 d-flex align-items-center text-white fw-bold" title="Log in" aria-label="Log in"
               style="border: none; outline: none; transition: all 0.3s ease;">

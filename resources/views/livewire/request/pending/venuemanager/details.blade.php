@@ -72,7 +72,7 @@
             Description: {{$event->description}}
             <br>
             <br>
-            Day Submitted: {{$event->created_at}}
+            Day Submitted: {{ optional($event->created_at)->format('D, M j, Y g:i A') }}
             <br>
             Event Start Time : {{$event->start_time}}
             <br>
@@ -112,15 +112,15 @@
 
         {{--Buttons--}}
         <div class="d-flex gap-2 mb-3 container-fluid">
-            <button type="button" wire:click="approve" class="btn btn-outline-success d-flex" wire:target="approve">
+            <button type="button" wire:click="approve" class="btn btn-success d-flex" wire:target="approve">
                 Approve
             </button>
 
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button" class="btn btn-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
                 Reject
             </button>
 
-            <button type="button" wire:click="back" class="btn btn-outline-secondary ms-auto"
+            <button type="button" wire:click="back" class="btn btn-secondary ms-auto"
                     wire:target="back">
                 Back
             </button>
@@ -150,7 +150,7 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button class="btn btn-outline-danger"
+                        <button class="btn btn-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">

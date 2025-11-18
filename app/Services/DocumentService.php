@@ -199,6 +199,21 @@ class DocumentService
         return Document::findOrFail($id);
     }
 
+    /**
+     * Attach documents to the provided event by updating event_id.
+     *
+     * @param array<int> $documentIds
+     */
+    public function assignDocumentsToEvent(array $documentIds, int $eventId): void
+    {
+        if (empty($documentIds)) {
+            return;
+        }
+
+        Document::whereIn('id', $documentIds)
+            ->update(['event_id' => $eventId]);
+    }
+
     /*private function safeTempDelete(string $tmpRelativePath): void
     {
         try {
