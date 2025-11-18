@@ -52,7 +52,7 @@ class ProcessFileUpload implements ShouldQueue
             }
 
             // Create scanning process
-            $scan = new Process([env('CLAMDSCAN_PATH'), $path]);
+            $scan = new Process([env('CLAMDSCAN_PATH'), '--fdpass', $path]);
 
             // Run process
             $scan->run();

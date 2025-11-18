@@ -107,11 +107,11 @@ class ProcessCsvFileUpload implements ShouldQueue
         $infected = false;
         $scanUnavailable = false;
 
-        try {
-            $scan = new Process(['clamdscan', $filePath]);
+//        try {
+            $scan = new Process([env('CLAMDSCAN_PATH'), '--fdpass', $filePath]);
             $scan->run();
             $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
-
+            dd($output);
             if (Str::contains($output, 'FOUND')) {
                 $infected = true;
             } elseif (!Str::contains($output, 'OK')) {
@@ -122,10 +122,10 @@ class ProcessCsvFileUpload implements ShouldQueue
                     'exit_code' => $scan->getExitCode(),
                 ]);
             }
-        } catch (\Throwable $e) {
-            $scanUnavailable = true;
-            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
-        }
+//        } catch (\Throwable $e) {
+//            $scanUnavailable = true;
+//            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
+//        }
 
         return [$filePath, $infected, $scanUnavailable];
     }
