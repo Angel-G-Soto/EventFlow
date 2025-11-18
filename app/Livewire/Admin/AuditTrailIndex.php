@@ -50,6 +50,14 @@ class AuditTrailIndex extends Component
     $this->resetPage();
   }
 
+  /**
+   * Navigate to a specific page number from the shared pagination partial.
+   */
+  public function goToPage(int $target): void
+  {
+    $this->page = max(1, $target);
+  }
+
   // Validation rules
   /**
    * Validation rules for filter and view state properties.
