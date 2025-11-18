@@ -31,19 +31,19 @@ class ApprovalRequiredEmail extends Mailable implements ShouldQueue
      *
      * @var array<string,mixed>
      */
-    public array $eventData;
+    public array $event;
 
     /**
      * Create a new message instance.
      *
-     * @param array<string,mixed> $eventData  Associative array with event information
+     * @param array<string,mixed> $event      Associative array with event information
      *                                        used by the Blade view. Common keys include
      *                                        `id`, `title`, `starts_at`, `ends_at`, `location`,
      *                                        and `requester_name`.
      */
-    public function __construct(array $eventData)
+    public function __construct(array $event)
     {
-        $this->eventData = $eventData;
+        $this->event = $event;
     }
 
     /**
@@ -53,7 +53,7 @@ class ApprovalRequiredEmail extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
-        $subjectTitle = $this->eventData['title'] ?? 'Event';
+        $subjectTitle = $this->event['title'] ?? 'Event';
 
         return new Envelope(
             subject: "Action Required: Approve {$subjectTitle}",
@@ -70,7 +70,8 @@ class ApprovalRequiredEmail extends Mailable implements ShouldQueue
         return new Content(
             view: 'mail.approval-required-email',
             with: [
-                'event' => $this->eventData,
+                'event' => $this->event,
+                'route' => route('approver.pending.request', ['event' => $this->event['id'] ?? 0]),
             ]
         );
     }

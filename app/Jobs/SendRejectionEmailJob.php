@@ -45,6 +45,12 @@ class SendRejectionEmailJob implements ShouldQueue
      */
     public string $justification;
 
+    public array $recipientEmails;
+
+    public string $creatorRoute;
+    public string $approverRoute;   
+
+
     /**
      * Create a new job instance.
      *
@@ -52,11 +58,16 @@ class SendRejectionEmailJob implements ShouldQueue
      * @param array<string,mixed> $eventData     Event metadata (id, title, dates, etc.).
      * @param string              $justification Reason the event was rejected.
      */
-    public function __construct(string $creatorEmail, array $eventData, string $justification)
+    public function __construct(string $creatorEmail, 
+    array $recipientEmails, array $eventData, 
+    string $justification,$creatorRoute, string $approverRoute)
     {
         $this->creatorEmail = $creatorEmail;
         $this->eventData = $eventData;
         $this->justification = $justification;
+        $this->recipientEmails = $recipientEmails;
+        $this->creatorRoute = $creatorRoute;
+        $this->approverRoute = $approverRoute;
     }
 
     /**
@@ -70,8 +81,15 @@ class SendRejectionEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Mail::to($this->creatorEmail)->send(
-            new RejectionEmail($this->eventData, $this->justification)
+        Mail::to($this->creatorEmail)
+            ->cc($this->recipientEmails)
+            ->send(new RejectionEmail($this->eventData, $this->justification, $this->creatorRoute)
         );
+
+        foreach ($this->recipientEmails as $recipient) {
+                Mail::to($recipient)
+                    ->send(new RejectionEmail($this->eventData, $this->justification, $this->approverRoute)); 
+        }
+
     }
 }

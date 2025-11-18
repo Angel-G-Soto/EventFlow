@@ -18,11 +18,15 @@
 namespace App\Livewire\Request\Pending;
 
 use App\Models\Event;
+use App\Services\EventHistoryService;
 use App\Services\EventService;
+use App\Services\NotificationService;
+use App\Services\UserService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Policies\EventPolicy;
+use Mockery\Matcher\Not;
 
 /**
  * Class Details
@@ -60,6 +64,7 @@ class Details extends Component
 
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
+
 
         app(EventService::class)->denyEvent($this->justification, $this->event, Auth::user());
 

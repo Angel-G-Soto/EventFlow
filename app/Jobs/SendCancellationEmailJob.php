@@ -45,6 +45,11 @@ class SendCancellationEmailJob implements ShouldQueue
      */
     public string $justification;
 
+    public string $creatorEmail;
+
+    public string $creatorRoute;
+    public string $approverRoute;
+
     /**
      * Create a new job instance.
      *
@@ -53,13 +58,19 @@ class SendCancellationEmailJob implements ShouldQueue
      * @param string              $justification   Reason for the cancellation.
      */
     public function __construct(
+        string $creatorEmail,
         array $recipientEmails,
         array $eventData,
-        string $justification
+        string $justification,
+        string $creatorRoute,
+        string $approverRoute
     ) {
+        $this->creatorEmail = $creatorEmail;
         $this->recipientEmails = $recipientEmails;
         $this->eventData = $eventData;
         $this->justification = $justification;
+        $this->creatorRoute = $creatorRoute;
+        $this->approverRoute = $approverRoute;
     }
 
     /**
@@ -73,10 +84,17 @@ class SendCancellationEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        foreach ($this->recipientEmails as $recipientEmail) {
-            Mail::to($recipientEmail)->send(
-                new CancellationEmail($this->eventData, $this->justification)
-            );
-        }
+        Mail::to($this->creatorEmail)
+            ->send(new CancellationEmail($this->eventData, 
+            $this->justification
+            , $this->creatorRoute));
+
+       foreach ($this->recipientEmails as $recipientEmail) {
+           Mail::to($recipientEmail)->send(
+               new CancellationEmail($this->eventData, 
+               $this->justification
+               , $this->approverRoute)
+           );
+       }
     }
 }
