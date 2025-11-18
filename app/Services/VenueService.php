@@ -797,32 +797,34 @@ class VenueService
             );
         }
 
-        if ($admin) {
-            $this->auditService->logAdminAction(
-                $admin->id,
-                'venue',
-                'VENUE_UPDATED',
-                (string)$venue->id,
-                ['meta' => ['fields' => array_keys($data)]]
-            );
-        }
-
-        // Update the venue with the filtered data
-        $venue = Venue::updateOrCreate(
+        // Update or create the venue with the filtered data
+        $venueModel = Venue::updateOrCreate(
             [
                 'id' => $venue->id
             ],
             $data
         );
 
-        if ($availabilityPayload !== null) {
-            $normalized = $this->normalizeAvailabilityPayload($availabilityPayload);
-            $this->syncAvailabilityRecords($venue, $normalized);
-        } elseif (!empty($legacyPayload)) {
-            $this->syncAvailabilityRecords($venue, $legacyPayload);
+        // Audit after persistence, distinguishing between create vs update
+        if ($admin) {
+            $action = $venueModel->wasRecentlyCreated ? 'VENUE_CREATED' : 'VENUE_UPDATED';
+            $this->auditService->logAdminAction(
+                $admin->id,
+                'venue',
+                $action,
+                (string)$venueModel->id,
+                ['meta' => ['fields' => array_keys($data)]]
+            );
         }
 
-        return $venue->load('availabilities');
+        if ($availabilityPayload !== null) {
+            $normalized = $this->normalizeAvailabilityPayload($availabilityPayload);
+            $this->syncAvailabilityRecords($venueModel, $normalized);
+        } elseif (!empty($legacyPayload)) {
+            $this->syncAvailabilityRecords($venueModel, $legacyPayload);
+        }
+
+        return $venueModel->load('availabilities');
         //}
         //catch (InvalidArgumentException $exception) {throw $exception;}
         //catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
@@ -893,6 +895,7 @@ class VenueService
                 }
                 // Try to resolve department by code first, then by name
                 $deptCode = $venue['department_code'] ?? $venue['department_code_raw'] ?? null;
+                $deptNameRaw = $venue['department_name_raw'] ?? null;
                 $deptNameOrCode = $venue['department'] ?? null;
                 $department = null;
                 if ($deptCode) {
@@ -905,23 +908,35 @@ class VenueService
                 if (!$department && $deptNameOrCode) {
                     $department = $this->departmentService->findByName($deptNameOrCode);
                 }
+                // Fallback: match by raw department name from CSV when available
+                if (!$department && $deptNameRaw) {
+                    $department = $this->departmentService->findByName($deptNameRaw);
+                }
                 if ($department == null) {
                     throw new ModelNotFoundException('Department [' . ($deptCode ?: $deptNameOrCode) . '] does not exist.');
                 }
-                $venueModel = Venue::updateOrCreate(
-                    [
-                        'name' => $venue['name'],
-                        'code' => $venue['code'],
-                    ],
-                    [
+
+                // Use venue code as the unique key: if a venue with this code
+                // exists, update all fields; otherwise, create a new one.
+                $venueModel = Venue::where('code', $venue['code'])->first();
+
+                if (!$venueModel) {
+                    $venueModel = Venue::create([
                         'name' => $venue['name'],
                         'code' => $venue['code'],
                         'department_id' => $department->id,
                         'features' => $venue['features'],
                         'capacity' => $venue['capacity'],
                         'test_capacity' => $venue['test_capacity'],
-                    ]
-                );
+                    ]);
+                } else {
+                    $venueModel->name = $venue['name'];
+                    $venueModel->department_id = $department->id;
+                    $venueModel->features = $venue['features'];
+                    $venueModel->capacity = $venue['capacity'];
+                    $venueModel->test_capacity = $venue['test_capacity'];
+                    $venueModel->save();
+                }
 
                 $updatedVenues->add($venueModel);
 

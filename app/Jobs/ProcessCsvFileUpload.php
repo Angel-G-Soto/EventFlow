@@ -196,10 +196,16 @@ class ProcessCsvFileUpload implements ShouldQueue
             try {
                 $byName = $deptSvc->findByName($dept['name']);
                 $byCode = $deptSvc->findByCode($dept['code']);
-                if (!$byName && !$byCode) {
+
+                if ($byName && !$byCode) {
+                    // Department exists by name but with a different code; update it to match CSV.
+                    $byName->code = $dept['code'];
+                    $byName->save();
+                } elseif (!$byName && !$byCode) {
+                    // Department does not exist at all; create it.
                     $deptSvc->updateOrCreateDepartment([
                         ['name' => $dept['name'], 'code' => $dept['code']],
-                    ], $adminUser);
+                    ]);
                 }
             } catch (\Throwable $e) {
                 Log::warning('Unable to ensure/update department during CSV import', [
@@ -235,8 +241,11 @@ class ProcessCsvFileUpload implements ShouldQueue
             $out[] = [
                 'name' => $name,
                 'code' => $code,
-                // Only pass department as code for lookup
+                // Department lookup fields
                 'department' => (string)($r['department_code_raw'] ?? ''),
+                'department_code' => (string)($r['department_code_raw'] ?? ''),
+                'department_code_raw' => (string)($r['department_code_raw'] ?? ''),
+                'department_name_raw' => (string)($r['department_name_raw'] ?? ''),
                 'features' => $ordered,
                 'capacity' => (int)($r['v_capacity'] ?? 0),
                 'test_capacity' => (int)($r['v_test_capacity'] ?? ($r['v_capacity'] ?? 0)),

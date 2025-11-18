@@ -3,18 +3,18 @@ use Illuminate\Support\Facades\Auth;
 $user = Auth::user();
 $roleNames = $user && method_exists($user, 'getRoleNames') ? $user->getRoleNames()->map(fn($r) =>
 Illuminate\Support\Str::slug($r)) : collect();
-$isAdmin = $roleNames->contains('system-admin') || $roleNames->contains('system-administrator');
+$isAdmin = $roleNames->contains('system-admin') || $roleNames->contains('system-administrator') ||
+$roleNames->contains('admin');
 $isAdvisor = $roleNames->contains('advisor');
 $isApprover = $roleNames->contains('event-approver');
 $isVenueManager = $roleNames->contains('venue-manager');
 $isDirector = $roleNames->contains('department-director');
 @endphp
 
-<nav class="navbar navbar-expand-lg navbar-dark"
-  aria-label="Primary site navigation"
+<nav class="navbar navbar-expand-lg navbar-dark" aria-label="Primary site navigation"
   style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
-    <a class="navbar-brand fw-semibold" href="#">
+    <a class="navbar-brand fw-semibold" href="https://eventflow.uprm.edu/">
       <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
       EventFlow</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
@@ -147,8 +147,7 @@ $isDirector = $roleNames->contains('department-director');
             </button>
           </form>
           {{-- Confirm logout modal --}}
-          <x-confirm-logout id="logoutConfirmModal" title="Confirm logout"
-            message="Are you sure you want to log out?"
+          <x-confirm-logout id="logoutConfirmModal" title="Confirm logout" message="Are you sure you want to log out?"
             formId="navbarLogoutForm" confirmLabel="Log out" />
           @else
           <form method="GET" action="{{ route('saml.login') }}" class="m-0" aria-label="Log in form">
