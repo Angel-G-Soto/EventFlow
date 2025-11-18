@@ -299,7 +299,12 @@ class UsersIndex extends Component
                 'required', 'string', 'min:2', 'max:255', 'regex:/^[A-Za-z\s\'\.-]+$/', 'not_regex:/^\s*$/',
             ],
             'editEmail'      => [
-                'required', 'email', 'regex:/@(uprm|upr)\.edu$/i', 'not_regex:/^\s*$/', 'unique:users,email,' . ($this->editId ?? 'NULL') . ',id',
+                'required',
+                'email',
+                // Allow dots and numbers (and common email characters) before the @, restricted to upr/uprm.edu domains
+                'regex:/^[a-z0-9.]+@(uprm|upr)\.edu$/i',
+                'not_regex:/^\s*$/',
+                'unique:users,email,' . ($this->editId ?? 'NULL') . ',id',
             ],
             'editRoles'      => [ 'required', 'array', 'min:1',                
             function ($attribute, $value, $fail) {
