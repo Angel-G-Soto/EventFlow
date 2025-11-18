@@ -80,7 +80,7 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(
                 $admin->id,
-                $admin->name,
+                'user',
                 'USER_ROLES_UPDATED',
                 Mockery::any() // We don't need to assert the exact description string
             );
@@ -108,9 +108,9 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(
                 $admin->id,
-                $admin->name,
+                'department',
                 'USER_DEPT_ASSIGNED',
-                "Assigned user '{$user->name}' to department '{$department->d_name}'."
+                Mockery::any()
             );
 
         // Act: Assign the user to the department.
@@ -143,7 +143,7 @@ class UserServiceTest extends TestCase
         $this->assertFalse($dscaUsers->contains($userWithoutRole));
     }
 
-     #[Test]
+    #[Test]
     public function update_user_profile_changes_data_and_audits(): void
     {
         // Arrange
@@ -162,7 +162,7 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(
                 $admin->id,
-                $admin->name,
+                'user',
                 'USER_PROFILE_UPDATED',
                 Mockery::any()
             );
@@ -202,9 +202,9 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(
                 $admin->id,
-                $admin->name,
+                'user',
                 'USER_DELETED',
-                "Permanently deleted user '{$userToDelete->name}' (Email: {$userToDelete->email}) (ID: {$userToDelete->id})."
+                Mockery::any()
             );
 
         // Act

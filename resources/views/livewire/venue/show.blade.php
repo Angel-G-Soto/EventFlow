@@ -50,7 +50,7 @@
         <a href="{{ route('venues.manage') }}"
            class="btn btn-secondary"
            onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
-            <i class="bi bi-arrow-left"></i> Back
+            Back
         </a>
 
 {{--        --}}{{-- Optional: link to your existing Configure screen for this venue --}}
@@ -77,14 +77,25 @@
             <dt class="col-sm-4">Capacity:</dt>
             <dd class="col-sm-8">{{ $venue->capacity ? number_format($venue->capacity) : '—' }}</dd>
 
-            <dt class="col-sm-4">Opening Time:</dt>
+            <dt class="col-sm-4">Description:</dt>
             <dd class="col-sm-8">
-                {{ $open ? \Carbon\Carbon::parse($open)->format('g:i A') : '—' }}
+                {{ $venue->description ? $venue->description : '—' }}
             </dd>
 
-            <dt class="col-sm-4">Closing Time:</dt>
+            <dt class="col-sm-4">Weekly Availability:</dt>
             <dd class="col-sm-8">
-                {{ $close ? \Carbon\Carbon::parse($close)->format('g:i A') : '—' }}
+                @if (!empty($schedule))
+                    <ul class="list-unstyled mb-0">
+                        @foreach ($schedule as $slot)
+                            <li class="d-flex justify-content-between border-bottom py-1">
+                                <span class="fw-semibold">{{ $slot['day'] }}</span>
+                                <span>{{ $slot['opens'] }} – {{ $slot['closes'] }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <span>—</span>
+                @endif
             </dd>
 
             <dt class="col-sm-4">Features:</dt>

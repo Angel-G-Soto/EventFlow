@@ -106,7 +106,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">
-                                    Action for record @if($selectedEmployee){{ $selectedEmployee->first_name.' '.$selectedEmployee->last_name }}@endif
+                                    Action for user: @if($selectedEmployee){{ $selectedEmployee->first_name.' '.$selectedEmployee->last_name }}@endif
                                 </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
@@ -118,7 +118,7 @@
                             </div>
 
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
                                 <button type="button"
                                         class="btn btn-danger"
                                         wire:click="removeManager"
@@ -154,7 +154,7 @@
                 <form wire:submit.prevent="addManager" novalidate>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email address</label>
+                            <label for="emailInput" class="form-label">Email address</label>
                             <input id="emailInput"
                                    type="email"
                                    class="form-control @error('email') is-invalid @enderror"
@@ -162,7 +162,7 @@
                                    wire:model.defer="email"
                                    required
                                    aria-describedby="emailHelp emailError" />
-                            <div id="emailHelp" class="form-text">Add email for new manager.</div>
+                            <div id="emailHelp" class="form-text visually-hidden">Add email for new manager.</div>
                             @error('email')
                             <div id="emailError" class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -176,7 +176,7 @@
                                    wire:model.defer="emailConfirmation"
                                    required
                                    aria-describedby="emailConfirmationHelp emailConfirmationError" />
-                            <div id="emailConfirmationHelp" class="form-text">Re-enter the email to confirm.</div>
+                            <div id="emailConfirmationHelp" class="form-text visually-hidden">Re-enter the email to confirm.</div>
                             @error('emailConfirmation')
                             <div id="emailConfirmationError" class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -184,10 +184,51 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
                         <button type="submit" class="btn btn-primary" wire:click="addManager">Save Email</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmManagerTransferModal" tabindex="-1" aria-labelledby="confirmManagerTransferModalLabel"
+         aria-hidden="true" wire:ignore.self data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="confirmManagerTransferModalLabel">Confirm reassignment</h1>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                            wire:click="cancelManagerTransfer"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        <strong>{{ $pendingManagerEmail ?: 'This user' }}</strong>
+                        currently belongs to
+                        <strong>{{ $pendingManagerDepartment ?: 'another department' }}</strong>.
+                    </p>
+                    <p class="mb-0">
+                        Continuing will reassign them to {{ $department->name ?? 'this department' }} and give them manager access here.
+                        Do you want to proceed?
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                            wire:click="cancelManagerTransfer">
+                        Back
+                    </button>
+                    <button type="button"
+                            class="btn btn-primary"
+                            wire:click="confirmManagerTransfer"
+                            wire:loading.attr="disabled">
+                        Reassign & Add Manager
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -211,4 +252,3 @@
             bootstrap.Modal.getOrCreateInstance(el).hide();
         });
     </script>
-

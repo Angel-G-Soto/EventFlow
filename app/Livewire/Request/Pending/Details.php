@@ -106,7 +106,10 @@ class Details extends Component
         $this->authorize('manageMyPendingRequests', $event);
 
         $eventService = app(EventService::class);
-        $event->loadMissing('categories:id,name');
+        $event->loadMissing([
+            'categories:id,name',
+            'venue:id,name,code,description',
+        ]);
         $docs = $eventService->getEventDocuments($event)->toArray();
         $conflicts = $eventService->conflictingEvents($event)->paginate(4);
 //        dd($conflicts);

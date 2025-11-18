@@ -62,10 +62,23 @@ return new class extends Migration {
             $table->string('features');
             $table->integer('capacity');
             $table->integer('test_capacity');
-            $table->time('opening_time')->default('00:00:00');
-            $table->time('closing_time')->default('23:59:59');
+            // $table->time('opening_time')->default('00:00:00');
+            // $table->time('closing_time')->default('23:59:59');
+            $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        Schema::create('venue_availabilities', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('venue_id')->constrained()->cascadeOnDelete();
+
+            $table->string('day'); // "Monday"
+
+            $table->time('opens_at');
+            $table->time('closes_at');
+
+            $table->timestamps();
         });
 
         Schema::create('use_requirements', function (Blueprint $table) {
@@ -88,6 +101,7 @@ return new class extends Migration {
             $table->string('organization_advisor_email')->nullable();
             $table->index('organization_advisor_email');
             $table->string('organization_advisor_name')->nullable();
+            $table->string('organization_advisor_phone')->nullable();
             $table->string('creator_institutional_number')->nullable();
             //$table->string('student_number')->nullable();
             $table->string('creator_phone_number')->nullable();

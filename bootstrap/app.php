@@ -29,7 +29,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
 
             '/auth/callback',
-
         ]);
         //
     })
@@ -40,5 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->call(function () {
             app(EventService::class)->markEventAsCompleted();
         })->dailyAt('00:00');
+
+        $schedule->exec('freshclam')->weeklyOn(6, '00:00');
     })
     ->create();

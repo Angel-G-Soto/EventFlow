@@ -3,7 +3,6 @@
 namespace App\Livewire\Admin;
 
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\EventFilters;
@@ -11,6 +10,7 @@ use App\Livewire\Traits\EventEditState;
 use App\Services\CategoryService;
 use App\Services\EventService;
 // Note: Admin views must use services only (no direct models). Venue lookups are avoided here.
+use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
@@ -18,41 +18,21 @@ use Illuminate\Support\Facades\Auth;
 #[Layout('layouts.app')]
 class EventsIndex extends Component
 {
+    // For category search in modal
+    public string $categorySearch = '';
+    // For displaying selected category labels
+    public array $selectedCategoryLabels = [];
+    // For filtered categories in modal
+    public array $filteredCategories = [];
     // Traits / shared state
     use EventFilters, EventEditState;
 
-    /**
-     * Backing store for generated requests displayed in oversight.
-     * Generated from EventFactory on mount and kept stable during the session.
-     *
-     * @var array<int,array<string,mixed>>
-     */
-    // Properties / backing stores
-    public array $requests = [];
     /**
      * Pool of category names generated from CategoryFactory (no DB).
      *
      * @var array<int,string>
      */
     public array $categoryPool = [];
-
-    // Accessors and Mutators
-    /**
-     * Organizations list from DB via service (distinct), no hardcoding.
-     *
-     * @return array<int,string>
-     */
-    public function getOrganizationsProperty(): array
-    {
-        try {
-            return app(EventService::class)
-                ->getDistinctOrganizations()
-                ->values()
-                ->all();
-        } catch (\Throwable $e) {
-            return [];
-        }
-    }
 
     /**
      * Status list from DB via service (distinct), no hardcoding.
@@ -63,7 +43,7 @@ class EventsIndex extends Component
     {
         try {
             return app(EventService::class)
-                ->getDistinctEventStatuses()
+                ->getFlowStatuses(true)
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
@@ -77,13 +57,58 @@ class EventsIndex extends Component
     // Lifecycle
     public function mount(): void
     {
-        // Load categories for the edit dropdown and validation rules via service
-        try {
-            $categories = app(CategoryService::class)->getAllCategories();
-            $this->categoryPool = $categories->pluck('name')->sort()->values()->all();
-        } catch (\Throwable $e) {
-            $this->categoryPool = [];
+        $this->refreshCategoryPool();
+        $this->filteredCategories = $this->getFilteredCategories();
+    }
+    public function updatedCategorySearch()
+    {
+        $this->filteredCategories = $this->getFilteredCategories();
+    }
+
+    public function updatedECategoryIds()
+    {
+        $this->updateSelectedCategoryLabels();
+    }
+
+    public function clearCategories()
+    {
+        $this->eCategoryIds = [];
+        $this->updateSelectedCategoryLabels();
+    }
+
+    protected function getFilteredCategories(): array
+    {
+        $categories = app(CategoryService::class)->getAllCategories();
+        $search = trim($this->categorySearch);
+        if ($search === '') {
+            return $categories->map(fn($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'description' => $cat->description ?? null,
+            ])->all();
         }
+        return $categories->filter(function ($cat) use ($search) {
+            return str_contains(strtolower($cat->name), strtolower($search));
+        })->map(fn($cat) => [
+            'id' => $cat->id,
+            'name' => $cat->name,
+            'description' => $cat->description ?? null,
+        ])->all();
+    }
+
+    protected function updateSelectedCategoryLabels(): void
+    {
+        $categories = app(CategoryService::class)->getAllCategories();
+        $this->selectedCategoryLabels = collect($categories)
+            ->whereIn('id', $this->eCategoryIds)
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    public function removeCategory($id)
+    {
+        $this->eCategoryIds = array_values(array_diff($this->eCategoryIds, [(int)$id]));
+        $this->updateSelectedCategoryLabels();
     }
 
     // Filters: search update reaction
@@ -111,6 +136,15 @@ class EventsIndex extends Component
      */
     public function applyDateRange(): void
     {
+        $this->validate([
+            'from' => ['nullable', 'string', 'date_format:Y-m-d\TH:i'],
+            'to' => [
+                'nullable',
+                'string',
+                'date_format:Y-m-d\TH:i',
+                'after_or_equal:from',
+            ],
+        ]);
         $this->page = 1;
     }
 
@@ -158,7 +192,10 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
-        $request = $this->filtered()->firstWhere('id', $id);
+        $this->resetErrorBag();
+        $this->resetValidation();
+
+        $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
         $this->dispatch('bs:open', id: 'oversightEdit');
@@ -173,9 +210,13 @@ class EventsIndex extends Component
     {
         $this->authorize('access-dashboard');
 
-        $request = $this->filtered()->firstWhere('id', $id);
+        $this->resetErrorBag();
+        $this->resetValidation();
+
+        $request = app(EventService::class)->getEventRowById($id);
         if (!$request) return;
         $this->fillEditFromRequest($request);
+        $this->loadViewDocuments((int)($request['id'] ?? 0));
         $this->dispatch('bs:open', id: 'oversightView');
     }
 
@@ -194,10 +235,20 @@ class EventsIndex extends Component
         $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
         $this->eVenue = $request['venue'];
         $this->eVenueId = (int)($request['venue_id'] ?? 0);
-        $this->eFrom = substr($request['from'], 0, 16);
-        $this->eTo   = substr($request['to'], 0, 16);
+        $this->eFrom = (string)($request['from_edit'] ?? $request['from'] ?? '');
+        $this->eTo   = (string)($request['to_edit'] ?? $request['to'] ?? '');
         $this->eAttendees = $request['attendees'] ?? 0;
         $this->eCategory  = $request['category'] ?? '';
+        // If categories are available as array/ids, set eCategoryIds
+        if (!empty($request['category_ids']) && is_array($request['category_ids'])) {
+            $this->eCategoryIds = $request['category_ids'];
+        } elseif (!empty($request['category_id'])) {
+            $this->eCategoryIds = [(int)$request['category_id']];
+        } else {
+            $this->eCategoryIds = [];
+        }
+        $this->updateSelectedCategoryLabels();
+        $this->eStatus    = (string)($request['status'] ?? '');
         // Policies
         $this->eHandlesFood = (bool)($request['handles_food'] ?? false);
         $this->eUseInstitutionalFunds = (bool)($request['use_institutional_funds'] ?? false);
@@ -207,6 +258,7 @@ class EventsIndex extends Component
         $this->eOrganization   = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
         $this->eAdvisorName    = $request['organization_advisor_name']  ?? '';
         $this->eAdvisorEmail   = $request['organization_advisor_email'] ?? '';
+        $this->eAdvisorPhone   = $request['organization_advisor_phone'] ?? '';
         // Map to DB-backed creator fields
         $this->eStudentNumber  = $request['creator_institutional_number'] ?? '';
         $this->eStudentPhone   = $request['creator_phone_number'] ?? '';
@@ -221,6 +273,9 @@ class EventsIndex extends Component
     public function save(): void
     {
         $this->authorize('perform-override');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         // Validate fields before asking for justification
         $this->validate($this->eventFieldRules());
@@ -260,21 +315,22 @@ class EventsIndex extends Component
                         'start_time'   => str_replace('T', ' ', (string)$this->eFrom),
                         'end_time'     => str_replace('T', ' ', (string)$this->eTo),
                         'status'       => (string)($event->status ?? 'approved'),
-                        'guests'       => (int)$this->eAttendees,
+                            'guest_size'   => (int)$this->eAttendees,
                         'organization_name' => (string)$this->eOrganization,
                         'organization_advisor_name'  => (string)$this->eAdvisorName,
                         'organization_advisor_email' => (string)$this->eAdvisorEmail,
+                        'organization_advisor_phone' => (string)$this->eAdvisorPhone,
                         'creator_institutional_number' => (string)$this->eStudentNumber,
                         'creator_phone_number'          => (string)$this->eStudentPhone,
                         'handles_food' => (bool)$this->eHandlesFood,
                         'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
-                        'external_guests' => (bool)$this->eExternalGuest,
+                            'external_guest' => (bool)$this->eExternalGuest,
                     ];
                     // Route edits through performManualOverride (service-only, no model access here)
                     $saved = $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
-                    // Sync category by name (if provided)
-                    if (trim((string)$this->eCategory) !== '') {
-                        try { $svc->syncEventCategoryByName($saved, (string)$this->eCategory); } catch (\Throwable) { /* noop */ }
+                    // Sync categories by IDs (multiselect)
+                    if (!empty($this->eCategoryIds)) {
+                        try { $svc->syncEventCategoriesByIds($saved, $this->eCategoryIds); } catch (\Throwable) { /* noop */ }
                     }
                 }
             } catch (\Throwable $e) {
@@ -297,6 +353,9 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $this->editId = isset($id) && is_int($id) ? $id : null;
         $this->actionType = 'delete';
         $this->dispatch('bs:open', id: 'oversightConfirm');
@@ -308,6 +367,9 @@ class EventsIndex extends Component
     public function proceedDelete(): void
     {
         $this->authorize('perform-override');
+
+        $this->resetErrorBag();
+        $this->resetValidation();
 
         $this->dispatch('bs:close', id: 'oversightConfirm');
         $this->dispatch('bs:open', id: 'oversightJustify');
@@ -358,6 +420,9 @@ class EventsIndex extends Component
         $this->authorize('perform-override');
 
         $this->actionType = 'approve';
+        $this->justification = '';
+        $this->resetErrorBag();
+        $this->resetValidation();
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
@@ -366,11 +431,14 @@ class EventsIndex extends Component
      *
      * This function is used to deny an event request that has been flagged for oversight.
      * It will open the justification modal with the action type set to 'deny', allowing the user to enter a justification for the denial.
-     */    public function deny(): void
+     */
+    public function deny(): void
     {
         $this->authorize('perform-override');
 
         $this->actionType = 'deny';
+        $this->resetErrorBag();
+        $this->resetValidation();
         $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
@@ -384,18 +452,14 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
+        $this->resetErrorBag();
+        $this->resetValidation();
+
         $this->actionType = 'advance';
         $this->advanceTo = '';
+        // First show confirmation; justification will be collected after confirm
         $this->dispatch('bs:open', id: 'oversightAdvance');
     }
-
-    /**
-     * Opens the justification modal with the action type set to 'reroute'.
-     *
-     * This function is used to re-route an event request that has been flagged for oversight.
-     * It will open the justification modal with the action type set to 'reroute', allowing the user to enter a justification for the re-routing.
-     */
-    // reroute removed
 
     // Confirm action flows
     /**
@@ -407,50 +471,25 @@ class EventsIndex extends Component
      */
     public function confirmAction(): void
     {
-        // Apply status change based on action type
+        // Apply status change via service (no hardcoded statuses)
         $toastMsg = null;
-        if ($this->editId && in_array($this->actionType, ['approve', 'deny', 'advance'], true)) {
-            $newStatus = match ($this->actionType) {
-                'approve' => 'Approved',
-                'deny'    => 'Denied',
-                'advance' => 'Pending',
-                default   => null,
-            };
-            if ($newStatus !== null) {
-                try {
-                    $svc = app(EventService::class);
-                    $event = $this->getEventFromServiceById((int)$this->editId);
-                    if ($event) {
-                        $venueId = (int)($event->venue_id ?? 0);
-                        $payload = [
-                            'venue_id'     => $venueId,
-                            'title'        => (string)($event->title ?? 'Untitled'),
-                            'description'  => (string)($event->description ?? ''),
-                            'start_time'   => (string)($event->start_time),
-                            'end_time'     => (string)($event->end_time),
-                            'status'       => mb_strtolower($newStatus) === 'denied' ? 'rejected' : strtolower($newStatus),
-                            'guests'       => (int)($event->guest_size ?? 0),
-                            'organization_name' => (string)($event->organization_name ?? ''),
-                            'organization_advisor_name'  => (string)($event->organization_advisor_name ?? ''),
-                            'organization_advisor_email' => (string)($event->organization_advisor_email ?? ''),
-                            'handles_food' => (bool)($event->handles_food ?? false),
-                            'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
-                            'external_guests' => (bool)($event->external_guest ?? false),
-                        ];
-                    $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), $this->actionType);
+        if ($this->editId && in_array($this->actionType, ['approve', 'deny'], true)) {
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    if ($this->actionType === 'approve') {
+                        $svc->approveEvent($event, Auth::user());
+                        $toastMsg = 'Event approved';
+                    } elseif ($this->actionType === 'deny') {
+                        $this->validateJustification();
+                        $svc->denyEvent((string)($this->justification ?? ''), $event, Auth::user());
+                        $toastMsg = 'Event denied';
                     }
-                } catch (\Throwable $e) {
-                    // ignore status update errors
                 }
+            } catch (\Throwable $e) {
+                // ignore service errors; UI will still close modals
             }
-
-            // More descriptive toast
-            $toastMsg = match ($this->actionType) {
-                'approve' => 'Event approved',
-                'deny'    => 'Event denied',
-                'advance' => ($this->advanceTo !== '' ? 'Advanced to ' . $this->advanceTo : 'Advanced'),
-                default   => null,
-            };
         }
         $this->dispatch('bs:close', id: 'oversightJustify');
         $this->dispatch('bs:close', id: 'oversightEdit');
@@ -470,7 +509,22 @@ class EventsIndex extends Component
             $this->confirmDelete();
             return;
         }
-        if (in_array($type, ['approve', 'deny', 'advance'], true)) {
+        if ($type === 'advance') {
+            $this->validateJustification();
+            try {
+                $svc = app(EventService::class);
+                $event = $this->getEventFromServiceById((int)$this->editId);
+                if ($event) {
+                    $svc->advanceEvent($event, Auth::user(), (string)($this->justification ?? ''));
+                }
+            } catch (\Throwable) { /* ignore */ }
+            $this->dispatch('bs:close', id: 'oversightJustify');
+            $this->dispatch('bs:close', id: 'oversightEdit');
+            $this->dispatch('toast', message: 'Advance completed');
+            $this->reset('actionType', 'justification');
+            return;
+        }
+        if (in_array($type, ['approve', 'deny'], true)) {
             $this->confirmAction();
             return;
         }
@@ -485,26 +539,9 @@ class EventsIndex extends Component
     {
         $this->authorize('perform-override');
 
-        $data = $this->validate([
-            'advanceTo' => ['required', 'string', 'min:2', 'max:120'],
-        ]);
-
-        if ($this->editId) {
-            foreach ($this->requests as &$request) {
-                if ((int)($request['id'] ?? 0) === (int)$this->editId) {
-                    $request['status']     = 'Pending';
-                    $request['updated']    = now()->format('Y-m-d H:i');
-                    $request['routed_to']  = (string)($data['advanceTo'] ?? $this->advanceTo);
-                    break;
-                }
-            }
-            unset($request);
-        }
-
+        // After confirm, move to justification modal
         $this->dispatch('bs:close', id: 'oversightAdvance');
-        $this->dispatch('bs:close', id: 'oversightEdit');
-        $this->dispatch('toast', message: 'Advanced to ' . $this->advanceTo);
-        $this->reset('actionType', 'advanceTo');
+        $this->dispatch('bs:open', id: 'oversightJustify');
     }
 
         // Reroute logic removed
@@ -514,9 +551,7 @@ class EventsIndex extends Component
      */
     public function goToPage(int $target): void
     {
-    $total = $this->filtered()->count();
-    $last  = max(1, (int) ceil($total / max(1, $this->pageSize)));
-    $this->page = max(1, min($target, $last));
+        $this->page = max(1, $target);
     }
 
     /**
@@ -524,7 +559,7 @@ class EventsIndex extends Component
      *
      * The page is re-paginated if the current page number is not the same as the paginator's current page number.
      * The visible IDs are obtained from the paginator.
-     * The view is rendered with the paginator, visible IDs, and organizations.
+     * The view is rendered with the paginator, visible IDs, statuses, and venues.
      *
      * @return \Illuminate\Contracts\View\View
      */
@@ -532,10 +567,10 @@ class EventsIndex extends Component
     {
         $this->authorize('access-dashboard');
 
-        $paginator = $this->paginated();
-        if ($this->page !== $paginator->currentPage()) {
-            $paginator = $this->paginated();
-        }
+        // Keep category options aligned with DB state
+        $categories = !empty($this->categoryPool) ? $this->categoryPool : $this->refreshCategoryPool();
+
+        $paginator = $this->eventsPaginator();
         $visibleIds = $paginator->pluck('id')->all();
         // Venue options for filter (disambiguate duplicate names)
         try {
@@ -547,9 +582,58 @@ class EventsIndex extends Component
             'rows' => $paginator,
             'visibleIds' => $visibleIds,
             'statuses' => $this->statuses,
-            'categories' => $this->categoryPool,
+            'categories' => $categories,
             'venues' => $venues,
         ]);
+    }
+
+    protected function eventsPaginator(): LengthAwarePaginator
+    {
+        $svc = app(EventService::class);
+        $venueValue = $this->venue;
+        $venueId = null;
+        $venueName = null;
+        if (is_int($venueValue) || (is_string($venueValue) && ctype_digit($venueValue))) {
+            $venueId = (int)$venueValue;
+        } elseif (is_string($venueValue) && trim($venueValue) !== '') {
+            $venueName = trim($venueValue);
+        }
+
+        $paginator = $svc->paginateEventRows(
+            [
+                'search' => $this->search,
+                'status' => $this->status,
+                'venue_id' => $venueId,
+                'venue_name' => $venueName,
+                'category' => $this->category,
+                'from' => $this->from,
+                'to' => $this->to,
+            ],
+            $this->pageSize,
+            $this->page
+        );
+
+        $last = max(1, (int)$paginator->lastPage());
+        if ($this->page > $last) {
+            $this->page = $last;
+            if ((int)$paginator->currentPage() !== $last) {
+                $paginator = $svc->paginateEventRows(
+                    [
+                        'search' => $this->search,
+                        'status' => $this->status,
+                        'venue_id' => $venueId,
+                        'venue_name' => $venueName,
+                        'category' => $this->category,
+                        'from' => $this->from,
+                        'to' => $this->to,
+                    ],
+                    $this->pageSize,
+                    $this->page
+                );
+            }
+        }
+
+        return $paginator;
     }
 
     // Presentation helpers
@@ -563,92 +647,10 @@ class EventsIndex extends Component
         if (str_contains($s, 'approve')) return 'text-bg-success';
         if (str_contains($s, 'deny') || str_contains($s, 'reject') || str_contains($s, 'cancel') || str_contains($s, 'withdraw')) return 'text-bg-danger';
         if (str_contains($s, 'pending')) return 'text-bg-primary';
-        return 'text-bg-secondary';
+        return 'text-bg-light';
     }
 
     // Private/Protected Helper Methods
-
-    protected function allRequests(): Collection
-    {
-        $this->authorize('perform-override');
-
-        // Query live data from DB and normalize for the view
-        $raw = $this->fetchEventsCollection();
-        $rows = $raw
-            ->map(function ($e) {
-                $from = $e->start_time instanceof DateTimeInterface ? $e->start_time->format('Y-m-d H:i') : (string)$e->start_time;
-                $to   = $e->end_time   instanceof DateTimeInterface ? $e->end_time->format('Y-m-d H:i')   : (string)$e->end_time;
-                $requestor = method_exists($e, 'requester') && $e->requester ? trim(($e->requester->first_name ?? '') . ' ' . ($e->requester->last_name ?? '')) : ('User ' . (string)($e->creator_id ?? ''));
-                $venueName = method_exists($e, 'venue') && $e->venue ? ($e->venue->name ?? $e->venue->code ?? '') : '';
-                $category  = method_exists($e, 'categories') && $e->categories?->first()?->name ? $e->categories->first()->name : '';
-                return [
-                    'id' => (int)$e->id,
-                    'title' => (string)($e->title ?? 'Untitled'),
-                    'requestor' => $requestor,
-                    'organization' => (string)($e->organization_name ?? ''),
-                    'organization_advisor_name' => (string)($e->organization_advisor_name ?? ''),
-                    'organization_advisor_email' => (string)($e->organization_advisor_email ?? ''),
-                    'venue' => (string)$venueName,
-                    'venue_id' => (int)($e->venue_id ?? 0),
-                    'from' => (string)$from,
-                    'to' => (string)$to,
-                    'status' => (string)($e->status ?? ''),
-                    'category' => (string)$category,
-                    'updated' => now()->format('Y-m-d H:i'),
-                    'description' => (string)($e->description ?? ''),
-                    'attendees' => (int)($e->guest_size ?? 0),
-                    'handles_food' => (bool)($e->handles_food ?? false),
-                    'use_institutional_funds' => (bool)($e->use_institutional_funds ?? false),
-                    'external_guest' => (bool)($e->external_guest ?? false),
-                    'creator_institutional_number' => (string)($e->creator_institutional_number ?? ''),
-                    'creator_phone_number'  => (string)($e->creator_phone_number ?? ''),
-                ];
-            });
-        return collect($rows);
-    }
-
-    /**
-     * Applies filters to the collection of all event requests (excluding soft-deleted).
-     */
-    protected function filtered(): Collection
-    {
-        $s = mb_strtolower(trim($this->search));
-        return $this->allRequests()->filter(function ($request) use ($s) {
-            $orgVal = $request['organization'] ?? ($request['organization_nexo_name'] ?? '');
-            $hit = $s === '' ||
-                str_contains(mb_strtolower($request['title']), $s) ||
-                str_contains(mb_strtolower($request['requestor']), $s) ||
-                str_contains(mb_strtolower((string)$orgVal), $s);
-            $statOk  = $this->status === '' || $request['status'] === $this->status;
-            // Venue filter: support either venue id (int) or venue name (string)
-            $venueOk = true;
-            if (!is_null($this->venue) && $this->venue !== '') {
-                if (is_int($this->venue) || (is_string($this->venue) && ctype_digit($this->venue))) {
-                    $venueOk = (int)($request['venue_id'] ?? 0) === (int)$this->venue;
-                } else {
-                    $venueOk = (string)$request['venue'] === (string)$this->venue;
-                }
-            }
-            $catOk   = $this->category === '' || $request['category'] === $this->category;
-            // Organization is part of free-text search; org filter disabled
-            $orgOk   = true;
-
-            // Normalize date comparisons to timestamps
-            $dateOk = true;
-            $reqFromTs = strtotime(str_replace('T', ' ', (string)($request['from'] ?? '')));
-            $reqToTs   = strtotime(str_replace('T', ' ', (string)($request['to']   ?? '')));
-            $fromTs = $this->from ? strtotime(str_replace('T', ' ', (string)$this->from)) : null;
-            $toTs   = $this->to   ? strtotime(str_replace('T', ' ', (string)$this->to))   : null;
-            if ($fromTs) {
-                $dateOk = $dateOk && ($reqFromTs !== false && $reqFromTs >= $fromTs);
-            }
-            if ($toTs) {
-                $dateOk = $dateOk && ($reqToTs   !== false && $reqToTs   <= $toTs);
-            }
-
-            return $hit && $statOk && $venueOk && $dateOk && $catOk && $orgOk;
-        })->values();
-    }
 
     /**
      * Validation rules for all editable event fields.
@@ -657,21 +659,53 @@ class EventsIndex extends Component
      */
     protected function eventFieldRules(): array
     {
+        if (empty($this->categoryPool)) {
+            $this->refreshCategoryPool();
+        }
+        $today = now()->format('Y-m-d H:i');
         return [
             'eTitle' => ['required', 'string', 'min:3', 'max:120', 'not_regex:/^\s*$/'],
             'ePurpose' => ['required', 'string', 'min:3', 'max:2000', 'not_regex:/^\s*$/'],
             'eVenueId' => ['required', 'integer', 'min:1'],
-            'eFrom' => ['required', 'string'], // validated as date in datesInOrder()
-            'eTo' => ['required', 'string'],   // validated as date in datesInOrder()
-            'eAttendees' => ['required', 'integer', 'min:1', 'max:50000'],
-            'eCategory' => ['required', 'string', Rule::in($this->categoryPool)],
+            'eFrom' => [
+                'required', 'string',
+                function ($attribute, $value, $fail) use ($today) {
+                    if (strtotime($value) < strtotime($today)) {
+                        $fail('Start date/time cannot be in the past.');
+                    }
+                }
+            ],
+            'eTo' => [
+                'required', 'string',
+                function ($attribute, $value, $fail) use ($today) {
+                    if (strtotime($value) < strtotime($today)) {
+                        $fail('End date/time cannot be in the past.');
+                    }
+                }
+            ],
+            'eAttendees' => [
+                'required', 'integer', 'min:1', 'max:50000',
+                function ($attribute, $value, $fail) {
+                    if ($value > 10000) {
+                        $fail('Attendee count seems unusually high.');
+                    }
+                }
+            ],
+            'eCategoryIds' => [
+                'required', 'array', 'min:1',
+                function ($attribute, $value, $fail) {
+                    if (empty($this->categoryPool)) {
+                        $fail('No categories are available. Please contact an administrator.');
+                    }
+                }
+            ],
             'eHandlesFood' => ['boolean'],
             'eUseInstitutionalFunds' => ['boolean'],
             'eExternalGuest' => ['boolean'],
             'eOrganization' => ['required', 'string', 'min:2', 'max:120', 'not_regex:/^\s*$/'],
             'eAdvisorName' => ['nullable', 'string', 'max:120'],
             'eAdvisorEmail' => ['nullable', 'email', 'max:120'],
-            // Advisor phone removed; no backing column in schema
+            'eAdvisorPhone' => ['nullable', 'string', 'max:30'],
             'eStudentNumber' => ['nullable', 'string', 'max:50'],
             'eStudentPhone' => ['nullable', 'string', 'max:50'],
         ];
@@ -688,16 +722,6 @@ class EventsIndex extends Component
         $st = strtotime($to);
         if ($sf === false || $st === false) return false;
         return $st >= $sf;
-    }
-
-    /**
-     * Paginates the filtered collection of event requests.
-     */
-    protected function paginated(): LengthAwarePaginator
-    {
-        $data = $this->filtered();
-        $items = $data->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values();
-        return new LengthAwarePaginator($items, $data->count(), $this->pageSize, $this->page, ['path' => request()->url(), 'query' => request()->query()]);
     }
 
     /**
@@ -721,28 +745,61 @@ class EventsIndex extends Component
     /**
      * Fetch events via EventService without relying on undefined methods.
      */
-    protected function fetchEventsCollection(): Collection
+    protected function getEventFromServiceById(int $id)
     {
+        if (!isset($id) || $id <= 0) return null;
         try {
-            $res = app(EventService::class)->getAllEvents([]);
-            if ($res instanceof LengthAwarePaginator) {
-                return collect($res->items());
-            }
-            if (is_iterable($res)) return collect($res);
-        } catch (\Throwable $e) { /* ignore */
+            return app(EventService::class)->findEventById($id);
+        } catch (\Throwable $e) {
+            return null;
         }
-        return collect();
+    }
+
+
+    protected function loadViewDocuments(int $eventId): void
+    {
+        $this->eDocuments = [];
+        $previousStatus = $this->eStatus;
+        try {
+            $event = app(EventService::class)->findEventById($eventId);
+            if (!$event) {
+                $this->eStatus = $previousStatus;
+                return;
+            }
+            $this->eStatus = (string)($event->status ?? $previousStatus);
+            $documents = collect($event->documents ?? []);
+            $this->eDocuments = $documents
+                ->map(function ($doc) {
+                    $name = (string)($doc->name ?? '');
+                    $path = (string)($doc->file_path ?? '');
+                    $label = basename($path ?: $name ?: ('document-' . ($doc->id ?? '')));
+                    $url = $name !== '' ? route('documents.show', ['name' => $name]) : null;
+                    return compact('name', 'label', 'url');
+                })
+                ->filter(fn($doc) => trim((string)($doc['name'] ?? '')) !== '')
+                ->values()
+                ->all();
+        } catch (\Throwable $exception) {
+            $this->eStatus = $previousStatus;
+            $this->eDocuments = [];
+        }
     }
 
     /**
-     * Resolve a single event by id using the service response only.
+     * Refresh categories from the database for oversight UI and validation.
+     *
+     * @return array<int,string>
      */
-    protected function getEventFromServiceById(int $id)
+    protected function refreshCategoryPool(): array
     {
-    if (!isset($id) || $id <= 0) return null;
-    $list = $this->fetchEventsCollection();
-    return $list->firstWhere('id', $id) ?? null;
-    }
+        try {
+            $categories = app(CategoryService::class)->getAllCategories();
+            $this->categoryPool = $categories->pluck('name')->sort()->values()->all();
+        } catch (\Throwable $e) {
+            $this->categoryPool = [];
+        }
 
+        return $this->categoryPool;
+    }
 
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class UseRequirement extends Model
 {
@@ -44,5 +45,27 @@ class UseRequirement extends Model
     public function venue(): BelongsTo
     {
         return $this->belongsTo(Venue::class);
+    }
+
+    /**
+     * Always return hyperlinks with an explicit http(s) scheme.
+     */
+    public function getHyperlinkAttribute($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return $value;
+        }
+
+        $lower = Str::lower($value);
+        if (! Str::startsWith($lower, ['http://', 'https://'])) {
+            return 'https://' . ltrim($value, '/');
+        }
+
+        return $value;
     }
 }

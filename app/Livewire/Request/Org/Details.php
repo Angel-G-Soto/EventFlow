@@ -18,6 +18,7 @@
 namespace App\Livewire\Request\Org;
 
 use App\Models\Event;
+use App\Services\EventRequestPdfDownloadService;
 use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -76,6 +77,16 @@ class Details extends Component
     {
         $this->redirectRoute('user.index');
     }
+
+/**
+ * Trigger the PDF export for the approved request.
+ * @return \Symfony\Component\HttpFoundation\Response
+ */
+
+    public function downloadSummary(EventRequestPdfDownloadService $pdfDownloadService)
+    {
+        return $pdfDownloadService->download($this->event);
+    }
 /**
  * Render the venue details Blade view.
  * @return \Illuminate\Contracts\View\View
@@ -89,7 +100,10 @@ class Details extends Component
         $eventService = app(EventService::class);
         $event = $this->event;
         $docs = $eventService->getEventDocuments($event)->toArray();
-        $event->loadMissing('categories:id,name');
+        $event->loadMissing([
+            'categories:id,name',
+            'venue:id,name,code,description',
+        ]);
         return view('livewire.request.org.details', [
             'docs' => $docs,
         ]);

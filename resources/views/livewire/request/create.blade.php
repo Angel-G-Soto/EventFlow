@@ -40,7 +40,40 @@
     @csrf
 
     {{-- Step pills --}}
-    <ul class="nav nav-pills mb-4">
+    <style>
+        .request-step-nav .nav-link {
+            font-weight: 600;
+            border: none;
+            color: #0a214a;
+            background-color: transparent;
+        }
+
+        .request-step-nav .nav-link:not(.active) {
+            background-color: transparent;
+        }
+
+        .request-step-nav .nav-link:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(10, 33, 74, 0.35);
+        }
+
+        .request-step-nav .nav-link.active {
+            background-color: #0a214a;
+            color: #fff;
+        }
+
+        .event-form-link-btn {
+            color: #1557b0;
+            text-decoration: none;
+        }
+
+        .event-form-link-btn:hover,
+        .event-form-link-btn:focus-visible {
+            color: #0d3f7a;
+            text-decoration: underline;
+        }
+    </style>
+    <ul class="nav nav-pills mb-4 request-step-nav" aria-label="Event creation steps">
         <li class="nav-item"><span class="nav-link {{ $step === 1 ? 'active' : '' }}">1. Event</span></li>
         <li class="nav-item"><span class="nav-link {{ $step === 2 ? 'active' : '' }}">2. Venue</span></li>
         <li class="nav-item"><span class="nav-link {{ $step === 3 ? 'active' : '' }}">3. Documents</span></li>
@@ -48,12 +81,13 @@
     {{-- STEP 1 --}}
     @if ($step === 1)
 
+        <h2 id="eventRequestStep1Heading" class="visually-hidden">Event details</h2>
         <p class="text-muted small">
             <span class="text-danger" aria-hidden="true">*</span>
             <span class="visually-hidden">required</span>
             Fields marked with an asterisk are required.
         </p>
-        <form wire:submit.prevent="next">
+        <form wire:submit.prevent="next" data-prevent-enter-submit aria-labelledby="eventRequestStep1Heading">
 
             <div class="row g-3">
                 <div class="col-md-4">
@@ -78,8 +112,9 @@
                 </div>
 
                 <div class="col-md-12">
-                    <label class="form-label">Number of Guests</label>
+                    <label class="form-label required">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
+                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
 
                 </div>
 
@@ -98,7 +133,7 @@
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-baseline">
                         <label class="form-label">Event Categories</label>
-                        <button type="button" class="btn btn-link btn-sm p-0" wire:click="clearCategories" @disabled(empty($category_ids))>
+                        <button type="button" class="btn btn-link btn-sm p-0 event-form-link-btn" wire:click="clearCategories" @disabled(empty($category_ids))>
                             Clear selection
                         </button>
                     </div>
@@ -106,15 +141,35 @@
                     <div class="card border shadow-sm">
                         <div class="card-body">
                             <div class="row g-2 align-items-center mb-3">
-                                <div class="col-md-8">
-                                    <input
-                                        type="search"
-                                        class="form-control"
-                                        placeholder="Search categories (e.g., Workshop, Fundraiser)"
-                                        wire:model.debounce.300ms="categorySearch"
-                                    >
+                                <div class="col-md-8 col-lg-9">
+                                    <div class="input-group">
+                                        <input
+                                            type="search"
+                                            class="form-control"
+                                            placeholder="Search categories (e.g., Workshop, Fundraiser)"
+                                            wire:model.defer="categorySearchInput"
+                                            wire:keydown.enter.prevent="runCategorySearch"
+                                            data-allow-enter-submit="true"
+                                        >
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary"
+                                            wire:click="runCategorySearch"
+                                            wire:loading.attr="disabled"
+                                            wire:target="runCategorySearch"
+                                        >
+                                            <span
+                                                wire:loading
+                                                wire:target="runCategorySearch"
+                                                class="spinner-border spinner-border-sm me-1"
+                                                role="status"
+                                                aria-hidden="true"
+                                            ></span>
+                                            Search
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-md-end">
+                                <div class="col-md-4 col-lg-3 text-md-end">
                                     <small class="text-muted">
                                         {{ count($category_ids) }} selected
                                     </small>
@@ -164,6 +219,7 @@
                             </div>
                         </div>
                     </div>
+                    @error('category_ids') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                 </div>
 
                 <label class="form-label">General Requirements</label>
@@ -174,10 +230,11 @@
                         type="checkbox"
                         class="form-check-input"
                         wire:model.live="handles_food"
-                        aria-describedby="handles_food"
+                        aria-describedby="handles_food_help"
                     >
                     <label class="form-check-label" for="handles_food">This event is to sell food</label>
-                    <div id="handles_food" class="form-text"></div>
+                    <div id="handles_food_help" class="form-text">Select if you'll serve or sell food so we can
+                        request the proper permits.</div>
                 </div>
 
                 {{-- Check box for institutional funds --}}
@@ -190,7 +247,8 @@
                         aria-describedby="hasFunds"
                     >
                     <label class="form-check-label" for="has_funds">This event uses institutional funds</label>
-                    <div id="hasFunds" class="form-text"></div>
+                    <div id="hasFunds" class="form-text">Choose this if institutional or university funds will cover
+                        the request.</div>
                 </div>
 
                 {{-- Check box for external guest --}}
@@ -203,23 +261,36 @@
                         aria-describedby="externalGuest"
                     >
                     <label class="form-check-label" for="external_guest">This event has an external guest</label>
+                    <div id="externalGuest" class="form-text">Let us know if you'll host speakers or guests from
+                        outside the institution.</div>
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
-                    <input wire:model.defer="organization_name"   type="text" class="form-control" value="{{ $organization_name }}" {{--disabled--}} placeholder="Organization name">
+                    <input type="text" class="form-control" value="{{ $organization_name }}"
+                           disabled placeholder="Organization name">
+                    @error('organization_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" {{--wire:model.defer="organization_advisor_name"--}} disabled placeholder="Enter advisor's name">
+                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" wire:model.defer="organization_advisor_name"
+                    disabled placeholder="Enter advisor's name">
                     @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" {{--wire:model.defer="organization_advisor_email"--}}  disabled placeholder="Enter advisor's email">
+                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" wire:model.defer="organization_advisor_email"
+{{--                    disabled --}}
+                           placeholder="Enter advisor's email"
+                    >
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">Advisor phone</label>
+                    <input type="text" class="form-control" wire:model.defer="organization_advisor_phone" placeholder="Enter advisor's phone number">
+                    @error('organization_advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
@@ -231,7 +302,8 @@
 
     @if ($step === 2)
 
-        <form wire:submit.prevent="next">
+        <h2 id="eventRequestStep2Heading" class="visually-hidden">Venue selection</h2>
+        <form wire:submit.prevent="next" data-prevent-enter-submit aria-labelledby="eventRequestStep2Heading">
             <div class="mb-3">
                 <div class="form-text">
                     Showing venues available between
@@ -247,29 +319,76 @@
             @endif
 
 
-            <div class="mb-3">
-                <label for="venueCodeSearch" class="form-label">Search by venue code</label>
-                <input id="venueCodeSearch"
-                       type="text"
-                       class="form-control"
-                       placeholder="e.g., 1098"
-                       wire:model.live.debounce.300ms="venueCodeSearch"
-                       wire:keydown.enter.prevent />
-                <div class="form-text">Type a venue code to filter the list below.</div>
+            <div class="card shadow-sm mb-3">
+                <div class="card-body" wire:keydown.enter.prevent="runVenueSearch">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5 col-lg-4">
+                            <label for="venueSearch" class="form-label">Search by name or code</label>
+                            <input id="venueSearch"
+                                   type="text"
+                                   class="form-control"
+                                   placeholder="e.g., SALON DE CLASES or AE-102"
+                                   wire:model.defer="venueSearch">
+                        </div>
+                        <div class="col-md-3 col-lg-2">
+                            <label for="venueCapacityFilter" class="form-label">Minimum capacity</label>
+                            <input id="venueCapacityFilter"
+                                   type="number"
+                                   min="0"
+                                   class="form-control"
+                                   placeholder="50"
+                                   wire:model.defer="venueCapacityFilter">
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="venueDepartmentFilter" class="form-label">Department</label>
+                            <select id="venueDepartmentFilter"
+                                    class="form-select"
+                                    wire:model.defer="venueDepartmentFilter">
+                                <option value="">All departments</option>
+                                @foreach($departments as $department)
+                                    <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-primary flex-fill"
+                                wire:click="runVenueSearch"
+                                wire:loading.attr="disabled"
+                                wire:target="runVenueSearch">
+                                @if ($loadingVenues)
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                @endif
+                                Search
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary flex-fill"
+                                wire:click="resetVenueFilters"
+                                wire:loading.attr="disabled"
+                                wire:target="resetVenueFilters">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability query.</div>
+                </div>
             </div>
 
             <div class="table-responsive mb-2">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle shadow-sm">
                     <thead class="table-light">
                     <tr>
                         <th scope="col" style="width:56px">Select</th>
                         <th scope="col">Code</th>
                         <th scope="col">Name</th>
                         <th scope="col" class="text-end">Capacity</th>
+                        <th scope="col" class="text-center" style="width:120px">Details</th>
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse ($this->filteredVenues as $v)
+                    @forelse ($this->paginatedVenues as $v)
                         <tr wire:key="venue-row-{{ $v['id'] }}"
                             class="{{ (int)$venue_id === (int)($v['id'] ?? 0) ? 'table-primary' : '' }}"
                             style="cursor:pointer"
@@ -284,21 +403,72 @@
                             <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
                             <td>{{ $v['name'] ?? '—' }}</td>
                             <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
+                            <td class="text-center">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-primary"
+                                    wire:click.stop="showVenueDescription({{ $v['id'] }})"
+                                >
+                                    View
+                                </button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">No venues match the current filter.</td>
+                            <td colspan="5" class="text-center text-muted py-4">No venues match the current filter.</td>
                         </tr>
                     @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2">
+                <div class="text-muted small">
+                    @if ($this->venuePagination['total'] > 0)
+                        Showing {{ $this->venuePagination['from'] }}–{{ $this->venuePagination['to'] }}
+                        of {{ $this->venuePagination['total'] }} venues
+                    @else
+                        No venues to display.
+                    @endif
+                </div>
+                @if ($this->venuePagination['last'] > 1)
+                    <nav aria-label="Venues pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item {{ $this->venuePagination['current'] === 1 ? 'disabled' : '' }}">
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="previousVenuePage"
+                                    @disabled($this->venuePagination['current'] === 1)
+                                >&laquo;</button>
+                            </li>
+                            @foreach (range(1, $this->venuePagination['last']) as $page)
+                                <li class="page-item {{ $page === $this->venuePagination['current'] ? 'active' : '' }}">
+                                    <button
+                                        type="button"
+                                        class="page-link"
+                                        wire:click="goToVenuePage({{ $page }})"
+                                        @disabled($page === $this->venuePagination['current'])
+                                    >{{ $page }}</button>
+                                </li>
+                            @endforeach
+                            <li class="page-item {{ $this->venuePagination['current'] === $this->venuePagination['last'] ? 'disabled' : '' }}">
+                                <button
+                                    type="button"
+                                    class="page-link"
+                                    wire:click="nextVenuePage"
+                                    @disabled($this->venuePagination['current'] === $this->venuePagination['last'])
+                                >&raquo;</button>
+                            </li>
+                        </ul>
+                    </nav>
+                @endif
             </div>
             @error('venue_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
                 <button
                     type="submit"
                     class="btn btn-primary"
@@ -309,10 +479,60 @@
             </div>
         </form>
     @endif
+    @if ($showVenueDescriptionModal && $selectedVenueDetails)
+        <div
+            class="modal fade show d-block"
+            tabindex="-1"
+            aria-modal="true"
+            role="dialog"
+            style="background: rgba(0,0,0,0.35);"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            {{ $selectedVenueDetails['name'] ?? 'Venue details' }}
+                            <small class="text-muted ms-2">{{ $selectedVenueDetails['code'] ?? '' }}</small>
+                        </h5>
+                        <button type="button" class="btn-close" aria-label="Close" wire:click="closeVenueDescription"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">
+                            {{ $selectedVenueDetails['description'] ?? 'No description available.' }}
+                        </p>
+
+                        <h6>Availability</h6>
+                        @php($slots = $selectedVenueDetails['availabilities'] ?? [])
+                        @if (!empty($slots))
+                            <ul class="list-group">
+                                @foreach ($slots as $slot)
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span class="fw-semibold">{{ $slot['day'] }}</span>
+                                        <span>
+                                            {{ \Carbon\Carbon::parse($slot['opens_at'])->format('g:i A') }}
+                                            –
+                                            {{ \Carbon\Carbon::parse($slot['closes_at'])->format('g:i A') }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-muted mb-0">No availability configured.</p>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" wire:click="closeVenueDescription">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show"></div>
+    @endif
 
     {{-- STEP 3 --}}
     @if ($step === 3)
-        <form wire:submit.prevent="submit">
+        <h2 id="eventRequestStep3Heading" class="visually-hidden">Document uploads and submission</h2>
+        <form wire:submit.prevent="submit" data-prevent-enter-submit aria-labelledby="eventRequestStep3Heading">
 
             <div class="mb-3">
                 <div class="form-text">Upload the documents required due to the nature of the event.</div>
@@ -323,7 +543,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
                         </li>
                     </ul>
                 </div>
@@ -334,7 +554,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
                         </li>
                     </ul>
                 </div>
@@ -345,7 +565,7 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="text-primary" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                            <a href="#" class="event-form-link-btn" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
                         </li>
                     </ul>
                 </div>
@@ -363,13 +583,16 @@
                 <ul class="row">
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
-                                <a href="{{$doc['hyperlink']}}" target="_blank">
+                                <a href="{{$doc['hyperlink']}}" target="_blank" class="event-form-link-btn">
                                     {{ $doc['name'] . ": "}}
                                 </a>
                                 {{$doc['description']}}
                         </li>
                     @endforeach
                 </ul>
+            @endif
+
+            @if ($this->shouldShowRequirementUploads)
                 <div class="mb-3">
                     <label for="requirementFiles" class="form-label">Upload Requirement Documents</label>
                     <input type="file"
@@ -377,22 +600,20 @@
                            id="requirementFiles"
                            wire:model="requirementFiles"
                            multiple
-{{--                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>--}}
-                            accept=".pdf"/>
+                           accept=".pdf"/>
                     <div class="form-text">
-{{--                        Upload all required documents here. Accepted formats: PDF, DOCX, JPG, PNG.--}}
                         Upload all required documents here. Accepted formats: PDF.
                     </div>
 
-                    @error('requirementFiles.*')
+                @error('requirementFiles.*')
                     <div class="text-danger">{{ $message }}</div>
-                    @enderror
+                @enderror
                 </div>
             @endif
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
                 <button type="submit" class="btn btn-success">Submit Event</button>
             </div>
         </form>
@@ -400,22 +621,80 @@
 </div>
 
 <script>
-    // Flag to prevent 'beforeunload' on form submit
-    let isSubmitting = false;
-
-    // Add event listener for the form submit action
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            isSubmitting = true;
-        });
-    });
-
-    // Trigger beforeunload when the user tries to leave the page (except on form submit)
-    window.addEventListener('beforeunload', function (event) {
-        if (!isSubmitting) { // Only show the warning if it's not a form submission
-            const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
-            event.returnValue = confirmationMessage;  // For most modern browsers
-            return confirmationMessage;              // For older browsers
+    (function initializeLeaveWarning() {
+        if (window.eventFormLeaveGuardInitialized) {
+            return;
         }
-    });
+        window.eventFormLeaveGuardInitialized = true;
+
+        const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";
+        let shouldWarn = true;
+
+        const handleBeforeUnload = function (event) {
+            if (!shouldWarn) {
+                return;
+            }
+
+            event.preventDefault();
+            event.returnValue = confirmationMessage;
+            return confirmationMessage;
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        const registerLivewireHandlers = () => {
+            if (!window.Livewire || typeof window.Livewire.on !== 'function') {
+                return;
+            }
+
+            window.Livewire.on('event-form-submitted', () => {
+                shouldWarn = false;
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            });
+        };
+
+        if (window.Livewire) {
+            registerLivewireHandlers();
+        } else {
+            document.addEventListener('livewire:init', registerLivewireHandlers);
+        }
+    })();
+
+    (function preventEnterFormSubmissions() {
+        if (window.eventFormEnterGuardInitialized) {
+            return;
+        }
+        window.eventFormEnterGuardInitialized = true;
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+
+            if (target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            if (target.closest('[data-allow-enter-submit]')) {
+                return;
+            }
+
+            const form = target.closest('form[data-prevent-enter-submit]');
+            if (!form) {
+                return;
+            }
+
+            const selector = 'input:not([type=\"button\"]):not([type=\"submit\"]):not([type=\"reset\"]), select, [contenteditable=\"true\"]';
+            if (!target.matches(selector)) {
+                return;
+            }
+
+            event.preventDefault();
+        });
+    })();
 </script>

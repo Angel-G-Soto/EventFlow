@@ -15,15 +15,63 @@ class VerifyApiKey
      */
     public function handle(Request $request, Closure $next)
     {
-        // The key provided by the caller (HTTP client)
-        $apiKeyHeader = (string) $request->header('X-API-KEY', '');
-
-        // The key configured on the server
+        $apiKeyHeader  = (string) $request->header('X-API-KEY', '');
         $configuredKey = (string) env('API_KEY', '');
 
-        // Timing-safe equality check prevents certain side-channel attacks
+        // Success path
         if ($apiKeyHeader !== '' && $configuredKey !== '' && hash_equals($configuredKey, $apiKeyHeader)) {
+
+            // AUDIT: any successful NEXO API interaction (best-effort, non-blocking)
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                // Pick an actor id: authenticated user if present, otherwise a service actor from config
+                $actorId = auth()->id()
+                    ?: (int) config('eventflow.nexo_actor_id', (int) config('eventflow.system_user_id', 0));
+
+                if ($actorId > 0) {
+                    // Minimal meta; we keep it lightweight on purpose
+                    $meta = ['authorized' => true];
+
+                    // Enrich with request context (ip/method/path/ua) automatically
+                    $audit->logActionFromRequest(
+                        $request,
+                        $actorId,
+                        'nexo',              // targetType
+                        'NEXO_API_HIT',      // actionCode
+                        (string) $request->path(), // targetId (endpoint path)
+                        $meta
+                    );
+                }
+            } catch (\Throwable $e) {
+                // never block request on audit failures
+                report($e);
+            }
+
             return $next($request);
+        }
+
+        // Optional: audit denied attempts (toggleable via config)
+        try {
+            if (config('eventflow.audit_nexo_failures', false)) {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(\App\Services\AuditService::class);
+
+                $actorId = (int) config('eventflow.nexo_actor_id', (int) config('eventflow.system_user_id', 0));
+                if ($actorId > 0) {
+                    $audit->logActionFromRequest(
+                        $request,
+                        $actorId,
+                        'nexo',
+                        'NEXO_API_DENIED',
+                        (string) $request->path(),
+                        ['authorized' => false]
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            report($e);
         }
 
         return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);

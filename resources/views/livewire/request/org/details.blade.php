@@ -39,26 +39,69 @@
 @endphp
 
 <div class="container my-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h1 class="fw-bold">Event Details</h1>
-        <button type="button"
-                wire:click="back"
-                class="btn btn-secondary ms-auto"
-                wire:target="back"
-                aria-label="Go Back">
-            Back
-        </button>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+        <h1 class="fw-bold mb-0">Event Details</h1>
+        <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
+            <button type="button"
+                    wire:click="back"
+                    class="btn btn-secondary"
+                    wire:target="back"
+                    aria-label="Go Back">
+                Back
+            </button>
+        </div>
     </div>
 
+    <style>
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .status-indicator .status-dot {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: currentColor;
+        }
+
+        .status-indicator--neutral {
+            color: #495057;
+        }
+
+        .status-indicator--danger {
+            color: #b02a37;
+        }
+
+        .status-indicator--success {
+            color: #146c43;
+        }
+
+        .status-indicator--warning {
+            color: #856404;
+        }
+    </style>
+
     {{-- Event Header --}}
-    <section class="card shadow-sm mb-4" aria-labelledby="event-header" role="region">
+    <section class="card shadow-sm mb-3" aria-labelledby="event-header" role="region">
         <div class="card-body">
             <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
 
-            <!-- Status as a tag (badge) with appropriate styles and ARIA labeling -->
+            @php
+                $statusVariant = match (true) {
+                    in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
+                    in_array($event->status, ['approved', 'completed']) => 'success',
+                    default => 'warning',
+                };
+            @endphp
             <p>
-                <span class="badge bg-secondary" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
-                    {{ 'Status: '. $event->getSimpleStatus() }}
+                <span class="status-indicator status-indicator--{{ $statusVariant }}" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span>{{ 'Status: '. $event->getSimpleStatus() }}</span>
                 </span>
             </p>
 
@@ -67,6 +110,19 @@
                 at <span class="sr-only">From: </span>{{ $start->format('g:i A') }} –
                 <span class="sr-only">To: </span>{{ $end->format('g:i A') }}
             </p>
+
+            @if($event->status === 'approved')
+                <div class="mt-3">
+                    <button type="button"
+                            class="btn btn-primary"
+                            wire:click="downloadSummary"
+                            wire:loading.attr="disabled"
+                            wire:target="downloadSummary">
+                        <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                        <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                    </button>
+                </div>
+            @endif
         </div>
     </section>
 
@@ -80,6 +136,24 @@
             <p class="mb-0">{{ $event->description }}</p>
         </div>
     </section>
+
+    @if($event->venue)
+        <section class="card shadow-sm mb-4" aria-labelledby="venue-details">
+            <div class="card-body">
+                <h3 id="venue-details" class="fw-semibold border-bottom pb-2 mb-3">Venue Details</h3>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">{{ $event->venue->name ?? '—' }}</dd>
+
+                    <dt class="col-sm-4">Code</dt>
+                    <dd class="col-sm-8">{{ $event->venue->code ?? '—' }}</dd>
+
+                    <dt class="col-sm-4">Description</dt>
+                    <dd class="col-sm-8">{{ $event->venue->description ?? 'No description available.' }}</dd>
+                </dl>
+            </div>
+        </section>
+    @endif
 
     {{-- Organization & Requester Info --}}
     <section class="card shadow-sm mb-4" aria-labelledby="organization-info">
@@ -102,9 +176,19 @@
                         {{ $event->organization_advisor_name }}
                     </a>
                 </dd>
+                <dt class="col-sm-4">Advisor Phone</dt>
+                <dd class="col-sm-8">
+                    @if($event->organization_advisor_phone)
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $event->organization_advisor_phone) }}">
+                            {{ $event->organization_advisor_phone }}
+                        </a>
+                    @else
+                        —
+                    @endif
+                </dd>
 
                 <dt class="col-sm-4">Date Submitted</dt>
-                <dd class="col-sm-8">{{ $event->created_at->format('M j, Y g:i A') }}</dd>
+                <dd class="col-sm-8">{{ $event->created_at->format('D, M j, Y g:i A') }}</dd>
             </dl>
         </div>
     </section>
@@ -116,20 +200,23 @@
             <div class="d-flex flex-column gap-2">
                 <div>
                     <span class="fw-semibold me-2">Handles Food:</span>
-                    <span class="badge bg-{{ $event->handles_food ? 'success' : 'secondary' }}">
-                        {{ $event->handles_food ? 'Yes' : 'No' }}
+                    <span class="status-indicator status-indicator--{{ $event->handles_food ? 'success' : 'danger' }}">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>{{ $event->handles_food ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
                 <div>
                     <span class="fw-semibold me-2">Uses Institutional Funds:</span>
-                    <span class="badge bg-{{ $event->use_institutional_funds ? 'success' : 'secondary' }}">
-                        {{ $event->use_institutional_funds ? 'Yes' : 'No' }}
+                    <span class="status-indicator status-indicator--{{ $event->use_institutional_funds ? 'success' : 'danger' }}">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>{{ $event->use_institutional_funds ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
                 <div>
                     <span class="fw-semibold me-2">Invites External Guests:</span>
-                    <span class="badge bg-{{ $event->external_guests ? 'success' : 'secondary' }}">
-                        {{ $event->external_guests ? 'Yes' : 'No' }}
+                    <span class="status-indicator status-indicator--{{ $event->external_guests ? 'success' : 'danger' }}">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>{{ $event->external_guests ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
             </div>
@@ -170,20 +257,30 @@
         </div>
     </section>
 
-    {{--Buttons--}}
+    {{-- Buttons --}}
     <div class="d-flex gap-2 mb-3 container-fluid">
 
         @if($event->status === 'approved')
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button"
+                    class="btn btn-danger d-flex"
+                    data-bs-toggle="modal"
+                    data-bs-target="#denyModal"
+                    aria-label="Cancel {{ $event->title }}">
                 Cancel
             </button>
         @elseif(str_contains($event->status,'pending'))
-            <button type="button" class="btn btn-outline-danger d-flex" data-bs-toggle="modal" data-bs-target="#denyModal">
+            <button type="button"
+                    class="btn btn-danger d-flex"
+                    data-bs-toggle="modal"
+                    data-bs-target="#denyModal"
+                    aria-label="Withdraw {{ $event->title }}">
                 Withdraw
             </button>
         @endif
 
-        <button type="button" wire:click="back" class="btn btn-outline-secondary ms-auto"
+        <button type="button"
+                wire:click="back"
+                class="btn btn-secondary ms-auto"
                 wire:target="back">
             Back
         </button>
@@ -214,7 +311,7 @@
 
                 <div class="modal-footer">
                     @if($event->status === 'approved')
-                        <button class="btn btn-outline-danger"
+                        <button class="btn btn-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
@@ -222,7 +319,7 @@
                         </button>
                     @elseif(str_contains($event->status,'pending'))
 
-                        <button class="btn btn-outline-danger"
+                        <button class="btn btn-danger"
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">

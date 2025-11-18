@@ -20,9 +20,8 @@
 namespace App\Livewire\Request\History;
 
 use App\Models\EventHistory;
-use App\Services\EventHistoryService;
+use App\Services\EventRequestPdfDownloadService;
 use App\Services\EventService;
-use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -89,6 +88,17 @@ class Details extends Component
     {
         $this->redirectRoute('approver.history.index');
     }
+
+
+/**
+ * Trigger the PDF export for the approved request.
+ * @return \Symfony\Component\HttpFoundation\Response
+ */
+
+    public function downloadSummary(EventRequestPdfDownloadService $pdfDownloadService)
+    {
+        return $pdfDownloadService->download($this->eventHistory->event);
+    }
 /**
  * Render the Blade view for the venue details page.
  * @return \Illuminate\Contracts\View\View
@@ -99,11 +109,12 @@ class Details extends Component
     {
         $this->authorize('manageMyApprovalHistory', $this->eventHistory);
 
-        $event = tap($this->eventHistory->event)->loadMissing('categories:id,name');
+        $event = tap($this->eventHistory->event)->loadMissing([
+            'categories:id,name',
+            'venue:id,name,code,description',
+        ]);
 
-//        $docs = app(EventService::class)->getEventDocuments($event)->toArray();
-
-        $docs = app(EventService::class)->getEventDocuments($this->eventHistory->event)->toArray();
+        $docs = app(EventService::class)->getEventDocuments($event)->toArray();
 
         // Use document service method that accepts event_id and return the array of docs.
 

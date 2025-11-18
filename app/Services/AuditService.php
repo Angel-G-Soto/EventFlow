@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\AuditTrail;
+use App\Models\Event;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
@@ -116,6 +118,46 @@ class AuditService
             $targetId,
             $this->buildContextFromRequest($request, $extraMeta)
         );
+    }
+
+    /**
+     * Convenience helper for logging admin actions tied to an Event entity.
+     */
+    public function logEventAdminAction(User $admin, Event $event, string $actionCode, array $extraMeta = []): AuditTrail
+    {
+        if ($admin->id <= 0) {
+            throw new \InvalidArgumentException('Valid admin user required for audit.');
+        }
+
+        $context = [];
+        if (!empty($extraMeta)) {
+            $context['meta'] = $extraMeta;
+        }
+
+        try {
+            if (function_exists('request') && request()) {
+                $context = $this->buildContextFromRequest(request(), $extraMeta);
+            }
+        } catch (\Throwable) {
+            // No HTTP context available; proceed with meta only.
+        }
+
+        return $this->logAdminAction(
+            (int) $admin->id,
+            $this->formatActorLabel($admin),
+            $actionCode,
+            (string) $event->id,
+            $context
+        );
+    }
+
+    private function formatActorLabel(User $actor): string
+    {
+        $name = trim(((string)($actor->first_name ?? '')) . ' ' . ((string)($actor->last_name ?? '')));
+        if ($name !== '') {
+            return $name;
+        }
+        return (string)($actor->name ?? ($actor->email ?? 'Admin'));
     }
 
     /**

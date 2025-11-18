@@ -39,7 +39,7 @@ class AdminController extends Controller
     $this->authorize('accessDashboard', User::class);
 
     // Using Department::employees() relation instead of users()
-    $departments = \App\Models\Department::query()->withCount('employees')->paginate(15);
+    $departments = Department::query()->withCount('employees')->paginate(15);
 
     return view('admin.departments.index', compact('departments'));
   }
@@ -54,7 +54,7 @@ class AdminController extends Controller
     $this->authorize('accessDashboard', User::class);
 
     // Eager load department and manager relations
-    $venues = Venue::with(['department', 'manager'])->paginate(15);
+    $venues = Venue::with(['department'])->paginate(15);
 
     return view('admin.venues.index', compact('venues'));
   }
@@ -103,7 +103,7 @@ class AdminController extends Controller
     ]);
 
     /** @var Event $event */
-    $event = \App\Models\Event::query()->findOrFail($validated['event_id']);
+    $event = Event::query()->findOrFail($validated['event_id']);
 
     // Define what each override action does
     $map = [

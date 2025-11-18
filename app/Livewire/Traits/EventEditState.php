@@ -15,6 +15,7 @@ trait EventEditState
   public string $eTo = '';
   public int    $eAttendees = 0;
   public string $eCategory = '';
+  public array $eCategoryIds = [];
   // Policies
   public bool   $eHandlesFood = false;
   public bool   $eUseInstitutionalFunds = false;
@@ -24,8 +25,11 @@ trait EventEditState
   public string $eOrganization = '';
   public string $eAdvisorName = '';
   public string $eAdvisorEmail = '';
+  public string $eAdvisorPhone = '';
   public string $eStudentNumber = '';
   public string $eStudentPhone = '';
+  public string $eStatus = '';
+  public array $eDocuments = [];
 
   // Justification/action for save/delete
   public string $actionType = '';

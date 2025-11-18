@@ -44,6 +44,36 @@
             <livewire:request.pending.filters/>
         </div>
 
+        <style>
+            .status-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+
+            .status-indicator .status-dot {
+                width: 0.5rem;
+                height: 0.5rem;
+                border-radius: 50%;
+                display: inline-block;
+                background-color: currentColor;
+            }
+
+            .status-indicator--success {
+                color: #146c43;
+            }
+
+            .status-indicator--danger {
+                color: #b02a37;
+            }
+
+            .status-indicator--warning {
+                color: #856404;
+            }
+        </style>
+
         <div class="card shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -54,7 +84,7 @@
                         <th>Date Submitted</th>
                         <th>Status</th>
 
-                        <th class="text-end">Actions</th>
+                        <th class="text-end text-nowrap" style="width: 170px;">Actions</th>
                     </tr>
                     </thead>
 
@@ -63,22 +93,28 @@
                             <tr>
                                 <td class="fw-medium">{{$event->title ?? '—' }}</td>
                                 <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
-                                <td class="fw-medium">{{\Carbon\Carbon::parse($event->created_at)->toDayDateTimeString()}}</td>
+                                <td class="fw-medium">{{ \Carbon\Carbon::parse($event->created_at)->format('D, M j, Y g:i A') }}</td>
                                 <td class="fw-medium">
-                                    @if($event->status === 'cancelled' || $event->status === 'withdrawn' || $event->status === 'rejected')
-                                        <span class="badge rounded-pill bg-danger">{{$event->getSimpleStatus()}}</span>
-                                    @elseif($event->status === 'approved' || $event->status === 'completed')
-                                        <span class="badge rounded-pill bg-success">{{$event->getSimpleStatus()}}</span>
-                                    @else
-                                        <span class="badge rounded-pill bg-warning">{{$event->getSimpleStatus()}}</span>
-
-                                    @endif
+                                    @php
+                                        $statusVariant = match (true) {
+                                            in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
+                                            in_array($event->status, ['approved', 'completed']) => 'success',
+                                            default => 'warning'
+                                        };
+                                    @endphp
+                                    <span class="status-indicator status-indicator--{{ $statusVariant }}">
+                                        <span class="status-dot" aria-hidden="true"></span>
+                                        <span>{{ $event->getSimpleStatus() }}</span>
+                                    </span>
                                 </td>
                                 <td class="fw-medium text-end">
-                                    <button class="btn btn-outline-secondary text-end" style="text-align: right"
-                                            data-bs-toggle="tooltip" data-bs-placement="top" title="View Details"
+                                    <button type="button"
+                                            class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="View details"
+                                            aria-label="View details"
                                             onclick="window.location='{{ route('approver.pending.request',['event'=>$event]) }}'">
-                                        <i class="bi bi-eye me-1"></i> View details
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                        <span class="d-none d-sm-inline">View details</span>
                                     </button>
                                 </td>
                             </tr>
@@ -94,4 +130,3 @@
             {{ $events->withQueryString()->onEachSide(1)->links() }}
         </div>
     </div>
-

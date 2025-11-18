@@ -40,11 +40,15 @@
             <label for="searchTitle" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Search</label>
             <div class="input-group input-group-sm">
                 <input id="searchTitle" type="text" class="form-control"
-                       placeholder="Search by title..."
+                       placeholder="Search by title or organization..."
                        wire:model.defer="searchTitle"
                        wire:keydown.enter="apply"
                        style="font-size: 1.05rem;">
-                <button class="btn btn-secondary" wire:click="apply" style="font-size: 1.05rem;">
+                <button type="button"
+                        class="btn btn-secondary"
+                        wire:click="apply"
+                        aria-label="Search pending requests"
+                        style="font-size: 1.05rem;">
                     <i class="bi bi-search"></i>
                 </button>
             </div>
@@ -83,18 +87,24 @@
         </div>
 
         {{-- Clear Button --}}
-        <div class="col-md-1 col-sm-6">
-            <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
-            <button type="button" class="btn btn-secondary btn-sm w-100" wire:click="resetFilters" style="font-size: 1.05rem;">
-                <i class="bi bi-x-circle me-1"></i> Clear
+        <div class="col-6 col-md-2 col-lg-1">
+            <div class="form-label mb-0 small text-muted d-block" aria-hidden="true">&nbsp;</div>
+            <button type="button"
+                    class="btn btn-secondary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
+                    wire:click="resetFilters" style="font-size: 1.05rem;">
+                <i class="bi bi-x-circle" aria-hidden="true"></i>
+                <span>Clear</span>
             </button>
         </div>
 
         {{-- Apply Button --}}
-        <div class="col-md-1 col-sm-6">
-            <label class="form-label mb-0 small text-muted d-block">&nbsp;</label>
-            <button type="button" class="btn btn-success btn-sm w-100" wire:click="apply" style="font-size: 1.05rem;">
-                <i class="bi bi-arrow-right-circle me-1"></i> Apply
+        <div class="col-6 col-md-2 col-lg-1">
+            <div class="form-label mb-0 small text-muted d-block" aria-hidden="true">&nbsp;</div>
+            <button type="button"
+                    class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
+                    wire:click="apply" style="font-size: 1.05rem;">
+                <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>
+                <span>Apply</span>
             </button>
         </div>
 
@@ -114,4 +124,3 @@
     });
 </script>
 @endscript
-

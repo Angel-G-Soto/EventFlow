@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\User;
 use App\Services\UserService;
 use App\Services\VenueService;
 use App\Services\DepartmentService;
@@ -21,14 +22,16 @@ class ProcessCsvFileUpload implements ShouldQueue
 
     protected string $file_name;
     protected int $admin_id;
+    protected array $context;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(String $file_name, int $admin_id)
+    public function __construct(string $file_name, int $admin_id, array $context = [])
     {
         $this->file_name = $file_name;
         $this->admin_id = $admin_id;
+        $this->context = $context;
     }
 
     /**
@@ -37,33 +40,10 @@ class ProcessCsvFileUpload implements ShouldQueue
     public function handle(): void
     {
         $cacheKey = 'venues_import:' . $this->file_name;
+
         try {
             Cache::put($cacheKey, 'scanning', 600);
-
-            $filePath = Storage::disk('uploads_temp')->path($this->file_name);
-
-            $infected = false;
-            $scanUnavailable = false;
-
-            try {
-                $scan = new Process(['clamdscan', $filePath]);
-                $scan->run();
-                $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
-
-                if (Str::contains($output, 'FOUND')) {
-                    $infected = true;
-                } elseif (!Str::contains($output, 'OK')) {
-                    // clamd not available or misconfigured on this machine
-                    $scanUnavailable = true;
-                    Log::warning('clamdscan unavailable or inconclusive; proceeding without AV scan', [
-                        'output' => $output,
-                        'exit_code' => $scan->getExitCode(),
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                $scanUnavailable = true;
-                Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
-            }
+            [$filePath, $infected, $scanUnavailable] = $this->scanFile($cacheKey);
 
             if ($infected) {
                 Cache::put($cacheKey, 'infected', 600);
@@ -77,65 +57,23 @@ class ProcessCsvFileUpload implements ShouldQueue
 
             Cache::put($cacheKey, 'parsing', 600);
 
-            // Parse CSV and normalize to the VenueService expected schema
-            $parsed = new VenueCsvParser()->parse($filePath);
-            $normalized = $this->normalizeCsvRows($parsed);
+            // Parse CSV, normalize, and validate content
+            [$parsed, $normalized] = $this->parseAndNormalize($filePath);
 
-            // Build name=>code map from parsed rows (department_name_raw => department_code_raw)
-            $deptMap = collect($parsed)
-                ->mapWithKeys(function ($r) {
-                    $name = trim((string)($r['department_name_raw'] ?? ''));
-                    $code = trim((string)($r['department_code_raw'] ?? ''));
-                    return $name !== '' ? [$name => $code] : [];
-                })
-                ->filter();
-
-            // Ensure departments exist locally (auto-create if missing during import)
-            $deptSvc = app(DepartmentService::class);
-            $uniqueDepts = collect($deptMap)
-                ->map(fn($code, $name) => ['name' => $name, 'code' => $code])
-                ->filter(fn($d) => ($d['name'] ?? '') !== '' && ($d['code'] ?? '') !== '')
-                ->unique(fn($d) => $d['name'] . '|' . $d['code']);
-
-            foreach ($uniqueDepts as $dept) {
-                try {
-                    $byName = $deptSvc->findByName($dept['name']);
-                    $byCode = $deptSvc->findByCode($dept['code']);
-                    if (!$byName && !$byCode) {
-                        $deptSvc->updateOrCreateDepartment([
-                            ['name' => $dept['name'], 'code' => $dept['code']],
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('Unable to ensure/update department during CSV import', [
-                        'department' => $dept['name'],
-                        'code' => $dept['code'],
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            Cache::put($cacheKey, 'importing', 600);
-
-            // Strictly resolve an admin via provided ID; fail if not found
-            if ($this->admin_id > 0) {
-                try {
-                    $adminUser = app(UserService::class)->findUserById($this->admin_id);
-                } catch (\Throwable $e) {
-                    Cache::put($cacheKey, 'failed', 600);
-                    Cache::put($cacheKey . ':error', 'Admin user required for import', 600);
-                    Storage::disk('uploads_temp')->delete($this->file_name);
-                    return;
-                }
-            } else {
-                Cache::put($cacheKey, 'failed', 600);
-                Cache::put($cacheKey . ':error', 'Admin user required for import', 600);
+            // Resolve admin user or fail gracefully
+            $adminUser = $this->resolveAdminUser($cacheKey);
+            if (!$adminUser) {
                 Storage::disk('uploads_temp')->delete($this->file_name);
                 return;
             }
 
+            // Ensure departments referenced in CSV exist
+            $this->ensureDepartmentsExist($parsed, $adminUser);
+
+            Cache::put($cacheKey, 'importing', 600);
+
             // Import via service
-            $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser);
+            $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser, $this->context);
 
             // Cleanup and done
             Storage::disk('uploads_temp')->delete($this->file_name);
@@ -153,6 +91,122 @@ class ProcessCsvFileUpload implements ShouldQueue
             try {
                 Storage::disk('uploads_temp')->delete($this->file_name);
             } catch (\Throwable $e2) {
+            }
+        }
+    }
+
+    /**
+     * Run AV scan on the uploaded file and return scan flags plus path.
+     *
+     * @return array{0:string,1:bool,2:bool} [$filePath, $infected, $scanUnavailable]
+     */
+    protected function scanFile(string $cacheKey): array
+    {
+        $filePath = Storage::disk('uploads_temp')->path($this->file_name);
+
+        $infected = false;
+        $scanUnavailable = false;
+
+        try {
+            $scan = new Process(['clamdscan', $filePath]);
+            $scan->run();
+            $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
+
+            if (Str::contains($output, 'FOUND')) {
+                $infected = true;
+            } elseif (!Str::contains($output, 'OK')) {
+                // clamd not available or misconfigured on this machine
+                $scanUnavailable = true;
+                Log::warning('clamdscan unavailable or inconclusive; proceeding without AV scan', [
+                    'output' => $output,
+                    'exit_code' => $scan->getExitCode(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            $scanUnavailable = true;
+            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
+        }
+
+        return [$filePath, $infected, $scanUnavailable];
+    }
+
+    /**
+     * Parse and normalize CSV rows for VenueService.
+     *
+     * @param string $filePath
+     * @return array{0:array<int,array<string,mixed>>,1:array<int,array<string,mixed>>}
+     */
+    protected function parseAndNormalize(string $filePath): array
+    {
+        $parsed = (new VenueCsvParser())->parse($filePath);
+        $normalized = $this->normalizeCsvRows($parsed);
+
+        // Validate normalized content (duplicate codes, empty result, capacities)
+        $this->validateNormalizedRows($normalized);
+
+        return [$parsed, $normalized];
+    }
+
+    /**
+     * Resolve the admin user for this import, updating cache on failure.
+     */
+    protected function resolveAdminUser(string $cacheKey): ?User
+    {
+        if ($this->admin_id <= 0) {
+            Cache::put($cacheKey, 'failed', 600);
+            Cache::put($cacheKey . ':error', 'Admin user required for import', 600);
+            return null;
+        }
+
+        try {
+            /** @var UserService $svc */
+            $svc = app(UserService::class);
+            return $svc->findUserById($this->admin_id);
+        } catch (\Throwable $e) {
+            Cache::put($cacheKey, 'failed', 600);
+            Cache::put($cacheKey . ':error', 'Admin user required for import', 600);
+            return null;
+        }
+    }
+
+    /**
+     * Ensure departments referenced in the parsed CSV exist (auto-create if missing).
+     *
+     * @param array<int,array<string,mixed>> $parsed
+     */
+    protected function ensureDepartmentsExist(array $parsed, User $adminUser): void
+    {
+        // Build name=>code map from parsed rows (department_name_raw => department_code_raw)
+        $deptMap = collect($parsed)
+            ->mapWithKeys(function ($r) {
+                $name = trim((string)($r['department_name_raw'] ?? ''));
+                $code = trim((string)($r['department_code_raw'] ?? ''));
+                return $name !== '' ? [$name => $code] : [];
+            })
+            ->filter();
+
+        // Ensure departments exist locally (auto-create if missing during import)
+        $deptSvc = app(DepartmentService::class);
+        $uniqueDepts = collect($deptMap)
+            ->map(fn($code, $name) => ['name' => $name, 'code' => $code])
+            ->filter(fn($d) => ($d['name'] ?? '') !== '' && ($d['code'] ?? '') !== '')
+            ->unique(fn($d) => $d['name'] . '|' . $d['code']);
+
+        foreach ($uniqueDepts as $dept) {
+            try {
+                $byName = $deptSvc->findByName($dept['name']);
+                $byCode = $deptSvc->findByCode($dept['code']);
+                if (!$byName && !$byCode) {
+                    $deptSvc->updateOrCreateDepartment([
+                        ['name' => $dept['name'], 'code' => $dept['code']],
+                    ], $adminUser);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Unable to ensure/update department during CSV import', [
+                    'department' => $dept['name'],
+                    'code' => $dept['code'],
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
     }
@@ -189,5 +243,46 @@ class ProcessCsvFileUpload implements ShouldQueue
             ];
         }
         return $out;
+    }
+
+    /**
+     * Basic content validation for normalized CSV rows.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     * @throws \RuntimeException
+     */
+    protected function validateNormalizedRows(array $rows): void
+    {
+        if (empty($rows)) {
+            throw new \RuntimeException('CSV did not contain any valid venue rows.');
+        }
+
+        $seenCodes = [];
+        $duplicateCodes = [];
+
+        foreach ($rows as $r) {
+            $code = trim((string)($r['code'] ?? ''));
+            $capacity = (int)($r['capacity'] ?? 0);
+            $testCapacity = (int)($r['test_capacity'] ?? 0);
+
+            if ($code === '') {
+                throw new \RuntimeException('CSV contains a row with a missing venue code.');
+            }
+
+            if (isset($seenCodes[$code])) {
+                $duplicateCodes[$code] = true;
+            } else {
+                $seenCodes[$code] = true;
+            }
+
+            if ($capacity < 0 || $testCapacity < 0) {
+                throw new \RuntimeException('CSV contains a row with negative capacity values.');
+            }
+        }
+
+        if (!empty($duplicateCodes)) {
+            $codes = implode(', ', array_keys($duplicateCodes));
+            throw new \RuntimeException('CSV contains duplicate venue codes: ' . $codes);
+        }
     }
 }

@@ -56,69 +56,105 @@
             <strong>Please fix the errors below:</strong>
         </div>
     @endif
-        <div class="d-flex">
-        <a href="{{ route('venues.manage') }}"
-           class="btn btn-secondary ms-auto"
-           onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
-            <i class="bi bi-arrow-left"></i> Back
-        </a>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h1 class="h4 mb-0">Configure Venue</h1>
+
+            <div class="d-flex gap-2">
+                <a href="{{ route('venues.manage') }}"
+                   class="btn btn-secondary"
+                   onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
+                    Back
+                </a>
+            </div>
         </div>
 
         <div class="py-4">
 
         <div class="card shadow-sm mb-3">
             <div class="card-header">
-                <h2 id="availability-title" class="h5 mb-0">Venue Availability</h2>
+                <h2 id="availability-title" class="h5 mb-0">Venue Description & Weekly Availability</h2>
             </div>
 
             <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="opens_at" class="form-label">Opens at <span class="text-danger" aria-hidden="true">*</span></label>
-                        <input
-                            id="opens_at"
-                            type="time"
-                            class="form-control @error('opens_at') is-invalid @enderror"
-                            wire:model.live="opens_at"
-                            aria-describedby="opensAtHelp {{ $errors->has('opens_at') ? 'opensAtError' : '' }}"
-                            required
-                        >
-                        <div id="opensAtHelp" class="form-text">Use 24-hour format (e.g., 08:00, 13:30).</div>
-                        @error('opens_at')
-                        <div id="opensAtError" class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="closes_at" class="form-label">Closes at <span class="text-danger" aria-hidden="true">*</span></label>
-                        <input
-                            id="closes_at"
-                            type="time"
-                            class="form-control @error('closes_at') is-invalid @enderror"
-                            wire:model.live="closes_at"
-                            aria-describedby="closesAtHelp {{ $errors->has('closes_at') ? 'closesAtError' : '' }}"
-                            required
-                        >
-                        <div id="closesAtHelp" class="form-text">Must be after the opening time.</div>
-                        @error('closes_at')
-                        <div id="closesAtError" class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                <div class="mb-4">
+                    <label for="venue_description" class="form-label">Description</label>
+                    <textarea
+                        id="venue_description"
+                        class="form-control @error('description') is-invalid @enderror"
+                        rows="3"
+                        wire:model.lazy="description"
+                        placeholder="Describe the venue, its layout, or important rules."
+                    ></textarea>
+                    @error('description')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th scope="col">Day</th>
+                            <th scope="col">Opens</th>
+                            <th scope="col">Closes</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach ($weekDays as $day)
+                            @php($row = $availabilityForm[$day] ?? ['enabled' => false, 'opens_at' => '', 'closes_at' => ''])
+                            @php($dayId = strtolower($day))
+                            <tr>
+                                <td class="fw-semibold">
+                                    <div class="form-check">
+                                        <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="day-{{ $dayId }}"
+                                            wire:model.live="availabilityForm.{{ $day }}.enabled"
+                                        >
+                                        <label class="form-check-label" for="day-{{ $dayId }}">{{ $day }}</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input
+                                        type="time"
+                                        class="form-control form-control-sm @error('availabilityForm.'.$day.'.opens_at') is-invalid @enderror"
+                                        wire:model.lazy="availabilityForm.{{ $day }}.opens_at"
+                                        @disabled(empty($row['enabled']))
+                                    >
+                                    @error('availabilityForm.'.$day.'.opens_at')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input
+                                        type="time"
+                                        class="form-control form-control-sm @error('availabilityForm.'.$day.'.closes_at') is-invalid @enderror"
+                                        wire:model.lazy="availabilityForm.{{ $day }}.closes_at"
+                                        @disabled(empty($row['enabled']))
+                                    >
+                                    @error('availabilityForm.'.$day.'.closes_at')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-text">
+                    Enable the days the venue can be booked and provide 24-hour times (HH:MM). End time must be after the start time.
+                </div>
+                @error('availabilityForm')
+                <div class="text-danger small mt-2">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="card-footer d-flex gap-2 align-items-center">
                 <button class="btn btn-primary ms-auto" wire:click="saveAvailability">
                     <i class="bi bi-save"></i>
-                    Save availability
+                    Save details
                 </button>
-                <span class="text-muted" role="status" aria-live="polite">
-                    @if ($opens_at && $closes_at)
-                        Currently {{ $opens_at }} – {{ $closes_at }}.
-                    @else
-                        Not configured yet.
-                    @endif
-                </span>
             </div>
         </div>
         </div>
@@ -131,6 +167,11 @@
         <h1 class="h4 mb-0">Requirements for: {{ $venue->name }}</h1>
 
         <div class="d-flex gap-2">
+            <button class="btn btn-danger" type="button"
+                    onclick="if(!confirm('Clear all requirements for this venue?')) return false;"
+                    wire:click="clearRequirements">
+                <i class="bi bi-trash"></i> Clear requirements
+            </button>
             <button class="btn btn-secondary" type="button" wire:click="addRow">
                 <i class="bi bi-plus-lg"></i> Add requirement
             </button>

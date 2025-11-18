@@ -12,6 +12,10 @@ use App\Livewire\Admin\DepartmentsIndex;
 use App\Livewire\Admin\VenuesIndex;
 use App\Livewire\Admin\EventsIndex;
 use App\Livewire\Admin\AuditTrailIndex;
+use App\Livewire\Admin\CategoriesIndex;
+
+require __DIR__ . '/saml2.php';
+//require __DIR__.'/auth.php';
 
 Route::get('/', PublicCalendar::class)->name('public.calendar');
 //Route::get('/choose-role', ChooseRole::class)->name('choose.role');
@@ -26,6 +30,7 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
   Route::get('/admin/users', UsersIndex::class)->name('admin.users');
   Route::get('/admin/departments', DepartmentsIndex::class)->name('admin.departments');
   Route::get('/admin/venues', VenuesIndex::class)->name('admin.venues');
+  Route::get('/admin/categories', CategoriesIndex::class)->name('admin.categories');
   Route::get('/admin/events', EventsIndex::class)->name('admin.events');
   Route::get('/admin/audit-log', AuditTrailIndex::class)
     ->name('admin.audit');
@@ -88,6 +93,3 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
   //})->name('approver.history.request');
 
 });
-
-require __DIR__ . '/saml2.php';
-//require __DIR__.'/auth.php';

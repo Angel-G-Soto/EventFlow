@@ -21,10 +21,9 @@ namespace App\Livewire\Venue;
 use App\Models\Venue;
 use App\Models\UseRequirement;
 use App\Services\VenueService;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -38,6 +37,15 @@ use Livewire\Component;
  */
 class Configure extends Component
 {
+    private const DAYS_OF_WEEK = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+    ];
 /**
  * @var \App\Models\Venue
  */
@@ -49,12 +57,9 @@ class Configure extends Component
     /** @var array<int> */
     public array $deleted = [];
 
-    /** Public state for the time inputs (HH:MM) */
-    public ?string $opens_at = null;
-/**
- * @var ?string
- */
-    public ?string $closes_at = null;
+    public string $description = '';
+    public array $availabilityForm = [];
+    public array $weekDays = [];
 /**
  * Initialize component state from a given Venue or ID.
  * @param Venue $venue
@@ -63,9 +68,10 @@ class Configure extends Component
 
     public function mount(Venue $venue): void
     {
-        $this->venue = $venue;
-        $this->opens_at  = $venue->opening_time ? substr($venue->opening_time, 0, 5) : '';
-        $this->closes_at = $venue->closing_time ? substr($venue->closing_time, 0, 5) : '';
+        $this->venue = $venue->load('availabilities');
+        $this->description = (string)($this->venue->description ?? '');
+        $this->availabilityForm = $this->buildAvailabilityForm();
+        $this->weekDays = self::DAYS_OF_WEEK;
 
         $req = app(VenueService::class)->getVenueRequirements($venue->id);
         $this->rows = $req->map(function (UseRequirement $r) {
@@ -97,19 +103,6 @@ class Configure extends Component
         }
     }
 /**
- * Rules action.
- * @return array
- */
-
-    protected function rules(): array
-    {
-        // When is_24h is true, both nullable. Otherwise require HH:MM and closes after opens.
-        return [
-            'opens_at' => ['required', 'date_format:H:i'],
-            'closes_at'=> ['required', 'date_format:H:i', 'after:opens_at'],
-        ];
-    }
-/**
  * AddRow action.
  * @return void
  */
@@ -133,21 +126,23 @@ class Configure extends Component
     {
         $this->authorize('update-availability', $this->venue);
 
-        $this->validate();
+        $this->validate([
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
 
-//        $this->venue->update([
-//            'opening_time'  => $this->opens_at,   // DB TIME will append :00 seconds
-//            'closing_time' => $this->closes_at,
-//        ]);
+        $payload = $this->normalizeAvailabilityInput();
 
-        $opens = Carbon::parse($this->opens_at);
-        $closes = Carbon::parse($this->closes_at);
+        $this->venue->description = $this->description;
+        $this->venue->save();
 
-        app(VenueService::class)->updateVenueOperatingHours($this->venue, $opens, $closes, Auth::user());
+        app(VenueService::class)->updateVenueOperatingHours($this->venue, $payload, Auth::user());
 
-        session()->flash('success', 'Availability updated.');
+        $this->venue->refresh();
+        $this->availabilityForm = $this->buildAvailabilityForm();
 
-        $this->dispatch('notify', type: 'success', message: 'Availability updated.');
+        session()->flash('success', 'Venue details updated.');
+
+        $this->dispatch('notify', type: 'success', message: 'Venue details updated.');
     }
 /**
  * RemoveRow action.
@@ -171,10 +166,10 @@ class Configure extends Component
             $this->addRow();
         }
     }
-/**
- * Validate input and persist configuration changes.
- * @return void
- */
+    /**
+     * Validate input and persist configuration changes.
+     * @return void
+     */
 
     public function save(): void
     {
@@ -244,6 +239,25 @@ class Configure extends Component
         // Optional: refresh from DB to get cleaned state
         $this->mount($this->venue);
     }
+
+    /**
+     * Remove every requirement associated with the current venue.
+     *
+     * @return void
+     */
+    public function clearRequirements(): void
+    {
+        $this->authorize('update-requirements', $this->venue);
+
+        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, [], Auth::user());
+
+        $this->rows = [];
+        $this->deleted = [];
+        $this->addRow();
+
+        session()->flash('success', 'All requirements for this venue have been cleared.');
+        $this->dispatch('notify', type: 'success', message: 'All requirements have been cleared.');
+    }
 /**
  * ReplaceUuidWithId action.
  * @param string $uuid
@@ -287,6 +301,78 @@ class Configure extends Component
         $this->authorize('update-requirements', $this->venue);
 
         return view('livewire.venue.configure');
+    }
+
+    protected function buildAvailabilityForm(): array
+    {
+        $existing = $this->venue->availabilities->keyBy('day');
+        $form = [];
+
+        foreach (self::DAYS_OF_WEEK as $day) {
+            $record = $existing->get($day);
+            $form[$day] = [
+                'enabled' => $record !== null,
+                'opens_at' => $record ? substr($record->opens_at, 0, 5) : '',
+                'closes_at' => $record ? substr($record->closes_at, 0, 5) : '',
+            ];
+        }
+
+        return $form;
+    }
+
+    protected function normalizeAvailabilityInput(): array
+    {
+        $payload = [];
+        $errors = [];
+
+        foreach (self::DAYS_OF_WEEK as $day) {
+            $row = $this->availabilityForm[$day] ?? [];
+            $enabled = (bool)($row['enabled'] ?? false);
+            if (!$enabled) {
+                continue;
+            }
+
+            $validator = validator(
+                [
+                    'opens_at' => $row['opens_at'] ?? null,
+                    'closes_at' => $row['closes_at'] ?? null,
+                ],
+                [
+                    'opens_at' => ['required', 'date_format:H:i'],
+                    'closes_at' => ['required', 'date_format:H:i', 'after:opens_at'],
+                ],
+                [],
+                [
+                    'opens_at' => "$day opening time",
+                    'closes_at' => "$day closing time",
+                ]
+            );
+
+            if ($validator->fails()) {
+                foreach ($validator->errors()->messages() as $field => $messages) {
+                    $errors["availabilityForm.$day.$field"] = $messages;
+                }
+                continue;
+            }
+
+            $payload[] = [
+                'day' => $day,
+                'opens_at' => $row['opens_at'],
+                'closes_at' => $row['closes_at'],
+            ];
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        if (empty($payload)) {
+            throw ValidationException::withMessages([
+                'availabilityForm' => ['Select at least one day and provide its hours.'],
+            ]);
+        }
+
+        return $payload;
     }
 }
 

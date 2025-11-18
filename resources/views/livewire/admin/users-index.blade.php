@@ -32,7 +32,7 @@
             <option value="">All</option>
             <option value="__none__">No roles</option>
             @foreach($allRoles as $role)
-            <option value="{{ $role['code'] }}">{{ $role['name'] }}</option>
+            <option value="{{ $role['code'] }}">{{ ucwords($role['name']) }}</option>
             @endforeach
           </select>
         </div>
@@ -64,7 +64,13 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th scope="col">
+            <th scope="col"
+              @if((($sortField ?? '') === 'name'))
+                aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}"
+              @else
+                aria-sort="none"
+              @endif
+            >
               <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
@@ -79,10 +85,10 @@
                 @endif
               </button>
             </th>
-            <th>Email</th>
-            <th>Department</th>
-            <th>Roles</th>
-            <th class="text-end" style="width:140px;">Actions</th>
+            <th scope="col">Email</th>
+            <th scope="col">Department</th>
+            <th scope="col">Roles</th>
+            <th scope="col" class="text-end" style="width:140px;">Actions</th>
           </tr>
         </thead>
 
@@ -96,7 +102,7 @@
               @php
               $roles = $user['roles'];
               // Build a map of code => name for display
-              $roleMap = collect($allRoles ?? [])->mapWithKeys(fn($r) => [$r['code'] => $r['name']]);
+              $roleMap = collect($allRoles ?? [])->mapWithKeys(fn($r) => [$r['code'] => ucwords($r['name'])]);
               @endphp
               @if(!empty($roles))
               {{-- Chip-style badges for roles for better readability --}}
@@ -110,12 +116,15 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary" wire:click="openEdit({{ $user['id'] }})" type="button"
+                <button class="btn btn-secondary" wire:click="openEdit({{ $user['id'] }})" type="button"
                   aria-label="Edit user {{ $user['name'] }}" title="Edit user {{ $user['name'] }}">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" wire:click="clearRoles({{ $user['id'] }})" type="button"
-                  @disabled(((count($user['roles'] ?? [])===1) && in_array('user', $user['roles'] ?? [])))
+                <button @class([ 'btn' , 'btn-outline-danger'=> ((count($user['roles'] ?? []) === 1) && in_array('user',
+                  $user['roles'] ?? [])),
+                  'btn-danger' => !((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])),
+                  ]) wire:click="clearRoles({{ $user['id'] }})" type="button"
+                  @disabled(((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])))
                   aria-label="Clear roles for user {{ $user['name'] }}"
                   title="Clear roles for user {{ $user['name'] }}">
                   <i class="bi bi-arrow-clockwise"></i>
@@ -220,8 +229,8 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal"
-            aria-label="Cancel and close">Cancel</button>
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" aria-label="Back to user list"><i
+              class="bi bi-arrow-left me-1"></i>Back</button>
           <button class="btn btn-primary" type="submit" aria-label="Save user"><i class="bi me-1"></i>Save</button>
         </div>
       </form>

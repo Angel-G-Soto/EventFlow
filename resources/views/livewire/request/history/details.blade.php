@@ -26,15 +26,17 @@
 
 <div>
     <div class="container my-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-            <h1 class="fw-bold mb-4">Approval Details</h1>
-            <button type="button"
-                    wire:click="back"
-                    class="btn btn-secondary ms-auto"
-                    wire:target="back"
-                    aria-label="Go Back">
-                Back
-            </button>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+            <h1 class="fw-bold mb-0">Approval Details</h1>
+            <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
+                <button type="button"
+                        wire:click="back"
+                        class="btn btn-secondary"
+                        wire:target="back"
+                        aria-label="Go Back">
+                    Back
+                </button>
+            </div>
         </div>
 
         {{-- Approver Action & Comment --}}
@@ -58,26 +60,68 @@
             </section>
 {{--        @endif--}}
 
-        {{-- Event Header --}}
-        <h1 class="fw-bold mb-4">Event Details</h1>
+        <style>
+            .status-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                font-weight: 600;
+                font-size: 0.95rem;
+            }
 
+            .status-indicator .status-dot {
+                width: 0.45rem;
+                height: 0.45rem;
+                border-radius: 50%;
+                display: inline-block;
+                background-color: currentColor;
+            }
+
+            .status-indicator--success {
+                color: #146c43;
+            }
+
+            .status-indicator--danger {
+                color: #b02a37;
+            }
+
+            .status-indicator--neutral {
+                color: #856404;
+            }
+        </style>
+
+        <h1 class="fw-bold mb-3">Event Details</h1>
+        {{-- Event Header --}}
         <section class="card shadow-sm mb-4" aria-labelledby="event-header">
             <div class="card-body">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
-                    <div>
-                        <h3 id="event-header" class="fw-semibold mb-1">{{ $eventHistory->event->title }}</h3>
-                        <p class="text-muted mb-1">
-                            {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
-                        </p>
-                        @if($eventHistory->event->status === 'cancelled' || $eventHistory->event->status === 'withdrawn' || $eventHistory->event->status === 'rejected')
-                            <span class="badge rounded-pill bg-danger">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
-                        @elseif($eventHistory->event->status === 'approved' || $eventHistory->event->status === 'completed')
-                            <span class="badge rounded-pill bg-success">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
-                        @else
-                            <span class="badge rounded-pill bg-warning">{{'Status: '. $eventHistory->event->getSimpleStatus()}}</span>
-                        @endif
+                <h3 id="event-header" class="fw-semibold mb-1">{{ $eventHistory->event->title }}</h3>
+                <p class="text-muted mb-1">
+                    {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
+                </p>
+                @if($eventHistory->event->status === 'cancelled' || $eventHistory->event->status === 'withdrawn' || $eventHistory->event->status === 'rejected')
+                    @php($detailStatusVariant = 'danger')
+                @elseif($eventHistory->event->status === 'approved' || $eventHistory->event->status === 'completed')
+                    @php($detailStatusVariant = 'success')
+                @else
+                    @php($detailStatusVariant = 'neutral')
+                @endif
+                <span class="status-indicator status-indicator--{{ $detailStatusVariant }}" aria-label="Event Status: {{ $eventHistory->event->getSimpleStatus() }}">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span>{{ 'Status: '. $eventHistory->event->getSimpleStatus() }}</span>
+                </span>
+
+                @if($eventHistory->event->status === 'approved')
+                    <div class="mt-3">
+                        <button type="button"
+                                class="btn btn-primary"
+                                wire:click="downloadSummary"
+                                wire:loading.attr="disabled"
+                                wire:target="downloadSummary">
+                            <span wire:loading.remove wire:target="downloadSummary">Download Request PDF</span>
+                            <span wire:loading wire:target="downloadSummary">Preparing...</span>
+                        </button>
                     </div>
-                </div>
+                @endif
             </div>
         </section>
 
@@ -91,6 +135,24 @@
                 <p class="mb-0 text-justify">{{ $eventHistory->event->description }}</p>
             </div>
         </section>
+
+        @if($eventHistory->event->venue)
+            <section class="card shadow-sm mb-4" aria-labelledby="venue-details">
+                <div class="card-body">
+                    <h4 id="venue-details" class="fw-semibold border-bottom pb-2 mb-3">Venue Details</h4>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">{{ $eventHistory->event->venue->name ?? '—' }}</dd>
+
+                        <dt class="col-sm-4">Code</dt>
+                        <dd class="col-sm-8">{{ $eventHistory->event->venue->code ?? '—' }}</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">{{ $eventHistory->event->venue->description ?? 'No description available.' }}</dd>
+                    </dl>
+                </div>
+            </section>
+        @endif
 
 
         {{-- Organization & Requester Info --}}
@@ -108,15 +170,25 @@
                     <dt class="col-sm-4">Organization</dt>
                     <dd class="col-sm-8">{{ $eventHistory->event->organization_name }}</dd>
 
-                    <dt class="col-sm-4">Advisor</dt>
-                    <dd class="col-sm-8">
-                        <a href="mailto:{{ $eventHistory->event->organization_advisor_email }}">
-                            {{ $eventHistory->event->organization_advisor_name }}
+                <dt class="col-sm-4">Advisor</dt>
+                <dd class="col-sm-8">
+                    <a href="mailto:{{ $eventHistory->event->organization_advisor_email }}">
+                        {{ $eventHistory->event->organization_advisor_name }}
+                    </a>
+                </dd>
+                <dt class="col-sm-4">Advisor Phone</dt>
+                <dd class="col-sm-8">
+                    @if($eventHistory->event->organization_advisor_phone)
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $eventHistory->event->organization_advisor_phone) }}">
+                            {{ $eventHistory->event->organization_advisor_phone }}
                         </a>
-                    </dd>
+                    @else
+                        —
+                    @endif
+                </dd>
 
                     <dt class="col-sm-4">Date Submitted</dt>
-                    <dd class="col-sm-8">{{ $eventHistory->event->created_at->format('M j, Y g:i A') }}</dd>
+                    <dd class="col-sm-8">{{ $eventHistory->event->created_at->format('D, M j, Y g:i A') }}</dd>
                 </dl>
             </div>
         </section>
@@ -126,27 +198,30 @@
             <div class="card-body">
                 <h4 id="event-attributes" class="fw-semibold border-bottom pb-2 mb-3">Event Attributes</h4>
                 <div class="d-flex flex-column gap-2">
-                    <div class="d-flex flex-column align-items-start">
-                        <span class="fw-semibold mb-1">Handles Food:
-                            <span class="badge bg-{{ $eventHistory->event->handles_food ? 'success' : 'secondary' }}"
-                                  aria-label="Handles Food: {{ $eventHistory->event->handles_food ? 'Yes' : 'No' }}">{{ $eventHistory->event->handles_food ? 'Yes' : 'No' }}
-                            </span>
+                    <div>
+                        <span class="fw-semibold me-2">Handles Food:</span>
+                        <span class="status-indicator status-indicator--{{ $eventHistory->event->handles_food ? 'success' : 'danger' }}"
+                              aria-label="Handles Food: {{ $eventHistory->event->handles_food ? 'Yes' : 'No' }}">
+                            <span class="status-dot" aria-hidden="true"></span>
+                            <span>{{ $eventHistory->event->handles_food ? 'Yes' : 'No' }}</span>
                         </span>
                     </div>
 
-                    <div class="d-flex flex-column align-items-start">
-                        <span class="fw-semibold mb-1">Uses Institutional Funds:
-                            <span class="badge bg-{{ $eventHistory->event->use_institutional_funds ? 'success' : 'secondary' }}"
-                                  aria-label="Uses Institutional Funds: {{ $eventHistory->event->use_institutional_funds ? 'Yes' : 'No' }}"> {{ $eventHistory->event->use_institutional_funds ? 'Yes' : 'No' }}
-                            </span>
+                    <div>
+                        <span class="fw-semibold me-2">Uses Institutional Funds:</span>
+                        <span class="status-indicator status-indicator--{{ $eventHistory->event->use_institutional_funds ? 'success' : 'danger' }}"
+                              aria-label="Uses Institutional Funds: {{ $eventHistory->event->use_institutional_funds ? 'Yes' : 'No' }}">
+                            <span class="status-dot" aria-hidden="true"></span>
+                            <span>{{ $eventHistory->event->use_institutional_funds ? 'Yes' : 'No' }}</span>
                         </span>
                     </div>
 
-                    <div class="d-flex flex-column align-items-start">
-                        <span class="fw-semibold mb-1">Invites External Guests:
-                            <span class="badge bg-{{ $eventHistory->event->external_guests ? 'success' : 'secondary' }}" aria-label="Invites External Guests: {{ $eventHistory->event->external_guests ? 'Yes' : 'No' }}">
-                                {{ $eventHistory->event->external_guests ? 'Yes' : 'No' }}
-                            </span>
+                    <div>
+                        <span class="fw-semibold me-2">Invites External Guests:</span>
+                        <span class="status-indicator status-indicator--{{ $eventHistory->event->external_guests ? 'success' : 'danger' }}"
+                              aria-label="Invites External Guests: {{ $eventHistory->event->external_guests ? 'Yes' : 'No' }}">
+                            <span class="status-dot" aria-hidden="true"></span>
+                            <span>{{ $eventHistory->event->external_guests ? 'Yes' : 'No' }}</span>
                         </span>
                     </div>
                 </div>

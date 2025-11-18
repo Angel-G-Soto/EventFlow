@@ -1,12 +1,12 @@
 {{-- resources/views/livewire/admin/audit-trail-index.blade.php --}}
-{{-- Local helper for 12-hour time formatting (display only) --}}
+{{-- Local helper for audit timestamp formatting --}}
 @php
 $fmtAudit = function ($dt) {
 if (empty($dt)) return '—';
 try {
 return \Carbon\Carbon::parse($dt)
 ->timezone(config('app.timezone'))
-->format('M j, Y • g:i A T');
+->format('D, M j, Y g:i A');
 } catch (\Exception $e) {
 return $dt;
 }
@@ -81,11 +81,11 @@ return $dt;
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>When</th>
-            <th>User</th>
-            <th>Action</th>
-            <th>Target</th>
-            <th class="text-end">Details</th>
+            <th scope="col">When</th>
+            <th scope="col">User</th>
+            <th scope="col">Action</th>
+            <th scope="col">Target</th>
+            <th scope="col" class="text-end">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -94,16 +94,16 @@ return $dt;
             <td class="text-nowrap">
               {{ $fmtAudit($r->created_at ?? null) }}
             </td>
-            <td>{{ $r->user_id ?? '—' }}</td>
+            <td>#{{ $r->user_id ?? '—' }}</td>
             <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
             <td class="text-truncate" style="max-width:220px;">
-              {{ $r->target_type ? class_basename($r->target_type) : '—' }}
+              {{ $r->target_type ? class_basename($r->target_type) : '—' }}:
               @if($r->target_id)
-              : #{{ $r->target_id }}
+              #{{ $r->target_id }}
               @endif
             </td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm" wire:click="showDetails({{ $r->id }})"
+              <button class="btn btn-info btn-sm" wire:click="showDetails({{ $r->id }})"
                 aria-label="Show details for audit #{{ $r->id }}" title="Show details for audit #{{ $r->id }}">
                 <i class="bi bi-info-circle"></i>
               </button>
@@ -111,7 +111,7 @@ return $dt;
           </tr>
           @empty
           <tr>
-            <td colspan="7" class="text-center text-secondary py-4">No audit entries found.</td>
+            <td colspan="5" class="text-center text-secondary py-4">No audit entries found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -129,19 +129,25 @@ return $dt;
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Audit Details #{{ $details['id'] ?? '' }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           @if(!empty($details))
           <dl class="row">
             <dt class="col-sm-3">User</dt>
-            <dd class="col-sm-9">{{ $details['user_id'] ?? '—' }}</dd>
+            <dd class="col-sm-9">
+              @if(!empty($details['user_id']))
+              <span class="text-muted small">#{{ $details['user_id'] }}</span>
+              @endif
+            </dd>
             <dt class="col-sm-3">Action</dt>
             <dd class="col-sm-9">{{ $details['action'] ?? '' }}</dd>
             <dt class="col-sm-3">Target</dt>
             <dd class="col-sm-9">{{ $details['target'] ?? '—' }}</dd>
             <dt class="col-sm-3">User Agent</dt>
             <dd class="col-sm-9"><small class="text-break">{{ $details['ua'] ?? '—' }}</small></dd>
+            <dt class="col-sm-3">IP Address</dt>
+            <dd class="col-sm-9"><small class="text-break">{{ $details['ip'] ?? 'Unknown' }}</small></dd>
             <dt class="col-sm-3">Created</dt>
             <dd class="col-sm-9">{{ $fmtAudit($details['created_at']) }}</dd>
           </dl>
@@ -155,7 +161,7 @@ return $dt;
           @endif
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
