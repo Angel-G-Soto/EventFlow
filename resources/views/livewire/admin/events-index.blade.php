@@ -522,8 +522,12 @@
   <x-justification id="oversightJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm cancel --}}
-  <x-confirm-delete id="oversightConfirm" title="Cancel request" message="Are you sure you want to cancel this request?"
-    confirm="proceedDelete" />
+  <x-confirm-cancel
+    id="oversightConfirm"
+    title="Cancel request"
+    message="Are you sure you want to cancel this request?"
+    confirm="proceedDelete"
+  />
 
   {{-- Reroute disabled --}}
 

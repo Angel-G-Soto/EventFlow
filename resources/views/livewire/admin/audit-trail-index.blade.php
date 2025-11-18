@@ -22,10 +22,17 @@ return $dt;
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
-        <div class="col-6 col-md-2">
-          <label class="form-label" for="audit_user_id">User ID</label>
-          <input id="audit_user_id" type="number" class="form-control" wire:model.live="userId" min="1"
-            placeholder="e.g. 12">
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="audit_user">Search</label>
+          <form wire:submit.prevent="applySearch">
+            <div class="input-group">
+              <input id="audit_user" type="text" class="form-control" wire:model.defer="userSearch"
+                placeholder="Search by user name or ID…">
+              <button class="btn btn-secondary" type="submit" aria-label="Search">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
         </div>
 
         <div class="col-6 col-md-3">
@@ -94,7 +101,26 @@ return $dt;
             <td class="text-nowrap">
               {{ $fmtAudit($r->created_at ?? null) }}
             </td>
-            <td>#{{ $r->user_id ?? '—' }}</td>
+            <td>
+              @php
+              $actor = $r->actor ?? null;
+              $name = null;
+              if ($actor) {
+              $full = trim(($actor->first_name ?? '').' '.($actor->last_name ?? ''));
+              $name = $full !== '' ? $full : ($actor->name ?? ($actor->email ?? null));
+              }
+              @endphp
+              @if($name)
+              {{ $name }}
+              @if(!empty($r->user_id))
+              <span class="text-muted small">(#{{ $r->user_id }})</span>
+              @endif
+              @elseif(!empty($r->user_id))
+              #{{ $r->user_id }}
+              @else
+              —
+              @endif
+            </td>
             <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
             <td class="text-truncate" style="max-width:220px;">
               {{ $r->target_type ? class_basename($r->target_type) : '—' }}:
@@ -136,8 +162,15 @@ return $dt;
           <dl class="row">
             <dt class="col-sm-3">User</dt>
             <dd class="col-sm-9">
+              @if(!empty($details['user_label']))
+              {{ $details['user_label'] }}
               @if(!empty($details['user_id']))
+              <span class="text-muted small">(#{{ $details['user_id'] }})</span>
+              @endif
+              @elseif(!empty($details['user_id']))
               <span class="text-muted small">#{{ $details['user_id'] }}</span>
+              @else
+              —
               @endif
             </dd>
             <dt class="col-sm-3">Action</dt>
