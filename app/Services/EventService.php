@@ -329,7 +329,7 @@ class EventService
                     $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                 }
 
-                $this->auditService->logAdminAction(
+                $this->auditService->logAction(
                     $actorId,
                     'event',
                     $action,
@@ -341,18 +341,6 @@ class EventService
             // Create new pending history only if not final approval
             if ($nextStatus !== 'approved') {
                 $this->createPendingHistory($event, $nextStatus, $approver);
-            }
-
-            if ($event->status === $nextStatus) {
-                $this->auditService->logEventAdminAction(
-                    $approver,
-                    $event,
-                    'EVENT_APPROVED',
-                    [
-                        'next_status' => $nextStatus,
-                        'comment' => (string)($comment ?? ''),
-                    ]
-                );
             }
 
             $approverName = $approver->first_name . ' ' . $approver->last_name;
