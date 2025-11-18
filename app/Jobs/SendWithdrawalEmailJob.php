@@ -46,6 +46,8 @@ class SendWithdrawalEmailJob implements ShouldQueue
      * @var string
      */
     public string $justification;
+    public string $creatorRoute;
+    public string $approverRoute;
 
     /**
      * Create a new job instance.
@@ -58,12 +60,16 @@ class SendWithdrawalEmailJob implements ShouldQueue
         string $creatorEmail,
         array $recipientEmails,
         array $eventData,
-        string $justification
+        string $justification,
+        string $creatorRoute,
+        string $approverRoute
     ) {
         $this->creatorEmail = $creatorEmail;
         $this->recipientEmails = $recipientEmails;
         $this->eventData = $eventData;
         $this->justification = $justification;
+        $this->creatorRoute = $creatorRoute;
+        $this->approverRoute = $approverRoute;
     }
 
     /**
@@ -78,8 +84,17 @@ class SendWithdrawalEmailJob implements ShouldQueue
     public function handle(): void
     {
         Mail::to($this->creatorEmail)
-            ->cc($this->recipientEmails)
-            ->send(new WithdrawalEmail($this->eventData, $this->justification));
+            ->send(new WithdrawalEmail($this->eventData, 
+            $this->justification
+            , $this->creatorRoute));
+        
+        foreach ($this->recipientEmails as $recipientEmail) {
+           Mail::to($recipientEmail)->send(
+               new WithdrawalEmail($this->eventData, 
+               $this->justification
+               , $this->approverRoute)
+           );
+       }
 
     }
 }

@@ -34,6 +34,9 @@ class SendSanctionedEmailJob implements ShouldQueue
 
     public array $recipientEmails;
 
+    public string $creatorRoute;
+    public string $approverRoute;
+
 
     /**
      * Event metadata used within the email (e.g., id, title, starts_at, ends_at).
@@ -48,11 +51,17 @@ class SendSanctionedEmailJob implements ShouldQueue
      * @param string              $creatorEmail Email address of the event creator.
      * @param array<string,mixed> $eventData    Event metadata (id, title, dates, etc.).
      */
-    public function __construct(string $creatorEmail, array $recipientEmails, array $eventData)
+    public function __construct(string $creatorEmail,
+    array $recipientEmails,
+    array $eventData,
+    string $creatorRoute,
+    string $approverRoute)
     {
         $this->creatorEmail = $creatorEmail;
         $this->eventData = $eventData;
         $this->recipientEmails = $recipientEmails;
+        $this->creatorRoute = $creatorRoute;
+        $this->approverRoute = $approverRoute;
     }
 
     /**
@@ -66,8 +75,12 @@ class SendSanctionedEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Mail::to($this->creatorEmail)
-            ->cc($this->recipientEmails)
-            ->send(new SanctionEmail($this->eventData));
+        Mail::to($this->creatorEmail)           
+            ->send(new SanctionEmail($this->eventData, $this->creatorRoute));
+        
+        foreach ($this->recipientEmails as $recipient) {
+                Mail::to($recipient)
+                    ->send(new SanctionEmail($this->eventData, $this->approverRoute));
+            }
     }
 }

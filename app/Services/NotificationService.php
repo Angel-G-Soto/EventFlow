@@ -68,13 +68,18 @@ class NotificationService
         string $creatorEmail,
         array $recipientEmails,
         array $eventDetails,
-        string $justification
+        string $justification,
+        string $creatorRoute,
+        string $approverRoute
+        
     ): void {
         SendRejectionEmailJob::dispatch(
             $creatorEmail,
             $recipientEmails,
             $eventDetails,
-            $justification);
+            $justification,
+            $creatorRoute,
+            $approverRoute);
     }
 
     /**
@@ -90,12 +95,16 @@ class NotificationService
     public function dispatchSanctionedNotification(
         string $creatorEmail,
         array $recipientEmails,
-        array $eventDetails
+        array $eventDetails,
+        string $creatorRoute,
+        string $approverRoute
     ): void {
         SendSanctionedEmailJob::dispatch(
             $creatorEmail,
             $recipientEmails,
-            $eventDetails);
+            $eventDetails,
+            $creatorRoute,
+            $approverRoute);
     }
 
     /**
@@ -113,13 +122,18 @@ class NotificationService
         string $creatorEmail,
         array $recipientEmails,
         array $eventDetails,
-        string $justification
+        string $justification,
+        string $creatorRoute,
+        string $approverRoute
     ): void {
         SendCancellationEmailJob::dispatch(
             $creatorEmail,
             $recipientEmails,
             $eventDetails,
-            $justification);
+            $justification,
+            $creatorRoute,
+            $approverRoute
+        );
     }
 
     /**
@@ -137,13 +151,20 @@ class NotificationService
         string $creatorEmail,
         array $recipientEmails,
         array $eventDetails,
-        string $justification
+        string $justification,
+        string $creatorRoute,
+        string $approverRoute
     ): void {
         SendWithdrawalEmailJob::dispatch(
             $creatorEmail,
             $recipientEmails,
             $eventDetails,
-            $justification);
+            $justification,
+            $creatorRoute,
+            $approverRoute
+            
+        
+        );
     }
 
 
@@ -176,6 +197,7 @@ class NotificationService
             'start_time' => $event->start_time,
             'end_time'=> $event->end_time,
             'venue_name' => $venue->name,
+            'id' => $event->id,
             ];
     }
 

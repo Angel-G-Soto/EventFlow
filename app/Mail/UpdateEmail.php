@@ -53,6 +53,7 @@ class UpdateEmail extends Mailable
                 'event'=> $this->eventDetails,
                 'approverName' => $this->approverName,
                 'role' => $this->role,
+                'route'=>route('user.request', ['event' => $this->eventDetails['id']]),
             ]
         );
     }

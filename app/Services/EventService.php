@@ -180,6 +180,8 @@ class EventService
                 recipientEmails: $approverEmails,
                 eventDetails: $eventDetails,
                 justification: $justification,
+                approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
+                creatorRoute: route('user.request', ['event' => $event->id])
             );
 
 
@@ -335,6 +337,9 @@ class EventService
                     recipientEmails: $approverEmails,
                     eventDetails: $eventDetails,
                     justification: $comment,
+                    approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
+                    creatorRoute: route('user.request', ['event' => $event->id])
+                    
                 );
 
 
@@ -367,12 +372,16 @@ class EventService
                 $creatorEmail = $event->requester->email;
                 $eventDetails = app(NotificationService::class)->getEventDetails($event);
                 $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+
+
                 app(NotificationService::class)->dispatchCancellationNotifications(
                     creatorEmail: $creatorEmail,
                     recipientEmails: $approverEmails,
                     eventDetails: $eventDetails,
                     justification: $comment ?? 'Event was cancelled.',
-                );
+                    approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
+                    creatorRoute: route('user.request', ['event' => $event->id])
+                    );
 
                 // Send email to the approvers
 
@@ -1036,7 +1045,9 @@ class EventService
                 app(NotificationService::class)->dispatchSanctionedNotification(
                     creatorEmail:$creatorEmail,
                     recipientEmails: $eventApproverEmails,
-                    eventDetails: $eventDetails
+                    eventDetails: $eventDetails,
+                    creatorRoute: route('user.request', ['event' => $event->id]),
+                    approverRoute: route('approver.history.request', ['eventHistory' => $event->id])
                 );
 
         }

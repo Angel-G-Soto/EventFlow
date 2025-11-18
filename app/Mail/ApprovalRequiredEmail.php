@@ -71,6 +71,7 @@ class ApprovalRequiredEmail extends Mailable implements ShouldQueue
             view: 'mail.approval-required-email',
             with: [
                 'event' => $this->event,
+                'route' => route('approver.pending.request', ['event' => $this->event['id'] ?? 0]),
             ]
         );
     }

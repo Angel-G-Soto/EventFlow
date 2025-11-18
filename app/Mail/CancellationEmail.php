@@ -41,6 +41,8 @@ class CancellationEmail extends Mailable implements ShouldQueue
      */
     public string $justification;
 
+    public string $route;
+
     /**
      * Create a new message instance.
      *
@@ -50,10 +52,11 @@ class CancellationEmail extends Mailable implements ShouldQueue
      *                                          and `requester_name`.
      * @param string              $justification Reason the event was cancelled.
      */
-    public function __construct(array $eventData, string $justification)
+    public function __construct(array $eventData, string $justification, string $route)
     {
         $this->eventData = $eventData;
         $this->justification = $justification;
+        $this->route = $route;
     }
 
     /**
@@ -82,6 +85,7 @@ class CancellationEmail extends Mailable implements ShouldQueue
             with: [
                 'event' => $this->eventData,
                 'justification' => $this->justification,
+                'route' => $this->route,
             ]
         );
     }
