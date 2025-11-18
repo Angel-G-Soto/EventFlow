@@ -34,7 +34,6 @@
   @if(!empty($importErrorMsg))
   <div class="alert alert-danger d-flex align-items-start justify-content-between" role="alert">
     <div class="me-3">
-      <strong>Import failed:</strong>
       <strong><span class="ms-1">{{ $importErrorMsg }}</span></strong>
     </div>
     <button type="button" class="btn-close" aria-label="Close" wire:click="$set('importErrorMsg', null)"></button>
@@ -105,13 +104,9 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th scope="col"
-              @if(($sortField ?? '') === 'name')
-                aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}"
-              @else
-                aria-sort="none"
-              @endif
-            >
+            <th scope="col" @if(($sortField ?? '' )==='name' )
+              aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}" @else aria-sort="none"
+              @endif>
               <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name
@@ -128,13 +123,9 @@
             </th>
             <th scope="col">Department</th>
             <th scope="col">Venue Code</th>
-            <th scope="col"
-              @if(($sortField ?? '') === 'capacity')
-                aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}"
-              @else
-                aria-sort="none"
-              @endif
-            >
+            <th scope="col" @if(($sortField ?? '' )==='capacity' )
+              aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}" @else aria-sort="none"
+              @endif>
               <button class="btn btn-link p-0 text-decoration-none text-black text-nowrap fw-bold"
                 wire:click="sortBy('capacity')" aria-label="Sort by capacity">
                 <span class="d-inline-flex align-items-center gap-1">
