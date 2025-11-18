@@ -47,19 +47,19 @@ class ProcessFileUpload implements ShouldQueue
             $tempRelative = basename($document->getFilePath());
             $path = Storage::disk('uploads_temp')->path($tempRelative);
 
-//            if (!file_exists(env('CLAMDSCAN_PATH'))) {
-//                throw new \Exception("clamdscan executable not found at: ".env('CLAMDSCAN_PATH'));
-//            }
-//
-//            // Create scanning process
-//            $scan = new Process([env('CLAMDSCAN_PATH'), $path]);
-//
-//            // Run process
-//            $scan->run();
+            if (!file_exists(env('CLAMDSCAN_PATH'))) {
+                throw new \Exception("clamdscan executable not found at: ".env('CLAMDSCAN_PATH'));
+            }
+
+            // Create scanning process
+            $scan = new Process([env('CLAMDSCAN_PATH'), $path]);
+
+            // Run process
+            $scan->run();
 
             // Examine output and take decision (move to documents folder or delete)
-//            if (Str::contains($scan->getOutput(), 'OK'))
-//            {
+            if (Str::contains($scan->getOutput(), 'OK'))
+            {
                 // Move file
                 $contents = Storage::disk('uploads_temp')->get($tempRelative);
                 Storage::disk('documents')->put($tempRelative, $contents);
@@ -67,14 +67,14 @@ class ProcessFileUpload implements ShouldQueue
 //                $document->file_path = 'documents/'.$tempRelative;
                 $document->file_path = $tempRelative;
                 $document->save();
-//            }
-//            elseif(Str::contains($scan->getOutput(), 'FOUND'))
-//            {
-//                // Delete file
-//                Storage::disk('uploads_temp')->delete($tempRelative);
-//                app(DocumentService::class)->deleteDocument($document);
-//            }
-//            else throw new ProcessFailedException($scan);
+            }
+            elseif(Str::contains($scan->getOutput(), 'FOUND'))
+            {
+                // Delete file
+                Storage::disk('uploads_temp')->delete($tempRelative);
+                app(DocumentService::class)->deleteDocument($document);
+            }
+            else throw new ProcessFailedException($scan);
         }
     }
 }
