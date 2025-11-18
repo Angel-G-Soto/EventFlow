@@ -128,11 +128,13 @@ class EventService
             try {
                 $actorId   = (int) $creator->id;
                 $actorName = trim((string)($creator->first_name ?? '').' '.(string)($creator->last_name ?? '')) ?: (string)($creator->email ?? '');
-                $meta      = ['status' => (string)$status, 'source' => 'event_form'];
-                // When the event is newly created, include its title in meta.
-                if ($event->wasRecentlyCreated) {
-                    $meta['title'] = (string) $event->title;
-                }
+                // Always include the event title in meta so it is visible
+                // in the audit log regardless of create vs update.
+                $meta      = [
+                    'status' => (string) $status,
+                    'source' => 'event_form',
+                    'title'  => (string) $event->title,
+                ];
 
                 $ctx = ['meta' => $meta];
                 if (function_exists('request') && request()) {
@@ -142,7 +144,7 @@ class EventService
                 $this->auditService->logAction(
                     $actorId,
                     'event',
-                    $event->wasRecentlyCreated ? 'EVENT_CREATED' : 'EVENT_UPDATED',
+                    $event->wasRecentlyCreated ? 'EVENT_REQUEST_CREATED' : 'EVENT_REQUEST_UPDATED',
                     (string) $event->id,
                     $ctx
                 );
