@@ -312,57 +312,57 @@ class DepartmentService
      * @return bool
      * @throws Exception
      */
-    public function deleteDepartment(int $id): bool
-    {
-        try {
-            if ($id < 0) throw new InvalidArgumentException('Department ID must be a positive integer.');
+    // public function deleteDepartment(int $id): bool
+    // {
+    //     try {
+    //         if ($id < 0) throw new InvalidArgumentException('Department ID must be a positive integer.');
 
-            $dept = Department::findOrFail($id);
-            $deleted = $dept->delete();
-
-
-            // AUDIT: department deleted (best-effort)
-            try {
-                /** @var \App\Services\AuditService $audit */
-                $audit = app(AuditService::class);
-
-                $actor   = Auth::user();
-                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
-
-                if ($actorId > 0 && $deleted) {
-                    $actorLabel = $actor
-                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
-                        : 'system';
-
-                    $meta = [
-                        'department_name' => (string) ($dept->name ?? ''),
-                        'department_code' => (string) ($dept->code ?? ''),
-                    ];
-
-                    $ctx = ['meta' => $meta];
-                    if (function_exists('request') && request()) {
-                        $ctx = $audit->buildContextFromRequest(request(), $meta);
-                    }
-
-                    $audit->logAdminAction(
-                        $actorId,
-                        'department',
-                        'DEPT_DELETED',
-                        (string) ($dept->id ?? $id),
-                        $ctx
-                    );
-                }
-            } catch (Throwable) { /* best-effort */ }
+    //         $dept = Department::findOrFail($id);
+    //         $deleted = $dept->delete();
 
 
-            return (bool) $deleted;
+    //         // AUDIT: department deleted (best-effort)
+    //         try {
+    //             /** @var \App\Services\AuditService $audit */
+    //             $audit = app(AuditService::class);
 
-        } catch (InvalidArgumentException | ModelNotFoundException $exception) {
-            throw $exception;
-        } catch (Throwable $exception) {
-            throw new Exception('Unable to delete the specified department.');
-        }
-    }
+    //             $actor   = Auth::user();
+    //             $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+
+    //             if ($actorId > 0 && $deleted) {
+    //                 $actorLabel = $actor
+    //                     ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+    //                     : 'system';
+
+    //                 $meta = [
+    //                     'department_name' => (string) ($dept->name ?? ''),
+    //                     'department_code' => (string) ($dept->code ?? ''),
+    //                 ];
+
+    //                 $ctx = ['meta' => $meta];
+    //                 if (function_exists('request') && request()) {
+    //                     $ctx = $audit->buildContextFromRequest(request(), $meta);
+    //                 }
+
+    //                 $audit->logAdminAction(
+    //                     $actorId,
+    //                     'department',
+    //                     'DEPT_DELETED',
+    //                     (string) ($dept->id ?? $id),
+    //                     $ctx
+    //                 );
+    //             }
+    //         } catch (Throwable) { /* best-effort */ }
+
+
+    //         return (bool) $deleted;
+
+    //     } catch (InvalidArgumentException | ModelNotFoundException $exception) {
+    //         throw $exception;
+    //     } catch (Throwable $exception) {
+    //         throw new Exception('Unable to delete the specified department.');
+    //     }
+    // }
 
     /////////////////////////////////////////////// SPECIALIZED FUNCTIONS //////////////////////////////////////////////
 
