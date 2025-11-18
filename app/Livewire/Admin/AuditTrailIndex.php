@@ -11,7 +11,7 @@ use App\Services\AuditService;
 class AuditTrailIndex extends Component
 {
     // Filters / query params
-    public ?int $userId = null;
+    public ?string $userSearch = null;
     public string $action = '';           // e.g. 'USER_UPDATE'
     public ?string $from = null;          // '2025-01-01'
     public ?string $to = null;            // '2025-01-31'
@@ -33,7 +33,7 @@ class AuditTrailIndex extends Component
      */
     public function updated($field)
     {
-        if (in_array($field, ['userId', 'action', 'from', 'to', 'adminOnly', 'pageSize'])) {
+        if (in_array($field, ['userSearch', 'action', 'from', 'to', 'pageSize'])) {
             $this->page = 1;
         }
     }
@@ -44,7 +44,7 @@ class AuditTrailIndex extends Component
      */
     public function clearFilters(): void
     {
-        $this->reset(['userId', 'action', 'from', 'to', 'adminOnly']);
+        $this->reset(['userSearch', 'action', 'from', 'to']);
         $this->pageSize = 25;
         $this->page = 1;
     }
@@ -55,6 +55,14 @@ class AuditTrailIndex extends Component
     public function goToPage(int $target): void
     {
         $this->page = max(1, $target);
+    }
+
+    /**
+     * Explicit applySearch handler so deferred search inputs submit via button/enter.
+     */
+    public function applySearch(): void
+    {
+        $this->page = 1;
     }
 
   // Validation rules
@@ -68,7 +76,7 @@ class AuditTrailIndex extends Component
     protected function rules(): array
     {
         return [
-            'userId' => ['nullable', 'integer', 'min:1'],
+            'userSearch' => ['nullable', 'string', 'max:100'],
             'action' => ['nullable', 'string', 'max:100', 'not_regex:/^\\s*$/'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => [
@@ -132,9 +140,24 @@ class AuditTrailIndex extends Component
             $target .= ': #'.$targetId;
         }
 
+        // Resolve a human-friendly user label if possible
+        $userLabel = null;
+        try {
+            $actor = method_exists($log, 'actor') ? $log->actor : null;
+            if ($actor) {
+                $name = trim((string)($actor->first_name ?? '') . ' ' . (string)($actor->last_name ?? ''));
+                $userLabel = $name !== ''
+                    ? $name
+                    : (string)($actor->name ?? ($actor->email ?? ''));
+            }
+        } catch (\Throwable $e) {
+            $userLabel = null;
+        }
+
         return [
             'id' => $log->id ?? null,
             'user_id' => $log->user_id ?? null,
+            'user_label' => $userLabel,
             'action' => $log->action ?? '',
 
             // human-ish target label
@@ -174,8 +197,8 @@ class AuditTrailIndex extends Component
         }
 
         $filters = [];
-        if ($this->userId) {
-            $filters['user_id'] = (int) $this->userId;
+        if (!empty($this->userSearch)) {
+            $filters['user'] = (string) $this->userSearch;
         }
         if ($this->action) {
             $filters['action'] = $this->action;
@@ -191,7 +214,7 @@ class AuditTrailIndex extends Component
             $rows = app(AuditService::class)->getPaginatedLogs($filters, $this->pageSize, (int) ($this->page ?? 1));
         } catch (\Throwable $e) {
             // On failure, return an empty paginator and surface a non-fatal error (no dummy data)
-            $this->addError('userId', 'Audit log unavailable.');
+            $this->addError('userSearch', 'Audit log unavailable.');
             $empty = collect();
             $rows = new LengthAwarePaginator($empty, 0, $this->pageSize, 1, [
                 'path' => request()->url(),

@@ -940,33 +940,43 @@ class EventService
             // Append history with standardized action label and justification
             EventHistory::create([
                 'event_id' => $event->id,
-                'action'   => 'cancelled',
-                'comment'  => $justification ?: 'Event was cancelled.',
+                'approver_id' => (int) $user->id,
+                'action' => 'cancelled',
+                'comment' => $justification ?: 'Event was cancelled.',
+                'status_when_signed' => 'cancelled',
             ]);
 
             // Audit with justification in meta
             $this->auditService->logAdminAction(
                 $user->id,
                 'event',
-                'ADMIN_OVERRIDE',
+                'ADMIN_OVERRIDE_CANCEL',
                 (string) $event->id,
                 ['meta' => ['justification' => (string) $justification]]
             );
 
-            //                // Send email to the approvers
-            $creatorEmail = $event->requester->email;
-            $eventDetails = app(NotificationService::class)->getEventDetails($event);
-            $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+            // Notifications are best-effort; cancellation should not fail if email dispatch fails
+            try {
+                $creatorEmail = optional($event->requester)->email;
+                if ($creatorEmail) {
+                    $eventDetails = app(NotificationService::class)->getEventDetails($event);
+                    $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
 
-
-            app(NotificationService::class)->dispatchCancellationNotifications(
-                creatorEmail: $creatorEmail,
-                recipientEmails: $approverEmails,
-                eventDetails: $eventDetails,
-                justification: $justification ?: 'Event was cancelled.',
-                creatorRoute: route('user.request', ['event' => $event->id]),
-                approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
-            );
+                    app(NotificationService::class)->dispatchCancellationNotifications(
+                        creatorEmail: $creatorEmail,
+                        recipientEmails: $approverEmails,
+                        eventDetails: $eventDetails,
+                        justification: $justification ?: 'Event was cancelled.',
+                        creatorRoute: route('user.request', ['event' => $event->id]),
+                        approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Event cancellation notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
 
             return $event->refresh();
