@@ -236,7 +236,7 @@ class EventService
             ->update(['status' => 'rejected']);
         if ($updated === 0) return $event; // stop if race condition occurred
 
-        $this->updateLastHistory($event, $approver, $justification ?: 'unjustified rejection', 'rejected');
+        $this->updateLastHistory($event, $approver, 'rejected', $justification ?: 'unjustified rejection');
 
         // Run audit trail
         // AUDIT: approver denied event
@@ -314,7 +314,7 @@ class EventService
             if ($updated === 0) return $event; // stop if race condition occurred
 
             // Update last history record
-            $this->updateLastHistory($event, $approver, $comment, 'approved');
+            $this->updateLastHistory($event, $approver, 'approved', $comment);
 
             // Run audit trail
             // AUDIT: approver advanced approval stage (or final approval)
@@ -416,7 +416,7 @@ class EventService
         if ($updated === 0) {
             return $event;
         }
-        $this->updateLastHistory($event, $actor, $comment, $action);
+        $this->updateLastHistory($event, $actor, $action, $comment);
         return $event->refresh();
     }
 
@@ -425,10 +425,10 @@ class EventService
      *
      * @param Event $event
      * @param User $approver
-     * @param string|null $comment
      * @param string $action Final action label (approved/rejected/etc).
+     * @param string|null $comment
      */
-    protected function updateLastHistory(Event $event, User $approver, ?string $comment = null, string $action)
+    protected function updateLastHistory(Event $event, User $approver, string $action, ?string $comment = null)
     {
         $lastHistory = $event->history()
             ->where('action', 'pending')
