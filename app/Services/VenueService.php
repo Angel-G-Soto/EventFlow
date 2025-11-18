@@ -797,34 +797,32 @@ class VenueService
             );
         }
 
-        // Update or create the venue with the filtered data
-        $venueModel = Venue::updateOrCreate(
-            [
-                'id' => $venue->id
-            ],
-            $data
-        );
-
-        // Audit after persistence, distinguishing between create vs update
         if ($admin) {
-            $action = $venueModel->wasRecentlyCreated ? 'VENUE_CREATED' : 'VENUE_UPDATED';
             $this->auditService->logAdminAction(
                 $admin->id,
                 'venue',
-                $action,
-                (string)$venueModel->id,
+                'VENUE_UPDATED',
+                (string)$venue->id,
                 ['meta' => ['fields' => array_keys($data)]]
             );
         }
 
+        // // Update the venue with the filtered data
+        // $venue = Venue::updateOrCreate(
+        //     [
+        //         'id' => $venue->id
+        //     ],
+        //     $data
+        // );
+
         if ($availabilityPayload !== null) {
             $normalized = $this->normalizeAvailabilityPayload($availabilityPayload);
-            $this->syncAvailabilityRecords($venueModel, $normalized);
+            $this->syncAvailabilityRecords($venue, $normalized);
         } elseif (!empty($legacyPayload)) {
-            $this->syncAvailabilityRecords($venueModel, $legacyPayload);
+            $this->syncAvailabilityRecords($venue, $legacyPayload);
         }
 
-        return $venueModel->load('availabilities');
+        return $venue->load('availabilities');
         //}
         //catch (InvalidArgumentException $exception) {throw $exception;}
         //catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
@@ -863,6 +861,9 @@ class VenueService
             $updatedVenues = new Collection();
 
             $allowedImportExtras = ['department', 'department_code', 'department_code_raw', 'department_name_raw', 'availabilities'];
+            $createdCount = 0;
+            $updatedCount = 0;
+
             foreach ($venueData as $venue) {
                 // Verify that the requirementsData structure is met
 
@@ -918,9 +919,9 @@ class VenueService
 
                 // Use venue code as the unique key: if a venue with this code
                 // exists, update all fields; otherwise, create a new one.
-                $venueModel = Venue::where('code', $venue['code'])->first();
+                $existing = Venue::where('code', $venue['code'])->first();
 
-                if (!$venueModel) {
+                if (!$existing) {
                     $venueModel = Venue::create([
                         'name' => $venue['name'],
                         'code' => $venue['code'],
@@ -929,13 +930,60 @@ class VenueService
                         'capacity' => $venue['capacity'],
                         'test_capacity' => $venue['test_capacity'],
                     ]);
+                    $createdCount++;
                 } else {
-                    $venueModel->name = $venue['name'];
-                    $venueModel->department_id = $department->id;
-                    $venueModel->features = $venue['features'];
-                    $venueModel->capacity = $venue['capacity'];
-                    $venueModel->test_capacity = $venue['test_capacity'];
-                    $venueModel->save();
+                    // Only log and count as updated if something actually changed
+                    $changedFields = [];
+                    if ($existing->name !== $venue['name']) {
+                        $changedFields[] = 'name';
+                        $existing->name = $venue['name'];
+                    }
+                    if ($existing->department_id !== $department->id) {
+                        $changedFields[] = 'department_id';
+                        $existing->department_id = $department->id;
+                    }
+                    if ($existing->features !== $venue['features']) {
+                        $changedFields[] = 'features';
+                        $existing->features = $venue['features'];
+                    }
+                    if ((int)$existing->capacity !== (int)$venue['capacity']) {
+                        $changedFields[] = 'capacity';
+                        $existing->capacity = $venue['capacity'];
+                    }
+                    if ((int)$existing->test_capacity !== (int)$venue['test_capacity']) {
+                        $changedFields[] = 'test_capacity';
+                        $existing->test_capacity = $venue['test_capacity'];
+                    }
+
+                    if (!empty($changedFields)) {
+                        $existing->save();
+                        $updatedCount++;
+
+                        if ($admin) {
+                            // Build context including IP/UA when available, plus CSV meta.
+                            $meta = [
+                                'source' => 'csv-import',
+                                'code'   => $venue['code'],
+                                'changed_fields' => $changedFields,
+                            ];
+                            $ctx = $context;
+                            if (function_exists('request') && request()) {
+                                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                            } else {
+                                $ctx['meta'] = array_merge($ctx['meta'] ?? [], $meta);
+                            }
+
+                            $this->auditService->logAdminAction(
+                                $admin->id,
+                                'venue',
+                                'VENUE_UPDATED',
+                                (string) $existing->id,
+                                $ctx
+                            );
+                        }
+                    }
+
+                    $venueModel = $existing;
                 }
 
                 $updatedVenues->add($venueModel);
@@ -953,7 +1001,17 @@ class VenueService
             // Audit import action when admin context is available (auth-less supported)
             $ctx = $context;
             if (empty($ctx) && function_exists('request') && request()) {
-                $ctx = $this->auditService->buildContextFromRequest(request());
+                $ctx = $this->auditService->buildContextFromRequest(request(), [
+                    'created' => $createdCount,
+                    'updated' => $updatedCount,
+                    'total'   => $createdCount + $updatedCount,
+                ]);
+            } else {
+                $ctx['meta'] = array_merge($ctx['meta'] ?? [], [
+                    'created' => $createdCount,
+                    'updated' => $updatedCount,
+                    'total'   => $createdCount + $updatedCount,
+                ]);
             }
             if ($admin) {
                 $this->auditService->logAdminAction(

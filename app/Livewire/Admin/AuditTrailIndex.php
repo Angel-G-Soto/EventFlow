@@ -55,7 +55,7 @@ class AuditTrailIndex extends Component
    */
   public function goToPage(int $target): void
   {
-    $this->page = max(1, $target);
+    $this->setPage(max(1, $target));
   }
 
   // Validation rules
