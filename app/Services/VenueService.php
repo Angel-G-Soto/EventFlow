@@ -416,8 +416,7 @@ class VenueService
         }
 
         $file->storeAs('', $safe, 'uploads_temp');
-        $fullPath = Storage::disk('uploads_temp')->path($safe);
-        @chmod($fullPath, 0644);
+
         if (empty($context) && function_exists('request') && request()) {
             $context = [
                 'ip' => request()->ip(),
