@@ -129,6 +129,10 @@ class EventService
                 $actorId   = (int) $creator->id;
                 $actorName = trim((string)($creator->first_name ?? '').' '.(string)($creator->last_name ?? '')) ?: (string)($creator->email ?? '');
                 $meta      = ['status' => (string)$status, 'source' => 'event_form'];
+                // When the event is newly created, include its title in meta.
+                if ($event->wasRecentlyCreated) {
+                    $meta['title'] = (string) $event->title;
+                }
 
                 $ctx = ['meta' => $meta];
                 if (function_exists('request') && request()) {
