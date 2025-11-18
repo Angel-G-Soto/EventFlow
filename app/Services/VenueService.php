@@ -913,20 +913,32 @@ class VenueService
                 if ($department == null) {
                     throw new ModelNotFoundException('Department [' . ($deptCode ?: $deptNameOrCode) . '] does not exist.');
                 }
-                $venueModel = Venue::updateOrCreate(
-                    [
-                        'name' => $venue['name'],
-                        'code' => $venue['code'],
-                    ],
-                    [
+
+                // If the venue already exists (by code or by name), update all fields.
+                // Otherwise, create a new venue record.
+                $venueModel = Venue::where('code', $venue['code'])->first();
+                if (!$venueModel) {
+                    $venueModel = Venue::where('name', $venue['name'])->first();
+                }
+
+                if ($venueModel) {
+                    $venueModel->name = $venue['name'];
+                    $venueModel->code = $venue['code'];
+                    $venueModel->department_id = $department->id;
+                    $venueModel->features = $venue['features'];
+                    $venueModel->capacity = $venue['capacity'];
+                    $venueModel->test_capacity = $venue['test_capacity'];
+                    $venueModel->save();
+                } else {
+                    $venueModel = Venue::create([
                         'name' => $venue['name'],
                         'code' => $venue['code'],
                         'department_id' => $department->id,
                         'features' => $venue['features'],
                         'capacity' => $venue['capacity'],
                         'test_capacity' => $venue['test_capacity'],
-                    ]
-                );
+                    ]);
+                }
 
                 $updatedVenues->add($venueModel);
 
