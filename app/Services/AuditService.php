@@ -223,7 +223,7 @@ class AuditService
      * @param int                 $perPage
      * @return LengthAwarePaginator<AuditTrail>
      */
-    public function getPaginatedLogs(array $filters = [], int $perPage = 25): LengthAwarePaginator
+    public function getPaginatedLogs(array $filters = [], int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
         // Select all columns to avoid referencing optional columns that may not exist
         $q = AuditTrail::query()->orderByDesc('created_at');
@@ -244,7 +244,11 @@ class AuditService
             $q->whereDate('created_at', '<=', (string) $filters['date_to']);
         }
 
-        $paginator = $q->paginate($perPage);
+        $currentPage = $page !== null ? max(1, $page) : null;
+
+        $paginator = $currentPage === null
+            ? $q->paginate($perPage)
+            : $q->paginate($perPage, ['*'], 'page', $currentPage);
 
         $paginator->appends(array_filter([
             'user_id'   => $filters['user_id']   ?? null,

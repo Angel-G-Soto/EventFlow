@@ -67,7 +67,7 @@ return $dt;
     </small>
     <div class="d-flex align-items-center gap-2">
       <label class="text-secondary small mb-0 text-black" for="audit_rows">Rows</label>
-      <select id="audit_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="perPage">
+      <select id="audit_rows" class="form-select form-select-sm" style="width:auto" wire:model.live="pageSize">
         <option>25</option>
         <option>50</option>
         <option>100</option>
