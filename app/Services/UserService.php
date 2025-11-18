@@ -168,7 +168,7 @@ class UserService
         $roleIds = $this->resolveRoleIds($requested);
         $user->roles()->sync(array_values(array_unique($roleIds)));
 
-        $this->clearDepartmentIfNeeded($user, $previousRoles, $requested, $admin, $justification);
+        $this->removeDepartmentIfNoDepartmentRole($user, $previousRoles, $requested, $admin, $justification);
         $this->logUserRoleUpdate($user, $roleCodes, $admin, $justification);
 
         return $user->load('roles');
@@ -246,18 +246,18 @@ class UserService
      * @param User $admin
      * @param string $justification
      */
-    private function clearDepartmentIfNeeded(User $user, array $previousRoles, array $requested, User $admin, string $justification): void
+    private function removeDepartmentIfNoDepartmentRole(User $user, array $previousRoles, array $requested, User $admin, string $justification): void
     {
-        $requiresDepartment = function (array $codes) {
-            $codes = collect($codes)->map(fn($c) => Str::slug(mb_strtolower((string) $c)))->all();
+        $normalize = fn($c) => Str::slug(mb_strtolower((string) $c));
+        $hasDeptRole = function(array $codes) use ($normalize) {
+            $codes = array_map($normalize, $codes);
             return in_array('department-director', $codes, true) || in_array('venue-manager', $codes, true);
         };
-        $hadDeptRole = $requiresDepartment($previousRoles);
-        $hasDeptRole = $requiresDepartment($requested);
-        if ($hadDeptRole && !$hasDeptRole && $user->department_id !== null) {
+        $hadDeptRole = $hasDeptRole($previousRoles);
+        $hasNowDeptRole = $hasDeptRole($requested);
+        if ($hadDeptRole && !$hasNowDeptRole && $user->department_id !== null) {
             $user->department_id = null;
             $user->save();
-
             if ($admin && $admin->id) {
                 $meta = [
                     'user_id'    => (int) ($user->id ?? 0),
@@ -273,8 +273,7 @@ class UserService
                     if (function_exists('request') && request()) {
                         $ctx = app(AuditService::class)->buildContextFromRequest(request(), $meta);
                     }
-                } catch (\Throwable) { /* best-effort */ }
-
+                } catch (\Throwable) {}
                 $this->auditService->logAdminAction(
                     $admin->id,
                     'department',

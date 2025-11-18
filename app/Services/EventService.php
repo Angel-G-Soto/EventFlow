@@ -965,10 +965,9 @@ class EventService
                 creatorEmail: $creatorEmail,
                 recipientEmails: $approverEmails,
                 eventDetails: $eventDetails,
-                justification: $comment ?? 'Event was cancelled.',
+                justification: $justification ?: 'Event was cancelled.',
                 creatorRoute: route('user.request', ['event' => $event->id]),
                 approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
-
             );
 
 
