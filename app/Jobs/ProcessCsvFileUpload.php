@@ -111,7 +111,7 @@ class ProcessCsvFileUpload implements ShouldQueue
             $scan = new Process([env('CLAMDSCAN_PATH'), '--fdpass', $filePath]);
             $scan->run();
             $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
-            dd($output);
+            // dd($output);
             if (Str::contains($output, 'FOUND')) {
                 $infected = true;
             } elseif (!Str::contains($output, 'OK')) {
