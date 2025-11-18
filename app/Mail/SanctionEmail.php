@@ -33,6 +33,8 @@ class SanctionEmail extends Mailable implements ShouldQueue
      */
     public array $eventData;
 
+    public string $route;
+
     /**
      * Create a new message instance.
      *
@@ -41,9 +43,10 @@ class SanctionEmail extends Mailable implements ShouldQueue
      *                                        `id`, `title`, `starts_at`, `ends_at`, `location`,
      *                                        and `requester_name`.
      */
-    public function __construct(array $eventData)
+    public function __construct(array $eventData, string $route)
     {
         $this->eventData = $eventData;
+        $this->route = $route;
     }
 
     /**
@@ -68,9 +71,10 @@ class SanctionEmail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'mail.sanctioned-email',
+            view: 'mail.sanction-email',
             with: [
                 'event' => $this->eventData,
+                'route' => $this->route,
             ]
         );
     }

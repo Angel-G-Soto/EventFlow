@@ -26,7 +26,8 @@
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px; max-width:600px; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
                   <!-- Header -->
                   <tr>
-                      <td style="background:#0f6b3e; padding:20px 24px;">
+{{--                      #0f6b3e--}}
+                      <td style="background:#3a5178; padding:20px 24px;">
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                               <tr>
                                   <td align="left" style="font-family:Arial, Helvetica, sans-serif; color:#e8f5ed; font-size:18px; font-weight:700;">
@@ -58,10 +59,6 @@
                       <td style="background:#f0f4f8; padding:16px 24px;">
                           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                               <tr>
-                                  <td align="left" style="font-family:Arial, Helvetica, sans-serif; color:#6b7280; font-size:12px; line-height:1.5;">
-                                      © {{ date('Y') }} {{ config('app.name', 'EventFlow') }} — All rights reserved.
-                                      <br>
-                                  </td>
                                   <td align="right" style="font-family:Arial, Helvetica, sans-serif; color:#6b7280; font-size:12px;">
 
                                       <a style="color:#6b7280; text-decoration:none;">{{ config('app.name', 'EventFlow') }}</a>

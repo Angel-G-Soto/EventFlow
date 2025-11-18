@@ -114,7 +114,9 @@
                 <div class="col-md-12">
                     <label class="form-label required">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
-                    @error('guest_size') <div class="text-danger small">{{ $message }}</div> @enderror
+                    @error('guest_size')
+                        <div class="text-danger small">{{ $message }}</div>
+                    @enderror
 
                 </div>
 
@@ -372,52 +374,48 @@
                             </button>
                         </div>
                     </div>
-                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability query.</div>
+                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability
+                        query.</div>
                 </div>
             </div>
 
             <div class="table-responsive mb-2">
                 <table class="table table-hover align-middle shadow-sm">
                     <thead class="table-light">
-                    <tr>
-                        <th scope="col" style="width:56px">Select</th>
-                        <th scope="col">Code</th>
-                        <th scope="col">Name</th>
-                        <th scope="col" class="text-end">Capacity</th>
-                        <th scope="col" class="text-center" style="width:120px">Details</th>
-                    </tr>
+                        <tr>
+                            <th scope="col" style="width:56px">Select</th>
+                            <th scope="col">Code</th>
+                            <th scope="col">Name</th>
+                            <th scope="col" class="text-end">Capacity</th>
+                            <th scope="col" class="text-center" style="width:120px">Details</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    @forelse ($this->paginatedVenues as $v)
-                        <tr wire:key="venue-row-{{ $v['id'] }}"
-                            class="{{ (int)$venue_id === (int)($v['id'] ?? 0) ? 'table-primary' : '' }}"
-                            style="cursor:pointer"
-                            wire:click="selectVenue({{ $v['id'] }})">
-                            <td>
-                                <input type="radio"
-                                       class="form-check-input"
-                                       wire:model.live="venue_id"
-                                       value="{{ $v['id'] }}"
-                                       aria-label="Select {{ $v['code'] ?? ('Venue #'.$v['id']) }}" />
-                            </td>
-                            <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
-                            <td>{{ $v['name'] ?? '—' }}</td>
-                            <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
-                            <td class="text-center">
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-primary"
-                                    wire:click.stop="showVenueDescription({{ $v['id'] }})"
-                                >
-                                    View
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No venues match the current filter.</td>
-                        </tr>
-                    @endforelse
+                        @forelse ($this->paginatedVenues as $v)
+                            <tr wire:key="venue-row-{{ $v['id'] }}"
+                                class="{{ (int) $venue_id === (int) ($v['id'] ?? 0) ? 'table-primary' : '' }}"
+                                style="cursor:pointer" wire:click="selectVenue({{ $v['id'] }})">
+                                <td>
+                                    <input type="radio" class="form-check-input" wire:model.live="venue_id"
+                                        value="{{ $v['id'] }}"
+                                        aria-label="Select {{ $v['code'] ?? 'Venue #' . $v['id'] }}" />
+                                </td>
+                                <td><span class="fw-semibold">{{ $v['code'] ?? '—' }}</span></td>
+                                <td>{{ $v['name'] ?? '—' }}</td>
+                                <td class="text-end">{{ $v['capacity'] ?? '—' }}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        wire:click.stop="showVenueDescription({{ $v['id'] }})">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No venues match the current
+                                    filter.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -463,7 +461,9 @@
                     </nav>
                 @endif
             </div>
-            @error('venue_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            @error('venue_id')
+                <div class="text-danger small mt-1">{{ $message }}</div>
+            @enderror
 
 
 
@@ -494,7 +494,8 @@
                             {{ $selectedVenueDetails['name'] ?? 'Venue details' }}
                             <small class="text-muted ms-2">{{ $selectedVenueDetails['code'] ?? '' }}</small>
                         </h5>
-                        <button type="button" class="btn-close" aria-label="Close" wire:click="closeVenueDescription"></button>
+                        <button type="button" class="btn-close" aria-label="Close"
+                            wire:click="closeVenueDescription"></button>
                     </div>
                     <div class="modal-body">
                         <p class="text-muted mb-3">
@@ -594,20 +595,69 @@
 
             @if ($this->shouldShowRequirementUploads)
                 <div class="mb-3">
-                    <label for="requirementFiles" class="form-label">Upload Requirement Documents</label>
-                    <input type="file"
-                           class="form-control"
-                           id="requirementFiles"
-                           wire:model="requirementFiles"
-                           multiple
-                           accept=".pdf"/>
-                    <div class="form-text">
-                        Upload all required documents here. Accepted formats: PDF.
+                    <label for="requirementFiles" class="form-label fw-semibold">
+                        Upload Requirement Documents
+                        <span class="text-muted">(PDF, max 10MB each)</span>
+                    </label>
+
+                    <div class="position-relative">
+                        {{-- Visible dropzone UI --}}
+                        <div class="w-100 d-flex flex-column align-items-center justify-content-center rounded-3 p-4 text-center bg-light border border-2"
+                            style="border-style: dashed;">
+                            {{-- If you have Bootstrap Icons, this will show a nice cloud icon --}}
+                            <i class="bi bi-cloud-arrow-up fs-1 mb-2"></i>
+
+                            <span class="fw-semibold">Click to choose files</span>
+                            <span class="text-muted small">or drag and drop them here</span>
+                        </div>
+
+                        {{-- Actual file input overlay (handles click + drag/drop) --}}
+                        <input id="newRequirementFiles" type="file" wire:model="newRequirementFiles" multiple
+                            accept=".pdf" class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                            style="cursor: pointer;">
                     </div>
 
-                @error('requirementFiles.*')
-                    <div class="text-danger">{{ $message }}</div>
-                @enderror
+                    <div class="form-text mt-2">
+                        Upload all required documents here. Accepted formats: PDF. Maximum size 10MB per document.
+                    </div>
+
+                    {{-- Top-level error: no documents at all (if you add that rule later) --}}
+                    @error('requirementFiles')
+                    <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
+
+                    {{-- Deduped per-file errors for newRequirementFiles.* --}}
+                    @foreach (collect($errors->get('newRequirementFiles.*', []))->flatten()->unique() as $message)
+                        <div class="text-danger small mt-2">{{ $message }}</div>
+                    @endforeach
+                </div>
+
+                {{-- Preview list of all selected files --}}
+                @if ($requirementFiles)
+                    <ul class="list-group mb-3">
+                        @foreach ($requirementFiles as $index => $file)
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-semibold">
+                                        {{ $file->getClientOriginalName() }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        ~ {{ number_format($file->getSize() / 1024 / 1024, 2) }} MB
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                    wire:click="removeRequirementFile({{ $index }})">
+                                    Remove
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                {{-- Small “uploading” hint when Livewire is handling a new batch --}}
+                <div wire:loading wire:target="newRequirementFiles" class="mt-2 small text-muted">
+                    Uploading… please wait.
                 </div>
             @endif
 
@@ -698,3 +748,23 @@
         });
     })();
 </script>
+
+
+{{--// Flag to prevent 'beforeunload' on form submit--}}
+{{--let isSubmitting = false;--}}
+
+{{--// Add event listener for the form submit action--}}
+{{--document.querySelectorAll('form').forEach(function(form) {--}}
+{{--form.addEventListener('submit', function() {--}}
+{{--isSubmitting = true;--}}
+{{--});--}}
+{{--});--}}
+
+{{--// Trigger beforeunload when the user tries to leave the page (except on form submit)--}}
+{{--window.addEventListener('beforeunload', function(event) {--}}
+{{--if (!isSubmitting) { // Only show the warning if it's not a form submission--}}
+{{--const confirmationMessage = "You have unsaved changes. Are you sure you want to leave?";--}}
+{{--event.returnValue = confirmationMessage; // For most modern browsers--}}
+{{--return confirmationMessage; // For older browsers--}}
+{{--}--}}
+{{--});--}}

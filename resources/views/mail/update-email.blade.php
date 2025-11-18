@@ -1,11 +1,11 @@
 @extends('mail.mail-layout')
 
-@section('subject', 'Event Sanctioned')
-@section('preheader', 'Your event has been approved.')
+@section('subject', 'Event Updated')
+@section('preheader', 'Your event has been updated.')
 
 @section('content')
 
-    <h3>The following event has been sanctioned</h3>
+    <h3>The following event has been approved by {{$approverName}} ({{$role}})</h3>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
         <tr>
             <td align="center" style="padding:16px;">
@@ -39,7 +39,7 @@
                 </table>
                 <br>
                 <div style="width: 100%">
-                    <a href="{{ $route }}" target="_blank"
+                    <a href="https://www.amazon.com/"
                        style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:14px;text-decoration:none;background:#0d6efd;color:#ffffff;padding:8px 12px;border-radius:6px;display:inline-block;">
                         View in EventFlow
                     </a>

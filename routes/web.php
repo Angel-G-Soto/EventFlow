@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\DocumentController;
 use App\Http\Middleware\EnsureAuthentication;
+use App\Models\Document;
+use App\Services\DocumentService;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
@@ -13,9 +16,11 @@ use App\Livewire\Admin\VenuesIndex;
 use App\Livewire\Admin\EventsIndex;
 use App\Livewire\Admin\AuditTrailIndex;
 use App\Livewire\Admin\CategoriesIndex;
+use Illuminate\Http\Request;
 
 require __DIR__ . '/saml2.php';
 //require __DIR__.'/auth.php';
+
 
 Route::get('/', PublicCalendar::class)->name('public.calendar');
 //Route::get('/choose-role', ChooseRole::class)->name('choose.role');
@@ -70,17 +75,31 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
   Route::get('director', \App\Livewire\Director\VenuesIndex::class)->name('director.venues.index');
 
   //Documents
-  Route::get('/documents/{name}', function (string $name) {
-    $path = \Illuminate\Support\Facades\Storage::disk('documents')->path($name);
+  Route::get('/documents/{documentId}', \App\Livewire\ShowDocument::class)
+      ->name('documents.show');
 
-    abort_unless(file_exists($path), 404);
+  Route::get('/documents/{document}/pdf', function (Document $document, DocumentService $service) {
+        // Optional: policy check here if you want
+        // $this->authorize('viewMyDocument', [$document->event]);
 
-    return Response::file($path, [
-      'Content-Type'        => 'application/pdf',
-      'Content-Disposition' => 'inline; filename="' . basename($path),
-      'Cache-Control'       => 'private, max-age=3600',
-    ]);
-  })->name('documents.show');
+        return $service->showPDF($document);
+    })->name('documents.pdf');
+
+
+
+//  Route::get('/documents/{file_path}', function (string $file_path, Request $request) {
+//    $path = \Illuminate\Support\Facades\Storage::disk('documents')->path($file_path);
+//
+//      $downloadName = $request->query('name') ?: basename($path);
+//
+////    abort_unless(file_exists($path), 404);
+//
+//    return Response::file($path, [
+//      'Content-Type'        => 'application/pdf',
+//      'Content-Disposition' => 'inline; filename="' . $downloadName . '"',
+//      'Cache-Control'       => 'private, max-age=3600',
+//    ]);
+//  })->name('documents.show');
 
 
 
