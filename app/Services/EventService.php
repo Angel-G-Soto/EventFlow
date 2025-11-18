@@ -250,7 +250,7 @@ class EventService
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
             }
 
-            $this->auditService->logAdminAction(
+            $this->auditService->logAction(
                 $actorId,
                 'event',
                 'EVENT_DENIED',
