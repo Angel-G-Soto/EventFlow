@@ -893,6 +893,7 @@ class VenueService
                 }
                 // Try to resolve department by code first, then by name
                 $deptCode = $venue['department_code'] ?? $venue['department_code_raw'] ?? null;
+                $deptNameRaw = $venue['department_name_raw'] ?? null;
                 $deptNameOrCode = $venue['department'] ?? null;
                 $department = null;
                 if ($deptCode) {
@@ -904,6 +905,10 @@ class VenueService
                 }
                 if (!$department && $deptNameOrCode) {
                     $department = $this->departmentService->findByName($deptNameOrCode);
+                }
+                // Fallback: match by raw department name from CSV when available
+                if (!$department && $deptNameRaw) {
+                    $department = $this->departmentService->findByName($deptNameRaw);
                 }
                 if ($department == null) {
                     throw new ModelNotFoundException('Department [' . ($deptCode ?: $deptNameOrCode) . '] does not exist.');

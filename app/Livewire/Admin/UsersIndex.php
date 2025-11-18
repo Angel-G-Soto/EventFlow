@@ -296,7 +296,7 @@ class UsersIndex extends Component
 
         return [
             'editName'       => [
-                'required', 'string', 'min:2', 'max:255', 'regex:/^[A-Za-z\s\'\.-]+$/', 'not_regex:/^\s*$/',
+                'required', 'string', 'min:5', 'max:255', 'regex:/^[A-Za-z\s\'\.-]+$/', 'not_regex:/^\s*$/',
             ],
             'editEmail'      => [
                 'required',
