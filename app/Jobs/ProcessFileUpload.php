@@ -56,7 +56,6 @@ class ProcessFileUpload implements ShouldQueue
 
             // Run process
             $scan->run();
-            dd($scan->getOutput());
             // Examine output and take decision (move to documents folder or delete)
             if (Str::contains($scan->getOutput(), 'OK'))
             {
