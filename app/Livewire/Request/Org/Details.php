@@ -98,24 +98,12 @@ class Details extends Component
         $this->authorize('viewMyRequest', $this->event);
 
         $eventService = app(EventService::class);
-        $event = $this->event;
+        $event = $eventService->loadEventDetails($this->event);
         $docs = $eventService->getEventDocuments($event)->toArray();
-        $event->loadMissing([
-            'categories:id,name',
-            'venue:id,name,code,description',
-        ]);
-
-        $terminalHistory = null;
-        if (in_array($event->status, ['cancelled', 'rejected'], true)) {
-            $terminalHistory = $event->history()
-                ->with('approver:id,first_name,last_name,email')
-                ->whereIn('action', ['cancelled', 'rejected'])
-                ->latest('updated_at')
-                ->first();
-        }
+        $terminalNotice = $eventService->getTerminalActionNotice($event);
         return view('livewire.request.org.details', [
             'docs' => $docs,
-            'terminalHistory' => $terminalHistory,
+            'terminalNotice' => $terminalNotice,
         ]);
     }
 }

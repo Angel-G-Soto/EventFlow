@@ -109,27 +109,16 @@ class Details extends Component
     {
         $this->authorize('manageMyApprovalHistory', $this->eventHistory);
 
-        $event = tap($this->eventHistory->event)->loadMissing([
-            'categories:id,name',
-            'venue:id,name,code,description',
-        ]);
-
-        $docs = app(EventService::class)->getEventDocuments($event)->toArray();
-
-        $terminalHistory = null;
-        if (in_array($event->status, ['cancelled', 'rejected'], true)) {
-            $terminalHistory = $event->history()
-                ->with('approver:id,first_name,last_name,email')
-                ->whereIn('action', ['cancelled', 'rejected'])
-                ->latest('updated_at')
-                ->first();
-        }
+        $eventService = app(EventService::class);
+        $event = $eventService->loadEventDetails($this->eventHistory->event);
+        $docs = $eventService->getEventDocuments($event)->toArray();
+        $terminalNotice = $eventService->getTerminalActionNotice($event);
 
         // Use document service method that accepts event_id and return the array of docs.
 
         return view('livewire.request.history.details', [
             'docs' => $docs,
-            'terminalHistory' => $terminalHistory,
+            'terminalNotice' => $terminalNotice,
         ]);
     }
 }

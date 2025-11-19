@@ -110,29 +110,17 @@
                     <span>{{ 'Current Status: '. $eventHistory->event->getSimpleStatus() }}</span>
                 </span>
 
-                @if($terminalHistory)
-                    @php
-                        $actor = $terminalHistory->approver;
-                        $actorName = $actor
-                            ? trim(($actor->first_name ?? '') . ' ' . ($actor->last_name ?? ''))
-                            : '';
-                        if (empty($actorName) && $actor) {
-                            $actorName = $actor->name ?? ($actor->email ?? 'Unknown user');
-                        }
-                        if (empty($actorName)) {
-                            $actorName = 'Unknown user';
-                        }
-                    @endphp
+                @if($terminalNotice)
                     <div class="ps-3 py-2 my-2 bg-light rounded">
                         <p class="mb-1 fw-semibold">
-                            {{ ucfirst($terminalHistory->action) }} by {{ $actorName }}
-                            @if(!empty($actor?->email))
-                                <span class="text-muted small ms-1">({{ $actor->email }})</span>
+                            {{ ucfirst($terminalNotice['action'] ?? '') }} by {{ $terminalNotice['actor_name'] ?? 'Unknown user' }}
+                            @if(!empty($terminalNotice['actor_email']))
+                                <span class="text-muted small ms-1">({{ $terminalNotice['actor_email'] }})</span>
                             @endif
                         </p>
                         <p class="mb-0">
                             <strong>Justification:</strong>
-                            {{ $terminalHistory->comment ?: 'No justification provided.' }}
+                            {{ $terminalNotice['comment'] ?: 'No justification provided.' }}
                         </p>
                     </div>
                 @endif

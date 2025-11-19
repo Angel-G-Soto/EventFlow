@@ -805,6 +805,59 @@ class EventService
         return $event->documents;
     }
 
+    /**
+     * Ensure the provided event instance has the relationships required for detail pages.
+     *
+     * @param Event $event
+     * @return Event
+     */
+    public function loadEventDetails(Event $event): Event
+    {
+        return tap($event)->loadMissing([
+            'categories:id,name',
+            'venue:id,name,code,description',
+        ]);
+    }
+
+    /**
+     * Retrieve the latest cancelled/rejected history entry (with actor metadata) for an event.
+     *
+     * @param Event $event
+     * @return array|null
+     */
+    public function getTerminalActionNotice(Event $event): ?array
+    {
+        $terminalActions = ['cancelled', 'rejected'];
+        if (!in_array($event->status, $terminalActions, true)) {
+            return null;
+        }
+
+        $history = $event->history()
+            ->with('approver:id,first_name,last_name,email')
+            ->whereIn('action', $terminalActions)
+            ->latest('updated_at')
+            ->first();
+
+        if (!$history) {
+            return null;
+        }
+
+        $approver = $history->approver;
+        $actorName = $approver
+            ? trim(($approver->first_name ?? '') . ' ' . ($approver->last_name ?? ''))
+            : '';
+        if ($actorName === '') {
+            $actorName = $approver?->name ?? $approver?->email ?? 'Unknown user';
+        }
+
+        return [
+            'action' => (string) $history->action,
+            'comment' => (string) ($history->comment ?? ''),
+            'actor_name' => $actorName,
+            'actor_email' => $approver?->email,
+        ];
+    }
+
     //        public function getEventsForApproverDashboard(User $user): LengthAwarePaginator
     //        {
     //            // Create table that matches role with the status
