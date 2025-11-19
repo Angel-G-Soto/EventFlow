@@ -104,8 +104,18 @@ class Details extends Component
             'categories:id,name',
             'venue:id,name,code,description',
         ]);
+
+        $terminalHistory = null;
+        if (in_array($event->status, ['cancelled', 'rejected'], true)) {
+            $terminalHistory = $event->history()
+                ->with('approver:id,first_name,last_name,email')
+                ->whereIn('action', ['cancelled', 'rejected'])
+                ->latest('updated_at')
+                ->first();
+        }
         return view('livewire.request.org.details', [
             'docs' => $docs,
+            'terminalHistory' => $terminalHistory,
         ]);
     }
 }

@@ -91,6 +91,12 @@
         <div class="card-body">
             <h2 id="event-header" class="fw-semibold mb-2">{{ $event->title }}</h2>
 
+            <p class="text-muted mb-1">
+                <span class="sr-only"></span>{{ $start->format('M j, Y') }}
+                at <span class="sr-only"></span>{{ $start->format('g:i A') }} –
+                <span class="sr-only"></span>{{ $end->format('g:i A') }}
+            </p>
+
             @php
                 $statusVariant = match (true) {
                     in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
@@ -98,18 +104,39 @@
                     default => 'warning',
                 };
             @endphp
-            <p>
+            <p class="mb-2">
                 <span class="status-indicator status-indicator--{{ $statusVariant }}" aria-label="Event Status: {{ $event->getSimpleStatus() }}">
                     <span class="status-dot" aria-hidden="true"></span>
                     <span>{{ 'Status: '. $event->getSimpleStatus() }}</span>
                 </span>
             </p>
 
-            <p class="text-muted mb-1">
-                <span class="sr-only">Event Start Date: </span>{{ $start->format('M j, Y') }}
-                at <span class="sr-only">From: </span>{{ $start->format('g:i A') }} –
-                <span class="sr-only">To: </span>{{ $end->format('g:i A') }}
-            </p>
+            @if($terminalHistory)
+                @php
+                    $actor = $terminalHistory->approver;
+                    $actorName = $actor
+                        ? trim(($actor->first_name ?? '') . ' ' . ($actor->last_name ?? ''))
+                        : '';
+                    if (empty($actorName) && $actor) {
+                        $actorName = $actor->name ?? ($actor->email ?? 'Unknown user');
+                    }
+                    if (empty($actorName)) {
+                        $actorName = 'Unknown user';
+                    }
+                @endphp
+                <div class="ps-3 py-2 mb-2 bg-light rounded">
+                    <p class="mb-1 fw-semibold">
+                        {{ ucfirst($terminalHistory->action) }} by {{ $actorName }}
+                        @if(!empty($actor?->email))
+                            <span class="text-muted small ms-1">({{ $actor->email }})</span>
+                        @endif
+                    </p>
+                    <p class="mb-0">
+                        <strong>Justification:</strong>
+                        {{ $terminalHistory->comment ?: 'No justification provided.' }}
+                    </p>
+                </div>
+            @endif
 
             @if($event->status === 'approved')
                 <div class="mt-3">
@@ -125,8 +152,6 @@
             @endif
         </div>
     </section>
-
-
 
     {{-- Description & Guest Size --}}
     <section class="card shadow-sm mb-4" aria-labelledby="event-description">

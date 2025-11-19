@@ -116,8 +116,20 @@ class Details extends Component
 
         $docs = app(EventService::class)->getEventDocuments($event)->toArray();
 
+        $terminalHistory = null;
+        if (in_array($event->status, ['cancelled', 'rejected'], true)) {
+            $terminalHistory = $event->history()
+                ->with('approver:id,first_name,last_name,email')
+                ->whereIn('action', ['cancelled', 'rejected'])
+                ->latest('updated_at')
+                ->first();
+        }
+
         // Use document service method that accepts event_id and return the array of docs.
 
-        return view('livewire.request.history.details', compact('docs'));
+        return view('livewire.request.history.details', [
+            'docs' => $docs,
+            'terminalHistory' => $terminalHistory,
+        ]);
     }
 }

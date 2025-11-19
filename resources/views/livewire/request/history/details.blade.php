@@ -98,17 +98,44 @@
                 <p class="text-muted mb-1">
                     {{ $start->format('M j, Y') }}: {{ $start->format('g:i A') }} – {{ $end->format('g:i A') }}
                 </p>
-                @if($eventHistory->event->status === 'cancelled' || $eventHistory->event->status === 'withdrawn' || $eventHistory->event->status === 'rejected')
-                    @php($detailStatusVariant = 'danger')
-                @elseif($eventHistory->event->status === 'approved' || $eventHistory->event->status === 'completed')
-                    @php($detailStatusVariant = 'success')
-                @else
-                    @php($detailStatusVariant = 'neutral')
-                @endif
+                @php
+                    $detailStatusVariant = match (true) {
+                        in_array($eventHistory->event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
+                        in_array($eventHistory->event->status, ['approved', 'completed']) => 'success',
+                        default => 'neutral',
+                    };
+                @endphp
                 <span class="status-indicator status-indicator--{{ $detailStatusVariant }}" aria-label="Event Status: {{ $eventHistory->event->getSimpleStatus() }}">
                     <span class="status-dot" aria-hidden="true"></span>
                     <span>{{ 'Current Status: '. $eventHistory->event->getSimpleStatus() }}</span>
                 </span>
+
+                @if($terminalHistory)
+                    @php
+                        $actor = $terminalHistory->approver;
+                        $actorName = $actor
+                            ? trim(($actor->first_name ?? '') . ' ' . ($actor->last_name ?? ''))
+                            : '';
+                        if (empty($actorName) && $actor) {
+                            $actorName = $actor->name ?? ($actor->email ?? 'Unknown user');
+                        }
+                        if (empty($actorName)) {
+                            $actorName = 'Unknown user';
+                        }
+                    @endphp
+                    <div class="ps-3 py-2 my-2 bg-light rounded">
+                        <p class="mb-1 fw-semibold">
+                            {{ ucfirst($terminalHistory->action) }} by {{ $actorName }}
+                            @if(!empty($actor?->email))
+                                <span class="text-muted small ms-1">({{ $actor->email }})</span>
+                            @endif
+                        </p>
+                        <p class="mb-0">
+                            <strong>Justification:</strong>
+                            {{ $terminalHistory->comment ?: 'No justification provided.' }}
+                        </p>
+                    </div>
+                @endif
 
                 @if($eventHistory->event->status === 'approved')
                     <div class="mt-3">
