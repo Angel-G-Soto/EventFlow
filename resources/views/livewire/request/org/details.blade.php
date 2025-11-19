@@ -277,14 +277,6 @@
                 Withdraw
             </button>
         @endif
-
-        <button type="button"
-                wire:click="back"
-                class="btn btn-secondary ms-auto"
-                wire:target="back">
-            Back
-        </button>
-
     </div>
 
 
