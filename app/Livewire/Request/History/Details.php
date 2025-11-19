@@ -62,8 +62,8 @@ class Details extends Component
 
         $this->validate(['justification' => 'required|min:10']);
         // ... do your action
-        $eventHistoryService = app(EventService::class);
-        $eventHistoryService->cancelEvent($this->eventHistory->event,Auth::user(),$this->justification);
+        $eventService = app(EventService::class);
+        $eventService->cancelEvent($this->eventHistory->event,Auth::user(),$this->justification);
         $this->redirectRoute('approver.history.index');
     }
 /**

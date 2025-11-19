@@ -917,14 +917,14 @@ class EventService
         return DB::transaction(function () use ($event, $user, $justification) {
             // Guard: only transition to cancelled from approved
             $updated = Event::where('id', $event->id)
-                ->where('status', 'approved')
+                // ->where('status', 'approved')
                 ->update(['status' => 'cancelled']);
 
             if ($updated === 0) {
                 // No state change; return current model without side effects
                 return $event;
             }
-
+            
             // Append history with standardized action label and justification
             EventHistory::create([
                 'event_id' => $event->id,

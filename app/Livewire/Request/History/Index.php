@@ -19,7 +19,6 @@
 
 namespace App\Livewire\Request\History;
 
-use App\Models\Event;
 use App\Models\EventHistory;
 use App\Services\EventHistoryService;
 use Illuminate\Support\Facades\Auth;
@@ -37,18 +36,18 @@ class Index extends Component
 
     // Track selected filters
     public array $filters = [
-        'role'      => '',
+        'action'      => '',
         'searchTitle'=> '',
         'sortDirection' => 'desc',
     ];
 
     #[On('filters-changed')]
-    public function onFiltersChanged(string $role = '', string $searchTitle = '', string $sortDirection = 'desc'): void
+    public function onFiltersChanged(string $action = '', string $searchTitle = '', string $sortDirection = 'desc'): void
     {
 
-//        dd($role, $searchTitle, $sortDirection);
+//        dd($action, $searchTitle, $sortDirection);
 
-        $this->filters['role'] = $role;
+        $this->filters['action'] = $action;
         $this->filters['searchTitle'] = $searchTitle;
         $this->filters['sortDirection'] = $sortDirection;
         $this->resetPage(); // reset pagination when filters change
@@ -60,17 +59,15 @@ class Index extends Component
 
         $user = Auth::user();
 
-        // Get the roles filter (from Filters component)
-        $role = $this->filters['role'] ?? [];
+        // Get the action filter (from Filters component)
+        $action = $this->filters['action'] ?? '';
 
         // Start query using the service method
 
-        if (!empty($role)) {
-//            dd(true);
-            $query = app(EventHistoryService::class)->genericApproverRequestHistoryV2($user, [$role]);
-        } else {
-            // no role filter
-            $query = app(EventHistoryService::class)->genericApproverRequestHistoryV2($user);
+        $query = app(EventHistoryService::class)->genericApproverRequestHistoryV2($user);
+
+        if (!empty($action)) {
+            $query->where('action', $action);
         }
 
         // Apply search by title if provided

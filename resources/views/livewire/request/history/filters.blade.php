@@ -78,25 +78,13 @@
             </div>
         </div>
 
-        {{-- Role / Status --}}
+        {{-- Action Filter --}}
         <div class="col-md-3 col-sm-6">
-            <label for="status" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Role / Status</label>
-            <select id="status" class="form-select form-select-sm" wire:model.defer="selectedRole" style="font-size: 1.05rem;">
-                <option value="">All Roles</option>
-                @foreach($roles as $role)
-                    @php
-                        $roleName = strtolower($role['name']);
-                        if (str_contains($roleName, 'advisor')) {
-                            $display = 'Advisor'; $value = 'advisor';
-                        } elseif (str_contains($roleName, 'venue-manager')) {
-                            $display = 'Venue Manager'; $value = 'venue-manager';
-                        } elseif (str_contains($roleName, 'event-approver') || str_contains($roleName, 'dsca')) {
-                            $display = 'Event Approver'; $value = 'event-approver';
-                        } else {
-                            $display = $roleName; $value = $roleName;
-                        }
-                    @endphp
-                    <option value="{{ $value }}">{{ $display }}</option>
+            <label for="historyAction" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Action</label>
+            <select id="historyAction" class="form-select form-select-sm" wire:model.defer="selectedAction" style="font-size: 1.05rem;">
+                <option value="">All Actions</option>
+                @foreach($availableActions as $action)
+                    <option value="{{ $action }}">{{ ucfirst($action) }}</option>
                 @endforeach
             </select>
         </div>

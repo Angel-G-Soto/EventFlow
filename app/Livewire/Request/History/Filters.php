@@ -19,30 +19,19 @@
 
 namespace App\Livewire\Request\History;
 
-use App\Models\Category;
-use App\Models\Event;
-use App\Models\Role;
-use App\Models\Venue;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Filters extends Component
 {
-    public array $roles = [];
-
-//    #[Url(as: 'role', history: true)]
-    public string $selectedRole = '';
+    public array $availableActions = ['approved', 'rejected', 'cancelled'];
+    public string $selectedAction = '';
 
     public string $searchTitle = '';
     public string $sortDirection = 'desc';
 
     public function mount(): void
     {
-        // Load roles for current user
-//        $this->roles = Auth::user()->roles()->where('name', '<>', 'user')->get(['name'])->toArray();
-            $this->roles = Role::whereNotIn('name', ['user', 'system-admin', 'department-director'])->get(['name'])->toArray();
+        // No-op for now; actions are predefined.
     }
 
     public function apply(): void
@@ -50,7 +39,7 @@ class Filters extends Component
 //        dd($this->selectedRole);
 
         $this->dispatch('filters-changed',
-            $this->selectedRole,
+            $this->selectedAction,
             $this->searchTitle,
             $this->sortDirection
         );
@@ -60,7 +49,7 @@ class Filters extends Component
 
     public function resetFilters(): void
     {
-        $this->selectedRole = '';
+        $this->selectedAction = '';
         $this->searchTitle = '';
         $this->sortDirection = 'desc';
         $this->apply();
