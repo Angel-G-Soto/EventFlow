@@ -345,7 +345,7 @@ class EventService
 
             $approverName = $approver->first_name . ' ' . $approver->last_name;
             $this->sendCreatorUpdateEmail($event, $approverName, $currentStatus);
-
+            $event->refresh();
             $this->sendApproverEmails($event);
 
 
@@ -1503,7 +1503,6 @@ class EventService
             $eventDetails = app(NotificationService::class)->getEventDetails($event);
 
 
-
             switch ($event->status)
             {
                 case 'pending - venue manager approval':
@@ -1511,6 +1510,7 @@ class EventService
                     if($venue != null){
                         $departmentEmployees = Department::findOrFail($venue->department_id)->employees();
                         $recipientEmails = $departmentEmployees->pluck('email')->toArray();
+                        
                         foreach ($recipientEmails as $recipientEmail) {
                             app(NotificationService::class)->dispatchApprovalRequiredNotification(
                                 $recipientEmail, $eventDetails);
@@ -1520,7 +1520,7 @@ class EventService
 
                     break;
                 case 'pending - dsca approval':
-                    $eventApproverEmails= app(UserService::class)->getUsersWithRole('4')
+                    $eventApproverEmails= app(UserService::class)->getUsersWithRole('event-approver')
                         ->pluck('email')->toArray();
                     foreach ($eventApproverEmails as $approverEmail) {
                         app(NotificationService::class)->dispatchApprovalRequiredNotification(
@@ -1583,8 +1583,6 @@ class EventService
                     role: 'DSCA Staff'
                 );
 
-                break;
-            case 'approved':
                 $eventApproverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
 
                 app(NotificationService::class)->dispatchSanctionedNotification(
@@ -1594,6 +1592,8 @@ class EventService
                     creatorRoute: route('user.request', ['event' => $event->id]),
                     approverRoute: route('approver.history.request', ['eventHistory' => $event->id])
                 );
+
+                break;
 
         }
 

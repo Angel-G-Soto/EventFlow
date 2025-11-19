@@ -490,14 +490,14 @@ class UserService
     /**
      * Retrieves a collection of all users who have a specific role.
      *
-     * @param string $roleCode The machine-readable code for the role (e.g., 'dsca-staff').
+     * @param string $roleNamee Name of the role (e.g., 'dsca-staff').
      * @return Collection An Eloquent Collection of User objects.
      */
-    public function getUsersWithRole(string $roleCode): Collection
+    public function getUsersWithRole(string $roleName): Collection
     {
-        return User::whereHas('roles', function ($query) use ($roleCode) {
+        return User::whereHas('roles', function ($query) use ($roleName) {
             // Roles table uses human-readable slug in 'name'; 'code' is numeric in this schema
-            $query->where('name', $roleCode);
+            $query->where('name', $roleName);
         })
             ->with(['department', 'roles'])
             ->get();
