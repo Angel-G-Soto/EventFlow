@@ -39,24 +39,35 @@
 
 <div class="container">
     <h1 class="h4 mb-3">My Venues</h1>
-    {{--<div class="container">--}}
-{{--    <h1 class="h4 mb-3">Manage Venues</h1>--}}
-{{--    <div class="card shadow-sm mb-3">--}}
-{{--        <div class="card-body">--}}
-{{--            <div class="row g-2">--}}
-{{--                <div class="col-12 col-md-4">--}}
-{{--                    <label class="form-label">Search</label>--}}
-{{--                    <div class="input-group">--}}
-{{--                        <span class="input-group-text"><i class="bi bi-search"></i></span>--}}
-{{--                        <input type="text" class="form-control" placeholder="name, building, manager, department"--}}
-{{--                               wire:model.live.debounce.300ms="search">--}}
-{{--                    </div>--}}
-{{--                </div>--}}
-{{--            </div>--}}
 
-{{--        </div>--}}
-
-{{--    </div>--}}
+    <div class="card shadow-sm mb-3 pb-1">
+        <div class="card-body py-2" style="font-size: 1.05rem;">
+            <div class="row align-items-end g-2">
+                <div class="col-md-4 col-sm-12">
+                    <label for="venueSearch"
+                           class="form-label mb-0 small text-muted"
+                           style="font-size: 1.05rem;">Search venues</label>
+                    <div class="input-group input-group-sm">
+                        <input id="venueSearch"
+                               type="text"
+                               class="form-control"
+                               placeholder="Search by name or room number..."
+                               wire:model.defer="searchDraft"
+                               wire:keydown.enter="applySearch"
+                               style="font-size: 1.05rem;">
+                        <button type="button"
+                                class="btn btn-secondary d-inline-flex align-items-center gap-2"
+                                wire:click="applySearch"
+                                aria-label="Search my venues"
+                                style="font-size: 1.05rem;">
+                            <i class="bi bi-search"></i>
+                            <span>Search</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <div class="card shadow-sm">
     <div class="table-responsive">

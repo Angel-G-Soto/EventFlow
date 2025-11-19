@@ -41,7 +41,7 @@
 
         {{-- Search by Title --}}
         <div class="col-md-7 col-sm-12">
-            <label for="searchTitle" class="form-label mb-0 small text-muted fw-semibold" style="font-size: 1.05rem;">Search requests</label>
+            <label for="searchTitle" class="form-label mb-0 small text-muted" style="font-size: 1.05rem;">Search requests</label>
             <div class="input-group input-group-sm">
                 <input id="searchTitle" type="text" class="form-control"
                        placeholder="Search by title or organization..."

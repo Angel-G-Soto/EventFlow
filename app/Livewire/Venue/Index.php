@@ -39,10 +39,15 @@ class Index extends Component
     public string $paginationTheme = 'bootstrap';
 
 //    public $venues;
-/**
- * @var string
- */
-    public string $search = '';
+    /**
+     * Current search input before applying.
+     */
+    public string $searchDraft = '';
+
+    /**
+     * Search term currently being applied to the query.
+     */
+    public string $searchTerm = '';
 /**
  * Configure action.
  * @param Venue $venue
@@ -60,14 +65,34 @@ class Index extends Component
  * Render the Manage Venues view with venues and managers.
  * @return \Illuminate\Contracts\View\View
  */
+    public function applySearch(): void
+    {
+        $this->searchTerm = trim($this->searchDraft);
+        $this->resetPage();
+    }
+
+    public function resetSearch(): void
+    {
+        $this->searchDraft = '';
+        $this->searchTerm = '';
+        $this->resetPage();
+    }
+
     public function render()
     {
+        $query = Venue::query()
+            ->where('department_id', Auth::user()->department_id);
 
+        if (!empty($this->searchTerm)) {
+            $term = '%'.$this->searchTerm.'%';
+            $query->where(function ($builder) use ($term) {
+                $builder->where('name', 'like', $term)
+                    ->orWhere('code', 'like', $term);
+            });
+        }
 
-        $venues = Venue::query()->where('department_id', Auth::user()->department_id)
-            ->latest()
-            ->paginate(8);
-//        dd($venues);
+        $venues = $query->latest()->paginate(8);
+
         return view('livewire.venue.index', compact('venues'));
     }
 }
