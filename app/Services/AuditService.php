@@ -227,10 +227,28 @@ class AuditService
     public function getPaginatedLogs(array $filters = [], int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
         // Select all columns to avoid referencing optional columns that may not exist
-        $q = AuditTrail::query()->orderByDesc('created_at');
+        $q = AuditTrail::query()
+            ->with('actor')
+            ->orderByDesc('created_at');
 
-        if (!empty($filters['user_id'])) {
-            $q->where('user_id', (int) $filters['user_id']);
+        if (!empty($filters['user'])) {
+            $term = trim((string) $filters['user']);
+            if ($term !== '') {
+                if (ctype_digit($term)) {
+                    // Numeric: treat as exact user ID
+                    $q->where('user_id', (int) $term);
+                } else {
+                    // Text: search on related user name/email
+                    $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
+                    $q->whereHas('actor', function ($uq) use ($like) {
+                        $uq->whereRaw(
+                            "TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ? ESCAPE '\\\\'",
+                            [$like]
+                        )->orWhere('name', 'like', $like)
+                          ->orWhere('email', 'like', $like);
+                    });
+                }
+            }
         }
 
         if (!empty($filters['action'])) {

@@ -679,60 +679,60 @@ class VenueService
      * @return Venue
      * @throws InvalidArgumentException
      */
-    public function createVenue(array $data, User $admin): Venue
-    {
-        if (!$admin->getRoleNames()->contains('system-admin')) {
-            throw new InvalidArgumentException('Only admins can create venues.');
-        }
+    // public function createVenue(array $data, User $admin): Venue
+    // {
+    //     if (!$admin->getRoleNames()->contains('system-admin')) {
+    //         throw new InvalidArgumentException('Only admins can create venues.');
+    //     }
 
-        // Validate mandatory fields exist
-        $requiredKeys = [
-            'department_id',
-            'name',
-            'code',
-            'features',
-            'capacity',
-            'test_capacity'
-        ];
+    //     // Validate mandatory fields exist
+    //     $requiredKeys = [
+    //         'department_id',
+    //         'name',
+    //         'code',
+    //         'features',
+    //         'capacity',
+    //         'test_capacity'
+    //     ];
 
-        foreach ($requiredKeys as $key) {
-            if (!isset($data[$key])) {
-                throw new InvalidArgumentException("Missing required field: {$key}");
-            }
-        }
+    //     foreach ($requiredKeys as $key) {
+    //         if (!isset($data[$key])) {
+    //             throw new InvalidArgumentException("Missing required field: {$key}");
+    //         }
+    //     }
 
-        if ((!$this->departmentService->getDepartmentByID($data['department_id']))) {
-            throw new InvalidArgumentException('The manager_id or department_id does not exist.');
-        }
+    //     if ((!$this->departmentService->getDepartmentByID($data['department_id']))) {
+    //         throw new InvalidArgumentException('The manager_id or department_id does not exist.');
+    //     }
 
-        $venue = new Venue();
+    //     $venue = new Venue();
 
-        $venue->department_id = $data['department_id'];
-        $venue->name          = $data['name'];
-        $venue->code          = $data['code'];
-        $venue->description   = $data['description'] ?? null;
-        $venue->features      = $data['features'];
-        $venue->capacity      = $data['capacity'];
-        $venue->test_capacity = $data['test_capacity'];
+    //     $venue->department_id = $data['department_id'];
+    //     $venue->name          = $data['name'];
+    //     $venue->code          = $data['code'];
+    //     $venue->description   = $data['description'] ?? null;
+    //     $venue->features      = $data['features'];
+    //     $venue->capacity      = $data['capacity'];
+    //     $venue->test_capacity = $data['test_capacity'];
 
-        $venue->save();
+    //     $venue->save();
 
-        $availabilityPayload = [];
-        if (!empty($data['availabilities'])) {
-            if (!is_array($data['availabilities'])) {
-                throw new InvalidArgumentException('Availabilities must be an array of entries.');
-            }
-            $availabilityPayload = $this->normalizeAvailabilityPayload($data['availabilities']);
-        } else {
-            $availabilityPayload = $this->buildLegacyAvailabilityPayload($data);
-        }
+    //     $availabilityPayload = [];
+    //     if (!empty($data['availabilities'])) {
+    //         if (!is_array($data['availabilities'])) {
+    //             throw new InvalidArgumentException('Availabilities must be an array of entries.');
+    //         }
+    //         $availabilityPayload = $this->normalizeAvailabilityPayload($data['availabilities']);
+    //     } else {
+    //         $availabilityPayload = $this->buildLegacyAvailabilityPayload($data);
+    //     }
 
-        if (!empty($availabilityPayload)) {
-            $this->syncAvailabilityRecords($venue, $availabilityPayload);
-        }
+    //     if (!empty($availabilityPayload)) {
+    //         $this->syncAvailabilityRecords($venue, $availabilityPayload);
+    //     }
 
-        return $venue->load('availabilities');
-    }
+    //     return $venue->load('availabilities');
+    // }
 
     /**
      * Updates the attributes of the given menu.
@@ -756,77 +756,77 @@ class VenueService
      * @return Venue
      * @throws Exception
      */
-    public function updateVenue(Venue $venue, array $data, User $admin): Venue
-    {
-        //try {
+    // public function updateVenue(Venue $venue, array $data, User $admin): Venue
+    // {
+    //     //try {
 
-        // Validate admin role
-        if ($admin && !$admin->getRoleNames()->contains('system-admin')) {
-            throw new InvalidArgumentException('The manager and the director must be system-admin.');
-        }
+    //     // Validate admin role
+    //     if ($admin && !$admin->getRoleNames()->contains('system-admin')) {
+    //         throw new InvalidArgumentException('The manager and the director must be system-admin.');
+    //     }
 
-        $allowedKeys = array_merge($venue->getFillable(), ['availabilities', 'opening_time', 'closing_time']);
+    //     $allowedKeys = array_merge($venue->getFillable(), ['availabilities', 'opening_time', 'closing_time']);
 
-        // Check for invalid keys
-        $invalidKeys = array_diff(array_keys($data), $allowedKeys);
-        if (!empty($invalidKeys)) {
-            throw new InvalidArgumentException(
-                'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
-            );
-        }
+    //     // Check for invalid keys
+    //     $invalidKeys = array_diff(array_keys($data), $allowedKeys);
+    //     if (!empty($invalidKeys)) {
+    //         throw new InvalidArgumentException(
+    //             'Invalid attribute keys detected: ' . implode(', ', $invalidKeys)
+    //         );
+    //     }
 
-        $availabilityPayload = null;
-        $legacyPayload = [];
-        if (array_key_exists('availabilities', $data)) {
-            if (!is_array($data['availabilities'])) {
-                throw new InvalidArgumentException('Availabilities must be an array of entries.');
-            }
-            $availabilityPayload = $data['availabilities'];
-            unset($data['availabilities']);
-        } else {
-            $legacyPayload = $this->buildLegacyAvailabilityPayload($data);
-        }
+    //     $availabilityPayload = null;
+    //     $legacyPayload = [];
+    //     if (array_key_exists('availabilities', $data)) {
+    //         if (!is_array($data['availabilities'])) {
+    //             throw new InvalidArgumentException('Availabilities must be an array of entries.');
+    //         }
+    //         $availabilityPayload = $data['availabilities'];
+    //         unset($data['availabilities']);
+    //     } else {
+    //         $legacyPayload = $this->buildLegacyAvailabilityPayload($data);
+    //     }
 
-        // Check for null values
-        $nullKeys = array_keys(array_filter($data, function ($value) {
-            return is_null($value);
-        }));
-        if (!empty($nullKeys)) {
-            throw new InvalidArgumentException(
-                'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
-            );
-        }
+    //     // Check for null values
+    //     $nullKeys = array_keys(array_filter($data, function ($value) {
+    //         return is_null($value);
+    //     }));
+    //     if (!empty($nullKeys)) {
+    //         throw new InvalidArgumentException(
+    //             'Null values are not allowed for keys: ' . implode(', ', $nullKeys)
+    //         );
+    //     }
 
-        if ($admin) {
-            $this->auditService->logAdminAction(
-                $admin->id,
-                'venue',
-                'VENUE_UPDATED',
-                (string)$venue->id,
-                ['meta' => ['fields' => array_keys($data)]]
-            );
-        }
+    //     if ($admin) {
+    //         $this->auditService->logAdminAction(
+    //             $admin->id,
+    //             'venue',
+    //             'VENUE_UPDATED',
+    //             (string)$venue->id,
+    //             ['meta' => ['fields' => array_keys($data)]]
+    //         );
+    //     }
 
-        // // Update the venue with the filtered data
-        // $venue = Venue::updateOrCreate(
-        //     [
-        //         'id' => $venue->id
-        //     ],
-        //     $data
-        // );
+    //     // // Update the venue with the filtered data
+    //     // $venue = Venue::updateOrCreate(
+    //     //     [
+    //     //         'id' => $venue->id
+    //     //     ],
+    //     //     $data
+    //     // );
 
-        if ($availabilityPayload !== null) {
-            $normalized = $this->normalizeAvailabilityPayload($availabilityPayload);
-            $this->syncAvailabilityRecords($venue, $normalized);
-        } elseif (!empty($legacyPayload)) {
-            $this->syncAvailabilityRecords($venue, $legacyPayload);
-        }
+    //     if ($availabilityPayload !== null) {
+    //         $normalized = $this->normalizeAvailabilityPayload($availabilityPayload);
+    //         $this->syncAvailabilityRecords($venue, $normalized);
+    //     } elseif (!empty($legacyPayload)) {
+    //         $this->syncAvailabilityRecords($venue, $legacyPayload);
+    //     }
 
-        return $venue->load('availabilities');
-        //}
-        //catch (InvalidArgumentException $exception) {throw $exception;}
-        //catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
-    }
+    //     return $venue->load('availabilities');
+    //     //}
+    //     //catch (InvalidArgumentException $exception) {throw $exception;}
+    //     //catch (\Throwable $exception) {throw new Exception('Unable to update or create the venue requirements.');}
+    // }
 
     /**
      * This process is intended to iterate through the submitted array of

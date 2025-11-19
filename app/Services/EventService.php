@@ -31,7 +31,6 @@ class EventService
     protected $categoryService;
     protected $auditService;
     protected $documentService;
-    protected $userService;
 
     /**
      * Create a new EventService instance.
@@ -40,13 +39,12 @@ class EventService
      * @param CategoryService $categoryService
      * @param AuditService $auditService
      */
-    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService, UserService $userService)
+    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService)
     {
         $this->venueService = $venueService;
         $this->categoryService = $categoryService;
         $this->auditService = $auditService;
         $this->documentService = $documentService;
-        $this->userService = $userService;
     }
 
 
@@ -130,13 +128,11 @@ class EventService
             try {
                 $actorId   = (int) $creator->id;
                 $actorName = trim((string)($creator->first_name ?? '').' '.(string)($creator->last_name ?? '')) ?: (string)($creator->email ?? '');
-                // Always include the event title in meta so it is visible
-                // in the audit log regardless of create vs update.
-                $meta      = [
-                    'status' => (string) $status,
-                    'source' => 'event_form',
-                    'title'  => (string) $event->title,
-                ];
+                $meta      = ['status' => (string)$status, 'source' => 'event_form'];
+                // When the event is newly created, include its title in meta.
+                if ($event->wasRecentlyCreated) {
+                    $meta['title'] = (string) $event->title;
+                }
 
                 $ctx = ['meta' => $meta];
                 if (function_exists('request') && request()) {
@@ -146,7 +142,7 @@ class EventService
                 $this->auditService->logAction(
                     $actorId,
                     'event',
-                    $event->wasRecentlyCreated ? 'EVENT_REQUEST_CREATED' : 'EVENT_REQUEST_UPDATED',
+                    $event->wasRecentlyCreated ? 'EVENT_CREATED' : 'EVENT_UPDATED',
                     (string) $event->id,
                     $ctx
                 );
@@ -154,26 +150,6 @@ class EventService
 
             if ($event->status === 'draft') {
                 return $event;
-            }
-
-            if (!empty($event->organization_advisor_email)) {
-                $advisor = $this->userService->findOrCreateUser(
-                    $event->organization_advisor_email
-                );
-
-                $advisorRole = $this->userService
-                    ->getAllRoles()
-                    ->firstWhere('name', 'advisor');
-
-                if ($advisorRole) {
-                    $alreadyHasRole = $advisor->roles()
-                        ->where('role_id', $advisorRole->id)
-                        ->exists();
-
-                    if (!$alreadyHasRole) {
-                        $advisor->roles()->attach($advisorRole->id);
-                    }
-                }
             }
 
             // Attach documents (hasMany)
@@ -260,7 +236,7 @@ class EventService
             ->update(['status' => 'rejected']);
         if ($updated === 0) return $event; // stop if race condition occurred
 
-        $this->updateLastHistory($event, $approver, $justification ?: 'unjustified rejection', 'rejected');
+        $this->updateLastHistory($event, $approver, 'rejected', $justification ?: 'unjustified rejection');
 
         // Run audit trail
         // AUDIT: approver denied event
@@ -274,7 +250,7 @@ class EventService
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
             }
 
-            $this->auditService->logAdminAction(
+            $this->auditService->logAction(
                 $actorId,
                 'event',
                 'EVENT_DENIED',
@@ -338,7 +314,7 @@ class EventService
             if ($updated === 0) return $event; // stop if race condition occurred
 
             // Update last history record
-            $this->updateLastHistory($event, $approver, $comment, 'approved');
+            $this->updateLastHistory($event, $approver, 'approved', $comment);
 
             // Run audit trail
             // AUDIT: approver advanced approval stage (or final approval)
@@ -353,7 +329,7 @@ class EventService
                     $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                 }
 
-                $this->auditService->logAdminAction(
+                $this->auditService->logAction(
                     $actorId,
                     'event',
                     $action,
@@ -365,18 +341,6 @@ class EventService
             // Create new pending history only if not final approval
             if ($nextStatus !== 'approved') {
                 $this->createPendingHistory($event, $nextStatus, $approver);
-            }
-
-            if ($event->status === $nextStatus) {
-                $this->auditService->logEventAdminAction(
-                    $approver,
-                    $event,
-                    'EVENT_APPROVED',
-                    [
-                        'next_status' => $nextStatus,
-                        'comment' => (string)($comment ?? ''),
-                    ]
-                );
             }
 
             $approverName = $approver->first_name . ' ' . $approver->last_name;
@@ -440,7 +404,7 @@ class EventService
         if ($updated === 0) {
             return $event;
         }
-        $this->updateLastHistory($event, $actor, $comment, $action);
+        $this->updateLastHistory($event, $actor, $action, $comment);
         return $event->refresh();
     }
 
@@ -449,10 +413,10 @@ class EventService
      *
      * @param Event $event
      * @param User $approver
-     * @param string|null $comment
      * @param string $action Final action label (approved/rejected/etc).
+     * @param string|null $comment
      */
-    protected function updateLastHistory(Event $event, User $approver, ?string $comment = null, string $action)
+    protected function updateLastHistory(Event $event, User $approver, string $action, ?string $comment = null)
     {
         $lastHistory = $event->history()
             ->where('action', 'pending')
@@ -964,33 +928,43 @@ class EventService
             // Append history with standardized action label and justification
             EventHistory::create([
                 'event_id' => $event->id,
-                'action'   => 'cancelled',
-                'comment'  => $justification ?: 'Event was cancelled.',
+                'approver_id' => (int) $user->id,
+                'action' => 'cancelled',
+                'comment' => $justification ?: 'Event was cancelled.',
+                'status_when_signed' => 'cancelled',
             ]);
 
             // Audit with justification in meta
             $this->auditService->logAdminAction(
                 $user->id,
                 'event',
-                'ADMIN_OVERRIDE',
+                'ADMIN_OVERRIDE_CANCEL',
                 (string) $event->id,
                 ['meta' => ['justification' => (string) $justification]]
             );
 
-            //                // Send email to the approvers
-            $creatorEmail = $event->requester->email;
-            $eventDetails = app(NotificationService::class)->getEventDetails($event);
-            $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
+            // Notifications are best-effort; cancellation should not fail if email dispatch fails
+            try {
+                $creatorEmail = optional($event->requester)->email;
+                if ($creatorEmail) {
+                    $eventDetails = app(NotificationService::class)->getEventDetails($event);
+                    $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
 
-
-            app(NotificationService::class)->dispatchCancellationNotifications(
-                creatorEmail: $creatorEmail,
-                recipientEmails: $approverEmails,
-                eventDetails: $eventDetails,
-                justification: $justification ?: 'Event was cancelled.',
-                creatorRoute: route('user.request', ['event' => $event->id]),
-                approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
-            );
+                    app(NotificationService::class)->dispatchCancellationNotifications(
+                        creatorEmail: $creatorEmail,
+                        recipientEmails: $approverEmails,
+                        eventDetails: $eventDetails,
+                        justification: $justification ?: 'Event was cancelled.',
+                        creatorRoute: route('user.request', ['event' => $event->id]),
+                        approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Event cancellation notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
 
             return $event->refresh();

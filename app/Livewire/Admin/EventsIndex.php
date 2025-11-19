@@ -471,26 +471,33 @@ class EventsIndex extends Component
      */
     public function confirmAction(): void
     {
+        $this->authorize('perform-override');
+
         // Apply status change via service (no hardcoded statuses)
         $toastMsg = null;
         if ($this->editId && in_array($this->actionType, ['approve', 'deny'], true)) {
             try {
                 $svc = app(EventService::class);
-                $event = $this->getEventFromServiceById((int)$this->editId);
-                if ($event) {
-                    if ($this->actionType === 'approve') {
-                        $svc->approveEvent($event, Auth::user());
-                        $toastMsg = 'Event approved';
-                    } elseif ($this->actionType === 'deny') {
-                        $this->validateJustification();
-                        $svc->denyEvent((string)($this->justification ?? ''), $event, Auth::user());
-                        $toastMsg = 'Event denied';
-                    }
+                $event = $this->getEventFromServiceById((int) $this->editId);
+                if (! $event) {
+                    $this->addError('justification', 'Unable to load event for action.');
+                    return;
+                }
+
+                if ($this->actionType === 'approve') {
+                    $svc->approveEvent($event, Auth::user());
+                    $toastMsg = 'Event approved';
+                } elseif ($this->actionType === 'deny') {
+                    $this->validateJustification();
+                    $svc->denyEvent((string) ($this->justification ?? ''), $event, Auth::user());
+                    $toastMsg = 'Event denied';
                 }
             } catch (\Throwable $e) {
-                // ignore service errors; UI will still close modals
+                $this->addError('justification', 'Unable to ' . $this->actionType . ' event.');
+                return;
             }
         }
+
         $this->dispatch('bs:close', id: 'oversightJustify');
         $this->dispatch('bs:close', id: 'oversightEdit');
         $this->dispatch('toast', message: $toastMsg ?? (ucfirst($this->actionType) . ' completed'));
