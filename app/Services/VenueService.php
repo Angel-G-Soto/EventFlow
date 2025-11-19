@@ -487,11 +487,25 @@ class VenueService
             }
 
             // Audit: director assigns manager to venue
+            $meta = [
+                'venue_id'      => (int) $venue->id,
+                'venue_name'    => (string) $venue->name,
+                'manager_id'    => (int) $manager->id,
+                'manager_email' => (string) ($manager->email ?? ''),
+                'director_id'   => (int) $director->id,
+                'source'        => 'assign_manager',
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+
             $this->auditService->logAction(
                 $director->id,
                 'venue',
                 'ASSIGN_MANAGER',
-                'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'
+                (string) $venue->id,
+                $ctx
             );
         } catch (InvalidArgumentException $exception) {
             throw $exception;
@@ -535,11 +549,22 @@ class VenueService
             $normalized = $this->normalizeAvailabilityPayload($availabilityData);
 
             // Audit: operating hours update
+            $meta = [
+                'venue_id'   => (int) $venue->id,
+                'venue_name' => (string) $venue->name,
+                'source'     => 'venue_hours_update',
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+
             $this->auditService->logAction(
                 $manager->id,
                 'venue',
                 'UPDATE_OPERATING_HOURS',
-                'Updated availability schedule for venue #' . $venue->id
+                (string) $venue->id,
+                $ctx
             );
 
             $this->syncAvailabilityRecords($venue, $normalized);
@@ -628,11 +653,23 @@ class VenueService
                 $requirement->hyperlink = $r['hyperlink'];
                 $requirement->description = $r['description'];
                 $requirement->save();
+                $meta = [
+                    'venue_id'       => (int) $venue->id,
+                    'requirement_id' => (int) ($requirement->id ?? 0),
+                    'name'           => (string) $requirement->name,
+                    'source'         => 'venue_requirement_create',
+                ];
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                }
+
                 $this->auditService->logAction(
                     $manager->id,
                     'venue',
                     'CREATE_REQUIREMENT',
-                    'Create requirement for venue #' . $venue->id
+                    (string) $requirement->id,
+                    $ctx
                 );
             }
         } catch (InvalidArgumentException $exception) {
@@ -1200,11 +1237,21 @@ class VenueService
             foreach ($venues as $venue) {
                 $venue->delete();
                 if ($admin) {
+                    $meta = [
+                        'venue_id' => (int) $venue->id,
+                        'source'   => 'venue_deactivate',
+                    ];
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                    }
+
                     $this->auditService->logAdminAction(
                         $admin->id,
                         'venue',
                         'VENUE_DEACTIVATED',
-                        (string) $venue->id
+                        (string) $venue->id,
+                        $ctx
                     );
                 }
             };
