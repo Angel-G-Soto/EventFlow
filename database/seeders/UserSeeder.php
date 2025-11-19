@@ -79,11 +79,18 @@ class UserSeeder extends Seeder
 
         foreach ($users as $data) {
             $department = $departments->get($data['department_code']) ?? $departments->first();
+
+            // Match UsersIndex rule: only roles that require a department
+            // (department-director or venue-manager) should be tied to one.
+            $rolesForUser = collect($data['roles'])->map(fn ($r) => (string) $r)->all();
+            $requiresDept = in_array('department-director', $rolesForUser, true)
+                || in_array('venue-manager', $rolesForUser, true);
+
             $user = User::factory()->create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],
-                'department_id' => $department?->id,
+                'department_id' => $requiresDept ? $department?->id : null,
                 'auth_type' => 'saml',
             ]);
 

@@ -7,6 +7,8 @@ use \Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 use Throwable;
+use App\Services\AuditService;
+use Illuminate\Support\Facades\Auth;
 
 class UseRequirementService {
 
@@ -53,7 +55,37 @@ class UseRequirementService {
             $requirement->description = $description;
             $requirement->save();
 
-            // Add audit trail
+            // Add audit trail (best-effort)
+            try {
+                /** @var AuditService $audit */
+                $audit = app(AuditService::class);
+
+                $actor = Auth::user();
+                $actorId = $actor?->id ?? null;
+
+                if ($actorId) {
+                    $meta = [
+                        'requirement_id' => (int) ($requirement->id ?? $id),
+                        'venue_id'       => (int) ($requirement->venue_id ?? 0),
+                        'name'           => (string) $name,
+                        'source'         => 'use_requirement_update',
+                    ];
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAdminAction(
+                        (int) $actorId,
+                        'requirement',
+                        'VENUE_REQUIREMENT_UPDATED',
+                        (string) ($requirement->id ?? $id),
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) {
+                // best-effort
+            }
 
             // Return collection of updated values
             return $requirement;
@@ -76,9 +108,45 @@ class UseRequirementService {
         try {
             if ($venue_id < 0) throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');
 
-            if (UseRequirement::where('venue_id', $venue_id)->get()->isEmpty()) { return false;}//throw new ModelNotFoundException("No use requirements found for venue ID {$id}.");}
+            $query = UseRequirement::where('venue_id', $venue_id);
+            if ($query->get()->isEmpty()) { return false;}//throw new ModelNotFoundException("No use requirements found for venue ID {$id}.");}
 
-            return UseRequirement::where('venue_id', $venue_id)->delete();
+            $deletedCount = $query->delete();
+
+            // Audit: venue requirements deleted (best-effort)
+            if ($deletedCount > 0) {
+                try {
+                    /** @var AuditService $audit */
+                    $audit = app(AuditService::class);
+
+                    $actor = Auth::user();
+                    $actorId = $actor?->id ?? null;
+
+                    if ($actorId) {
+                        $meta = [
+                            'venue_id'      => (int) $venue_id,
+                            'deleted_count' => (int) $deletedCount,
+                            'source'        => 'use_requirement_delete',
+                        ];
+                        $ctx = ['meta' => $meta];
+                        if (function_exists('request') && request()) {
+                            $ctx = $audit->buildContextFromRequest(request(), $meta);
+                        }
+
+                        $audit->logAdminAction(
+                            (int) $actorId,
+                            'requirement',
+                            'VENUE_REQUIREMENTS_DELETED',
+                            (string) $venue_id,
+                            $ctx
+                        );
+                    }
+                } catch (\Throwable) {
+                    // best-effort
+                }
+            }
+
+            return (bool) $deletedCount;
         }
         catch (InvalidArgumentException|ModelNotFoundException $exception) {throw $exception;} catch (Throwable $exception) {throw new Exception('Unable to delete the specified use requirement.');}
     }

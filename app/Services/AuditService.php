@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Service responsible for writing and reading audit log entries.
@@ -145,20 +146,11 @@ class AuditService
 
         return $this->logAdminAction(
             (int) $admin->id,
-            $this->formatActorLabel($admin),
+            'event',
             $actionCode,
             (string) $event->id,
             $context
         );
-    }
-
-    private function formatActorLabel(User $actor): string
-    {
-        $name = trim(((string)($actor->first_name ?? '')) . ' ' . ((string)($actor->last_name ?? '')));
-        if ($name !== '') {
-            return $name;
-        }
-        return (string)($actor->name ?? ($actor->email ?? 'Admin'));
     }
 
     /**
@@ -186,12 +178,25 @@ class AuditService
             $allowed['meta'] = ['raw' => (string) $allowed['meta']];
         }
 
-        return AuditTrail::create(array_merge([
-            'user_id'     => $userId,
-            'action'      => mb_substr($actionCode, 0, 255),
-            'target_type' => mb_substr($targetType, 0, 255),
-            'target_id'   => mb_substr($targetId, 0, 255),
-        ], $allowed));
+        try {
+            return AuditTrail::create(array_merge([
+                'user_id'     => $userId,
+                'action'      => mb_substr($actionCode, 0, 255),
+                'target_type' => mb_substr($targetType, 0, 255),
+                'target_id'   => mb_substr($targetId, 0, 255),
+            ], $allowed));
+        } catch (\Throwable $exception) {
+            Log::error('Failed to write audit log entry.', [
+                'user_id'     => $userId,
+                'action'      => $actionCode,
+                'target_type' => $targetType,
+                'target_id'   => $targetId,
+                'context'     => $allowed,
+                'exception'   => $exception,
+            ]);
+
+            throw $exception;
+        }
     }
 
     /**
@@ -331,8 +336,13 @@ class AuditService
                 (string) $resourceId,
                 $context
             );
-        } catch (\Throwable) {
-            // best-effort
+        } catch (\Throwable $exception) {
+            // best-effort: log warning but do not break the main flow
+            Log::warning('Failed to record category admin audit action.', [
+                'action_code' => $actionCode,
+                'resource_id' => $resourceId,
+                'exception'   => $exception,
+            ]);
         }
     }
 

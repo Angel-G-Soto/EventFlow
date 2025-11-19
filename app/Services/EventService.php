@@ -569,12 +569,22 @@ class EventService
             return;
         }
 
+        $meta = [
+            'status'   => 'completed',
+            'source'   => 'auto_completion',
+            'event_id' => (int) $event->id,
+        ];
+        $ctx = ['meta' => $meta];
+        if (function_exists('request') && request()) {
+            $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+        }
+
         $this->auditService->logAdminAction(
             $systemUserId,
             'event',
             'EVENT_COMPLETED_AUTO',
             (string) $event->id,
-            ['meta' => ['status' => 'completed']]
+            $ctx
         );
     }
 
@@ -916,6 +926,7 @@ class EventService
     {
         return DB::transaction(function () use ($event, $user, $justification) {
             // Guard: only transition to cancelled from approved
+            $flowStatuses = $this->getFlowStatuses(includeTerminals: false);
             $updated = Event::where('id', $event->id)
                 // ->where('status', 'approved')
                 ->update(['status' => 'cancelled']);
@@ -924,7 +935,7 @@ class EventService
                 // No state change; return current model without side effects
                 return $event;
             }
-            
+
             // Append history with standardized action label and justification
             EventHistory::create([
                 'event_id' => $event->id,
@@ -935,12 +946,23 @@ class EventService
             ]);
 
             // Audit with justification in meta
+            $meta = [
+                'justification' => (string) $justification,
+                'source'        => 'cancel_event',
+            ];
+            $ctx = ['meta' => $meta];
+            try {
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                }
+            } catch (\Throwable) { /* best-effort http context */ }
+
             $this->auditService->logAdminAction(
                 $user->id,
                 'event',
                 'ADMIN_OVERRIDE_CANCEL',
                 (string) $event->id,
-                ['meta' => ['justification' => (string) $justification]]
+                $ctx
             );
 
             // Notifications are best-effort; cancellation should not fail if email dispatch fails
