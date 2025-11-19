@@ -92,6 +92,27 @@ class AuthService
         // Establish a standard session-based login
         Auth::login($user);
 
+        // Audit: SAML login (best-effort)
+        try {
+            $meta = [
+                'source' => 'saml',
+                'email'  => $email,
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+            $this->auditService->logAction(
+                (int) $user->id,
+                'auth',
+                'USER_LOGIN_SAML',
+                (string) $user->id,
+                $ctx
+            );
+        } catch (\Throwable) {
+            // best-effort only
+        }
+
         return $user;
     }
 
@@ -152,6 +173,29 @@ class AuthService
         // Establish a standard session-based login
         Auth::login($user);
 
+        // Audit: Nexo login (best-effort)
+        try {
+            $meta = [
+                'source'            => 'nexo',
+                'email'             => $email,
+                'assoc_id'          => $payload['assoc_id'] ?? null,
+                'association_name'  => $payload['association_name'] ?? null,
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+            $this->auditService->logAction(
+                (int) $user->id,
+                'auth',
+                'USER_LOGIN_NEXO',
+                (string) $user->id,
+                $ctx
+            );
+        } catch (\Throwable) {
+            // best-effort only
+        }
+
         return $user;
     }
 
@@ -167,8 +211,33 @@ class AuthService
      */
     public function logout(): void
     {
+        $user = Auth::user();
+
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
+
+        // Audit: logout (best-effort)
+        try {
+            if ($user && $user->id) {
+                $meta = ['source' => 'logout'];
+                if (function_exists('request') && request()) {
+                    $meta['ip'] = request()->ip();
+                }
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                }
+                $this->auditService->logAction(
+                    (int) $user->id,
+                    'auth',
+                    'USER_LOGOUT',
+                    (string) $user->id,
+                    $ctx
+                );
+            }
+        } catch (\Throwable) {
+            // best-effort only
+        }
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\StorageException;
 use App\Models\Document;
 use App\Jobs\ProcessFileUpload;
+use App\Services\AuditService;
 
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\Eloquent\Collection;
@@ -76,7 +77,34 @@ class DocumentService
 
         // 3) Queue virus scan & move to final storage
         ProcessFileUpload::dispatch(Document::whereIn('id', [$doc->id])->get());
-        //dd($doc->refresh());
+
+        // AUDIT: document uploaded (best-effort)
+        try {
+            /** @var AuditService $audit */
+            $audit = app(AuditService::class);
+
+            $meta = [
+                'document_id' => (int) ($doc->id ?? 0),
+                'event_id'    => (int) $eventId,
+                'name'        => (string) $cleanName,
+                'source'      => 'document_upload',
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $audit->buildContextFromRequest(request(), $meta);
+            }
+
+            $audit->logAction(
+                $userId,
+                'document',
+                'DOCUMENT_UPLOADED',
+                (string) ($doc->id ?? 0),
+                $ctx
+            );
+        } catch (\Throwable) {
+            // best-effort
+        }
+
         return $doc;
     }
 
@@ -113,7 +141,41 @@ class DocumentService
         }
 
         // 2) Remove DB record
-        return (bool) $document->delete();
+        $deleted = (bool) $document->delete();
+
+        // AUDIT: document deleted (best-effort)
+        if ($deleted) {
+            try {
+                /** @var AuditService $audit */
+                $audit = app(AuditService::class);
+
+                $userId = auth()->id() ?? 0;
+                if ($userId) {
+                    $meta = [
+                        'document_id' => (int) ($document->id ?? 0),
+                        'event_id'    => (int) ($document->event_id ?? 0),
+                        'name'        => (string) ($document->name ?? ''),
+                        'source'      => 'document_delete',
+                    ];
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAction(
+                        (int) $userId,
+                        'document',
+                        'DOCUMENT_DELETED',
+                        (string) ($document->id ?? 0),
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) {
+                // best-effort
+            }
+        }
+
+        return $deleted;
     }
 
     /**
@@ -212,6 +274,35 @@ class DocumentService
 
         Document::whereIn('id', $documentIds)
             ->update(['event_id' => $eventId]);
+
+        // AUDIT: documents assigned to event (best-effort)
+        try {
+            /** @var AuditService $audit */
+            $audit = app(AuditService::class);
+
+            $userId = auth()->id() ?? 0;
+            if ($userId) {
+                $meta = [
+                    'event_id'     => (int) $eventId,
+                    'document_ids' => array_values($documentIds),
+                    'source'       => 'document_assign',
+                ];
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = $audit->buildContextFromRequest(request(), $meta);
+                }
+
+                $audit->logAction(
+                    (int) $userId,
+                    'document',
+                    'DOCUMENTS_ASSIGNED_TO_EVENT',
+                    (string) $eventId,
+                    $ctx
+                );
+            }
+        } catch (\Throwable) {
+            // best-effort
+        }
     }
 
     /*private function safeTempDelete(string $tmpRelativePath): void

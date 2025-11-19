@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
 
@@ -140,6 +141,10 @@ class VenueService
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
+            Log::error('Unable to fetch the venues.', [
+                'filters'   => $filters,
+                'exception' => $exception,
+            ]);
             throw new Exception('Unable to fetch the venues.');
         }
     }
@@ -333,6 +338,12 @@ class VenueService
 
             return $query->get();
         } catch (\Throwable $exception) {
+            Log::error('Unable to extract available venues.', [
+                'start_time' => $start_time,
+                'end_time'   => $end_time,
+                'filters'    => $filters,
+                'exception'  => $exception,
+            ]);
             throw new Exception('Unable to extract available venues.');
         }
     }
@@ -627,6 +638,11 @@ class VenueService
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
+            Log::error('Unable to update or create the venue requirements.', [
+                'venue_id'   => $venue->id ?? null,
+                'manager_id' => $manager->id ?? null,
+                'exception'  => $exception,
+            ]);
             throw new Exception('Unable to update or create the venue requirements.');
         }
     }
@@ -1016,6 +1032,10 @@ class VenueService
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
+            Log::error('Unable to synchronize venue data.', [
+                'venue_count' => count($venueData),
+                'exception'   => $exception,
+            ]);
             throw new Exception('Unable to synchronize venue data.');
         }
     }
@@ -1190,7 +1210,14 @@ class VenueService
             };
         } catch (InvalidArgumentException $exception) {
             throw $exception;
-        } catch (\Throwable) {
+        } catch (\Throwable $exception) {
+            Log::error('Unable to remove the venues.', [
+                'venue_ids' => array_map(function ($venue) {
+                    return $venue instanceof Venue ? $venue->id : null;
+                }, $venues),
+                'admin_id'  => $admin->id ?? null,
+                'exception' => $exception,
+            ]);
             throw new Exception('Unable to remove the venues.');
         }
     }
