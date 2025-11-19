@@ -476,13 +476,9 @@ class VenueService
             }
 
             // Audit: director assigns manager to venue
-            $directorLabel = $director->name ?? trim(((string)($director->first_name ?? '')) . ' ' . ((string)($director->last_name ?? '')));
-            if ($directorLabel === '') {
-                $directorLabel = (string)($director->email ?? '');
-            }
             $this->auditService->logAction(
                 $director->id,
-                $directorLabel,
+                'venue',
                 'ASSIGN_MANAGER',
                 'Assigning user ' . $manager->name . '[' . $manager->id . '] to manage ' . $venue->name . ' [' . $venue->id . ']'
             );
@@ -528,13 +524,9 @@ class VenueService
             $normalized = $this->normalizeAvailabilityPayload($availabilityData);
 
             // Audit: operating hours update
-            $managerLabel = $manager->name ?? trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
-            if ($managerLabel === '') {
-                $managerLabel = (string)($manager->email ?? '');
-            }
             $this->auditService->logAction(
                 $manager->id,
-                $managerLabel,
+                'venue',
                 'UPDATE_OPERATING_HOURS',
                 'Updated availability schedule for venue #' . $venue->id
             );
@@ -625,13 +617,9 @@ class VenueService
                 $requirement->hyperlink = $r['hyperlink'];
                 $requirement->description = $r['description'];
                 $requirement->save();
-                $managerLabel = $manager->name ?? trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
-                if ($managerLabel === '') {
-                    $managerLabel = (string)($manager->email ?? '');
-                }
                 $this->auditService->logAction(
                     $manager->id,
-                    $managerLabel,
+                    'venue',
                     'CREATE_REQUIREMENT',
                     'Create requirement for venue #' . $venue->id
                 );
