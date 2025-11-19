@@ -927,7 +927,7 @@ class EventService
         return DB::transaction(function () use ($event, $user, $justification) {
             // Guard: only transition to cancelled from approved
             $flowStatuses = $this->getFlowStatuses(includeTerminals: false);
-            $updated = Event::where('id', $event->id)
+            $updated = Event::whereIn('status', $flowStatuses)
                 // ->where('status', 'approved')
                 ->update(['status' => 'cancelled']);
 
