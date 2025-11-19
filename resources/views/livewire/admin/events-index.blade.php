@@ -129,15 +129,15 @@
                   )>
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button @class([ 'btn' , 'btn-outline-danger'=> !$r['status_is_approved'] || $r['is_past_event'] ||
+                <button @class([ 'btn' , 'btn-outline-danger'=> !$r['status_is_approved'] ||
                   $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
                   $r['status_is_completed'],
-                  'btn-danger' => !(!$r['status_is_approved'] || $r['is_past_event'] ||
+                  'btn-danger' => !(!$r['status_is_approved'] ||
                   $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
                   $r['status_is_completed']),
                   ]) wire:click="delete({{ $r['id'] }})"
                   @disabled(
-                  !$r['status_is_approved'] || $r['is_past_event'] || $r['status_is_cancelled'] ||
+                  !$r['status_is_approved'] || $r['status_is_cancelled'] ||
                   $r['status_is_denied'] || $r['status_is_withdrawn'] || $r['status_is_completed']
                   )
                   aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
