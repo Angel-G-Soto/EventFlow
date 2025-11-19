@@ -71,15 +71,15 @@ class NotificationService
         string $justification,
         string $creatorRoute,
         string $approverRoute
-        
+
     ): void {
         SendRejectionEmailJob::dispatch(
-            $creatorEmail,
-            $recipientEmails,
-            $eventDetails,
-            $justification,
-            $creatorRoute,
-            $approverRoute);
+            creatorEmail: $creatorEmail,
+            recipientEmails: $recipientEmails,
+            eventData: $eventDetails,
+            justification: $justification,
+            creatorRoute: $creatorRoute,
+            approverRoute: $approverRoute);
     }
 
     /**
@@ -100,11 +100,11 @@ class NotificationService
         string $approverRoute
     ): void {
         SendSanctionedEmailJob::dispatch(
-            $creatorEmail,
-            $recipientEmails,
-            $eventDetails,
-            $creatorRoute,
-            $approverRoute);
+            creatorEmail: $creatorEmail,
+            recipientEmails: $recipientEmails,
+            eventData: $eventDetails,
+            creatorRoute: $creatorRoute,
+            approverRoute: $approverRoute);
     }
 
     /**
@@ -127,12 +127,12 @@ class NotificationService
         string $approverRoute
     ): void {
         SendCancellationEmailJob::dispatch(
-            $creatorEmail,
-            $recipientEmails,
-            $eventDetails,
-            $justification,
-            $creatorRoute,
-            $approverRoute
+            creatorEmail: $creatorEmail,
+            recipientEmails: $recipientEmails,
+            eventData: $eventDetails,
+            justification: $justification,
+            creatorRoute: $creatorRoute,
+            approverRoute: $approverRoute
         );
     }
 
@@ -156,14 +156,14 @@ class NotificationService
         string $approverRoute
     ): void {
         SendWithdrawalEmailJob::dispatch(
-            $creatorEmail,
-            $recipientEmails,
-            $eventDetails,
-            $justification,
-            $creatorRoute,
-            $approverRoute
-            
-        
+            creatorEmail: $creatorEmail,
+            recipientEmails: $recipientEmails,
+            eventData: $eventDetails,
+            justification: $justification,
+            creatorRoute: $creatorRoute,
+            approverRoute: $approverRoute
+
+
         );
     }
 
@@ -175,10 +175,10 @@ class NotificationService
         string $role){
 
         SendUpdateEmailJob::dispatch(
-            $creatorEmail,
-            $approverName,
-            $eventDetails,
-            $role);
+            creatorEmail: $creatorEmail,
+            approverName: $approverName,
+            eventDetails: $eventDetails,
+            role: $role);
 
 
     }
