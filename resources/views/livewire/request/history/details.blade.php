@@ -107,7 +107,7 @@
                 @endif
                 <span class="status-indicator status-indicator--{{ $detailStatusVariant }}" aria-label="Event Status: {{ $eventHistory->event->getSimpleStatus() }}">
                     <span class="status-dot" aria-hidden="true"></span>
-                    <span>{{ 'Status: '. $eventHistory->event->getSimpleStatus() }}</span>
+                    <span>{{ 'Current Status: '. $eventHistory->event->getSimpleStatus() }}</span>
                 </span>
 
                 @if($eventHistory->event->status === 'approved')
