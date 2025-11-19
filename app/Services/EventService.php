@@ -957,13 +957,27 @@ class EventService
                 }
             } catch (\Throwable) { /* best-effort http context */ }
 
-            $this->auditService->logAdminAction(
-                $user->id,
-                'event',
-                'ADMIN_OVERRIDE_CANCEL',
-                (string) $event->id,
-                $ctx
-            );
+            // Use admin vs non-admin audit channel depending on actor role.
+            $roleNames = method_exists($user, 'getRoleNames') ? $user->getRoleNames() : collect();
+            $isSystemAdmin = $roleNames->contains('system-admin') || $roleNames->contains('system-administrator');
+
+            if ($isSystemAdmin) {
+                $this->auditService->logAdminAction(
+                    $user->id,
+                    'event',
+                    'ADMIN_OVERRIDE_CANCEL',
+                    (string) $event->id,
+                    $ctx
+                );
+            } else {
+                $this->auditService->logAction(
+                    $user->id,
+                    'event',
+                    'EVENT_CANCELLED',
+                    (string) $event->id,
+                    $ctx
+                );
+            }
 
             // Notifications are best-effort; cancellation should not fail if email dispatch fails
             try {
