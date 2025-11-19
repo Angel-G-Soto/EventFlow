@@ -274,8 +274,8 @@
                                     <h3 id="event-documents-{{ $eventId }}" class="fw-semibold border-bottom pb-2 mb-3">
                                         Documents
                                     </h3>
-                                    <livewire:documents.list-with-preview :docs="$docs" :key=\"'docs-'.($ev->id ??
-                                        '0')\" />
+                                    <livewire:documents.list-with-preview     :docs="$docs"
+                                                                              :key="'docs-'.($modal['event']->id ?? '0')" />
                                 </div>
                             </section>
                         </div>
