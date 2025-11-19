@@ -269,6 +269,31 @@ class DepartmentService
                         ->values()
                         ->all();
 
+                    // Individual DEPARTMENT_UPDATED entries (best-effort)
+                    foreach ($updatedDepartments as $dept) {
+                        try {
+                            $meta = [
+                                'department_id'   => (int) ($dept->id ?? 0),
+                                'department_name' => (string) ($dept->name ?? ''),
+                                'department_code' => (string) ($dept->code ?? ''),
+                                'source'          => 'dept_sync',
+                            ];
+                            $ctx = ['meta' => $meta];
+                            if (function_exists('request') && request()) {
+                                $ctx = $audit->buildContextFromRequest(request(), $meta);
+                            }
+                            $audit->logAdminAction(
+                                $actorId,
+                                'department',
+                                'DEPARTMENT_UPDATED',
+                                (string) ($dept->id ?? '0'),
+                                $ctx
+                            );
+                        } catch (\Throwable) {
+                            // continue logging batch summary even if one fails
+                        }
+                    }
+
                     $meta = [
                         'count'       => (int) $updatedDepartments->count(),
                         'departments' => $names,

@@ -56,11 +56,22 @@ class EventCompletionService
 
         // Optional audit trail
         if ($systemUserId = (int) config('eventflow.system_user_id', 0)) {
+            $meta = [
+                'status'   => self::STATUS_COMPLETED,
+                'source'   => 'auto_completion_cron',
+                'event_id' => (int) $eventId,
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->audit->buildContextFromRequest(request(), $meta);
+            }
+
             $this->audit->logAdminAction(
                 $systemUserId,
                 'event',
                 'EVENT_COMPLETED_AUTO',
-                (string) $eventId
+                (string) $eventId,
+                $ctx
             );
         }
 

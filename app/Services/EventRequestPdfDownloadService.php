@@ -7,11 +7,14 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Services\AuditService;
+use Illuminate\Support\Facades\Auth;
 
 class EventRequestPdfDownloadService
 {
     public function __construct(
-        protected ViewFactory $view
+        protected ViewFactory $view,
+        protected AuditService $auditService,
     ) {
     }
 
@@ -52,13 +55,41 @@ class EventRequestPdfDownloadService
 
         $pdf = Pdf::loadHTML($html)->setPaper('letter', 'portrait');
 
-        return response()->streamDownload(
+        $response = response()->streamDownload(
             static function () use ($pdf) {
                 echo $pdf->output();
             },
             $outputName,
             ['Content-Type' => 'application/pdf']
         );
+
+        // AUDIT: event PDF downloaded (best-effort)
+        try {
+            $user = Auth::user();
+            if ($user && $user->id) {
+                $meta = [
+                    'event_id' => (int) $event->id,
+                    'filename' => $outputName,
+                    'source'   => 'event_pdf_download',
+                ];
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                }
+
+                $this->auditService->logAction(
+                    (int) $user->id,
+                    'event',
+                    'EVENT_PDF_DOWNLOADED',
+                    (string) $event->id,
+                    $ctx
+                );
+            }
+        } catch (\Throwable) {
+            // best-effort
+        }
+
+        return $response;
     }
 
 }
