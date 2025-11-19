@@ -406,42 +406,6 @@ class EventsIndex extends Component
         $this->reset(['editId', 'actionType', 'justification']);
     }
 
-    // Restore-all functionality removed
-
-    // Action workflows (approve/deny/advance/reroute)
-    /**
-     * Opens the justification modal with the action type set to 'approve'.
-     *
-     * This function is used to approve an event request that has been flagged for oversight.
-     * It will open the justification modal with the action type set to 'approve', allowing the user to enter a justification for the approval.
-     */
-    public function approve(): void
-    {
-        $this->authorize('perform-override');
-
-        $this->actionType = 'approve';
-        $this->justification = '';
-        $this->resetErrorBag();
-        $this->resetValidation();
-        $this->dispatch('bs:open', id: 'oversightJustify');
-    }
-
-    /**
-     * Opens the justification modal with the action type set to 'deny'.
-     *
-     * This function is used to deny an event request that has been flagged for oversight.
-     * It will open the justification modal with the action type set to 'deny', allowing the user to enter a justification for the denial.
-     */
-    public function deny(): void
-    {
-        $this->authorize('perform-override');
-
-        $this->actionType = 'deny';
-        $this->resetErrorBag();
-        $this->resetValidation();
-        $this->dispatch('bs:open', id: 'oversightJustify');
-    }
-
     /**
      * Opens the justification modal with the action type set to 'advance'.
      *
@@ -777,13 +741,18 @@ class EventsIndex extends Component
             $documents = collect($event->documents ?? []);
             $this->eDocuments = $documents
                 ->map(function ($doc) {
+                    $id = (int)($doc->id ?? 0);
                     $name = (string)($doc->name ?? '');
                     $path = (string)($doc->file_path ?? '');
                     $label = basename($path ?: $name ?: ('document-' . ($doc->id ?? '')));
-                    $url = $name !== '' ? route('documents.show', ['name' => $name]) : null;
-                    return compact('name', 'label', 'url');
+                    $url = $id > 0 ? route('documents.show', ['documentId' => $id]) : null;
+                    return compact('id', 'name', 'label', 'url');
                 })
-                ->filter(fn($doc) => trim((string)($doc['name'] ?? '')) !== '')
+                ->filter(function ($doc) {
+                    return ($doc['id'] ?? 0) > 0
+                        || trim((string)($doc['name'] ?? '')) !== ''
+                        || trim((string)($doc['label'] ?? '')) !== '';
+                })
                 ->values()
                 ->all();
         } catch (\Throwable $exception) {
