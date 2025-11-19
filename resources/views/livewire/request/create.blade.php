@@ -597,7 +597,9 @@
                 <div class="mb-3">
                     <label for="requirementFiles" class="form-label fw-semibold">
                         Upload Requirement Documents
-                        <span class="text-muted">(PDF, max 10MB each)</span>
+                        <span class="text-muted">
+                            (PDF, max 10MB each{{ $this->requirementUploadsAreMandatory ? '' : ', optional' }})
+                        </span>
                     </label>
 
                     <div class="position-relative">
@@ -618,11 +620,18 @@
                     </div>
 
                     <div class="form-text mt-2">
-                        Upload all required documents here. Accepted formats: PDF. Maximum size 10MB per document.
+                        @if ($this->requirementUploadsAreMandatory)
+                            Upload all required documents here. Accepted formats: PDF. Maximum size 10MB per document.
+                        @else
+                            No documents are required for this event, but you can attach supporting PDFs if needed.
+                        @endif
                     </div>
 
                     {{-- Top-level error: no documents at all (if you add that rule later) --}}
                     @error('requirementFiles')
+                    <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
+                    @error('newRequirementFiles')
                     <div class="text-danger small mt-2">{{ $message }}</div>
                     @enderror
 

@@ -210,10 +210,16 @@ class Create extends Component
  * @var array<string,string>
  */
     public array $messages = [
-        'requirementFiles.required' => 'Please upload at least one document.',
-        'requirementFiles.array'    => 'Please upload at least one document.',
-        'requirementFiles.min'      => 'Please upload at least one document.',
+        'requirementFiles.required' => 'Please upload all required documents.',
+        'requirementFiles.array'    => 'Please upload all required documents.',
+        'requirementFiles.min'      => 'Please upload all required documents.',
+        'requirementFiles.max'      => 'Please upload no more than the required amount of documents.',
+
+        
+        
         // // New batch (before merge)
+
+        'newRequirementFiles.max' => 'Please upload no more than the required amount of documents.',
         'newRequirementFiles.*.file'  => 'Each document must be a valid file.',
         'newRequirementFiles.*.mimes' => 'Each document must be a PDF file.',
         'newRequirementFiles.*.max'   => 'Each document must be 10MB or smaller.',
@@ -310,11 +316,21 @@ class Create extends Component
         }
 
 //        Step 3
-        return
-            [
-                'requirementFiles'   => ['required','array','min:1'],
-                'requirementFiles.*' => ['file', 'mimes:pdf', 'max:10240'],
-            ];
+        $rules = [
+            'requirementFiles'   => ['array'],
+            'requirementFiles.*' => ['file', 'mimes:pdf', 'max:10240'],
+        ];
+
+        if ($this->requirementUploadsAreMandatory()
+            || (bool) $this->handles_food
+            || (bool) $this->use_institutional_funds
+            || (bool) $this->external_guest) {
+            array_unshift($rules['requirementFiles'], 'required');
+            $rules['requirementFiles'][] = 'min:1';
+            $rules['requirementFiles'][] = 'max:12'; // arbitrary upper limit
+        }
+
+        return $rules;
 
 
 
@@ -336,6 +352,7 @@ class Create extends Component
     public function uploadValidation(){
         return
             [
+                'newRequirementFiles'   => ['array', 'max:12'], // arbitrary upper limit
                 'newRequirementFiles.*' => ['file', 'mimes:pdf', 'max:10240']
             ]; // 10 MB each
     }
@@ -608,7 +625,7 @@ public function removeRequirementFile(int $index): void
 
 // Validate step 3 (dynamic files)
 
-//         $this->validate($this->rulesForStep($this->step));
+        $this->validate($this->rulesForStep($this->step));
          // Roadmap
             //create event
 
@@ -629,7 +646,7 @@ public function removeRequirementFile(int $index): void
             'creator_institutional_number' => $this->creator_institutional_number,
             'title' => $this->title,
             'description' => $this->description,
-            'guest_size' => $this->guest_size,
+            'guest_size' => $this->guest_size??0,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
             'organization_advisor_name' => $this->organization_advisor_name,
@@ -845,11 +862,15 @@ public function removeRequirementFile(int $index): void
     }
 
     #[Computed]
+    public function requirementUploadsAreMandatory(): bool
+    {
+        return !empty($this->requiredDocuments);
+    }
+
+    #[Computed]
     public function shouldShowRequirementUploads(): bool
     {
-        $hasVenueRequirements = !empty($this->requiredDocuments);
-
-        return $hasVenueRequirements
+        return $this->requirementUploadsAreMandatory()
             || (bool) $this->handles_food
             || (bool) $this->use_institutional_funds
             || (bool) $this->external_guest;
