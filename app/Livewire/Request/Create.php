@@ -421,7 +421,7 @@ public function removeRequirementFile(int $index): void
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-        $this->validate($this->rulesForStep($this->step));
+//        $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
@@ -608,7 +608,7 @@ public function removeRequirementFile(int $index): void
 
 // Validate step 3 (dynamic files)
 
-         $this->validate($this->rulesForStep($this->step));
+//         $this->validate($this->rulesForStep($this->step));
          // Roadmap
             //create event
 
