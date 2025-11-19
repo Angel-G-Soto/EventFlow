@@ -31,6 +31,7 @@ class EventService
     protected $categoryService;
     protected $auditService;
     protected $documentService;
+    protected $userService;
 
     /**
      * Create a new EventService instance.
@@ -39,12 +40,13 @@ class EventService
      * @param CategoryService $categoryService
      * @param AuditService $auditService
      */
-    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService)
+    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService, UserService $userService)
     {
         $this->venueService = $venueService;
         $this->categoryService = $categoryService;
         $this->auditService = $auditService;
         $this->documentService = $documentService;
+        $this->userService = $userService;
     }
 
 
@@ -152,6 +154,26 @@ class EventService
 
             if ($event->status === 'draft') {
                 return $event;
+            }
+
+            if (!empty($event->organization_advisor_email)) {
+                $advisor = $this->userService->findOrCreateUser(
+                    $event->organization_advisor_email
+                );
+
+                $advisorRole = $this->userService
+                    ->getAllRoles()
+                    ->firstWhere('name', 'advisor');
+
+                if ($advisorRole) {
+                    $alreadyHasRole = $advisor->roles()
+                        ->where('role_id', $advisorRole->id)
+                        ->exists();
+
+                    if (!$alreadyHasRole) {
+                        $advisor->roles()->attach($advisorRole->id);
+                    }
+                }
             }
 
             // Attach documents (hasMany)
