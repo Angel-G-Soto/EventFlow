@@ -827,7 +827,7 @@ class EventService
      */
     public function getTerminalActionNotice(Event $event): ?array
     {
-        $terminalActions = ['cancelled', 'rejected'];
+        $terminalActions = ['cancelled', 'rejected', 'withdrawn'];
         if (!in_array($event->status, $terminalActions, true)) {
             return null;
         }
