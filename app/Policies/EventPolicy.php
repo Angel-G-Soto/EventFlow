@@ -107,10 +107,11 @@ class EventPolicy
         $isAdvisor = $user->roles->contains('name', 'advisor') &&
             $event->organization_advisor_email === $user->email;
         $isDscaApprover = $user->roles->contains('name', 'event-approver');
+        $isSystemAdmin = $user->roles->contains('name', 'system-admin');
 
         $isCreator = $user->id === $event->creator_id;
 
 
-        return $isVenueManager || $isAdvisor || $isDscaApprover || $isCreator;
+        return $isVenueManager || $isAdvisor || $isDscaApprover || $isCreator || $isSystemAdmin;
     }
 }
