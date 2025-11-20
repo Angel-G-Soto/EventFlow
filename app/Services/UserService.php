@@ -164,12 +164,15 @@ class UserService
         $user->loadMissing('roles');
         $previousRoles = $this->getNormalizedRoles($user->roles, $normalize);
         $requested = $this->getNormalizedRequestedRoles($roleCodes, $normalize);
+        $rolesChanged = $this->rolesActuallyChanged($previousRoles, $requested);
 
         $roleIds = $this->resolveRoleIds($requested);
         $user->roles()->sync(array_values(array_unique($roleIds)));
 
-        $this->removeDepartmentIfNoDepartmentRole($user, $previousRoles, $requested, $admin, $justification);
-        $this->logUserRoleUpdate($user, $roleCodes, $admin, $justification);
+        if ($rolesChanged) {
+            $this->removeDepartmentIfNoDepartmentRole($user, $previousRoles, $requested, $admin, $justification);
+            $this->logUserRoleUpdate($user, $roleCodes, $admin, $justification);
+        }
 
         return $user->load('roles');
     }
@@ -204,6 +207,20 @@ class UserService
             $requested[] = 'user';
         }
         return $requested;
+    }
+
+    /**
+     * Determine whether the requested roles differ from the current roles.
+     */
+    private function rolesActuallyChanged(array $previousRoles, array $requestedRoles): bool
+    {
+        $normalizeForCompare = function (array $codes): array {
+            $unique = array_values(array_unique($codes));
+            sort($unique, SORT_STRING);
+            return $unique;
+        };
+
+        return $normalizeForCompare($previousRoles) !== $normalizeForCompare($requestedRoles);
     }
 
     /**
@@ -384,26 +401,40 @@ class UserService
      * @param User|null $admin
      * @param string|null $justification Optional admin-provided justification to include in audit log.
      */
-    public function updateUserProfile(User $user, array $data, User $admin, string $justification): User
+    public function updateUserProfile(User $user, array $data, User $admin, string $justification = ''): User
     {
         // Define a whitelist of fields that are allowed to be updated to prevent mass assignment vulnerabilities.
         $fillableData = Arr::only($data, ['first_name', 'last_name', 'email']);
 
+        $before = $user->only(array_keys($fillableData));
         $user->fill($fillableData);
+        $dirty = $user->getDirty();
+
+        // No change, skip write and audit
+        if (empty($dirty)) {
+            return $user;
+        }
+
         $user->save();
 
         if ($admin && $admin->id) {
-            $ctx = ['meta' => [
-                'fields' => array_keys($fillableData),
+            $changedFields = array_keys($dirty);
+            $meta = [
+                'user_id'   => (int) ($user->id ?? 0),
+                'user_email'=> (string) ($user->email ?? ''),
+                'changed_fields' => $changedFields,
+                'before' => Arr::only($before, $changedFields),
+                'after'  => Arr::only($user->only($changedFields), $changedFields),
                 'source' => 'user_profile_update',
-            ]];
+            ];
             if (($justification = trim((string)$justification)) !== '') {
-                $ctx['meta']['justification'] = $justification;
+                $meta['justification'] = $justification;
             }
+            $ctx = ['meta' => $meta];
             try {
                 if (request()) {
                     $ctx = app(AuditService::class)
-                        ->buildContextFromRequest(request(), $ctx['meta']);
+                        ->buildContextFromRequest(request(), $meta);
                 }
             } catch (\Throwable) { /* queue/no-http */
             }
