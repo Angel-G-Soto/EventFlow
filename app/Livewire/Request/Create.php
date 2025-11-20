@@ -276,11 +276,16 @@ class Create extends Component
 
         $this->name              = $payload['name'];
     
-        $this->organization_id   = $payload['assoc_id']        ?? null;  // optional
-        $this->organization_name = $payload['association_name']         ?? '';
-        $this->organization_advisor_name      = $payload['counselor'] ?? '';
-        $this->organization_advisor_phone     = $organization['advisor_phone'] ?? '';
-        $this->organization_advisor_email   = $payload['email_counselor']  ?? '';
+        // $this->organization_id   = $payload['assoc_id']        ?? $this->organization_id;  // optional
+        $this->organization_name = $payload['association_name']         ?? $this->organization_name;
+        $this->organization_advisor_name      = $payload['counselor'] ?? $this->organization_advisor_name;
+        $this->organization_advisor_phone     = $organization['advisor_phone'] ?? $this->organization_advisor_phone;
+        $this->organization_advisor_email   = $payload['email_counselor']  ?? $this->organization_advisor_email;
+        if(isset($payload['assoc_id'])){
+            $this->organization_id = $payload['assoc_id'];
+        }
+
+        dd($this->organization_id, $this->organization_name, $this->organization_advisor_name, $this->organization_advisor_phone, $this->organization_advisor_email);
     }
 
 
