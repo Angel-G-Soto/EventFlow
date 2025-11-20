@@ -764,7 +764,8 @@ class EventsIndex extends Component
                     $id = (int)($doc->id ?? 0);
                     $name = (string)($doc->name ?? '');
                     $path = (string)($doc->file_path ?? '');
-                    $label = basename($path ?: $name ?: ('document-' . ($doc->id ?? '')));
+                    // Prefer the original document name; fall back to path basename
+                    $label = $name !== '' ? $name : basename($path ?: ('document-' . ($doc->id ?? '')));
                     $url = $id > 0 ? route('documents.show', ['documentId' => $id]) : null;
                     return compact('id', 'name', 'label', 'url');
                 })
