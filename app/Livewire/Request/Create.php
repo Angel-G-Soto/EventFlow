@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Http\Request;
 
 /**
  * Class Create
@@ -203,6 +204,10 @@ class Create extends Component
  */
     public array $newRequirementFiles = [];
 
+    public ?int $source_id = null;
+
+    public string $name='';
+
 
 /**
  * Custom validation messages.
@@ -253,13 +258,23 @@ class Create extends Component
      *
      * @param array{id?:int,name?:string,organization_advisor_name?:string,advisor_phone?:string,advisor_email?:string}|null $organization
      */
-    public function mount(array $organization = []): void
+    public function mount(Request $request): void
+
     {
-        $this->organization_id   = $organization['id']            ?? null;  // optional
-        $this->organization_name = $organization['name']          ?? '';
-        $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
+        // 1. Read raw data from the request
+        $this->source_id = $request->query('source_id');
+
+        $payload = $request->input('payload', []);
+
+        // 2. Map payload into Livewire properties (only if present)
+
+        $this->name              = $payload['name'];
+    
+        $this->organization_id   = $payload['assoc_id']        ?? null;  // optional
+        $this->organization_name = $payload['association_name']         ?? '';
+        $this->organization_advisor_name      = $payload['counselor'] ?? '';
         $this->organization_advisor_phone     = $organization['advisor_phone'] ?? '';
-        $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
+        $this->organization_advisor_email   = $payload['email_counselor']  ?? '';
     }
 
 
