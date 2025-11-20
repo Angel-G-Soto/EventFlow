@@ -75,7 +75,7 @@ class UseRequirementService {
                         $ctx = $audit->buildContextFromRequest(request(), $meta);
                     }
 
-                    $audit->logAdminAction(
+                    $audit->logAction(
                         (int) $actorId,
                         'requirement',
                         'VENUE_REQUIREMENT_UPDATED',
@@ -100,10 +100,11 @@ class UseRequirementService {
      * Deletes the use requirements that belong to the specified venue.
      *
      * @param int $venue_id
+     * @param array<int,string> $deletedNames Optional list of requirement names being removed (for audit context)
      * @return bool
      * @throws Exception
      */
-    public function deleteVenueUseRequirements(int $venue_id): bool
+    public function deleteVenueUseRequirements(int $venue_id, array $deletedNames = []): bool
     {
         try {
             if ($venue_id < 0) throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');
@@ -111,6 +112,7 @@ class UseRequirementService {
             $query = UseRequirement::where('venue_id', $venue_id);
             if ($query->get()->isEmpty()) { return false;}//throw new ModelNotFoundException("No use requirements found for venue ID {$id}.");}
 
+            $deletedIds = $query->pluck('id')->all();
             $deletedCount = $query->delete();
 
             // Audit: venue requirements deleted (best-effort)
@@ -124,24 +126,31 @@ class UseRequirementService {
 
                     if ($actorId) {
                         $meta = [
-                            'venue_id'      => (int) $venue_id,
-                            'deleted_count' => (int) $deletedCount,
-                            'source'        => 'use_requirement_delete',
+                            'venue_id' => (int) $venue_id,
+                            'source'   => 'use_requirement_delete',
                         ];
+                        if (!empty($deletedIds)) {
+                            $meta['deleted_ids'] = $deletedIds;
+                        }
+                        if (!empty($deletedNames)) {
+                            $meta['deleted_names'] = array_values(array_filter($deletedNames));
+                        } else {
+                            $meta['deleted_count'] = (int) $deletedCount;
+                        }
                         $ctx = ['meta' => $meta];
                         if (function_exists('request') && request()) {
                             $ctx = $audit->buildContextFromRequest(request(), $meta);
                         }
 
-                        $audit->logAdminAction(
-                            (int) $actorId,
-                            'requirement',
-                            'VENUE_REQUIREMENTS_DELETED',
-                            (string) $venue_id,
-                            $ctx
-                        );
-                    }
-                } catch (\Throwable) {
+                    $audit->logAction(
+                        (int) $actorId,
+                        'requirement',
+                        'VENUE_REQUIREMENTS_DELETED',
+                        !empty($deletedIds) ? (string) $deletedIds[0] : (string) $venue_id,
+                        $ctx
+                    );
+                }
+            } catch (\Throwable) {
                     // best-effort
                 }
             }
