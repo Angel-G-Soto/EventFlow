@@ -14,6 +14,8 @@ class CategoryService {
 
     ///////////////////////////////////////////// CRUD Operations ////////////////////////////////////////////////
 
+    private ?Collection $allCategoriesCache = null;
+
     public function __construct(){}
 
     /**
@@ -47,7 +49,12 @@ class CategoryService {
     public function getAllCategories(): Collection
     {
         try {
-            return Category::all();
+            if ($this->allCategoriesCache) {
+                return $this->allCategoriesCache;
+            }
+
+            $this->allCategoriesCache = Category::all();
+            return $this->allCategoriesCache;
         }
         catch (Throwable $exception) {throw new Exception('Unable to retrieve the available categories.');}
     }
