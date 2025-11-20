@@ -283,8 +283,8 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" wire:model.defer="organization_advisor_email"
-{{--                    disabled --}}
+                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" disabled 
+                    {{--                    disabled wire:model.defer="organization_advisor_email"--}}
                            placeholder="e.g., advisor@upr.edu"
                     >
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
