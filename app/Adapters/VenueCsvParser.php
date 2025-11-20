@@ -64,9 +64,9 @@ class VenueCsvParser
             $row = array_map(static fn($v) => is_string($v) ? trim($v) : $v, $row);
 
             // Detect and skip a second human-readable header row
-            $maybeName = (string) ($row[$headerMap['name']] ?? '');
-            $maybeCode = (string) ($row[$headerMap['room_code']] ?? '');
-            $maybeCap  = (string) ($row[$headerMap['capacity']] ?? '');
+            $maybeName = $this->cleanString($row[$headerMap['name']] ?? '');
+            $maybeCode = $this->cleanString($row[$headerMap['room_code']] ?? '');
+            $maybeCap  = $this->cleanString($row[$headerMap['capacity']] ?? '');
             if (
                 (strcasecmp($maybeName, 'name') === 0 && strcasecmp($maybeCode, 'room code') === 0)
                 || strcasecmp($maybeCap, 'capacity') === 0
@@ -79,9 +79,9 @@ class VenueCsvParser
                 'v_name' => $maybeName,
                 'v_code' => $maybeCode,
                 // Pass the raw department name for the service to map to a local department ID.
-                'department_name_raw' => (string) ($row[$headerMap['department_name']] ?? ''),
+                'department_name_raw' => $this->cleanString($row[$headerMap['department_name']] ?? ''),
                 // Capture the department code from the 'department' column
-                'department_code_raw' => (string) ($row[$headerMap['department']] ?? ''),
+                'department_code_raw' => $this->cleanString($row[$headerMap['department']] ?? ''),
                 'v_features' => $this->buildFeaturesString($row, $headerMap),
                 'v_features_code' => $this->buildFeaturesCode($row, $headerMap),
                 'v_capacity' => $mainCapacity,
@@ -149,5 +149,28 @@ class VenueCsvParser
         }
 
         return $code;
+    }
+
+    /**
+     * Normalize incoming CSV strings to valid UTF-8 and strip invalid bytes.
+     */
+    private function cleanString($value): string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        // Convert common Windows-1252/Latin-1 bytes to UTF-8 when needed.
+        if (!mb_check_encoding($value, 'UTF-8')) {
+            $value = mb_convert_encoding($value, 'UTF-8', 'Windows-1252');
+        }
+
+        // Drop any remaining invalid sequences to avoid DB insert failures.
+        if (!mb_check_encoding($value, 'UTF-8')) {
+            $value = iconv('UTF-8', 'UTF-8//IGNORE', $value) ?: '';
+        }
+
+        return $value;
     }
 }
