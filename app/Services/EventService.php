@@ -120,9 +120,11 @@ class EventService
                     'guest_size' => $data['guest_size'] ?? null,
                     'handles_food' => $data['handles_food'] ?? false,
                     'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
-                    'external_guest' => $data['external_guests'] ?? false,
+                    'external_guest' => $data['external_guest'] ?? false,
                 ]
             );
+
+            // dd($data['external_guest']);
 
             // AUDIT: creator created/updated event
             try {

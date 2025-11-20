@@ -233,10 +233,10 @@
 
                     <div>
                         <span class="fw-semibold me-2">Invites External Guests:</span>
-                        <span class="status-indicator status-indicator--{{ $eventHistory->event->external_guests ? 'success' : 'danger' }}"
-                              aria-label="Invites External Guests: {{ $eventHistory->event->external_guests ? 'Yes' : 'No' }}">
+                        <span class="status-indicator status-indicator--{{ $eventHistory->event->external_guest ? 'success' : 'danger' }}"
+                              aria-label="Invites External Guests: {{ $eventHistory->event->external_guest ? 'Yes' : 'No' }}">
                             <span class="status-dot" aria-hidden="true"></span>
-                            <span>{{ $eventHistory->event->external_guests ? 'Yes' : 'No' }}</span>
+                            <span>{{ $eventHistory->event->external_guest ? 'Yes' : 'No' }}</span>
                         </span>
                     </div>
                 </div>
