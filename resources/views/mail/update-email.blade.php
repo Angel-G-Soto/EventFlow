@@ -21,7 +21,7 @@
                             <div>Organization Advisor Email: {{$event['organization_advisor_email']}} </div>
                             <div>Event Start Time: {{$event['start_time']}}</div>
                             <div>Event Start Time: {{$event['end_time']}}</div>
-                            <div>Venue: {{$event['venue_name']}}</div>
+                            <div>Venue: {{$event['venue_code']}}({{$event['venue_name']}})</div>
 
                         </td>
 

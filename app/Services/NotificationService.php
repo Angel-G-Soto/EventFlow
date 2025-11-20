@@ -198,6 +198,7 @@ class NotificationService
             'end_time'=> $event->end_time,
             'venue_name' => $venue->name,
             'id' => $event->id,
+            'venue_code' => $venue->code,
             ];
     }
 
