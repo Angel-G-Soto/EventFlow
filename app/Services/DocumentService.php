@@ -292,9 +292,10 @@ class DocumentService
                     $ctx = $audit->buildContextFromRequest(request(), $meta);
                 }
 
+                // Target is the event whose documents were updated
                 $audit->logAction(
                     (int) $userId,
-                    'document',
+                    'event',
                     'DOCUMENTS_ASSIGNED_TO_EVENT',
                     (string) $eventId,
                     $ctx

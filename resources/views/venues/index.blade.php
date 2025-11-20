@@ -1,1 +1,0 @@
-<h1>ALL VIEWS PAGE</h1>

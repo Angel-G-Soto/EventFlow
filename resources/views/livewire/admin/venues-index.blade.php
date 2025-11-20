@@ -176,9 +176,9 @@
                   aria-label="Show details for venue {{ $v['name'] }}" title="Show details">
                   <i class="bi bi-info-circle"></i>
                 </button>
-                <button class="btn btn-danger" wire:click="delete({{ $v['id'] }})"
-                  aria-label="Delete venue {{ $v['name'] }}" title="Delete venue {{ $v['name'] }}">
-                  <i class="bi bi-trash3"></i>
+                <button class="btn btn-danger" wire:click="deactivate({{ $v['id'] }})"
+                  aria-label="Deactivate venue {{ $v['name'] }}" title="Deactivate venue {{ $v['name'] }}">
+                  <i class="bi bi-power"></i>
                 </button>
               </div>
             </td>
@@ -292,12 +292,11 @@
   </div>
 
   {{-- Justification for save/delete --}}
-  <x-justification id="venueJustify" submit="confirmDelete" model="justification" />
+  <x-justification id="venueJustify" submit="confirmDeactivate" model="justification" />
 
   {{-- Confirm delete --}}
-  <x-confirm-delete id="venueConfirm" title="Delete venue" message="Are you sure you want to delete this venue?"
-    confirm="proceedDelete" />
-
+  <x-confirm-delete id="venueConfirm" title="Deactivate venue" message="Are you sure you want to deactivate this venue?"
+    confirm="proceedDeactivate" confirmLabel="Deactivate" confirmIcon="bi-power" />
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
     <div id="venueToast" class="toast text-bg-success" role="alert">

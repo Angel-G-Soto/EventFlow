@@ -292,14 +292,14 @@ class VenuesIndex extends Component
     }
 
     // Persist edits / session writes
-    // Delete workflows
+    // Delete/Deactivate workflows
     /**
      * Opens the justification modal for the venue with the given ID.
-     * This function should be called when the user wants to delete a venue.
+     * This function should be called when the user wants to deactivate a venue.
      * It sets the currently edited venue ID and opens the confirmation modal.
-     * @param int $id The ID of the venue to delete
+     * @param int $id The ID of the venue to deactivate
      */
-    public function delete(int $id): void
+    public function deactivate(int $id): void
     {
         $this->authorize('manage-venues');
 
@@ -308,9 +308,9 @@ class VenuesIndex extends Component
     }
 
     /**
-     * Proceeds from the delete confirmation to the justification modal.
+     * Proceeds from the deactivate confirmation to the justification modal.
      */
-    public function proceedDelete(): void
+    public function proceedDeactivate(): void
     {
         $this->authorize('manage-venues');
 
@@ -319,13 +319,13 @@ class VenuesIndex extends Component
     }
 
     /**
-     * Confirms the deletion of a venue.
+     * Confirms the deactivation of a venue.
      *
-     * This function will validate the justification entered by the user, and then delete the venue with the given ID.
-     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating the venue was deleted.
+     * This function will validate the justification entered by the user, and then deactivate the venue with the given ID.
+     * After deactivation, it clamps the current page to prevent the page from becoming out of bounds.
+     * Finally, it shows a toast message indicating the venue was deactivated.
      */
-    public function confirmDelete(): void
+    public function confirmDeactivate(): void
     {
         $this->authorize('manage-venues');
 
@@ -337,12 +337,12 @@ class VenuesIndex extends Component
                     app(VenueService::class)->deactivateVenues([$venue], Auth::user());
                 }
             } catch (\Throwable $e) {
-                $this->addError('justification', 'Unable to delete venue.');
+                $this->addError('justification', 'Unable to deactivate venue.');
                 return;
             }
         }
         $this->dispatch('bs:close', id: 'venueJustify');
-        $this->dispatch('toast', message: 'Venue deleted');
+        $this->dispatch('toast', message: 'Venue deactivated');
         $this->reset(['editId', 'justification']);
     }
 

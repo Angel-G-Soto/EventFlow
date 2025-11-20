@@ -615,10 +615,15 @@ class VenueService
             // Verify that the requirementsData structure is met
             $expectedKeys = ['name', 'hyperlink', 'description'];
 
-            $trimmedData = array_map(function ($requirement) use ($expectedKeys) {
-                // Use array_intersect_key to filter only the required keys
-                return array_intersect_key($requirement, array_flip($expectedKeys));
-            }, $requirementsData);
+            // Preserve original ids (if provided) so we can distinguish between
+            // existing and newly-created requirements for audit logging.
+            $trimmedData = [];
+            foreach ($requirementsData as $requirement) {
+                $originalId = $requirement['id'] ?? null;
+                $clean = array_intersect_key($requirement, array_flip($expectedKeys));
+                $clean['_original_id'] = $originalId;
+                $trimmedData[] = $clean;
+            }
 
             foreach ($trimmedData as $i => $doc) {
                 if (!is_array($doc)) {
@@ -647,30 +652,38 @@ class VenueService
 
             // Place requirements
             foreach ($trimmedData as $r) {
+                $originalId = $r['_original_id'] ?? null;
+                unset($r['_original_id']);
+
                 $requirement = new UseRequirement();
                 $requirement->venue_id = $venue->id;
                 $requirement->name = $r['name'];
                 $requirement->hyperlink = $r['hyperlink'];
                 $requirement->description = $r['description'];
                 $requirement->save();
-                $meta = [
-                    'venue_id'       => (int) $venue->id,
-                    'requirement_id' => (int) ($requirement->id ?? 0),
-                    'name'           => (string) $requirement->name,
-                    'source'         => 'venue_requirement_create',
-                ];
-                $ctx = ['meta' => $meta];
-                if (function_exists('request') && request()) {
-                    $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
-                }
 
-                $this->auditService->logAction(
-                    $manager->id,
-                    'venue',
-                    'CREATE_REQUIREMENT',
-                    (string) $requirement->id,
-                    $ctx
-                );
+                // Only audit CREATE_REQUIREMENT for rows that were truly new
+                // (no original id provided by the caller).
+                if ($originalId === null) {
+                    $meta = [
+                        'venue_id'       => (int) $venue->id,
+                        'requirement_id' => (int) ($requirement->id ?? 0),
+                        'name'           => (string) $requirement->name,
+                        'source'         => 'venue_requirement_create',
+                    ];
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $this->auditService->logAction(
+                        $manager->id,
+                        'venue',
+                        'CREATE_REQUIREMENT',
+                        (string) $venue->id,
+                        $ctx
+                    );
+                }
             }
         } catch (InvalidArgumentException $exception) {
             throw $exception;

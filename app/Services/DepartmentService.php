@@ -410,61 +410,61 @@ class DepartmentService
      * @return User
      * @throws Exception
      */
-    public function updateUserDepartment(Department $department, User $manager): User
-    {
-        try {
-            // Validate that both models exist in the database
-            if (!Department::find($department->id) || !$this->userService->findUserById($manager->id)) { // IMPORT AND MOCK USER SERVICE
-                throw new ModelNotFoundException('Either the department or the user does not exist in the database.');
-            }
+    // public function updateUserDepartment(Department $department, User $manager): User
+    // {
+    //     try {
+    //         // Validate that both models exist in the database
+    //         if (!Department::find($department->id) || !$this->userService->findUserById($manager->id)) { // IMPORT AND MOCK USER SERVICE
+    //             throw new ModelNotFoundException('Either the department or the user does not exist in the database.');
+    //         }
 
-            // Update user department
-            $manager->department_id = $department->id;
-            $manager->save();
+    //         // Update user department
+    //         $manager->department_id = $department->id;
+    //         $manager->save();
 
-            // AUDIT: user department set/changed (best-effort)
-            try {
-                /** @var AuditService $audit */
-                $audit = app(AuditService::class);
+    //         // AUDIT: user department set/changed (best-effort)
+    //         try {
+    //             /** @var AuditService $audit */
+    //             $audit = app(AuditService::class);
 
-                $actor   = Auth::user();
-                $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
+    //             $actor   = Auth::user();
+    //             $actorId = $actor?->id ?: (int) config('eventflow.system_user_id', 0);
 
-                if ($actorId > 0) {
-                    $actorLabel = $actor
-                        ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
-                        : 'system';
+    //             if ($actorId > 0) {
+    //                 $actorLabel = $actor
+    //                     ? (trim(($actor->first_name ?? '').' '.($actor->last_name ?? '')) ?: (string)($actor->email ?? ''))
+    //                     : 'system';
 
-                    $meta = [
-                        'user_id'          => (int) ($manager->id ?? 0),
-                        'user_email'       => (string) ($manager->email ?? ''),
-                        'department_id'    => (int) ($department->id ?? 0),
-                        'department_name'  => (string) ($department->name ?? ''),
-                        'source'           => 'dept_assign',
-                    ];
+    //                 $meta = [
+    //                     'user_id'          => (int) ($manager->id ?? 0),
+    //                     'user_email'       => (string) ($manager->email ?? ''),
+    //                     'department_id'    => (int) ($department->id ?? 0),
+    //                     'department_name'  => (string) ($department->name ?? ''),
+    //                     'source'           => 'dept_assign',
+    //                 ];
 
-                    $ctx = ['meta' => $meta];
-                    if (function_exists('request') && request()) {
-                        $ctx = $audit->buildContextFromRequest(request(), $meta);
-                    }
+    //                 $ctx = ['meta' => $meta];
+    //                 if (function_exists('request') && request()) {
+    //                     $ctx = $audit->buildContextFromRequest(request(), $meta);
+    //                 }
 
-                    $audit->logAdminAction(
-                        $actorId,
-                        'department',
-                        'USER_DEPT_UPDATE',
-                        (string) ($manager->id ?? '0'),
-                        $ctx
-                    );
-                }
-            } catch (Throwable) { /* best-effort */ }
+    //                 $audit->logAdminAction(
+    //                     $actorId,
+    //                     'user',
+    //                     'USER_DEPT_UPDATE',
+    //                     (string) ($manager->id ?? '0'),
+    //                     $ctx
+    //                 );
+    //             }
+    //         } catch (Throwable) { /* best-effort */ }
 
-            return $manager;
-        } catch (ModelNotFoundException $exception) {
-            throw $exception;
-        } catch (Throwable $exception) {
-            throw new Exception('Failed to update the user(s) department.');
-        }
-    }
+    //         return $manager;
+    //     } catch (ModelNotFoundException $exception) {
+    //         throw $exception;
+    //     } catch (Throwable $exception) {
+    //         throw new Exception('Failed to update the user(s) department.');
+    //     }
+    // }
 
 
     /**
@@ -525,7 +525,7 @@ class DepartmentService
 
                     $audit->logAdminAction(
                         $actorId,
-                        'department',
+                        'user',
                         'USER_DEPT_ADDED_ROLE',
                         (string) ($manager->id ?? '0'),
                         $ctx
@@ -604,9 +604,9 @@ class DepartmentService
                         $ctx = $audit->buildContextFromRequest(request(), $meta);
                     }
 
-                    $audit->logAdminAction(
+                    $audit->logAction(
                         $actorId,
-                        'department',
+                        'user',
                         'USER_DEPT_REMOVED_ROLE',
                         (string) ($manager->id ?? '0'),
                         $ctx
