@@ -678,15 +678,15 @@ class VenueService
                 fn(array $req) => $req['_original_id'] ?? null,
                 $trimmedData
             )));
-            $deletedNames = $existingRequirements
+            $deletedEntries = $existingRequirements
                 ->whereNotIn('id', $survivingIds)
-                ->pluck('name')
-                ->filter()
-                ->values()
-                ->all();
+                ->map(fn($item) => ['id' => $item->id, 'name' => $item->name])
+                ->values();
+            $deletedNames = $deletedEntries->pluck('name')->filter()->values()->all();
+            $deletedIds = $deletedEntries->pluck('id')->filter()->values()->all();
 
             // Remove all requirements
-            $this->useRequirementService->deleteVenueUseRequirements($venue->id, $deletedNames); // MOCK FROM SERVICE
+            $this->useRequirementService->deleteVenueUseRequirements($venue->id, $deletedNames, $deletedIds); // MOCK FROM SERVICE
 
             // Place requirements
             foreach ($trimmedData as $r) {

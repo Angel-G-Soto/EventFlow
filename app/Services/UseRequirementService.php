@@ -101,10 +101,11 @@ class UseRequirementService {
      *
      * @param int $venue_id
      * @param array<int,string> $deletedNames Optional list of requirement names being removed (for audit context)
+     * @param array<int>|null $deletedIdsForMeta Optional specific IDs to log (used when caller knows the removed IDs)
      * @return bool
      * @throws Exception
      */
-    public function deleteVenueUseRequirements(int $venue_id, array $deletedNames = []): bool
+    public function deleteVenueUseRequirements(int $venue_id, array $deletedNames = [], ?array $deletedIdsForMeta = null): bool
     {
         try {
             if ($venue_id < 0) throw new InvalidArgumentException('UseRequirement ID must be a positive integer.');
@@ -112,7 +113,7 @@ class UseRequirementService {
             $query = UseRequirement::where('venue_id', $venue_id);
             if ($query->get()->isEmpty()) { return false;}//throw new ModelNotFoundException("No use requirements found for venue ID {$id}.");}
 
-            $deletedIds = $query->pluck('id')->all();
+            $deletedIds = $deletedIdsForMeta ?? $query->pluck('id')->all();
             $deletedCount = $query->delete();
 
             // Audit: venue requirements deleted (best-effort)
@@ -142,15 +143,15 @@ class UseRequirementService {
                             $ctx = $audit->buildContextFromRequest(request(), $meta);
                         }
 
-                    $audit->logAction(
-                        (int) $actorId,
-                        'requirement',
-                        'VENUE_REQUIREMENTS_DELETED',
-                        !empty($deletedIds) ? (string) $deletedIds[0] : (string) $venue_id,
-                        $ctx
-                    );
-                }
-            } catch (\Throwable) {
+                        $audit->logAction(
+                            (int) $actorId,
+                            'requirement',
+                            'VENUE_REQUIREMENTS_DELETED',
+                            !empty($deletedIds) ? (string) $deletedIds[0] : (string) $venue_id,
+                            $ctx
+                        );
+                    }
+                } catch (\Throwable) {
                     // best-effort
                 }
             }

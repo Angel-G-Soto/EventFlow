@@ -116,7 +116,7 @@
                                             <input type="time"
                                                 class="form-control form-control-sm @error('availabilityForm.'.$day.'.opens_at') is-invalid @enderror"
                                                 wire:model.lazy="availabilityForm.{{ $day }}.opens_at"
-                                                @disabled(empty($row['enabled']))>
+                                                @if(empty($row['enabled'])) disabled @endif>
                                             @error('availabilityForm.'.$day.'.opens_at')
                                             <div class="invalid-feedback d-block">{{ $message }}</div>
                                             @enderror
@@ -125,7 +125,7 @@
                                             <input type="time"
                                                 class="form-control form-control-sm @error('availabilityForm.'.$day.'.closes_at') is-invalid @enderror"
                                                 wire:model.lazy="availabilityForm.{{ $day }}.closes_at"
-                                                @disabled(empty($row['enabled']))>
+                                                @if(empty($row['enabled'])) disabled @endif>
                                             @error('availabilityForm.'.$day.'.closes_at')
                                             <div class="invalid-feedback d-block">{{ $message }}</div>
                                             @enderror
@@ -190,26 +190,37 @@
                         @foreach ($rows as $i => $row)
                         <tr wire:key="req-{{ $row['uuid'] }}">
                             <td>
-                                <input type="text" class="form-control @error(" rows.$i.name") is-invalid @enderror"
-                                    placeholder="e.g., Safety Plan" wire:model.lazy="rows.{{ $i }}.name">
-                                @error("rows.$i.name")
+                                <input
+                                    type="text"
+                                    class="form-control @error('rows.'.$i.'.name') is-invalid @enderror"
+                                    placeholder="e.g., Safety Plan"
+                                    wire:model.lazy="rows.{{ $i }}.name"
+                                >
+                                @error('rows.'.$i.'.name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </td>
 
                             <td>
-                                <textarea rows="2" class="form-control @error(" rows.$i.description") is-invalid
-                                    @enderror" placeholder="Brief description…"
-                                    wire:model.lazy="rows.{{ $i }}.description"></textarea>
-                                @error("rows.$i.description")
+                                <textarea
+                                    rows="2"
+                                    class="form-control @error('rows.'.$i.'.description') is-invalid @enderror"
+                                    placeholder="Brief description…"
+                                    wire:model.lazy="rows.{{ $i }}.description"
+                                ></textarea>
+                                @error('rows.'.$i.'.description')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </td>
 
                             <td>
                                 <div class="input-group">
-                                    <input type="url" class="form-control @error(" rows.$i.hyperlink") is-invalid
-                                        @enderror" placeholder="https://…" wire:model.lazy="rows.{{ $i }}.hyperlink">
+                                    <input
+                                        type="url"
+                                        class="form-control @error('rows.'.$i.'.hyperlink') is-invalid @enderror"
+                                        placeholder="https://…"
+                                        wire:model.lazy="rows.{{ $i }}.hyperlink"
+                                    >
                                     @if (!empty($row['hyperlink']))
 
                                     <a class="btn btn-secondary" href="{{ $row['hyperlink'] }}" target="_blank"
@@ -218,22 +229,22 @@
                                         Open
                                     </a>
                                     @endif
-                                    @error("rows.$i.hyperlink")
+                                    @error('rows.'.$i.'.hyperlink')
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </td>
 
-                            <td class="text-end">
-                                <button type="button"
-                                    class="btn btn-sm {{ $disableRemove ? 'btn-outline-danger' : 'btn-danger' }}"
-                                    wire:click="confirmRemoveRow('{{ $row['uuid'] }}')"
-                                    wire:loading.attr="disabled"
-                                    title="Remove Requirement"
-                                    @disabled($disableRemove)>
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
+            <td class="text-end">
+                <button type="button"
+                    class="btn btn-sm {{ $disableRemove ? 'btn-outline-danger' : 'btn-danger' }}"
+                    wire:click="confirmRemoveRow('{{ $row['uuid'] }}')"
+                    wire:loading.attr="disabled"
+                    title="Remove Requirement"
+                    @disabled($disableRemove)>
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -272,4 +283,7 @@
                 </div>
             </div>
         </div>
+
+        <x-justification id="sharedJustification" submit="submitJustification" model="justification"
+            cancelLabel="Cancel" />
     </div>
