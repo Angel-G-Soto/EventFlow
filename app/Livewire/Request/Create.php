@@ -210,7 +210,7 @@ class Create extends Component
  */
     public array $newRequirementFiles = [];
 
-    public ?int $source_id = null;
+    public string $source_id = '';
 
     public string $name='';
 
