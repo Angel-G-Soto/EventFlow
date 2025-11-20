@@ -460,7 +460,7 @@ public function removeRequirementFile(int $index): void
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-       $this->validate($this->rulesForStep($this->step));
+    //    $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {
