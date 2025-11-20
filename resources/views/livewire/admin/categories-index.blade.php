@@ -1,10 +1,9 @@
 <div>
     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
         <h1 class="h4 mb-0">Categories</h1>
-        <x-tooltip-button type="button" class="btn btn-sm btn-primary" wire:click="startCreate"
-            text="Create a new category">
+        <button type="button" class="btn btn-sm btn-primary" wire:click="startCreate" title="Create a new category">
             <i class="bi bi-plus me-1" aria-hidden="true"></i> Add Category
-        </x-tooltip-button>
+        </button>
     </div>
 
     <div class="card shadow-sm mb-3">
@@ -15,18 +14,18 @@
                     <div class="input-group">
                         <input type="search" class="form-control" id="categorySearch" placeholder="Search by name"
                             wire:model.defer="search">
-                        <x-tooltip-button class="btn btn-secondary" type="submit" aria-label="Search" text="Run search">
+                        <button class="btn btn-secondary" type="submit" aria-label="Search" title="Run search">
                             <i class="bi bi-search"></i>
-                        </x-tooltip-button>
+                        </button>
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <x-tooltip-button type="button"
+                    <button type="button"
                         class="btn btn-secondary w-100 d-inline-flex align-items-center justify-content-center gap-1 text-nowrap"
-                        wire:click="clearFilters" aria-label="Clear filters" text="Reset filters">
+                        wire:click="clearFilters" aria-label="Clear filters" title="Reset filters">
                         <i class="bi bi-x-circle" aria-hidden="true"></i>
                         <span>Clear</span>
-                    </x-tooltip-button>
+                    </button>
                 </div>
             </form>
         </div>
@@ -58,9 +57,8 @@
                         'descending') : 'none';
                         @endphp
                         <th scope="col" aria-sort="{{ $nameSort }}">
-                            <x-tooltip-button class="btn btn-link p-0 text-decoration-none text-black fw-semibold"
-                                type="button" wire:click="sortBy('name')" aria-label="Sort by category name"
-                                text="Sort by category name">
+                            <button class="btn btn-link p-0 text-decoration-none text-black fw-semibold"
+                                type="button" wire:click="sortBy('name')" aria-label="Sort by category name" title="Sort by category name">
                                 Name
                                 @if($sortField === 'name')
                                 <i class="bi bi-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-short"
@@ -68,12 +66,11 @@
                                 @else
                                 <i class="bi bi-arrow-down-up text-muted" aria-hidden="true"></i>
                                 @endif
-                            </x-tooltip-button>
+                            </button>
                         </th>
                         <th scope="col" style="width:160px;" aria-sort="{{ $createdSort }}">
-                            <x-tooltip-button class="btn btn-link p-0 text-decoration-none text-black fw-semibold"
-                                type="button" wire:click="sortBy('created_at')" aria-label="Sort by creation date"
-                                text="Sort by creation date">
+                            <button class="btn btn-link p-0 text-decoration-none text-black fw-semibold"
+                                type="button" wire:click="sortBy('created_at')" aria-label="Sort by creation date" title="Sort by creation date">
                                 Created
                                 @if($sortField === 'created_at')
                                 <i class="bi bi-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-short"
@@ -81,7 +78,7 @@
                                 @else
                                 <i class="bi bi-arrow-down-up text-muted" aria-hidden="true"></i>
                                 @endif
-                            </x-tooltip-button>
+                            </button>
                         </th>
                         <th scope="col" class="text-end" style="width:200px;">Actions</th>
                     </tr>
@@ -94,20 +91,20 @@
                         <td class="text-end">
                             <div class="btn-group btn-group-sm" role="group"
                                 aria-label="Row actions for {{ $category->name }}">
-                                <x-tooltip-button type="button" class="btn btn-secondary"
+                                <button type="button" class="btn btn-secondary"
                                     wire:click="startEdit({{ $category->id }})"
                                     aria-label="Edit category {{ $category->name }}"
-                                    text="Edit category {{ $category->name }}">
+                                    title="Edit category {{ $category->name }}">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                     <span class="visually-hidden">Edit</span>
-                                </x-tooltip-button>
-                                <x-tooltip-button type="button" class="btn btn-danger"
+                                </button>
+                                <button type="button" class="btn btn-danger"
                                     wire:click="confirmDelete({{ $category->id }})"
                                     aria-label="Delete category {{ $category->name }}"
-                                    text="Delete category {{ $category->name }}">
+                                    title="Delete category {{ $category->name }}">
                                     <i class="bi bi-trash3" aria-hidden="true"></i>
                                     <span class="visually-hidden">Delete</span>
-                                </x-tooltip-button>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -139,10 +136,10 @@
                         <i class="bi bi-tags-fill me-2"></i>
                         {{ $editingId ? 'Edit Category' : 'Add Category' }}
                     </h5>
-                    <x-tooltip-button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-                        wire:click="cancelForm" text="Close dialog">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        wire:click="cancelForm" title="Close dialog">
                         <span class="visually-hidden">Close</span>
-                    </x-tooltip-button>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -156,14 +153,14 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <x-tooltip-button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                        wire:click="cancelForm" text="Return without saving">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        wire:click="cancelForm" title="Return without saving">
                         Back
-                    </x-tooltip-button>
-                    <x-tooltip-button type="submit" class="btn btn-primary"
-                        text="{{ $editingId ? 'Apply changes to this category' : 'Create the category' }}">
+                    </button>
+                    <button type="submit" class="btn btn-primary"
+                        title="{{ $editingId ? 'Apply changes to this category' : 'Create the category' }}">
                         {{ $editingId ? 'Update Category' : 'Create Category' }}
-                    </x-tooltip-button>
+                    </button>
                 </div>
             </form>
         </div>
@@ -177,10 +174,10 @@
                     <h5 class="modal-title">
                         <i class="bi bi-clipboard-check me-2"></i>Justification
                     </h5>
-                    <x-tooltip-button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-                        text="Close dialog">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        title="Close dialog">
                         <span class="visually-hidden">Close</span>
-                    </x-tooltip-button>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -193,11 +190,11 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <x-tooltip-button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
-                        wire:click="cancelDelete" text="Return without deleting">Back</x-tooltip-button>
-                    <x-tooltip-button class="btn btn-primary" type="submit" text="Confirm deletion of this category">
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
+                        wire:click="cancelDelete" title="Return without deleting">Back</button>
+                    <button class="btn btn-primary" type="submit" title="Confirm deletion of this category">
                         <i class="bi bi-check2 me-1"></i>Confirm
-                    </x-tooltip-button>
+                    </button>
                 </div>
             </form>
         </div>
@@ -211,23 +208,23 @@
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         Confirm deletion
                     </h5>
-                    <x-tooltip-button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-                        wire:click="cancelDelete" text="Close dialog">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        wire:click="cancelDelete" title="Close dialog">
                         <span class="visually-hidden">Close</span>
-                    </x-tooltip-button>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-0">Are you sure you want to delete <strong>{{ $deleteName ?: 'this category' }}</strong>?</p>
                 </div>
                 <div class="modal-footer">
-                    <x-tooltip-button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
-                        wire:click="cancelDelete" text="Return without deleting">
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
+                        wire:click="cancelDelete" title="Return without deleting">
                         Back
-                    </x-tooltip-button>
-                    <x-tooltip-button class="btn btn-danger" type="button" wire:click="proceedDelete"
-                        text="Continue to justification">
+                    </button>
+                    <button class="btn btn-danger" type="button" wire:click="proceedDelete"
+                        title="Continue to justification">
                         <i class="bi bi-arrow-right-square me-1"></i>Continue
-                    </x-tooltip-button>
+                    </button>
                 </div>
             </div>
         </div>
@@ -241,10 +238,10 @@
                     <h5 class="modal-title">
                         <i class="bi bi-clipboard-check me-2"></i>Justification
                     </h5>
-                    <x-tooltip-button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-                        text="Close dialog">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        title="Close dialog">
                         <span class="visually-hidden">Close</span>
-                    </x-tooltip-button>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -257,33 +254,13 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <x-tooltip-button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
-                        text="Return without saving">Back</x-tooltip-button>
-                    <x-tooltip-button class="btn btn-primary" type="submit" text="Apply category changes">
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
+                        title="Return without saving">Back</button>
+                    <button class="btn btn-primary" type="submit" title="Apply category changes">
                         <i class="bi bi-check2 me-1"></i>Confirm
-                    </x-tooltip-button>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    (function () {
-        const initTooltips = () => {
-            if (!window.bootstrap || !window.bootstrap.Tooltip) {
-                return;
-            }
-            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
-                window.bootstrap.Tooltip.getOrCreateInstance(el);
-            });
-        };
-
-        document.addEventListener('livewire:init', () => {
-            initTooltips();
-            document.addEventListener('livewire:update', initTooltips);
-        });
-    })();
-</script>
-@endpush
