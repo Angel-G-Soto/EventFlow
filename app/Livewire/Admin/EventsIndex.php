@@ -609,16 +609,36 @@ class EventsIndex extends Component
 
     // Presentation helpers
     /**
-     * Render the Events list with filters and modals.
+     * Normalize status for UI display (label + variant).
      */
-    public function statusBadgeClass(string $status): string
+    public function statusIndicatorData(string $status): array
     {
-    $s = mb_strtolower(trim($status));
-        if ($s === '') return 'text-bg-secondary';
-        if (str_contains($s, 'approve')) return 'text-bg-success';
-        if (str_contains($s, 'deny') || str_contains($s, 'reject') || str_contains($s, 'cancel') || str_contains($s, 'withdraw')) return 'text-bg-danger';
-        if (str_contains($s, 'pending')) return 'text-bg-primary';
-        return 'text-bg-light';
+        $normalized = mb_strtolower(trim($status));
+
+        $label = 'Unknown';
+        if ($normalized !== '') {
+            if (str_contains($normalized, 'advisor')) {
+                $label = 'Awaiting Advisor Approval';
+            } elseif (str_contains($normalized, 'venue manager')) {
+                $label = 'Awaiting Venue Manager Approval';
+            } elseif (str_contains($normalized, 'dsca')) {
+                $label = 'Awaiting DSCA Approval';
+            } else {
+                $label = ucfirst($status);
+            }
+        }
+
+        $variant = match (true) {
+            str_contains($normalized, 'cancel'),
+            str_contains($normalized, 'withdraw'),
+            str_contains($normalized, 'reject'),
+            str_contains($normalized, 'deny') => 'danger',
+            str_contains($normalized, 'approve'),
+            str_contains($normalized, 'complete') => 'success',
+            default => 'warning',
+        };
+
+        return ['label' => $label, 'variant' => $variant];
     }
 
     // Private/Protected Helper Methods
