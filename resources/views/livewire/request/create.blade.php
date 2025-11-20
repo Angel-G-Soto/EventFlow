@@ -92,28 +92,28 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label required">Student Phone</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_phone_number" placeholder="787-777-7777">
+                    <input type="text" class="form-control" wire:model.defer="creator_phone_number" placeholder="e.g., 787-777-7777">
                     @error('creator_phone_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
                     <label class="form-label required">Student ID / Number</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number" placeholder="802201234">
+                    <input type="text" class="form-control" wire:model.defer="creator_institutional_number" placeholder="e.g., 802201234">
                     @error('creator_institutional_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event Title</label>
-                    <input type="text" class="form-control" wire:model.defer="title" placeholder="Enter event title">
+                    <input type="text" class="form-control" wire:model.defer="title" placeholder="e.g., Campus Leadership Summit">
                     @error('title') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="Enter a brief description of the event"></textarea>
+                    <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-12">
                     <label class="form-label required">Number of Guests</label>
-                    <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="20">
+                    <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="e.g., 40">
                     @error('guest_size')
                         <div class="text-danger small">{{ $message }}</div>
                     @enderror
@@ -122,13 +122,13 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Start time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="start_time" placeholder="Select start time">
+                    <input type="datetime-local" class="form-control" wire:model.live="start_time" placeholder="e.g., 2025-05-15T09:00">
                     @error('start_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">End time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="end_time" placeholder="Select end time">
+                    <input type="datetime-local" class="form-control" wire:model.live="end_time" placeholder="e.g., 2025-05-15T12:00">
                     @error('end_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -270,14 +270,14 @@
                 <div class="col-md-6">
                     <label class="form-label required">Organization</label>
                     <input type="text" class="form-control" value="{{ $organization_name }}"
-                           disabled placeholder="Organization name">
+                           disabled placeholder="e.g., Engineering Student Council">
                     @error('organization_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
                     <input type="text" value="{{ $organization_advisor_name}}" class="form-control" wire:model.defer="organization_advisor_name"
-                    disabled placeholder="Enter advisor's name">
+                    disabled placeholder="e.g., Prof. Maria Lopez">
                     @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -285,13 +285,13 @@
                     <label class="form-label required">Advisor email</label>
                     <input type="email" value="{{ $organization_advisor_email}}" class="form-control" wire:model.defer="organization_advisor_email"
 {{--                    disabled --}}
-                           placeholder="Enter advisor's email"
+                           placeholder="e.g., advisor@upr.edu"
                     >
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-6">
                     <label class="form-label required">Advisor phone</label>
-                    <input type="text" class="form-control" wire:model.defer="organization_advisor_phone" placeholder="Enter advisor's phone number">
+                    <input type="text" class="form-control" wire:model.defer="organization_advisor_phone" placeholder="e.g., 787-555-1234">
                     @error('organization_advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -338,7 +338,7 @@
                                    type="number"
                                    min="0"
                                    class="form-control"
-                                   placeholder="50"
+                                   placeholder="e.g., 50"
                                    wire:model.defer="venueCapacityFilter">
                         </div>
                         <div class="col-md-4 col-lg-3">
