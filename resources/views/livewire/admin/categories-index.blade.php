@@ -194,12 +194,42 @@
                 </div>
                 <div class="modal-footer">
                     <x-tooltip-button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
-                        text="Return without deleting">Back</x-tooltip-button>
+                        wire:click="cancelDelete" text="Return without deleting">Back</x-tooltip-button>
                     <x-tooltip-button class="btn btn-primary" type="submit" text="Confirm deletion of this category">
                         <i class="bi bi-check2 me-1"></i>Confirm
                     </x-tooltip-button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="categoryConfirmDelete" tabindex="-1" aria-hidden="true" wire:ignore.self>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Confirm deletion
+                    </h5>
+                    <x-tooltip-button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        wire:click="cancelDelete" text="Close dialog">
+                        <span class="visually-hidden">Close</span>
+                    </x-tooltip-button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to delete <strong>{{ $deleteName ?: 'this category' }}</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <x-tooltip-button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
+                        wire:click="cancelDelete" text="Return without deleting">
+                        Back
+                    </x-tooltip-button>
+                    <x-tooltip-button class="btn btn-danger" type="button" wire:click="proceedDelete"
+                        text="Continue to justification">
+                        <i class="bi bi-arrow-right-square me-1"></i>Continue
+                    </x-tooltip-button>
+                </div>
+            </div>
         </div>
     </div>
 
