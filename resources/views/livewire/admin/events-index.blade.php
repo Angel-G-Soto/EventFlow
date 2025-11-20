@@ -70,15 +70,13 @@
         {{-- Organization filter removed; included in search --}}
         <div class="col-md-4">
           <label class="form-label" for="ev_from">From</label>
-          <input id="ev_from" type="datetime-local"
-            class="form-control @error('from') is-invalid @enderror"
+          <input id="ev_from" type="datetime-local" class="form-control @error('from') is-invalid @enderror"
             wire:model.defer="from">
           @error('from')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="col-md-4">
           <label class="form-label" for="ev_to">To</label>
-          <input id="ev_to" type="datetime-local"
-            class="form-control @error('to') is-invalid @enderror"
+          <input id="ev_to" type="datetime-local" class="form-control @error('to') is-invalid @enderror"
             wire:model.defer="to">
           @error('to')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
@@ -108,6 +106,7 @@
     </div>
   </div>
 
+  {{-- Table --}}
   <div class="card shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -543,10 +542,10 @@
         </div>
         <div class="modal-footer d-flex justify-content-between">
           <div class="btn-group">
-            <button type="button" class="btn btn-success" wire:click.prevent="approve" aria-label="Approve request"><i
-                class="bi bi-check2-circle me-1"></i>Approve</button>
+            {{-- <button type="button" class="btn btn-success" wire:click.prevent="approve"
+              aria-label="Approve request"><i class="bi bi-check2-circle me-1"></i>Approve</button>
             <button type="button" class="btn btn-danger" wire:click.prevent="deny" aria-label="Deny request"><i
-                class="bi bi-x-octagon me-1"></i>Deny</button>
+                class="bi bi-x-octagon me-1"></i>Deny</button> --}}
             <button type="button" class="btn btn-secondary" wire:click.prevent="advance" aria-label="Advance request"><i
                 class="bi bi-arrow-right-circle me-1"></i>Advance</button>
           </div>
@@ -560,12 +559,8 @@
   <x-justification id="oversightJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm cancel --}}
-  <x-confirm-cancel
-    id="oversightConfirm"
-    title="Cancel request"
-    message="Are you sure you want to cancel this request?"
-    confirm="proceedDelete"
-  />
+  <x-confirm-cancel id="oversightConfirm" title="Cancel request" message="Are you sure you want to cancel this request?"
+    confirm="proceedDelete" />
 
   {{-- Reroute disabled --}}
 
