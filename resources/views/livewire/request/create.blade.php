@@ -276,7 +276,7 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor name</label>
-                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" wire:model.defer="organization_advisor_name"
+                    <input type="text" value="{{ $organization_advisor_name}}" class="form-control" {{--wire:model="organization_advisor_name"--}}
                     disabled placeholder="e.g., Prof. Maria Lopez">
                     @error('organization_advisor_name') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
