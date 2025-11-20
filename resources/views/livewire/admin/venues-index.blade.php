@@ -295,8 +295,9 @@
   <x-justification id="venueJustify" submit="confirmDeactivate" model="justification" />
 
   {{-- Confirm delete --}}
-  <x-confirm-delete id="venueConfirm" title="Deactivate venue" message="Are you sure you want to deactivate this venue?"
-    confirm="proceedDeactivate" confirmLabel="Deactivate" confirmIcon="bi-power" />
+  <x-confirm-deactivate id="venueConfirm" title="Deactivate venue"
+    message="Are you sure you want to deactivate this venue?" confirm="proceedDeactivate" confirmLabel="Deactivate"
+    confirmIcon="bi-power" />
   {{-- Toast --}}
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1080;" wire:ignore>
     <div id="venueToast" class="toast text-bg-success" role="alert">
