@@ -905,7 +905,7 @@ class EventService
             $this->auditService->logAdminAction(
                 $user->id,
                 'event',
-                'ADMIN_OVERRIDE',
+                'ADMIN_OVERRIDE_EVENT',
                 (string) $event->id,
                 $ctx
             );

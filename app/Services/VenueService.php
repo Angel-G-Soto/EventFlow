@@ -680,7 +680,7 @@ class VenueService
                         $manager->id,
                         'venue',
                         'CREATE_REQUIREMENT',
-                        (string) $requirement->id,
+                        (string) $venue->id,
                         $ctx
                     );
                 }
