@@ -267,25 +267,17 @@ class Create extends Component
     public function mount(Request $request): void
 
     {
-        // 1. Read raw data from the request
-        $this->source_id = $request->query('source_id', $this->source_id);
+        // Read data coming from the import redirect (query params)
+        $this->source_id = (string) $request->query('source_id', $this->source_id);
+        $payload = (array) $request->input('payload', []);
 
-        $payload = $request->input('payload', []);
-
-        // 2. Map payload into Livewire properties (only if present)
-
-        $this->name              = $payload['name'];
-    
-        // $this->organization_id   = $payload['assoc_id']        ?? $this->organization_id;  // optional
-        $this->organization_name = $payload['association_name']         ?? $this->organization_name;
-        $this->organization_advisor_name      = $payload['counselor'] ?? $this->organization_advisor_name;
-        $this->organization_advisor_phone     = $organization['advisor_phone'] ?? $this->organization_advisor_phone;
-        $this->organization_advisor_email   = $payload['email_counselor']  ?? $this->organization_advisor_email;
-        if(isset($payload['assoc_id'])){
-            $this->organization_id = $payload['assoc_id'];
-        }
-
-        dd($this->organization_id, $this->organization_name, $this->organization_advisor_name, $this->organization_advisor_phone, $this->organization_advisor_email);
+        // Map payload into Livewire properties when present
+        $this->name = $payload['name'] ?? $this->name;
+        $this->organization_id = $payload['assoc_id'] ?? $this->organization_id;
+        $this->organization_name = $payload['association_name'] ?? $this->organization_name;
+        $this->organization_advisor_name = $payload['counselor'] ?? $this->organization_advisor_name;
+        $this->organization_advisor_phone = $payload['advisor_phone'] ?? $this->organization_advisor_phone;
+        $this->organization_advisor_email = $payload['email_counselor'] ?? $this->organization_advisor_email;
     }
 
 
