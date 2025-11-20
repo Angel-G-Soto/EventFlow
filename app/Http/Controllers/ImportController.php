@@ -24,6 +24,6 @@ class ImportController extends Controller
         // 2. Redirect the user to the standard "create event" form.
         // The validated data is passed directly to the route(),
         // which will append it as query parameters.
-        return redirect()->route('events.create', $validatedData);
+        return redirect()->route('event.create', $validatedData);
     }
 }
