@@ -51,7 +51,7 @@ class Configure extends Component
  */
     public Venue $venue;
 
-    /** @var array<int,array{id?:int, uuid:string, name:string, description:?string, user.index:?string, position:int}> */
+    /** @var array<int,array{id?:int, uuid:string, name:string, description:?string, hyperlink:?string, position:int}> */
     public array $rows = [];
 
     /** @var array<int> */
@@ -60,6 +60,10 @@ class Configure extends Component
     public string $description = '';
     public array $availabilityForm = [];
     public array $weekDays = [];
+
+    public ?string $confirmDeleteUuid = null;
+    public string $confirmDeleteAction = '';
+    public string $confirmDeleteMessage = '';
 /**
  * Initialize component state from a given Venue or ID.
  * @param Venue $venue
@@ -80,7 +84,7 @@ class Configure extends Component
                 'uuid'        => (string) Str::uuid(), // stable wire:key per row
                 'name'        => $r->name,
                 'description' => $r->description,
-                'hyperlink'     => $r->hyperlink,
+                'hyperlink'   => (string) ($r->hyperlink ?? ''),
                 'position'    => $r->position ?? 0,
             ];
         })->values()->all();
@@ -113,7 +117,7 @@ class Configure extends Component
             'uuid'        => (string) Str::uuid(),
             'name'        => '',
             'description' => '',
-            'user.index'     => '',
+            'hyperlink'   => '',
             'position'    => count($this->rows),
         ];
     }
@@ -144,18 +148,19 @@ class Configure extends Component
 
         $this->dispatch('notify', type: 'success', message: 'Venue details updated.');
     }
-/**
- * RemoveRow action.
- * @param string $uuid
- * @return void
- */
-
+    /**
+     * Remove a requirement row and persist immediately.
+     *
+     * @param string $uuid
+     * @return void
+     */
     public function removeRow(string $uuid): void
     {
+        // Update in-memory rows + deleted list
         foreach ($this->rows as $i => $row) {
-            if ($row['uuid'] === $uuid) {
+            if (($row['uuid'] ?? null) === $uuid) {
                 if (isset($row['id'])) {
-                    $this->deleted[] = $row['id']; // mark for deletion on save
+                    $this->deleted[] = $row['id']; // mark for deletion semantics
                 }
                 array_splice($this->rows, $i, 1);
                 break;
@@ -165,6 +170,89 @@ class Configure extends Component
         if (empty($this->rows)) {
             $this->addRow();
         }
+
+        // Persist requirements change immediately so navigation won't restore the row
+        $this->authorize('update-requirements', $this->venue);
+
+        // Normalize positions before saving
+        foreach ($this->rows as $i => &$row) {
+            $row['position'] = $i;
+        }
+        unset($row);
+
+        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, $this->rows, Auth::user());
+
+        // Refresh component state from DB (rebuild rows/uuids/availability)
+        $this->mount($this->venue);
+    }
+
+    /**
+     * Show confirmation modal before removing a single requirement row.
+     *
+     * @param string $uuid
+     * @return void
+     */
+    public function confirmRemoveRow(string $uuid): void
+    {
+        $this->authorize('update-requirements', $this->venue);
+
+        $row = $this->findRowByUuid($uuid);
+        if (!$row) {
+            return;
+        }
+
+        $label = trim((string) ($row['name'] ?? ''));
+        $labelText = $label !== '' ? "\"{$label}\"" : 'this requirement';
+
+        $this->confirmDeleteUuid = $uuid;
+        $this->confirmDeleteAction = 'remove';
+        $this->confirmDeleteMessage = "Remove {$labelText}? This will delete it immediately.";
+
+        $this->dispatch('bs:open', id: 'requirementsConfirm');
+    }
+
+    /**
+     * Show confirmation modal before clearing all requirements.
+     *
+     * @return void
+     */
+    public function confirmClearRequirements(): void
+    {
+        $this->authorize('update-requirements', $this->venue);
+
+        $this->confirmDeleteUuid = null;
+        $this->confirmDeleteAction = 'clear';
+        $this->confirmDeleteMessage = 'Remove all requirements for this venue? This action cannot be undone.';
+
+        $this->dispatch('bs:open', id: 'requirementsConfirm');
+    }
+
+    /**
+     * Execute the confirmed deletion action.
+     *
+     * @return void
+     */
+    public function confirmDelete(): void
+    {
+        if ($this->confirmDeleteAction === 'clear') {
+            $this->clearRequirements();
+        } elseif ($this->confirmDeleteAction === 'remove' && $this->confirmDeleteUuid) {
+            $this->removeRow($this->confirmDeleteUuid);
+        }
+
+        $this->dispatch('bs:close', id: 'requirementsConfirm');
+        $this->resetConfirmDelete();
+    }
+
+    /**
+     * Cancel the confirmation dialog and reset state.
+     *
+     * @return void
+     */
+    public function cancelConfirmDelete(): void
+    {
+        $this->resetConfirmDelete();
+        $this->dispatch('bs:close', id: 'requirementsConfirm');
     }
     /**
      * Validate input and persist configuration changes.
@@ -187,11 +275,11 @@ class Configure extends Component
             'rows'                 => 'array|min:1',
             'rows.*.name'          => 'required|string|max:255',
             'rows.*.description'   => 'nullable|string|max:2000',
-            'rows.*.user.index'       => 'nullable|url|max:2048',
+            'rows.*.hyperlink'     => 'nullable|url|max:2048',
             'rows.*.position'      => 'integer|min:0',
         ], [], [
             'rows.*.name' => 'requirement name',
-            'rows.*.user.index' => 'document link',
+            'rows.*.hyperlink' => 'document link',
         ]);
 
 //        dd($this->venue,$this->rows);
@@ -373,6 +461,24 @@ class Configure extends Component
         }
 
         return $payload;
+    }
+
+    private function findRowByUuid(string $uuid): ?array
+    {
+        foreach ($this->rows as $row) {
+            if (($row['uuid'] ?? null) === $uuid) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    private function resetConfirmDelete(): void
+    {
+        $this->confirmDeleteAction = '';
+        $this->confirmDeleteUuid = null;
+        $this->confirmDeleteMessage = '';
     }
 }
 
