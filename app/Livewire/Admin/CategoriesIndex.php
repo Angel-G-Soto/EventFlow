@@ -24,6 +24,7 @@ class CategoriesIndex extends Component
     public string $editJustification = '';
 
     public ?int $deleteId = null;
+    public string $deleteName = '';
     public string $deleteJustification = '';
     public bool $showModal = false;
 
@@ -137,10 +138,32 @@ class CategoriesIndex extends Component
     {
         $this->authorizeManage();
         $this->deleteId = $categoryId;
+        $this->deleteName = $this->resolveCategoryName($categoryId);
         $this->deleteJustification = '';
         $this->resetErrorBag();
         $this->resetValidation();
+        $this->dispatch('bs:open', id: 'categoryConfirmDelete');
+    }
+
+    public function proceedDelete(): void
+    {
+        $this->authorizeManage();
+
+        if (!$this->deleteId) {
+            return;
+        }
+
+        $this->dispatch('bs:close', id: 'categoryConfirmDelete');
         $this->dispatch('bs:open', id: 'categoryJustify');
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->deleteId = null;
+        $this->deleteName = '';
+        $this->deleteJustification = '';
+        $this->dispatch('bs:close', id: 'categoryConfirmDelete');
+        $this->dispatch('bs:close', id: 'categoryJustify');
     }
 
     public function deleteCategory(): void
@@ -265,5 +288,15 @@ class CategoriesIndex extends Component
         }
 
         return false;
+    }
+
+    protected function resolveCategoryName(int $categoryId): string
+    {
+        try {
+            $category = app(CategoryService::class)->getCategoryByID($categoryId);
+            return (string) ($category->name ?? '');
+        } catch (\Throwable) {
+            return '';
+        }
     }
 }

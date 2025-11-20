@@ -621,7 +621,27 @@ class VenueService
             foreach ($requirementsData as $requirement) {
                 $originalId = $requirement['id'] ?? null;
                 $clean = array_intersect_key($requirement, array_flip($expectedKeys));
+                // Normalize keys to avoid undefined and let us detect empty rows
+                $clean['name'] = $clean['name'] ?? '';
+                $clean['hyperlink'] = $clean['hyperlink'] ?? '';
+                $clean['description'] = $clean['description'] ?? '';
+
+                // Skip completely empty rows (no name/description/link provided)
+                if (
+                    trim((string) $clean['name']) === ''
+                    && trim((string) $clean['description']) === ''
+                    && trim((string) $clean['hyperlink']) === ''
+                ) {
+                    continue;
+                }
+
                 $clean['_original_id'] = $originalId;
+                // Ensure optional hyperlink key exists as a string (can be empty)
+                if (!array_key_exists('hyperlink', $clean)) {
+                    $clean['hyperlink'] = '';
+                } else {
+                    $clean['hyperlink'] = (string) ($clean['hyperlink'] ?? '');
+                }
                 $trimmedData[] = $clean;
             }
 
@@ -638,7 +658,12 @@ class VenueService
 
                 // No null or empty values
                 foreach ($expectedKeys as $key) {
-                    if ($doc[$key] == null) {
+                    // hyperlink is optional; allow blank but still ensure string type
+                    if ($key === 'hyperlink') {
+                        $doc[$key] = (string) $doc[$key];
+                        continue;
+                    }
+                    if ($doc[$key] === null) {
                         throw new InvalidArgumentException("The field '{$key}' in requirement at index {$i} cannot be null.");
                     }
                 }
@@ -647,8 +672,21 @@ class VenueService
                 $trimmedData[$i] = $doc;
             }
 
+            // Capture existing requirements to determine which were removed for audit context.
+            $existingRequirements = UseRequirement::where('venue_id', $venue->id)->get(['id', 'name']);
+            $survivingIds = array_values(array_filter(array_map(
+                fn(array $req) => $req['_original_id'] ?? null,
+                $trimmedData
+            )));
+            $deletedEntries = $existingRequirements
+                ->whereNotIn('id', $survivingIds)
+                ->map(fn($item) => ['id' => $item->id, 'name' => $item->name])
+                ->values();
+            $deletedNames = $deletedEntries->pluck('name')->filter()->values()->all();
+            $deletedIds = $deletedEntries->pluck('id')->filter()->values()->all();
+
             // Remove all requirements
-            $this->useRequirementService->deleteVenueUseRequirements($venue->id); // MOCK FROM SERVICE
+            $this->useRequirementService->deleteVenueUseRequirements($venue->id, $deletedNames, $deletedIds); // MOCK FROM SERVICE
 
             // Place requirements
             foreach ($trimmedData as $r) {

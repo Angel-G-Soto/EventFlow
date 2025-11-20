@@ -64,6 +64,9 @@ class Configure extends Component
     public ?string $confirmDeleteUuid = null;
     public string $confirmDeleteAction = '';
     public string $confirmDeleteMessage = '';
+    public string $justification = '';
+    public string $pendingAction = '';
+    public ?string $pendingUuid = null;
 /**
  * Initialize component state from a given Venue or ID.
  * @param Venue $venue
@@ -128,25 +131,7 @@ class Configure extends Component
 
     public function saveAvailability(): void
     {
-        $this->authorize('update-availability', $this->venue);
-
-        $this->validate([
-            'description' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        $payload = $this->normalizeAvailabilityInput();
-
-        $this->venue->description = $this->description;
-        $this->venue->save();
-
-        app(VenueService::class)->updateVenueOperatingHours($this->venue, $payload, Auth::user());
-
-        $this->venue->refresh();
-        $this->availabilityForm = $this->buildAvailabilityForm();
-
-        session()->flash('success', 'Venue details updated.');
-
-        $this->dispatch('notify', type: 'success', message: 'Venue details updated.');
+        $this->startJustification('save_availability');
     }
     /**
      * Remove a requirement row and persist immediately.
@@ -235,9 +220,9 @@ class Configure extends Component
     public function confirmDelete(): void
     {
         if ($this->confirmDeleteAction === 'clear') {
-            $this->clearRequirements();
+            $this->startJustification('clear_requirements');
         } elseif ($this->confirmDeleteAction === 'remove' && $this->confirmDeleteUuid) {
-            $this->removeRow($this->confirmDeleteUuid);
+            $this->startJustification('remove_requirement', $this->confirmDeleteUuid);
         }
 
         $this->dispatch('bs:close', id: 'requirementsConfirm');
@@ -261,71 +246,7 @@ class Configure extends Component
 
     public function save(): void
     {
-        $this->authorize('update-availability', $this->venue);
-        $this->authorize('update-requirements', $this->venue);
-
-        // Normalize positions to current order
-        foreach ($this->rows as $i => &$row) {
-            $row['position'] = $i;
-        }
-        unset($row);
-
-        // Validation rules per row
-        $this->validate([
-            'rows'                 => 'array|min:1',
-            'rows.*.name'          => 'required|string|max:255',
-            'rows.*.description'   => 'nullable|string|max:2000',
-            'rows.*.hyperlink'     => 'nullable|url|max:2048',
-            'rows.*.position'      => 'integer|min:0',
-        ], [], [
-            'rows.*.name' => 'requirement name',
-            'rows.*.hyperlink' => 'document link',
-        ]);
-
-//        dd($this->venue,$this->rows);
-
-        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, $this->rows, Auth::user());
-
-//        DB::transaction(function () {
-//            // Delete removed ones
-//            if (!empty($this->deleted)) {
-//                UseRequirement::where('venue_id', $this->venue->id)
-//                    ->whereIn('id', $this->deleted)
-//                    ->delete();
-//                $this->deleted = [];
-//            }
-//
-//            // Upsert rows
-//            foreach ($this->rows as $row) {
-//                if (isset($row['id'])) {
-//                    // update existing
-//                    UseRequirement::where('id', $row['id'])
-//                        ->where('venue_id', $this->venue->id)
-//                        ->update([
-//                            'name'        => $row['name'],
-//                            'description' => $row['description'],
-//                            'hyperlink'     => $row['user.index'],
-//                            'position'    => $row['position'],
-//                        ]);
-//                } else {
-//                    // create new (ignore completely empty rows)
-//                    if (trim($row['name']) !== '' || trim((string) $row['user.index']) !== '' || trim((string) $row['description']) !== '') {
-//                        $created = $this->venue->requirements()->create([
-//                            'name'        => $row['name'],
-//                            'description' => $row['description'],
-//                            'hyperlink'     => $row['user.index'],
-//                            'position'    => $row['position'],
-//                        ]);
-//                        // carry the new id back so the row is now "existing"
-//                        $this->replaceUuidWithId($row['uuid'], $created->id);
-//                    }
-//                }
-//            }
-//        });
-
-        session()->flash('success', 'Venue requirements saved.');
-        // Optional: refresh from DB to get cleaned state
-        $this->mount($this->venue);
+        $this->startJustification('save_requirements');
     }
 
     /**
@@ -479,6 +400,141 @@ class Configure extends Component
         $this->confirmDeleteAction = '';
         $this->confirmDeleteUuid = null;
         $this->confirmDeleteMessage = '';
+    }
+
+    public function startJustification(string $action, ?string $uuid = null): void
+    {
+        $this->pendingAction = $action;
+        $this->pendingUuid = $uuid;
+        $this->justification = '';
+        $this->resetErrorBag(['justification']);
+        $this->dispatch('bs:open', id: 'sharedJustification');
+    }
+
+    public function submitJustification(): void
+    {
+        $this->validate([
+            'justification' => ['required', 'string', 'min:10'],
+        ], [], [
+            'justification' => 'justification',
+        ]);
+
+        $action = $this->pendingAction;
+        $uuid = $this->pendingUuid;
+        $justification = $this->justification;
+
+        $this->pendingAction = '';
+        $this->pendingUuid = null;
+        $this->justification = '';
+
+        $this->dispatch('bs:close', id: 'sharedJustification');
+
+        if ($action === 'save_availability') {
+            $this->performSaveAvailability($justification);
+        } elseif ($action === 'save_requirements') {
+            $this->performSaveRequirements($justification);
+        } elseif ($action === 'clear_requirements') {
+            $this->performClearRequirements($justification);
+        } elseif ($action === 'remove_requirement' && $uuid) {
+            $this->performRemoveRequirement($uuid, $justification);
+        }
+    }
+
+    protected function performSaveAvailability(string $justification): void
+    {
+        $this->authorize('update-availability', $this->venue);
+
+        $this->validate([
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $payload = $this->normalizeAvailabilityInput();
+
+        $this->venue->description = $this->description;
+        $this->venue->save();
+
+        app(VenueService::class)->updateVenueOperatingHours($this->venue, $payload, Auth::user(), $justification);
+
+        $this->venue->refresh();
+        $this->availabilityForm = $this->buildAvailabilityForm();
+
+        session()->flash('success', 'Venue details updated.');
+
+        $this->dispatch('notify', type: 'success', message: 'Venue details updated.');
+    }
+
+    protected function performSaveRequirements(string $justification): void
+    {
+        $this->authorize('update-availability', $this->venue);
+        $this->authorize('update-requirements', $this->venue);
+
+        foreach ($this->rows as $i => &$row) {
+            $row['position'] = $i;
+        }
+        unset($row);
+
+        $this->validate([
+            'rows'                 => 'array|min:1',
+            'rows.*.name'          => 'required|string|max:255',
+            'rows.*.description'   => 'nullable|string|max:2000',
+            'rows.*.hyperlink'     => 'nullable|url|max:2048',
+            'rows.*.position'      => 'integer|min:0',
+        ], [], [
+            'rows.*.name' => 'requirement name',
+            'rows.*.hyperlink' => 'document link',
+        ]);
+
+        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, $this->rows, Auth::user());
+
+        session()->flash('success', 'Venue requirements saved.');
+        $this->mount($this->venue);
+    }
+
+    protected function performClearRequirements(string $justification): void
+    {
+        $this->authorize('update-requirements', $this->venue);
+
+        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, [], Auth::user());
+
+        $this->rows = [];
+        $this->deleted = [];
+        $this->addRow();
+
+        session()->flash('success', 'All requirements for this venue have been cleared.');
+        $this->dispatch('notify', type: 'success', message: 'All requirements have been cleared.');
+    }
+
+    protected function performRemoveRequirement(string $uuid, string $justification): void
+    {
+        $this->authorize('update-requirements', $this->venue);
+
+        $this->applyRemoveRow($uuid);
+
+        app(VenueService::class)->updateOrCreateVenueRequirements($this->venue, $this->rows, Auth::user());
+
+        $this->mount($this->venue);
+    }
+
+    private function applyRemoveRow(string $uuid): void
+    {
+        foreach ($this->rows as $i => $row) {
+            if (($row['uuid'] ?? null) === $uuid) {
+                if (isset($row['id'])) {
+                    $this->deleted[] = $row['id'];
+                }
+                array_splice($this->rows, $i, 1);
+                break;
+            }
+        }
+
+        if (empty($this->rows)) {
+            $this->addRow();
+        }
+
+        foreach ($this->rows as $i => &$row) {
+            $row['position'] = $i;
+        }
+        unset($row);
     }
 }
 
