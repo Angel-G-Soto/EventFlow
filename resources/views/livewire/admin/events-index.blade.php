@@ -340,12 +340,12 @@
               <h6 class="text-uppercase text-muted small mb-2">Documents</h6>
               <div class="border rounded px-3 py-2 bg-light">
                 @if(count($eDocuments))
-                <ul class="list-unstyled mb-0 small">
+                <ul class="list-unstyled mb-0">
                   @foreach($eDocuments as $doc)
                   <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
                     <span class="text-break">{{ $doc['label'] }}</span>
                     @if(!empty($doc['url']))
-                    <a class="text-decoration-none small" href="{{ $doc['url'] }}" target="_blank" rel="noreferrer">
+                    <a class="text-decoration-none fw-bold" href="{{ $doc['url'] }}" target="_blank" rel="noreferrer">
                       View
                     </a>
                     @endif
@@ -436,7 +436,7 @@
                 min="1" wire:model.live="eAttendees" placeholder="0+">
               @error('eAttendees')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-6">
+            <div class="col">
               <style>
                 .compact-multiselect .badge,
                 .compact-multiselect input,
