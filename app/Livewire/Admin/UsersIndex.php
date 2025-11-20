@@ -153,11 +153,11 @@ class UsersIndex extends Component
             try {
                 $user = $svc->findUserById((int)$this->editId);
                 [$first, $last] = $this->splitName($this->editName);
-                // $svc->updateUserProfile($user, [
-                //     'first_name' => $first,
-                //     'last_name'  => $last,
-                //     'email'      => $this->editEmail,
-                // ], Auth::user(), (string) $this->justification);
+                $svc->updateUserProfile($user, [
+                    'first_name' => $first,
+                    'last_name'  => $last,
+                    'email'      => $this->editEmail,
+                ], Auth::user(), (string) $this->justification);
                 $svc->updateUserRoles($user, $this->editRoles, Auth::user(), (string) $this->justification);
                 // Department resolution
                 $deptId = $this->resolveDepartmentIdFromName($this->editDepartment);
