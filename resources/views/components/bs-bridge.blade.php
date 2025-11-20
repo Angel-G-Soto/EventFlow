@@ -42,15 +42,20 @@
       const el = document.getElementById(id);
       if (!el) return;
 
-      const inst = bootstrap.Modal.getInstance(el) || modalCache.get(id);
+      const inst = bootstrap.Modal.getInstance(el) || modalCache.get(id) || ensureModalInstance(el);
       if (!inst) return;
 
       // Hide → on hidden, dispose and cleanup
       el.addEventListener('hidden.bs.modal', function onHidden() {
         el.removeEventListener('hidden.bs.modal', onHidden);
-        inst.dispose?.();
-        modalCache.delete(id);
-        cleanupBackdrops();
+        try {
+          inst.dispose?.();
+        } catch (_) {
+          // ignore dispose errors (e.g., missing backdrop)
+        } finally {
+          modalCache.delete(id);
+          cleanupBackdrops();
+        }
       }, { once: true });
 
       inst.hide();
