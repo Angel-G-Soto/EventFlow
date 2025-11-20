@@ -181,6 +181,12 @@ class Create extends Component
  * @var int
  */
     public int $venuePerPage = 10;
+/**
+ * Signature of the time window used to populate $availableVenues.
+ *
+ * @var string|null
+ */
+    public ?string $lastVenueWindowSignature = null;
 
 
 // Part 3 (dynamic required docs)
@@ -369,6 +375,22 @@ class Create extends Component
             $this->loadAvailableVenues();
         }
     }
+
+    public function updatedStartTime($value): void
+    {
+        $this->handleTimeWindowChange();
+    }
+
+    public function updatedEndTime($value): void
+    {
+        $this->handleTimeWindowChange();
+    }
+
+    protected function handleTimeWindowChange(): void
+    {
+        $this->resetVenueSelectionState();
+        $this->refreshVenuesIfPossible();
+    }
 /**
  * ValidTimeRange action.
  * @return bool
@@ -442,6 +464,9 @@ public function removeRequirementFile(int $index): void
 
 
         if ($this->step === 1) {
+            if ($this->timeWindowSignature() !== $this->lastVenueWindowSignature) {
+                $this->resetVenueSelectionState();
+            }
             // Step 1 complete ⇒ preload venues for Step 2
             $this->loadAvailableVenues();
             $this->step = 2;
@@ -482,6 +507,7 @@ public function removeRequirementFile(int $index): void
             //dd($this->availableVenues);
             $this->selectedVenueDetails = $this->resolveVenueDetails($this->venue_id);
             $this->resetVenuePagination();
+            $this->lastVenueWindowSignature = $this->timeWindowSignature();
         } catch (\Throwable $e) {
             $this->addError('venue_id', 'Could not load venue availability.');
         } finally {
@@ -836,6 +862,24 @@ public function removeRequirementFile(int $index): void
         $this->venuePage = $this->normalizeVenuePage($this->venuePage + 1);
     }
 
+    protected function resetVenueSelectionState(): void
+    {
+        if ($this->venue_id === null
+            && empty($this->availableVenues)
+            && $this->selectedVenueDetails === null
+            && empty($this->requiredDocuments)) {
+            return;
+        }
+
+        $this->venue_id = null;
+        $this->selectedVenueDetails = null;
+        $this->availableVenues = [];
+        $this->requiredDocuments = [];
+        $this->resetVenuePagination();
+        $this->resetErrorBag(['venue_id']);
+        $this->lastVenueWindowSignature = null;
+    }
+
     protected function resetVenuePagination(): void
     {
         $this->venuePage = 1;
@@ -859,6 +903,15 @@ public function removeRequirementFile(int $index): void
         } catch (\Throwable $e) {
             return (string)$value;
         }
+    }
+
+    protected function timeWindowSignature(): ?string
+    {
+        if (!$this->validTimeRange()) {
+            return null;
+        }
+
+        return sha1($this->start_time . '|' . $this->end_time);
     }
 
     #[Computed]
