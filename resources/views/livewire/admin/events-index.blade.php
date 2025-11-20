@@ -409,14 +409,17 @@
             <div class="col-md-3">
               <label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label>
               <input id="ev_e_advisor_phone" class="form-control @error('eAdvisorPhone') is-invalid @enderror"
-                wire:model.live="eAdvisorPhone" placeholder="###-###-####">
+                wire:model.live="eAdvisorPhone" placeholder="###-###-####" inputmode="tel" maxlength="12"
+                autocomplete="tel" oninput="formatDash(this)">
               @error('eAdvisorPhone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
-                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber" placeholder="Student ID">
+                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber"
+                placeholder="###-###-####" inputmode="tel" maxlength="12" autocomplete="off" oninput="formatDash(this)">
             </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_phone">Student Phone</label><input
-                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####">
+                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####"
+                inputmode="tel" maxlength="12" autocomplete="tel" oninput="formatDash(this)">
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_from">From</label>
@@ -596,6 +599,17 @@
   </div>
 
   <script>
+    (function () {
+      window.formatDash = function (input) {
+        const digits = (input.value || '').replace(/\D/g, '').slice(0, 10);
+        const parts = [];
+        if (digits.length > 0) parts.push(digits.slice(0, 3));
+        if (digits.length > 3) parts.push(digits.slice(3, 6));
+        if (digits.length > 6) parts.push(digits.slice(6, 10));
+        input.value = parts.filter(Boolean).join('-');
+      };
+    })();
+
     document.addEventListener('livewire:init', () => {
       const focusMap = new Map();
 
