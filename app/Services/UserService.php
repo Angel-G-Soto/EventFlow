@@ -277,7 +277,7 @@ class UserService
                 $this->auditService->logAdminAction(
                     $admin->id,
                     'department',
-                    'USER_DEPT_REMOVED_ROLE',
+                    'USER_DEPT_REMOVED',
                     (string) ($user->id ?? 0),
                     $ctx
                 );
@@ -367,9 +367,9 @@ class UserService
 
             $this->auditService->logAdminAction(
                 $admin->id,
-                'department',
+                'user',
                 'USER_DEPT_ASSIGNED',
-                $targetId,
+                (string) ($user->id ?? 0),
                 $ctx
             );
         }

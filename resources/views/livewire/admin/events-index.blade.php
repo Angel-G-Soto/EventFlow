@@ -3,6 +3,36 @@
     <h1 class="h4 mb-0">Event Oversight</h1>
   </div>
 
+  <style>
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .status-indicator .status-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      display: inline-block;
+      background-color: currentColor;
+    }
+
+    .status-indicator--success {
+      color: #146c43;
+    }
+
+    .status-indicator--danger {
+      color: #b02a37;
+    }
+
+    .status-indicator--warning {
+      color: #856404;
+    }
+  </style>
+
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
@@ -40,15 +70,13 @@
         {{-- Organization filter removed; included in search --}}
         <div class="col-md-4">
           <label class="form-label" for="ev_from">From</label>
-          <input id="ev_from" type="datetime-local"
-            class="form-control @error('from') is-invalid @enderror"
+          <input id="ev_from" type="datetime-local" class="form-control @error('from') is-invalid @enderror"
             wire:model.defer="from">
           @error('from')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="col-md-4">
           <label class="form-label" for="ev_to">To</label>
-          <input id="ev_to" type="datetime-local"
-            class="form-control @error('to') is-invalid @enderror"
+          <input id="ev_to" type="datetime-local" class="form-control @error('to') is-invalid @enderror"
             wire:model.defer="to">
           @error('to')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
@@ -78,6 +106,7 @@
     </div>
   </div>
 
+  {{-- Table --}}
   <div class="card shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -102,8 +131,11 @@
             <td>{{ $r['organization'] ?? ($r['organization_nexo_name'] ?? '') }}</td>
             <td>{{ $r['venue'] }}</td>
             <td>
-              @php($st = $r['status'] ?? '')
-              <span class="badge {{ $this->statusBadgeClass($st) }}">{{ $st !== '' ? ucwords($st) : 'Unknown' }}</span>
+              @php($status = $this->statusIndicatorData($r['status'] ?? ''))
+              <span class="status-indicator status-indicator--{{ $status['variant'] }}">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span>{{ $status['label'] }}</span>
+              </span>
             </td>
             <td>
               <div>{{ $r['from'] }}</div>
@@ -182,9 +214,14 @@
                 <h5 class="mb-0">{{ $eTitle ?: 'Untitled event' }}</h5>
                 <span class="text-muted">Request #{{ $editId }}</span>
               </div>
-              <div class="text-muted mt-1">
-                <span class="fw-bold">Attendees:</span>
-                {{ $eAttendees ?: 0 }} • <span class="fw-bold">Status:</span> {{ ucwords($eStatus) ?: 'Unknown' }}
+              <div class="text-muted mt-1 d-flex flex-wrap align-items-center gap-2">
+                <span><span class="fw-bold">Attendees:</span> {{ $eAttendees ?: 0 }}</span>
+                <span class="fw-bold">Status:</span>
+                @php($status = $this->statusIndicatorData($eStatus ?? ''))
+                <span class="status-indicator status-indicator--{{ $status['variant'] }}">
+                  <span class="status-dot" aria-hidden="true"></span>
+                  <span>{{ $status['label'] }}</span>
+                </span>
               </div>
             </div>
 
@@ -505,10 +542,10 @@
         </div>
         <div class="modal-footer d-flex justify-content-between">
           <div class="btn-group">
-            <button type="button" class="btn btn-success" wire:click.prevent="approve" aria-label="Approve request"><i
-                class="bi bi-check2-circle me-1"></i>Approve</button>
+            {{-- <button type="button" class="btn btn-success" wire:click.prevent="approve"
+              aria-label="Approve request"><i class="bi bi-check2-circle me-1"></i>Approve</button>
             <button type="button" class="btn btn-danger" wire:click.prevent="deny" aria-label="Deny request"><i
-                class="bi bi-x-octagon me-1"></i>Deny</button>
+                class="bi bi-x-octagon me-1"></i>Deny</button> --}}
             <button type="button" class="btn btn-secondary" wire:click.prevent="advance" aria-label="Advance request"><i
                 class="bi bi-arrow-right-circle me-1"></i>Advance</button>
           </div>
@@ -522,12 +559,8 @@
   <x-justification id="oversightJustify" submit="confirmJustify" model="justification" />
 
   {{-- Confirm cancel --}}
-  <x-confirm-cancel
-    id="oversightConfirm"
-    title="Cancel request"
-    message="Are you sure you want to cancel this request?"
-    confirm="proceedDelete"
-  />
+  <x-confirm-cancel id="oversightConfirm" title="Cancel request" message="Are you sure you want to cancel this request?"
+    confirm="proceedDelete" />
 
   {{-- Reroute disabled --}}
 

@@ -7,14 +7,15 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p class="mb-0">{{ $message ?? 'Are you sure you want to delete this item? This action cannot be undone.' }}</p>
+        <p class="mb-0">{{ $message ?? 'Are you sure you want to deactivate this item? This action cannot be undone.' }}
+        </p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" aria-label="Back">
           <i class="bi bi-arrow-left me-1"></i>Back
         </button>
-        <button class="btn btn-danger" type="button" wire:click="{{ $confirm ?? 'proceedDelete' }}">
-          <i class="bi bi-trash3 me-1"></i>Delete
+        <button class="btn btn-danger" type="button" wire:click="{{ $confirm ?? 'proceedDeactivate' }}">
+          <i class="bi bi-power me-1"></i>Deactivate
         </button>
       </div>
     </div>
