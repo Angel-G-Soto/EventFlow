@@ -268,7 +268,7 @@ class Create extends Component
 
     {
         // 1. Read raw data from the request
-        $this->source_id = $request->query('source_id');
+        $this->source_id = $request->query('source_id', $this->source_id);
 
         $payload = $request->input('payload', []);
 
