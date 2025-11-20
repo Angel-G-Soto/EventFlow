@@ -185,8 +185,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php($hasCreatedRequirements = !empty(array_filter($rows, fn($row) => !empty($row['id'] ?? null))))
-                        @php($disableRemove = !$hasCreatedRequirements)
                         @foreach ($rows as $i => $row)
                         <tr wire:key="req-{{ $row['uuid'] }}">
                             <td>
@@ -235,16 +233,15 @@
                                 </div>
                             </td>
 
-            <td class="text-end">
-                <button type="button"
-                    class="btn btn-sm {{ $disableRemove ? 'btn-outline-danger' : 'btn-danger' }}"
-                    wire:click="confirmRemoveRow('{{ $row['uuid'] }}')"
-                    wire:loading.attr="disabled"
-                    title="Remove Requirement"
-                    @disabled($disableRemove)>
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
+                            <td class="text-end">
+                                <button type="button"
+                                    class="btn btn-sm btn-danger"
+                                    wire:click="confirmRemoveRow('{{ $row['uuid'] }}')"
+                                    wire:loading.attr="disabled"
+                                    title="Remove Requirement">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
