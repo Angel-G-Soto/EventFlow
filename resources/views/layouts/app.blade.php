@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{{ $title ?? 'EventFlow' }}</title>
+{{-- or if you keep .ico --}}
+  <link rel="icon" href="{{ asset('favicon.png') }}">
+
 
   @vite(['resources/js/app.js','resources/scss/app.scss'])
   @livewireStyles
