@@ -84,7 +84,6 @@ class AuditTrailIndex extends Component
                     }
                 },
             ],
-            'adminOnly' => ['boolean'],
             'pageSize' => ['integer', 'in:25,50,100'],
             'detailsId' => ['nullable', 'integer', 'min:1'],
         ];

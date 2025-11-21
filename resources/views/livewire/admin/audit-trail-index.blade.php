@@ -22,23 +22,17 @@ return $dt;
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
-        <div class="col-12 col-md-4">
-          <label class="form-label" for="audit_user">Search</label>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="audit_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
-              <input id="audit_user" type="text" class="form-control" wire:model.defer="userSearch"
-                placeholder="Search by user name or ID…">
+              <input id="audit_search" type="text" class="form-control" wire:model.defer="search"
+                placeholder="Search by user, action, target, or ID…">
               <button class="btn btn-secondary" type="submit" aria-label="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
           </form>
-        </div>
-
-        <div class="col-6 col-md-3">
-          <label class="form-label" for="audit_action">Action Code</label>
-          <input id="audit_action" type="text" class="form-control" wire:model.live="action"
-            placeholder="e.g. USER_UPDATE">
         </div>
 
         <div class="col-6 col-md-2">
@@ -122,10 +116,22 @@ return $dt;
               @endif
             </td>
             <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
-            <td class="text-truncate" style="max-width:220px;">
-              {{ $r->target_type ? class_basename($r->target_type) : '—' }}:
-              @if($r->target_id)
-              #{{ $r->target_id }}
+            @php
+              $meta = is_array($r->meta ?? null) ? $r->meta : [];
+              $label = $r->target_type ? class_basename($r->target_type) : '—';
+              $metaName = $meta['name'] ?? null;
+            @endphp
+            <td class="text-truncate" style="max-width:260px;">
+              @if($label !== '—')
+                {{ $label }}
+                @if($r->target_id)
+                  #{{ $r->target_id }}
+                @endif
+                @if($metaName)
+                  – “{{ $metaName }}”
+                @endif
+              @else
+                —
               @endif
             </td>
             <td class="text-end">
