@@ -112,7 +112,7 @@
                 </div>
 
                 <div class="col-md-12">
-                    <label class="form-label required">Number of Guests</label>
+                    <label class="form-label">Number of Guests</label>
                     <input type="text" class="form-control" wire:model.defer="guest_size" placeholder="e.g., 40">
                     @error('guest_size')
                         <div class="text-danger small">{{ $message }}</div>
@@ -283,7 +283,7 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Advisor email</label>
-                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" disabled 
+                    <input type="email" value="{{ $organization_advisor_email}}" class="form-control" disabled
                     {{--                    disabled wire:model.defer="organization_advisor_email"--}}
                            placeholder="e.g., advisor@upr.edu"
                     >

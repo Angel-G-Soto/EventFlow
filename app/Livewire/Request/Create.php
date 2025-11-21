@@ -226,8 +226,8 @@ class Create extends Component
         'requirementFiles.min'      => 'Please upload all required documents.',
         'requirementFiles.max'      => 'Please upload no more than the required amount of documents.',
 
-        
-        
+
+
         // // New batch (before merge)
 
         'newRequirementFiles.max' => 'Please upload no more than the required amount of documents.',
@@ -309,11 +309,10 @@ class Create extends Component
                 'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10'],
-                'guest_size' => ['required','integer','min:0'],
+                'guest_size' => ['nullable','integer','min:0'],
                 'start_time' => ['required','date'],
                 'end_time' => ['required','date','after:start_time'],
                 'category_ids' => ['array','min:1'],
-//                'category_ids.*' => ['integer', Rule::exists('categories','id')],
                 'organization_name' => ['required','string','max:255'],
                 'organization_id' => ['nullable','integer'],
                 'organization_advisor_name' => ['required','string','max:150'],
