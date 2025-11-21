@@ -11,6 +11,20 @@ return \Carbon\Carbon::parse($dt)
 return $dt;
 }
 };
+
+$userSearch = $userSearch ?? null;
+$action = $action ?? '';
+$from = $from ?? null;
+$to = $to ?? null;
+$pageSize = $pageSize ?? 25;
+
+$downloadParams = array_filter([
+'user' => $userSearch,
+'action' => $action,
+'date_from' => $from,
+'date_to' => $to,
+'limit' => $pageSize,
+], fn ($v) => $v !== null && $v !== '');
 @endphp
 
 <div>
@@ -37,7 +51,7 @@ return $dt;
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
               <input id="audit_search" type="text" class="form-control" wire:model.defer="search"
-                placeholder="Search by user, action, target, or ID…">
+                placeholder="Search by user, action, target, or IP…">
               <button class="btn btn-secondary" type="submit" aria-label="Search">
                 <i class="bi bi-search"></i>
               </button>
@@ -73,6 +87,10 @@ return $dt;
         <option>50</option>
         <option>100</option>
       </select>
+      <a class="btn btn-primary btn-sm" href="{{ route('admin.audit.download', $downloadParams) }}" target="_blank"
+        rel="noopener">
+        <i class="bi bi-download me-1"></i> PDF
+      </a>
     </div>
   </div>
 
@@ -86,6 +104,7 @@ return $dt;
             <th scope="col">User</th>
             <th scope="col">Action</th>
             <th scope="col">Target</th>
+            <th scope="col">IP</th>
             <th scope="col" class="text-end">Details</th>
           </tr>
         </thead>
@@ -121,6 +140,9 @@ return $dt;
               @if($r->target_id)
               {{ $r->target_id }}
               @endif
+            </td>
+            <td class="text-truncate" style="max-width:130px;">
+              <small class="fw-bold">{{ $r->ip ?? '—' }}</small>
             </td>
             <td class="text-end">
               <button class="btn btn-info btn-sm" wire:click="showDetails({{ $r->id }})"
@@ -177,6 +199,10 @@ return $dt;
             <dd class="col-sm-9"><small class="text-break">{{ $details['ip'] ?? 'Unknown' }}</small></dd>
             <dt class="col-sm-3">Created</dt>
             <dd class="col-sm-9">{{ $fmtAudit($details['created_at']) }}</dd>
+            @if(!empty($details['justification']))
+            <dt class="col-sm-3">Justification</dt>
+            <dd class="col-sm-9">{{ $details['justification'] }}</dd>
+            @endif
           </dl>
 
           @if(!empty($details['meta']) && is_array($details['meta']))

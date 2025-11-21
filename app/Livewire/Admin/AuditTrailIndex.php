@@ -127,6 +127,11 @@ class AuditTrailIndex extends Component
             $decoded = json_decode((string) $rawMeta, true);
             $rawMeta = is_array($decoded) ? $decoded : [];
         }
+        $justification = null;
+        if (is_array($rawMeta) && array_key_exists('justification', $rawMeta)) {
+            $justification = (string) $rawMeta['justification'];
+            unset($rawMeta['justification']);
+        }
 
         // Compact target “Class#id” label like your table does
         $targetType = (string) ($log->target_type ?? '');
@@ -166,6 +171,7 @@ class AuditTrailIndex extends Component
 
             // raw meta payload (pretty-printed in blade)
             'meta' => $rawMeta,
+            'justification' => $justification,
         ];
     }
 
