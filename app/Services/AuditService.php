@@ -236,28 +236,54 @@ class AuditService
             ->with('actor')
             ->orderByDesc('created_at');
 
-        if (!empty($filters['user'])) {
-            $term = trim((string) $filters['user']);
+        $applyTextLike = function (string $value): string {
+            return '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value) . '%';
+        };
+
+        if (!empty($filters['q'])) {
+            $term = trim((string) $filters['q']);
             if ($term !== '') {
-                if (ctype_digit($term)) {
-                    // Numeric: treat as exact user ID
-                    $q->where('user_id', (int) $term);
-                } else {
-                    // Text: search on related user name/email
-                    $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
-                    $q->whereHas('actor', function ($uq) use ($like) {
+                $q->where(function ($sub) use ($term, $applyTextLike) {
+                    if (ctype_digit($term)) {
+                        $sub->orWhere('user_id', (int) $term);
+                    }
+                    $like = $applyTextLike($term);
+                    $sub->orWhereHas('actor', function ($uq) use ($like) {
                         $uq->whereRaw(
                             "TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ? ESCAPE '\\\\'",
                             [$like]
                         )->orWhere('name', 'like', $like)
                           ->orWhere('email', 'like', $like);
                     });
+                    $sub->orWhere('action', 'like', $like);
+                    $sub->orWhere('target_type', 'like', $like);
+                    $sub->orWhere('target_id', 'like', $like);
+                });
+            }
+        } else {
+            if (!empty($filters['user'])) {
+                $term = trim((string) $filters['user']);
+                if ($term !== '') {
+                    if (ctype_digit($term)) {
+                        // Numeric: treat as exact user ID
+                        $q->where('user_id', (int) $term);
+                    } else {
+                        // Text: search on related user name/email
+                        $like = $applyTextLike($term);
+                        $q->whereHas('actor', function ($uq) use ($like) {
+                            $uq->whereRaw(
+                                "TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ? ESCAPE '\\\\'",
+                                [$like]
+                            )->orWhere('name', 'like', $like)
+                              ->orWhere('email', 'like', $like);
+                        });
+                    }
                 }
             }
-        }
 
-        if (!empty($filters['action'])) {
-            $q->where('action', 'like', '%' . trim((string) $filters['action']) . '%');
+            if (!empty($filters['action'])) {
+                $q->where('action', 'like', $applyTextLike(trim((string) $filters['action'])));
+            }
         }
 
         if (!empty($filters['date_from'])) {
