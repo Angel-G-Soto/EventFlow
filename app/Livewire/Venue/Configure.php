@@ -109,9 +109,6 @@ class Configure extends Component
 //            ];
 //        })->values()->all();
 
-        if (empty($this->rows)) {
-            $this->addRow(); // start with one empty row
-        }
     }
 /**
  * AddRow action.
@@ -238,7 +235,6 @@ class Configure extends Component
         $this->venueService->updateOrCreateVenueRequirements($this->venue, [], Auth::user());
 
         $this->rows = [];
-        $this->addRow();
         $this->dispatchGreenToast('All requirements have been cleared.');
     }
     
@@ -289,10 +285,6 @@ class Configure extends Component
                 'position'    => $requirement->position ?? 0,
             ];
         })->values()->all();
-
-        if (empty($this->rows)) {
-            $this->addRow();
-        }
     }
 
     protected function buildAvailabilityForm(Collection $availabilities): array
@@ -445,6 +437,13 @@ class Configure extends Component
         $this->authorize('update-availability', $this->venue);
         $this->authorize('update-requirements', $this->venue);
 
+        if (empty($this->rows)) {
+            $this->venueService->updateOrCreateVenueRequirements($this->venue, [], Auth::user());
+            $this->dispatchGreenToast('All requirements have been cleared.');
+            $this->refreshRequirements();
+            return;
+        }
+
         foreach ($this->rows as $i => &$row) {
             $row['position'] = $i;
         }
@@ -474,7 +473,6 @@ class Configure extends Component
         $this->venueService->updateOrCreateVenueRequirements($this->venue, [], Auth::user());
 
         $this->rows = [];
-        $this->addRow();
 
         $this->dispatchGreenToast('All requirements have been cleared.');
     }
@@ -486,9 +484,6 @@ class Configure extends Component
                 array_splice($this->rows, $i, 1);
                 break;
             }
-        }
-        if (empty($this->rows)) {
-            $this->addRow();
         }
 
         foreach ($this->rows as $i => &$row) {

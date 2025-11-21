@@ -163,12 +163,12 @@
                                 <i class="bi bi-plus-lg"></i>
                                 Add requirement
                             </button>
-                            <button class="btn btn-danger" type="button"
+                            {{-- <button class="btn btn-danger" type="button"
                                 wire:click="confirmClearRequirements" wire:loading.attr="disabled"
                                 wire:target="confirmClearRequirements">
                                 <i class="bi bi-trash"></i>
                                 Clear all
-                            </button>
+                            </button> --}}
                             <button class="btn btn-primary" type="button" wire:click="save" wire:loading.attr="disabled"
                                 wire:target="save">
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"
