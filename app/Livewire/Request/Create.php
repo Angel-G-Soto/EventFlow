@@ -526,6 +526,21 @@ public function removeRequirementFile(int $index): void
         }
     }
 
+    public function updatedVenueSearch(): void
+    {
+        $this->triggerLiveVenueSearch();
+    }
+
+    public function updatedVenueCapacityFilter(): void
+    {
+        $this->triggerLiveVenueSearch();
+    }
+
+    public function updatedVenueDepartmentFilter(): void
+    {
+        $this->triggerLiveVenueSearch();
+    }
+
     public function runVenueSearch(): void
     {
         if (!$this->validTimeRange()) {
@@ -533,7 +548,7 @@ public function removeRequirementFile(int $index): void
             return;
         }
 
-        $this->loadAvailableVenues(filters: $this->buildVenueFilters());
+        $this->triggerLiveVenueSearch(force: true);
     }
 
     public function resetVenueFilters(): void
@@ -543,7 +558,7 @@ public function removeRequirementFile(int $index): void
         $this->venueDepartmentFilter = null;
 
         if ($this->validTimeRange()) {
-            $this->loadAvailableVenues();
+            $this->triggerLiveVenueSearch(force: true);
         }
 
         $this->resetVenuePagination();
@@ -570,6 +585,19 @@ public function removeRequirementFile(int $index): void
         }
 
         return $filters;
+    }
+
+    protected function triggerLiveVenueSearch(bool $force = false): void
+    {
+        if ($this->step !== 2 || !$this->validTimeRange()) {
+            return;
+        }
+
+        if ($this->loadingVenues && !$force) {
+            return;
+        }
+
+        $this->loadAvailableVenues(filters: $this->buildVenueFilters());
     }
 
     public function updatedVenueId($value): void
@@ -768,10 +796,24 @@ public function removeRequirementFile(int $index): void
         ));
     }
 
+    public function updatedCategorySearchInput(): void
+    {
+        $this->applyCategorySearchFilter();
+    }
+
     public function runCategorySearch(): void
     {
-        $this->categorySearchInput = trim($this->categorySearchInput);
-        $this->categorySearch = $this->categorySearchInput;
+        $this->applyCategorySearchFilter();
+    }
+
+    protected function applyCategorySearchFilter(): void
+    {
+        $nextValue = trim($this->categorySearchInput);
+        if ($nextValue === $this->categorySearch) {
+            return;
+        }
+
+        $this->categorySearch = $nextValue;
     }
 
     /**
