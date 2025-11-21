@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
-
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Document;
@@ -31,6 +30,7 @@ class EventService
     protected $categoryService;
     protected $auditService;
     protected $documentService;
+    protected UserService $userService;
 
     /**
      * Create a new EventService instance.
@@ -38,13 +38,16 @@ class EventService
      * @param VenueService $venueService
      * @param CategoryService $categoryService
      * @param AuditService $auditService
+     * @param DocumentService $documentService
+     * @param UserService $userService
      */
-    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService)
+    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService, UserService $userService)
     {
         $this->venueService = $venueService;
         $this->categoryService = $categoryService;
         $this->auditService = $auditService;
         $this->documentService = $documentService;
+        $this->userService = $userService;
     }
 
 
@@ -152,6 +155,39 @@ class EventService
 
             if ($event->status === 'draft') {
                 return $event;
+            }
+
+            // Assign Advisor role to organization advisor
+            if (!empty($data['organization_advisor_email'])) {
+                $advisorName = trim((string)($data['organization_advisor_name'] ?? ''));
+
+                $advisor = $this->userService->findOrCreateUser(
+                    (string) $data['organization_advisor_email'],
+                    $advisorName !== '' ? $advisorName : null
+                );
+
+                $advisor->loadMissing('roles');
+
+                $hasAdvisorRole = $advisor->roles->contains(
+                    fn($role) => strcasecmp((string)($role->name ?? ''), 'advisor') === 0
+                );
+
+                if (!$hasAdvisorRole) {
+                    $existingRoles = $advisor->roles
+                        ->pluck('name')
+                        ->filter()
+                        ->map(fn($name) => (string) $name)
+                        ->all();
+                    $existingRoles[] = 'advisor';
+                    $roleNames = array_values(array_unique($existingRoles));
+
+                    $this->userService->updateUserRoles(
+                        $advisor,
+                        $roleNames,
+                        $creator,
+                        'Auto-assigned advisor role from event form'
+                    );
+                }
             }
 
             // Attach documents (hasMany)

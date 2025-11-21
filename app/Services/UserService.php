@@ -148,15 +148,6 @@ class UserService
      * @param User|null $admin
      * @param string|null $justification Optional admin-provided justification to include in audit log.
      */
-    /**
-     * Synchronizes the roles for a given user to match the provided list of role codes.
-     *
-     * @param User $user
-     * @param array $roleCodes
-     * @param User $admin
-     * @param string $justification
-     * @return User
-     */
     public function updateUserRoles(User $user, array $roleCodes, User $admin, string $justification): User
     {
         $normalize = fn($v) => Str::slug(mb_strtolower((string) $v));
