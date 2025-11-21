@@ -11,11 +11,9 @@ use App\Services\AuditService;
 class AuditTrailIndex extends Component
 {
     // Filters / query params
-    public ?string $userSearch = null;
-    public string $action = '';           // e.g. 'USER_UPDATE'
+    public string $search = '';           // Combined search (user/action/target)
     public ?string $from = null;          // '2025-01-01'
     public ?string $to = null;            // '2025-01-31'
-    public bool $adminOnly = false;       // only ADMIN_* actions
     public int $pageSize = 25;
 
     // Pagination state
@@ -33,7 +31,7 @@ class AuditTrailIndex extends Component
      */
     public function updated($field)
     {
-        if (in_array($field, ['userSearch', 'action', 'from', 'to', 'pageSize'])) {
+        if (in_array($field, ['search', 'from', 'to', 'pageSize'])) {
             $this->page = 1;
         }
     }
@@ -44,7 +42,7 @@ class AuditTrailIndex extends Component
      */
     public function clearFilters(): void
     {
-        $this->reset(['userSearch', 'action', 'from', 'to']);
+        $this->reset(['search', 'from', 'to']);
         $this->pageSize = 25;
         $this->page = 1;
     }
@@ -76,8 +74,7 @@ class AuditTrailIndex extends Component
     protected function rules(): array
     {
         return [
-            'userSearch' => ['nullable', 'string', 'max:100'],
-            'action' => ['nullable', 'string', 'max:100', 'not_regex:/^\\s*$/'],
+            'search' => ['nullable', 'string', 'max:100'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => [
                 'nullable', 'date_format:Y-m-d', 'after_or_equal:from',
@@ -197,11 +194,8 @@ class AuditTrailIndex extends Component
         }
 
         $filters = [];
-        if (!empty($this->userSearch)) {
-            $filters['user'] = (string) $this->userSearch;
-        }
-        if ($this->action) {
-            $filters['action'] = $this->action;
+        if (!empty($this->search)) {
+            $filters['q'] = (string) $this->search;
         }
         if ($this->from) {
             $filters['date_from'] = $this->from;
@@ -214,7 +208,7 @@ class AuditTrailIndex extends Component
             $rows = app(AuditService::class)->getPaginatedLogs($filters, $this->pageSize, (int) ($this->page ?? 1));
         } catch (\Throwable $e) {
             // On failure, return an empty paginator and surface a non-fatal error (no dummy data)
-            $this->addError('userSearch', 'Audit log unavailable.');
+            $this->addError('search', 'Audit log unavailable.');
             $empty = collect();
             $rows = new LengthAwarePaginator($empty, 0, $this->pageSize, 1, [
                 'path' => request()->url(),
