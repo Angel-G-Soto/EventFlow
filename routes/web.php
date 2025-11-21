@@ -17,6 +17,7 @@ use App\Livewire\Admin\EventsIndex;
 use App\Livewire\Admin\AuditTrailIndex;
 use App\Livewire\Admin\CategoriesIndex;
 use Illuminate\Http\Request;
+use App\Http\Controllers\AuditLogController;
 
 require __DIR__ . '/saml2.php';
 //require __DIR__.'/auth.php';
@@ -39,6 +40,8 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
   Route::get('/admin/events', EventsIndex::class)->name('admin.events');
   Route::get('/admin/audit-log', AuditTrailIndex::class)
     ->name('admin.audit');
+  Route::get('/admin/audit-log/download', [AuditLogController::class, 'download'])
+    ->name('admin.audit.download');
 
   //Approver Request History-----------------------------------------------------------
   Route::get('/approver/requests/history', \App\Livewire\Request\History\Index::class)->name('approver.history.index');
