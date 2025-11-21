@@ -1,8 +1,5 @@
 @php
-use App\Services\UserService;
-use Illuminate\Support\Facades.Auth;
-
-$navbar = app(UserService::class)->getNavbarContext();
+$navbar = app(\App\Services\UserService::class)->getNavbarContext();
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark" aria-label="Primary site navigation"
@@ -157,7 +154,7 @@ $navbar = app(UserService::class)->getNavbarContext();
           </button>
         </div>
         <div class="ms-auto ms-lg-0">
-          @if(Auth::check())
+          @if(auth()->check())
           <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0"
             aria-label="Log out form">
             @csrf

@@ -36,16 +36,15 @@ class UserService
      */
     public function findOrCreateUser(string $email, ?string $name = null): User
     {
+        // ['first_name' => $name] placeholder kept commented to avoid accidental overrides.
         $user = User::firstOrCreate(
-            ['email' => $email]
-            //            ['first_name' => $name],
-            ,
+            ['email' => $email],
             [
                 'first_name' => 'first_name',
-                'last_name' => 'last_name',
-                'email' => $email,
-                'password' => bcrypt('password'),
-                'auth_type' => 'saml2',
+                'last_name'  => 'last_name',
+                'email'      => $email,
+                'password'   => bcrypt('password'),
+                'auth_type'  => 'saml2',
             ]
         );
 
