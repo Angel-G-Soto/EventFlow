@@ -365,6 +365,18 @@ class VenueService
     }
 
     /**
+     * Retrieve a venue or fail.
+     */
+    public function requireById(int $venue_id): Venue
+    {
+        if ($venue_id <= 0) {
+            throw new InvalidArgumentException('Venue id must be greater than zero.');
+        }
+
+        return Venue::with('department')->findOrFail($venue_id);
+    }
+
+    /**
      * Retrieve all venues associated with the department of a specific user.
      *
      * This method fetches all Venue records where the department matches the department
@@ -397,6 +409,39 @@ class VenueService
             throw new InvalidArgumentException('Venue id must be greater than zero.');
         }
         return Venue::findOrFail($venue_id)->requirements;
+    }
+
+    /**
+     * Update a venue's description field.
+     */
+    public function updateVenueDescription(Venue $venue, string $description, User $actor): Venue
+    {
+        $venue->description = $description;
+        $venue->save();
+
+        try {
+            $meta = [
+                'venue_id' => (int) $venue->id,
+                'source'   => 'venue_description_update',
+            ];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            } else {
+                $ctx = ['meta' => $meta];
+            }
+
+            $this->auditService->logAction(
+                (int) ($actor->id ?? 0),
+                'venue',
+                'UPDATE_DESCRIPTION',
+                (string) $venue->id,
+                $ctx
+            );
+        } catch (\Throwable) {
+            // best effort
+        }
+
+        return $venue->refresh();
     }
 
     /**
