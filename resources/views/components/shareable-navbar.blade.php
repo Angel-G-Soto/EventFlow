@@ -1,26 +1,58 @@
 @php
+use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
+
 $user = Auth::user();
-$roleNames = $user && method_exists($user, 'getRoleNames') ? $user->getRoleNames()->map(fn($r) =>
-Illuminate\Support\Str::slug($r)) : collect();
-$isAdmin = $roleNames->contains('system-admin') || $roleNames->contains('system-administrator') ||
-$roleNames->contains('admin');
+$roleNames = $user->getRoleNames()->map(fn($r) => Illuminate\Support\Str::slug($r));
+
+$isAdmin = $roleNames->contains('system-admin')
+    || $roleNames->contains('system-administrator')
+    || $roleNames->contains('admin');
 $isAdvisor = $roleNames->contains('advisor');
 $isApprover = $roleNames->contains('event-approver');
 $isVenueManager = $roleNames->contains('venue-manager');
 $isDirector = $roleNames->contains('department-director');
+
+$approverRoleSlugs = collect([
+    'advisor',
+    'venue-manager',
+    'event-approver',
+    'deanship-of-administration-approver',
+]);
+$shouldShowPendingBell = $user && $roleNames->intersect($approverRoleSlugs)->isNotEmpty();
+$pendingApprovalsCount = $shouldShowPendingBell
+    ? app(EventService::class)->genericGetPendingRequestsV2($user)->count()
+    : 0;
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark" aria-label="Primary site navigation"
   style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
-    <a class="navbar-brand fw-semibold" href="https://eventflow.uprm.edu/">
+    <div class="d-flex align-items-center justify-content-between gap-2 d-lg-none mb-2 w-100">
+      <a class="navbar-brand fw-semibold" href="https://eventflow.uprm.edu/">
+        <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
+        EventFlow</a>
+      <div class="d-flex align-items-center gap-1">
+        @if($shouldShowPendingBell)
+        <a href="{{ route('approver.pending.index') }}"
+          class="btn btn-success-subtle p-2 text-white position-relative d-inline-flex align-items-center"
+          title="Pending approvals" aria-label="View pending approvals ({{ $pendingApprovalsCount }})">
+          <i class="bi bi-bell{{ $pendingApprovalsCount ? '-fill' : '' }}"></i>
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ $pendingApprovalsCount > 99 ? '99+' : $pendingApprovalsCount }}
+          </span>
+        </a>
+        @endif
+        <button class="navbar-toggler d-flex align-items-center d-lg-none" type="button" data-bs-toggle="collapse"
+          data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </div>
+
+    <a class="navbar-brand fw-semibold d-none d-lg-inline-flex align-items-center" href="https://eventflow.uprm.edu/">
       <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
       EventFlow</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
-      aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
 
     <style>
       /* Accent color */
@@ -126,10 +158,16 @@ $isDirector = $roleNames->contains('department-director');
 
       <div class="d-flex w-100 mt-2 mt-lg-0 justify-content-between justify-content-lg-end align-items-center gap-2">
         <div class="d-flex gap-2">
-          {{-- <button class="btn btn-success-subtle p-2 text-white" type="button" title="Notifications"
-            aria-label="Open notifications">
-            <i class="bi bi-bell"></i>
-          </button>--}}
+          @if($shouldShowPendingBell)
+          <a href="{{ route('approver.pending.index') }}"
+            class="btn btn-success-subtle p-2 text-white position-relative d-none d-lg-inline-flex align-items-center"
+            title="Pending approvals" aria-label="View pending approvals ({{ $pendingApprovalsCount }})">
+            <i class="bi bi-bell{{ $pendingApprovalsCount ? '-fill' : '' }}"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{ $pendingApprovalsCount > 99 ? '99+' : $pendingApprovalsCount }}
+            </span>
+          </a>
+          @endif
           <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
             <i class="bi bi-question-lg"></i>
           </button>
