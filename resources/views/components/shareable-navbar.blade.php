@@ -1,28 +1,8 @@
 @php
-use App\Services\EventService;
-use Illuminate\Support\Facades\Auth;
+use App\Services\UserService;
+use Illuminate\Support\Facades.Auth;
 
-$user = Auth::user();
-$roleNames = $user->getRoleNames()->map(fn($r) => Illuminate\Support\Str::slug($r));
-
-$isAdmin = $roleNames->contains('system-admin')
-    || $roleNames->contains('system-administrator')
-    || $roleNames->contains('admin');
-$isAdvisor = $roleNames->contains('advisor');
-$isApprover = $roleNames->contains('event-approver');
-$isVenueManager = $roleNames->contains('venue-manager');
-$isDirector = $roleNames->contains('department-director');
-
-$approverRoleSlugs = collect([
-    'advisor',
-    'venue-manager',
-    'event-approver',
-    'deanship-of-administration-approver',
-]);
-$shouldShowPendingBell = $user && $roleNames->intersect($approverRoleSlugs)->isNotEmpty();
-$pendingApprovalsCount = $shouldShowPendingBell
-    ? app(EventService::class)->genericGetPendingRequestsV2($user)->count()
-    : 0;
+$navbar = app(UserService::class)->getNavbarContext();
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark" aria-label="Primary site navigation"
@@ -33,14 +13,16 @@ $pendingApprovalsCount = $shouldShowPendingBell
         <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
         EventFlow</a>
       <div class="d-flex align-items-center gap-1">
-        @if($shouldShowPendingBell)
+        @if($navbar['shouldShowPendingBell'])
         <a href="{{ route('approver.pending.index') }}"
           class="btn btn-success-subtle p-2 text-white position-relative d-inline-flex align-items-center"
-          title="Pending approvals" aria-label="View pending approvals ({{ $pendingApprovalsCount }})">
-          <i class="bi bi-bell{{ $pendingApprovalsCount ? '-fill' : '' }}"></i>
+          title="Pending approvals" aria-label="View pending approvals ({{ $navbar['pendingApprovalsCount'] }})">
+          <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
+          @if($navbar['pendingApprovalsCount'] > 0)
           <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-            {{ $pendingApprovalsCount > 99 ? '99+' : $pendingApprovalsCount }}
+            {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
           </span>
+          @endif
         </a>
         @endif
         <button class="navbar-toggler d-flex align-items-center d-lg-none" type="button" data-bs-toggle="collapse"
@@ -79,7 +61,7 @@ $pendingApprovalsCount = $shouldShowPendingBell
 
     <div id="navMain" class="collapse navbar-collapse">
       <ul class="navbar-nav mr-auto">
-        @if($user)
+        @if($navbar['user'])
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('public.calendar') ? 'active' : '' }}"
             href="{{ route('public.calendar') }}">
@@ -95,7 +77,7 @@ $pendingApprovalsCount = $shouldShowPendingBell
         </li>
         @endif
 
-        @if($isAdvisor || $isApprover)
+        @if($navbar['isAdvisor'] || $navbar['isApprover'])
         <li class="nav-item dropdown">
           <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('approver.history.index') || Route::is('approver.pending.index') ? 'active' : '' }}"
             href="#" id="requestsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -114,7 +96,7 @@ $pendingApprovalsCount = $shouldShowPendingBell
         </li>
         @endif
 
-        @if($isVenueManager)
+        @if($navbar['isVenueManager'])
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ (Route::is('venues.manage') || Route::is('venue.index')) ? 'active ' : '' }}"
             href="{{ route('venues.manage') }}">
@@ -123,7 +105,7 @@ $pendingApprovalsCount = $shouldShowPendingBell
         </li>
         @endif
 
-        @if($isDirector)
+        @if($navbar['isDirector'])
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('director.venues.index') ? 'active' : '' }}"
             href="{{ route('director.venues.index') }}">
@@ -132,7 +114,7 @@ $pendingApprovalsCount = $shouldShowPendingBell
         </li>
         @endif
 
-        @if($isAdmin)
+        @if($navbar['isAdmin'])
         <li class="nav-item dropdown">
           <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.categories') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
             href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -158,15 +140,17 @@ $pendingApprovalsCount = $shouldShowPendingBell
 
       <div class="d-flex w-100 mt-2 mt-lg-0 justify-content-between justify-content-lg-end align-items-center gap-2">
         <div class="d-flex gap-2">
-          @if($shouldShowPendingBell)
+          @if($navbar['shouldShowPendingBell'])
           <a href="{{ route('approver.pending.index') }}"
             class="btn btn-success-subtle p-2 text-white position-relative d-none d-lg-inline-flex align-items-center"
-            title="Pending approvals" aria-label="View pending approvals ({{ $pendingApprovalsCount }})">
-            <i class="bi bi-bell{{ $pendingApprovalsCount ? '-fill' : '' }}"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              {{ $pendingApprovalsCount > 99 ? '99+' : $pendingApprovalsCount }}
-            </span>
-          </a>
+            title="Pending approvals" aria-label="View pending approvals ({{ $navbar['pendingApprovalsCount'] }})">
+          <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
+          @if($navbar['pendingApprovalsCount'] > 0)
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
+          </span>
+          @endif
+        </a>
           @endif
           <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
             <i class="bi bi-question-lg"></i>
