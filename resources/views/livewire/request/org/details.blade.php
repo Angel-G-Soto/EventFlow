@@ -227,9 +227,9 @@
                 </div>
                 <div>
                     <span class="fw-semibold me-2">Invites External Guests:</span>
-                    <span class="status-indicator status-indicator--{{ $event->external_guests ? 'success' : 'danger' }}">
+                    <span class="status-indicator status-indicator--{{ $event->external_guest ? 'success' : 'danger' }}">
                         <span class="status-dot" aria-hidden="true"></span>
-                        <span>{{ $event->external_guests ? 'Yes' : 'No' }}</span>
+                        <span>{{ $event->external_guest ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
             </div>

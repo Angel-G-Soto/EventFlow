@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Http\Request;
 
 /**
  * Class Create
@@ -209,6 +210,10 @@ class Create extends Component
  */
     public array $newRequirementFiles = [];
 
+    public string $source_id = '';
+
+    public string $name='';
+
 
 /**
  * Custom validation messages.
@@ -221,8 +226,8 @@ class Create extends Component
         'requirementFiles.min'      => 'Please upload all required documents.',
         'requirementFiles.max'      => 'Please upload no more than the required amount of documents.',
 
-        
-        
+
+
         // // New batch (before merge)
 
         'newRequirementFiles.max' => 'Please upload no more than the required amount of documents.',
@@ -259,13 +264,20 @@ class Create extends Component
      *
      * @param array{id?:int,name?:string,organization_advisor_name?:string,advisor_phone?:string,advisor_email?:string}|null $organization
      */
-    public function mount(array $organization = []): void
+    public function mount(Request $request): void
+
     {
-        $this->organization_id   = $organization['id']            ?? null;  // optional
-        $this->organization_name = $organization['name']          ?? '';
-        $this->organization_advisor_name      = $organization['advisor_name']  ?? '';
-        $this->organization_advisor_phone     = $organization['advisor_phone'] ?? '';
-        $this->organization_advisor_email   = $organization['advisor_email'] ?? '';
+        // Read data coming from the import redirect (query params)
+        $this->source_id = (string) $request->query('source_id', $this->source_id);
+        $payload = (array) $request->input('payload', []);
+
+        // Map payload into Livewire properties when present
+        $this->name = $payload['name'] ?? $this->name;
+        $this->organization_id = $payload['assoc_id'] ?? $this->organization_id;
+        $this->organization_name = $payload['association_name'] ?? $this->organization_name;
+        $this->organization_advisor_name = $payload['counselor'] ?? $this->organization_advisor_name;
+        $this->organization_advisor_phone = $payload['advisor_phone'] ?? $this->organization_advisor_phone;
+        $this->organization_advisor_email = $payload['email_counselor'] ?? $this->organization_advisor_email;
     }
 
 
@@ -297,11 +309,10 @@ class Create extends Component
                 'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10'],
-                'guest_size' => ['required','integer','min:0'],
+                'guest_size' => ['nullable','integer','min:0'],
                 'start_time' => ['required','date'],
                 'end_time' => ['required','date','after:start_time'],
                 'category_ids' => ['array','min:1'],
-//                'category_ids.*' => ['integer', Rule::exists('categories','id')],
                 'organization_name' => ['required','string','max:255'],
                 'organization_id' => ['nullable','integer'],
                 'organization_advisor_name' => ['required','string','max:150'],
@@ -460,7 +471,7 @@ public function removeRequirementFile(int $index): void
      */
     public function next(/*DocumentRequirementService $docSvc*/): void
     {
-       $this->validate($this->rulesForStep($this->step));
+    //    $this->validate($this->rulesForStep($this->step));
 
 
         if ($this->step === 1) {

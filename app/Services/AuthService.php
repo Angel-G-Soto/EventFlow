@@ -102,11 +102,15 @@ class AuthService
             if (function_exists('request') && request()) {
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
             }
+            $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($label === '') {
+                $label = (string)($user->email ?? $user->id);
+            }
             $this->auditService->logAction(
                 (int) $user->id,
                 'auth',
                 'USER_LOGIN_SAML',
-                (string) $user->id,
+                $label,
                 $ctx
             );
         } catch (\Throwable) {
@@ -185,11 +189,15 @@ class AuthService
             if (function_exists('request') && request()) {
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
             }
+            $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($label === '') {
+                $label = (string)($user->email ?? $user->id);
+            }
             $this->auditService->logAction(
                 (int) $user->id,
                 'auth',
                 'USER_LOGIN_NEXO',
-                (string) $user->id,
+                $label,
                 $ctx
             );
         } catch (\Throwable) {
@@ -228,11 +236,15 @@ class AuthService
                 if (function_exists('request') && request()) {
                     $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                 }
+                $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+                if ($label === '') {
+                    $label = (string)($user->email ?? $user->id);
+                }
                 $this->auditService->logAction(
                     (int) $user->id,
                     'auth',
                     'USER_LOGOUT',
-                    (string) $user->id,
+                    $label,
                     $ctx
                 );
             }

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
-
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Document;
@@ -31,6 +30,7 @@ class EventService
     protected $categoryService;
     protected $auditService;
     protected $documentService;
+    protected UserService $userService;
 
     /**
      * Create a new EventService instance.
@@ -38,13 +38,16 @@ class EventService
      * @param VenueService $venueService
      * @param CategoryService $categoryService
      * @param AuditService $auditService
+     * @param DocumentService $documentService
+     * @param UserService $userService
      */
-    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService)
+    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService, UserService $userService)
     {
         $this->venueService = $venueService;
         $this->categoryService = $categoryService;
         $this->auditService = $auditService;
         $this->documentService = $documentService;
+        $this->userService = $userService;
     }
 
 
@@ -120,9 +123,11 @@ class EventService
                     'guest_size' => $data['guest_size'] ?? null,
                     'handles_food' => $data['handles_food'] ?? false,
                     'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
-                    'external_guest' => $data['external_guests'] ?? false,
+                    'external_guest' => $data['external_guest'] ?? false,
                 ]
             );
+
+            // dd($data['external_guest']);
 
             // AUDIT: creator created/updated event
             try {
@@ -150,6 +155,39 @@ class EventService
 
             if ($event->status === 'draft') {
                 return $event;
+            }
+
+            // Assign Advisor role to organization advisor
+            if (!empty($data['organization_advisor_email'])) {
+                $advisorName = trim((string)($data['organization_advisor_name'] ?? ''));
+
+                $advisor = $this->userService->findOrCreateUser(
+                    (string) $data['organization_advisor_email'],
+                    $advisorName !== '' ? $advisorName : null
+                );
+
+                $advisor->loadMissing('roles');
+
+                $hasAdvisorRole = $advisor->roles->contains(
+                    fn($role) => strcasecmp((string)($role->name ?? ''), 'advisor') === 0
+                );
+
+                if (!$hasAdvisorRole) {
+                    $existingRoles = $advisor->roles
+                        ->pluck('name')
+                        ->filter()
+                        ->map(fn($name) => (string) $name)
+                        ->all();
+                    $existingRoles[] = 'advisor';
+                    $roleNames = array_values(array_unique($existingRoles));
+
+                    $this->userService->updateUserRoles(
+                        $advisor,
+                        $roleNames,
+                        $creator,
+                        'Auto-assigned advisor role from event form'
+                    );
+                }
             }
 
             // Attach documents (hasMany)
@@ -181,11 +219,16 @@ class EventService
                             $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                         }
 
+                        $eventLabel = trim((string) ($event->title ?? ''));
+                        if ($eventLabel === '') {
+                            $eventLabel = 'Event #' . (string) $event->id;
+                        }
+
                         $this->auditService->logAction(
                             $actorId,
                             'event',
                             'EVENT_SUBMITTED',
-                            (string) $event->id,
+                            $eventLabel,
                             $ctx
                         );
                     } catch (\Throwable) { /* best-effort */ }
@@ -250,11 +293,16 @@ class EventService
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
             }
 
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
             $this->auditService->logAction(
                 $actorId,
                 'event',
                 'EVENT_DENIED',
-                (string) $event->id,
+                $eventLabel,
                 $ctx
             );
         } catch (\Throwable) { /* best-effort */ }
@@ -329,11 +377,16 @@ class EventService
                     $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                 }
 
+                $eventLabel = trim((string) ($event->title ?? ''));
+                if ($eventLabel === '') {
+                    $eventLabel = 'Event #' . (string) $event->id;
+                }
+
                 $this->auditService->logAction(
                     $actorId,
                     'event',
                     $action,
-                    (string) $event->id,
+                    $eventLabel,
                     $ctx
                 );
             } catch (\Throwable) { /* best-effort */ }
@@ -485,11 +538,16 @@ class EventService
                         $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                     }
 
+                    $eventLabel = trim((string) ($event->title ?? ''));
+                    if ($eventLabel === '') {
+                        $eventLabel = 'Event #' . (string) $event->id;
+                    }
+
                     $this->auditService->logAction(
                         $actorId,
                         'event',
                         'EVENT_WITHDRAWN',
-                        (string) $event->id,
+                        $eventLabel,
                         $ctx
                     );
                 } catch (\Throwable) { /* best-effort */ }
@@ -579,11 +637,16 @@ class EventService
             $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
         }
 
+        $eventLabel = trim((string) ($event->title ?? ''));
+        if ($eventLabel === '') {
+            $eventLabel = 'Event #' . (string) $event->id;
+        }
+
         $this->auditService->logAdminAction(
             $systemUserId,
             'event',
             'EVENT_COMPLETED_AUTO',
-            (string) $event->id,
+            $eventLabel,
             $ctx
         );
     }
@@ -955,11 +1018,16 @@ class EventService
             } catch (\Throwable) { /* no-http context */ }
 
             // Run audit trail with event id as target
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
             $this->auditService->logAdminAction(
                 $user->id,
                 'event',
                 'ADMIN_OVERRIDE_EVENT',
-                (string) $event->id,
+                $eventLabel,
                 $ctx
             );
 
@@ -1014,12 +1082,17 @@ class EventService
             $roleNames = method_exists($user, 'getRoleNames') ? $user->getRoleNames() : collect();
             $isSystemAdmin = $roleNames->contains('system-admin') || $roleNames->contains('system-administrator');
 
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
             if ($isSystemAdmin) {
                 $this->auditService->logAdminAction(
                     $user->id,
                     'event',
                     'ADMIN_OVERRIDE_CANCEL',
-                    (string) $event->id,
+                    $eventLabel,
                     $ctx
                 );
             } else {
@@ -1027,7 +1100,7 @@ class EventService
                     $user->id,
                     'event',
                     'EVENT_CANCELLED',
-                    (string) $event->id,
+                    $eventLabel,
                     $ctx
                 );
             }

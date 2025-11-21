@@ -66,11 +66,13 @@ class EventCompletionService
                 $ctx = $this->audit->buildContextFromRequest(request(), $meta);
             }
 
+            $label = 'Event #' . (string) $eventId;
+
             $this->audit->logAdminAction(
                 $systemUserId,
                 'event',
                 'EVENT_COMPLETED_AUTO',
-                (string) $eventId,
+                $label,
                 $ctx
             );
         }

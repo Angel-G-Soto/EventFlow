@@ -340,12 +340,12 @@
               <h6 class="text-uppercase text-muted small mb-2">Documents</h6>
               <div class="border rounded px-3 py-2 bg-light">
                 @if(count($eDocuments))
-                <ul class="list-unstyled mb-0 small">
+                <ul class="list-unstyled mb-0">
                   @foreach($eDocuments as $doc)
                   <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
                     <span class="text-break">{{ $doc['label'] }}</span>
                     @if(!empty($doc['url']))
-                    <a class="text-decoration-none small" href="{{ $doc['url'] }}" target="_blank" rel="noreferrer">
+                    <a class="text-decoration-none fw-bold" href="{{ $doc['url'] }}" target="_blank" rel="noreferrer">
                       View
                     </a>
                     @endif
@@ -409,14 +409,17 @@
             <div class="col-md-3">
               <label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label>
               <input id="ev_e_advisor_phone" class="form-control @error('eAdvisorPhone') is-invalid @enderror"
-                wire:model.live="eAdvisorPhone" placeholder="###-###-####">
+                wire:model.live="eAdvisorPhone" placeholder="###-###-####" inputmode="tel" maxlength="12"
+                autocomplete="tel" oninput="formatDash(this)">
               @error('eAdvisorPhone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
-                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber" placeholder="Student ID">
+                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber"
+                placeholder="###-###-####" inputmode="tel" maxlength="12" autocomplete="off" oninput="formatDash(this)">
             </div>
             <div class="col-md-3"><label class="form-label" for="ev_e_student_phone">Student Phone</label><input
-                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####">
+                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####"
+                inputmode="tel" maxlength="12" autocomplete="tel" oninput="formatDash(this)">
             </div>
             <div class="col-md-3">
               <label class="form-label" for="ev_e_from">From</label>
@@ -436,7 +439,7 @@
                 min="1" wire:model.live="eAttendees" placeholder="0+">
               @error('eAttendees')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-6">
+            <div class="col">
               <style>
                 .compact-multiselect .badge,
                 .compact-multiselect input,
@@ -596,6 +599,17 @@
   </div>
 
   <script>
+    (function () {
+      window.formatDash = function (input) {
+        const digits = (input.value || '').replace(/\D/g, '').slice(0, 10);
+        const parts = [];
+        if (digits.length > 0) parts.push(digits.slice(0, 3));
+        if (digits.length > 3) parts.push(digits.slice(3, 6));
+        if (digits.length > 6) parts.push(digits.slice(6, 10));
+        input.value = parts.filter(Boolean).join('-');
+      };
+    })();
+
     document.addEventListener('livewire:init', () => {
       const focusMap = new Map();
 

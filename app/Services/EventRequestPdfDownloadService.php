@@ -77,11 +77,16 @@ class EventRequestPdfDownloadService
                     $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                 }
 
+                $eventLabel = trim((string) ($event->title ?? ''));
+                if ($eventLabel === '') {
+                    $eventLabel = 'Event #' . (string) $event->id;
+                }
+
                 $this->auditService->logAction(
                     (int) $user->id,
                     'event',
                     'EVENT_PDF_DOWNLOADED',
-                    (string) $event->id,
+                    $eventLabel,
                     $ctx
                 );
             }

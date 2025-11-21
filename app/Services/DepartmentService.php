@@ -282,11 +282,13 @@ class DepartmentService
                             if (function_exists('request') && request()) {
                                 $ctx = $audit->buildContextFromRequest(request(), $meta);
                             }
+                            $targetLabel = (string) ($dept->name ?? ('Department #' . (string) ($dept->id ?? '0')));
+
                             $audit->logAdminAction(
                                 $actorId,
                                 'department',
                                 'DEPARTMENT_UPDATED',
-                                (string) ($dept->id ?? '0'),
+                                $targetLabel,
                                 $ctx
                             );
                         } catch (\Throwable) {
@@ -523,11 +525,16 @@ class DepartmentService
                         $ctx = $audit->buildContextFromRequest(request(), $meta);
                     }
 
+                    $userLabel = trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
+                    if ($userLabel === '') {
+                        $userLabel = (string)($manager->email ?? $manager->id);
+                    }
+
                     $audit->logAdminAction(
                         $actorId,
                         'user',
                         'USER_DEPT_ADDED_ROLE',
-                        (string) ($manager->id ?? '0'),
+                        $userLabel,
                         $ctx
                     );
                 }
@@ -604,11 +611,16 @@ class DepartmentService
                         $ctx = $audit->buildContextFromRequest(request(), $meta);
                     }
 
+                    $userLabel = trim(((string)($manager->first_name ?? '')) . ' ' . ((string)($manager->last_name ?? '')));
+                    if ($userLabel === '') {
+                        $userLabel = (string)($manager->email ?? $manager->id);
+                    }
+
                     $audit->logAction(
                         $actorId,
                         'user',
                         'USER_DEPT_REMOVED_ROLE',
-                        (string) ($manager->id ?? '0'),
+                        $userLabel,
                         $ctx
                     );
                 }

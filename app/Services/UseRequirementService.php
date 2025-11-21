@@ -79,7 +79,7 @@ class UseRequirementService {
                         (int) $actorId,
                         'requirement',
                         'VENUE_REQUIREMENT_UPDATED',
-                        (string) ($requirement->id ?? $id),
+                        (string) ($requirement->name ?? (string) $requirement->id ?? (string) $id),
                         $ctx
                     );
                 }
@@ -143,11 +143,15 @@ class UseRequirementService {
                             $ctx = $audit->buildContextFromRequest(request(), $meta);
                         }
 
+                        $targetLabel = !empty($deletedNames)
+                            ? (string) $deletedNames[0]
+                            : 'Requirements for venue ' . (string) $venue_id;
+
                         $audit->logAction(
                             (int) $actorId,
                             'requirement',
                             'VENUE_REQUIREMENTS_DELETED',
-                            !empty($deletedIds) ? (string) $deletedIds[0] : (string) $venue_id,
+                            $targetLabel,
                             $ctx
                         );
                     }
