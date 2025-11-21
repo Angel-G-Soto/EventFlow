@@ -36,7 +36,7 @@
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
-        <div class="col-md-4">
+        <div class="col-12 col-md-4">
           <label class="form-label" for="ev_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">

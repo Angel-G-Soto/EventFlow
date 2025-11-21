@@ -22,6 +22,16 @@ return $dt;
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
+        <div class="col-6 col-md-2">
+          <label class="form-label" for="audit_from">From</label>
+          <input id="audit_from" type="date" class="form-control" wire:model.live="from">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label" for="audit_to">To</label>
+          <input id="audit_to" type="date" class="form-control" wire:model.live="to">
+        </div>
+
         <div class="col-12 col-md-6">
           <label class="form-label" for="audit_search">Search</label>
           <form wire:submit.prevent="applySearch">
@@ -35,16 +45,6 @@ return $dt;
           </form>
         </div>
 
-        <div class="col-6 col-md-2">
-          <label class="form-label" for="audit_from">From</label>
-          <input id="audit_from" type="date" class="form-control" wire:model.live="from">
-        </div>
-
-        <div class="col-6 col-md-2">
-          <label class="form-label" for="audit_to">To</label>
-          <input id="audit_to" type="date" class="form-control" wire:model.live="to">
-        </div>
-
         {{--<div class="col-12 col-md-2 d-flex align-items-end">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="adminOnly" wire:model.live="adminOnly">
@@ -52,7 +52,7 @@ return $dt;
           </div>
         </div>--}}
 
-        <div class="col-6 col-md-1 d-flex align-items-end">
+        <div class="col-12 col-md-1 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
           </button>
