@@ -504,7 +504,7 @@ class VenueService
                 $director->id,
                 'venue',
                 'ASSIGN_MANAGER',
-                (string) $venue->id,
+                (string) ($venue->name ?? (string) $venue->id),
                 $ctx
             );
         } catch (InvalidArgumentException $exception) {
@@ -563,7 +563,7 @@ class VenueService
                 $manager->id,
                 'venue',
                 'UPDATE_OPERATING_HOURS',
-                (string) $venue->id,
+                (string) ($venue->name ?? (string) $venue->id),
                 $ctx
             );
 
@@ -718,7 +718,7 @@ class VenueService
                         $manager->id,
                         'venue',
                         'CREATE_REQUIREMENT',
-                        (string) $venue->id,
+                        (string) ($venue->name ?? (string) $venue->id),
                         $ctx
                     );
                 }

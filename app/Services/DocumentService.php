@@ -98,7 +98,7 @@ class DocumentService
                 $userId,
                 'document',
                 'DOCUMENT_UPLOADED',
-                (string) ($doc->id ?? 0),
+                (string) ($cleanName ?? (string) ($doc->id ?? 0)),
                 $ctx
             );
         } catch (\Throwable) {
@@ -162,11 +162,13 @@ class DocumentService
                         $ctx = $audit->buildContextFromRequest(request(), $meta);
                     }
 
+                    $label = (string) ($document->name ?? ('Document #' . (string) ($document->id ?? 0)));
+
                     $audit->logAction(
                         (int) $userId,
                         'document',
                         'DOCUMENT_DELETED',
-                        (string) ($document->id ?? 0),
+                        $label,
                         $ctx
                     );
                 }

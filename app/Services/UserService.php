@@ -82,12 +82,17 @@ class UserService
             }
         } catch (\Throwable) { /* no-http/queue */ }
 
+        $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+        if ($label === '') {
+            $label = (string)($user->email ?? $user->id);
+        }
+
         if ($user->wasRecentlyCreated ?? false) {
             $this->auditService->logAction(
                 (int) $user->id,
                 'user',                    // targetType
                 'USER_CREATED_SSO',        // actionCode
-                (string) ($user->id ?? 0), // targetId
+                $label,                    // targetId (display label)
                 $ctx
             );
         } else {
@@ -95,7 +100,7 @@ class UserService
                 (int) $user->id,
                 'user',
                 'USER_LOGGED_IN_SSO',
-                (string) ($user->id ?? 0),
+                $label,
                 $ctx
             );
         }
@@ -264,6 +269,8 @@ class UserService
         $hadDeptRole = $hasDeptRole($previousRoles);
         $hasNowDeptRole = $hasDeptRole($requested);
         if ($hadDeptRole && !$hasNowDeptRole && $user->department_id !== null) {
+            $user->loadMissing('department');
+            $deptName = (string) optional($user->department)->name;
             $user->department_id = null;
             $user->save();
             if ($admin && $admin->id) {
@@ -286,7 +293,7 @@ class UserService
                     $admin->id,
                     'department',
                     'USER_DEPT_REMOVED',
-                    (string) ($user->id ?? 0),
+                    $deptName !== '' ? $deptName : (string) ($user->id ?? 0),
                     $ctx
                 );
             }
@@ -318,11 +325,16 @@ class UserService
                 }
             } catch (\Throwable) { /* queue/no-http */ }
 
+            $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($label === '') {
+                $label = (string)($user->email ?? $user->id);
+            }
+
             $this->auditService->logAdminAction(
                 $admin->id,
                 'user',
                 'USER_ROLES_UPDATED',
-                (string) ($user->id ?? 0),
+                $label,
                 $ctx
             );
         }
@@ -373,11 +385,16 @@ class UserService
             } catch (\Throwable) { /* queue/no-http */
             }
 
+            $userLabel = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($userLabel === '') {
+                $userLabel = (string)($user->email ?? $user->id);
+            }
+
             $this->auditService->logAdminAction(
                 $admin->id,
                 'user',
                 'USER_DEPT_ASSIGNED',
-                (string) ($user->id ?? 0),
+                $userLabel,
                 $ctx
             );
         }
@@ -429,11 +446,16 @@ class UserService
                 }
             } catch (\Throwable) { /* queue/no-http */
             }
+            $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($label === '') {
+                $label = (string)($user->email ?? $user->id);
+            }
+
             $this->auditService->logAdminAction(
                 (int) $admin->id,
                 'user',
                 'USER_PROFILE_UPDATED',
-                (string) ($user->id ?? 0),
+                $label,
                 $ctx
             );
         }
@@ -493,11 +515,16 @@ class UserService
                 // keep $ctx as-is
             }
 
+            $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($label === '') {
+                $label = (string)($user->email ?? $user->id);
+            }
+
             $this->auditService->logAdminAction(
                 $admin->id,
                 'user',
                 'USER_CREATED',
-                (string) ($user->id ?? 0),
+                $label,
                 $ctx
             );
         }

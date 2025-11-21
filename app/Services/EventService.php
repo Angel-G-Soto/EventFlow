@@ -219,11 +219,16 @@ class EventService
                             $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                         }
 
+                        $eventLabel = trim((string) ($event->title ?? ''));
+                        if ($eventLabel === '') {
+                            $eventLabel = 'Event #' . (string) $event->id;
+                        }
+
                         $this->auditService->logAction(
                             $actorId,
                             'event',
                             'EVENT_SUBMITTED',
-                            (string) $event->id,
+                            $eventLabel,
                             $ctx
                         );
                     } catch (\Throwable) { /* best-effort */ }
@@ -288,11 +293,16 @@ class EventService
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
             }
 
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
             $this->auditService->logAction(
                 $actorId,
                 'event',
                 'EVENT_DENIED',
-                (string) $event->id,
+                $eventLabel,
                 $ctx
             );
         } catch (\Throwable) { /* best-effort */ }
@@ -367,11 +377,16 @@ class EventService
                     $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                 }
 
+                $eventLabel = trim((string) ($event->title ?? ''));
+                if ($eventLabel === '') {
+                    $eventLabel = 'Event #' . (string) $event->id;
+                }
+
                 $this->auditService->logAction(
                     $actorId,
                     'event',
                     $action,
-                    (string) $event->id,
+                    $eventLabel,
                     $ctx
                 );
             } catch (\Throwable) { /* best-effort */ }
@@ -523,11 +538,16 @@ class EventService
                         $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
                     }
 
+                    $eventLabel = trim((string) ($event->title ?? ''));
+                    if ($eventLabel === '') {
+                        $eventLabel = 'Event #' . (string) $event->id;
+                    }
+
                     $this->auditService->logAction(
                         $actorId,
                         'event',
                         'EVENT_WITHDRAWN',
-                        (string) $event->id,
+                        $eventLabel,
                         $ctx
                     );
                 } catch (\Throwable) { /* best-effort */ }
@@ -617,11 +637,16 @@ class EventService
             $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
         }
 
+        $eventLabel = trim((string) ($event->title ?? ''));
+        if ($eventLabel === '') {
+            $eventLabel = 'Event #' . (string) $event->id;
+        }
+
         $this->auditService->logAdminAction(
             $systemUserId,
             'event',
             'EVENT_COMPLETED_AUTO',
-            (string) $event->id,
+            $eventLabel,
             $ctx
         );
     }
@@ -993,11 +1018,16 @@ class EventService
             } catch (\Throwable) { /* no-http context */ }
 
             // Run audit trail with event id as target
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
             $this->auditService->logAdminAction(
                 $user->id,
                 'event',
                 'ADMIN_OVERRIDE_EVENT',
-                (string) $event->id,
+                $eventLabel,
                 $ctx
             );
 
@@ -1052,12 +1082,17 @@ class EventService
             $roleNames = method_exists($user, 'getRoleNames') ? $user->getRoleNames() : collect();
             $isSystemAdmin = $roleNames->contains('system-admin') || $roleNames->contains('system-administrator');
 
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
             if ($isSystemAdmin) {
                 $this->auditService->logAdminAction(
                     $user->id,
                     'event',
                     'ADMIN_OVERRIDE_CANCEL',
-                    (string) $event->id,
+                    $eventLabel,
                     $ctx
                 );
             } else {
@@ -1065,7 +1100,7 @@ class EventService
                     $user->id,
                     'event',
                     'EVENT_CANCELLED',
-                    (string) $event->id,
+                    $eventLabel,
                     $ctx
                 );
             }

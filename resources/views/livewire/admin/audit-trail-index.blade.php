@@ -116,22 +116,10 @@ return $dt;
               @endif
             </td>
             <td><span class="badge text-bg-light">{{ $r->action }}</span></td>
-            @php
-              $meta = is_array($r->meta ?? null) ? $r->meta : [];
-              $label = $r->target_type ? class_basename($r->target_type) : '—';
-              $metaName = $meta['name'] ?? null;
-            @endphp
-            <td class="text-truncate" style="max-width:260px;">
-              @if($label !== '—')
-                {{ $label }}
-                @if($r->target_id)
-                  #{{ $r->target_id }}
-                @endif
-                @if($metaName)
-                  – “{{ $metaName }}”
-                @endif
-              @else
-                —
+            <td class="text-truncate" style="max-width:220px;">
+              {{ $r->target_type ? class_basename($r->target_type) : '—' }}:
+              @if($r->target_id)
+              {{ $r->target_id }}
               @endif
             </td>
             <td class="text-end">

@@ -111,15 +111,33 @@ class CategoryService {
 
             $category = Category::create(['name' => $name]);
 
-            app(AuditService::class)->logCategoryAdminAction(
-                'CATEGORY_CREATED',
-                $category->id,
-                [
-                    'category_id' => (int) $category->id,
-                    'category_name' => (string) $category->name,
-                    'source' => 'category_create',
-                ]
-            );
+            try {
+                /** @var \App\Services\AuditService $audit */
+                $audit = app(AuditService::class);
+
+                $actor   = Auth::user();
+                $actorId = $actor?->id ?? null;
+
+                if ($actorId) {
+                    $meta = [
+                        'category_id'   => (int) $category->id,
+                        'category_name' => (string) $category->name,
+                        'source'        => 'category_create',
+                    ];
+                    $ctx = ['meta' => $meta];
+                    if (function_exists('request') && request()) {
+                        $ctx = $audit->buildContextFromRequest(request(), $meta);
+                    }
+
+                    $audit->logAction(
+                        (int) $actorId,
+                        'category',
+                        'CATEGORY_CREATED',
+                        (string) $category->name,
+                        $ctx
+                    );
+                }
+            } catch (Throwable) { /* best-effort */ }
 
             return $category;
         } catch (InvalidArgumentException $exception) {
@@ -200,7 +218,7 @@ class CategoryService {
                         $actorId,
                         'category',
                         'CATEGORY_UPDATED',
-                        (string) ($category->id ?? $category_id),
+                        (string) ($category->name ?? (string) $category_id),
                         $ctx
                     );
                 }
@@ -267,7 +285,7 @@ class CategoryService {
                         (int) $actorId,
                         'category',
                         'CATEGORY_DELETED',
-                        (string) ($category->id ?? $category_id),
+                        (string) ($category->name ?? (string) $category_id),
                         $ctx
                     );
                 }

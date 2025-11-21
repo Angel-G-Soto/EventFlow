@@ -144,11 +144,16 @@ class AuditService
             // No HTTP context available; proceed with meta only.
         }
 
+        $eventLabel = trim((string) ($event->title ?? ''));
+        if ($eventLabel === '') {
+            $eventLabel = 'Event #' . (string) $event->id;
+        }
+
         return $this->logAdminAction(
             (int) $admin->id,
             'event',
             $actionCode,
-            (string) $event->id,
+            $eventLabel,
             $context
         );
     }
@@ -330,46 +335,6 @@ class AuditService
             ->get()
             ->pluck('target_type', 'user_id')
             ->toArray();
-    }
-
-    /**
-     * Convenience helper: log a category-related admin action using the
-     * currently authenticated user as the actor (best-effort).
-     *
-     * @param string                $actionCode
-     * @param int|string            $resourceId
-     * @param array<string,mixed>   $meta
-     */
-    public function logCategoryAdminAction(string $actionCode, int|string $resourceId, array $meta = []): void
-    {
-        try {
-            $actor = Auth::user();
-            $actorId = $actor?->id ?? null;
-
-            if (! $actorId) {
-                return;
-            }
-
-            $context = ['meta' => $meta];
-            if (function_exists('request') && request()) {
-                $context = $this->buildContextFromRequest(request(), $meta);
-            }
-
-            $this->logAdminAction(
-                (int) $actorId,
-                'category',
-                $actionCode,
-                (string) $resourceId,
-                $context
-            );
-        } catch (\Throwable $exception) {
-            // best-effort: log warning but do not break the main flow
-            Log::warning('Failed to record category admin audit action.', [
-                'action_code' => $actionCode,
-                'resource_id' => $resourceId,
-                'exception'   => $exception,
-            ]);
-        }
     }
 
     /**
