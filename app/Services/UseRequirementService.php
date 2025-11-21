@@ -83,7 +83,7 @@ class UseRequirementService {
                         $ctx
                     );
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // best-effort
             }
 
@@ -155,7 +155,7 @@ class UseRequirementService {
                             $ctx
                         );
                     }
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // best-effort
                 }
             }

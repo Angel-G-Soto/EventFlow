@@ -291,7 +291,7 @@ class DepartmentService
                                 $targetLabel,
                                 $ctx
                             );
-                        } catch (\Throwable) {
+                        } catch (Throwable) {
                             // continue logging batch summary even if one fails
                         }
                     }
