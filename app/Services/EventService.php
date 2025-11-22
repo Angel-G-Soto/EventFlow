@@ -1340,15 +1340,25 @@ class EventService
                 $categoryQuery->where('name', $category);
             });
         }
-            if (!empty($filters['from'])) {
-                try {
-                    $from = Carbon::parse(str_replace('T', ' ', (string)$filters['from']));
-                    $query->where('start_time', '>=', $from);
-                    } catch (\Throwable) {}
+        if (!empty($filters['from'])) {
+            try {
+                $rawFrom = (string)$filters['from'];
+                $from = Carbon::parse(str_replace('T', ' ', $rawFrom));
+                if (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', trim($rawFrom))) {
+                    $from = $from->startOfDay();
+                }
+                $query->where('start_time', '>=', $from);
+            } catch (\Throwable) {
+                // ignore invalid date
+            }
         }
-            if (!empty($filters['to'])) {
-                try {
-                $to = Carbon::parse(str_replace('T', ' ', (string)$filters['to']));
+        if (!empty($filters['to'])) {
+            try {
+                $rawTo = (string)$filters['to'];
+                $to = Carbon::parse(str_replace('T', ' ', $rawTo));
+                if (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', trim($rawTo))) {
+                    $to = $to->endOfDay();
+                }
                 $query->where('end_time', '<=', $to);
             } catch (\Throwable) {
                 // ignore invalid date

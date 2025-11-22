@@ -137,11 +137,11 @@ class EventsIndex extends Component
     public function applyDateRange(): void
     {
         $this->validate([
-            'from' => ['nullable', 'string', 'date_format:Y-m-d\TH:i'],
+            'from' => ['nullable', 'string', 'date_format:Y-m-d'],
             'to' => [
                 'nullable',
                 'string',
-                'date_format:Y-m-d\TH:i',
+                'date_format:Y-m-d',
                 'after_or_equal:from',
             ],
         ]);
@@ -171,6 +171,8 @@ class EventsIndex extends Component
      */
     public function clearFilters(): void
     {
+        $this->resetErrorBag(['from', 'to']);
+        $this->resetValidation(['from', 'to']);
         $this->search = '';
         $this->status = '';
         $this->venue = null;

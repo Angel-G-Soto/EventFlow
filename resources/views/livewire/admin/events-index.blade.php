@@ -70,13 +70,13 @@
         {{-- Organization filter removed; included in search --}}
         <div class="col-md-4">
           <label class="form-label" for="ev_from">From</label>
-          <input id="ev_from" type="datetime-local" class="form-control @error('from') is-invalid @enderror"
+          <input id="ev_from" type="date" class="form-control @error('from') is-invalid @enderror"
             wire:model.defer="from">
           @error('from')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="col-md-4">
           <label class="form-label" for="ev_to">To</label>
-          <input id="ev_to" type="datetime-local" class="form-control @error('to') is-invalid @enderror"
+          <input id="ev_to" type="date" class="form-control @error('to') is-invalid @enderror"
             wire:model.defer="to">
           @error('to')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
@@ -180,7 +180,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="7" class="text-center text-secondary py-4">No requests found.</td>
+            <td colspan="8" class="text-center text-secondary py-4">No requests found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -424,7 +424,7 @@
             <div class="col-md-3">
               <label class="form-label" for="ev_e_from">From</label>
               <input id="ev_e_from" type="datetime-local" class="form-control @error('eFrom') is-invalid @enderror"
-                wire:model.live="eFrom">
+                wire:model.live="eFrom" min="{{ now()->format('Y-m-d\\TH:i') }}">
               @error('eFrom')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
