@@ -646,17 +646,21 @@ class EventService
      */
     public function genericGetPendingRequests(User $user, Role $role): \Illuminate\Database\Eloquent\Builder
     {
+        $departmentId = $user->department?->id;
+
         return match ($role->name) {
             'advisor' => Event::query()
                 ->where('organization_advisor_email', $user->email)
                 ->where('status', 'pending - advisor approval'),
             'venue-manager' => Event::query()
-                ->whereIn('venue_id', $user->department->venues()->pluck('id'))
+                ->whereHas('venue', fn ($q) => $departmentId
+                    ? $q->where('department_id', $departmentId)
+                    : $q->whereRaw('0 = 1'))
                 ->where('status', 'pending - venue manager approval'),
             'event-approver' => Event::query()
                 ->where('status', 'pending - dsca approval'),
-            'deanship-of-administration-approver' => Event::query()
-                ->where('status', 'pending - deanship of administration approval'),
+            // 'deanship-of-administration-approver' => Event::query()
+            //     ->where('status', 'pending - deanship of administration approval'),
             default => Event::query()
                 ->where('creator_id', $user->id),
         };
@@ -694,9 +698,10 @@ class EventService
 
         // Group all role conditions together
         $query->where(function ($outer) use ($activeRoles, $user) {
+            $departmentId = $user->department?->id;
+
             foreach ($activeRoles as $role) {
-                //dd($user->roles->contains('name', $role));
-                $outer->orWhere(function ($q) use ($role, $user) {
+                $outer->orWhere(function ($q) use ($role, $user, $departmentId) {
                     switch ($role) {
                         case 'advisor':
                             $q->where('organization_advisor_email', $user->email)
@@ -704,7 +709,9 @@ class EventService
                             break;
 
                         case 'venue-manager':
-                            $q->whereIn('venue_id', $user->department->venues()->pluck('id'))
+                            $q->whereHas('venue', fn ($venueQuery) => $departmentId
+                                ? $venueQuery->where('department_id', $departmentId)
+                                : $venueQuery->whereRaw('0 = 1'))
                                 ->where('status', 'pending - venue manager approval');
                             break;
 
@@ -712,9 +719,9 @@ class EventService
                             $q->where('status', 'pending - dsca approval');
                             break;
 
-                        case 'deanship-of-administration-approver':
-                            $q->where('status', 'pending - deanship of administration approval');
-                            break;
+                        // case 'deanship-of-administration-approver':
+                        //     $q->where('status', 'pending - deanship of administration approval');
+                        //     break;
                     }
                 });
             }
@@ -793,9 +800,9 @@ class EventService
                                     $q->where('status_when_signed', 'pending - dsca approval');
                                     break;
 
-                                case 'deanship-of-administration-approver':
-                                    $q->where('status_when_signed', 'pending - deanship of administration approval');
-                                    break;
+                                // case 'deanship-of-administration-approver':
+                                //     $q->where('status_when_signed', 'pending - deanship of administration approval');
+                                //     break;
                             }
                         });
                     }
