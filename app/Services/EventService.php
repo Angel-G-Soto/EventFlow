@@ -1616,7 +1616,7 @@ class EventService
 //                    $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
 //                    $eventApproverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
 //
-//                    app(NotificationService::class)->dispatchSanctionedNotification(
+//                    $this->notificationService->dispatchSanctionedNotification(
 //                        creatorEmail:$creatorEmail,
 //                        recipientEmails: $eventApproverEmails,
 //                        eventDetails: $eventDetails
