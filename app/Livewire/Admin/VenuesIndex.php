@@ -94,6 +94,14 @@ class VenuesIndex extends Component
         $this->page = max(1, $target);
     }
 
+    /**
+     * Normalize capMin as user types and reset pagination.
+     */
+    public function updatedCapMin($value): void
+    {
+        $this->page = 1;
+    }
+
     // Filters: search update reaction
     /**
      * Resets the current page to 1 when the search filter is updated.
@@ -360,6 +368,11 @@ class VenuesIndex extends Component
     public function render()
     {
         $this->authorize('manage-venues');
+
+        // Normalize numeric filters so validation doesn't choke on empty strings while typing
+        if ($this->capMin === '') {
+            $this->capMin = null;
+        }
 
         try {
             $this->validate();
