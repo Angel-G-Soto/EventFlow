@@ -72,7 +72,7 @@
                 <div class="card shadow-sm mb-3">
                     <div class="card-header d-flex align-items-center gap-2 justify-content-between flex-wrap">
                         <h2 id="availability-title" class="h5 mb-0">Venue Description & Weekly Availability</h2>
-                        <button class="btn btn-primary" wire:click="saveAvailability">
+                        <button class="btn btn-primary" wire:click="saveAvailability" @disabled(! $this->detailsDirty)>
                             <i class="bi bi-save me-1"></i>
                             Save details
                         </button>
@@ -170,7 +170,7 @@
                                 Clear all
                             </button> --}}
                             <button class="btn btn-primary" type="button" wire:click="save" wire:loading.attr="disabled"
-                                wire:target="save">
+                                wire:target="save" @disabled(! $this->requirementsDirty)>
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"
                                     wire:loading wire:target="save"></span>
                                 <i class="bi bi-save me-1" wire:loading.remove wire:target="save"></i>

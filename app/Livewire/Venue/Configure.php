@@ -66,6 +66,10 @@ class Configure extends Component
     public string $justification = '';
     public string $pendingAction = '';
     public ?string $pendingUuid = null;
+    protected string $detailsSnapshot = '';
+    protected string $requirementsSnapshot = '';
+    protected bool $detailsDirtyFlag = false;
+    protected bool $requirementsDirtyFlag = false;
 
     protected VenueService $venueService;
     protected VenueAvailabilityService $venueAvailabilityService;
@@ -124,6 +128,7 @@ class Configure extends Component
             'hyperlink'   => '',
             'position'    => count($this->rows),
         ];
+        $this->recalculateRequirementsDirty();
     }
 /**
  * SaveAvailability action.
@@ -223,6 +228,21 @@ class Configure extends Component
         $this->startJustification('save_requirements');
     }
 
+    public function updated(string $propertyName, mixed $value): void
+    {
+        if (
+            $propertyName === 'description'
+            || $propertyName === 'availabilityForm'
+            || str_starts_with($propertyName, 'availabilityForm.')
+        ) {
+            $this->recalculateDetailsDirty();
+        }
+
+        if ($propertyName === 'rows' || str_starts_with($propertyName, 'rows.')) {
+            $this->recalculateRequirementsDirty();
+        }
+    }
+
     /**
      * Remove every requirement associated with the current venue.
      *
@@ -235,6 +255,7 @@ class Configure extends Component
         $this->venueService->updateOrCreateVenueRequirements($this->venue, [], Auth::user());
 
         $this->rows = [];
+        $this->updateRequirementsSnapshot();
         $this->dispatchGreenToast('All requirements have been cleared.');
     }
     
@@ -270,6 +291,7 @@ class Configure extends Component
     {
         $records = $this->venueAvailabilityService->listByVenueId((int) $this->venue->id);
         $this->availabilityForm = $this->buildAvailabilityForm($records);
+        $this->updateDetailsSnapshot();
     }
 
     protected function refreshRequirements(): void
@@ -285,6 +307,7 @@ class Configure extends Component
                 'position'    => $requirement->position ?? 0,
             ];
         })->values()->all();
+        $this->updateRequirementsSnapshot();
     }
 
     protected function buildAvailabilityForm(Collection $availabilities): array
@@ -308,18 +331,19 @@ class Configure extends Component
     {
         $payload = [];
         $errors = [];
+        $state = $this->normalizedAvailabilityState();
 
         foreach (self::DAYS_OF_WEEK as $day) {
-            $row = $this->availabilityForm[$day] ?? [];
-            $enabled = (bool)($row['enabled'] ?? false);
+            $row = $state[$day];
+            $enabled = $row['enabled'];
             if (!$enabled) {
                 continue;
             }
 
             $validator = validator(
                 [
-                    'opens_at' => $row['opens_at'] ?? null,
-                    'closes_at' => $row['closes_at'] ?? null,
+                    'opens_at' => $row['opens_at'] !== '' ? $row['opens_at'] : null,
+                    'closes_at' => $row['closes_at'] !== '' ? $row['closes_at'] : null,
                 ],
                 [
                     'opens_at' => ['required', 'date_format:H:i'],
@@ -424,6 +448,7 @@ class Configure extends Component
         $payload = $this->normalizeAvailabilityInput();
 
         $this->venue = $this->venueService->updateVenueDescription($this->venue, $this->description, Auth::user());
+        $this->description = (string) ($this->venue->description ?? '');
 
         $this->venueService->updateVenueOperatingHours($this->venue, $payload, Auth::user(), $justification);
 
@@ -475,6 +500,7 @@ class Configure extends Component
         $this->rows = [];
 
         $this->dispatchGreenToast('All requirements have been cleared.');
+        $this->updateRequirementsSnapshot();
     }
 
     private function applyRemoveRow(string $uuid): void
@@ -490,11 +516,94 @@ class Configure extends Component
             $row['position'] = $i;
         }
         unset($row);
+        $this->recalculateRequirementsDirty();
     }
 
     private function dispatchGreenToast(string $message): void
     {
         $this->dispatch('toast', message: $message, className: 'text-bg-success border-0 shadow-lg rounded-3', delay: 3200);
+    }
+
+    public function getDetailsDirtyProperty(): bool
+    {
+        return $this->detailsDirtyFlag;
+    }
+
+    protected function updateDetailsSnapshot(): void
+    {
+        $this->detailsSnapshot = $this->snapshotDetails();
+        $this->detailsDirtyFlag = false;
+    }
+
+    protected function snapshotDetails(): string
+    {
+        return md5(serialize([
+            'description' => (string) $this->description,
+            'availability' => $this->normalizedAvailabilityState(),
+        ]));
+    }
+
+    public function getRequirementsDirtyProperty(): bool
+    {
+        return $this->requirementsDirtyFlag;
+    }
+
+    protected function updateRequirementsSnapshot(): void
+    {
+        $this->requirementsSnapshot = $this->snapshotRows($this->rows);
+        $this->requirementsDirtyFlag = false;
+    }
+
+    protected function snapshotRows(array $rows): string
+    {
+        return md5(serialize($this->normalizedRequirementRows($rows)));
+    }
+
+    protected function normalizedAvailabilityState(): array
+    {
+        $state = [];
+        foreach (self::DAYS_OF_WEEK as $day) {
+            $row = $this->availabilityForm[$day] ?? [];
+            $state[$day] = [
+                'enabled' => (bool) ($row['enabled'] ?? false),
+                'opens_at' => (string) ($row['opens_at'] ?? ''),
+                'closes_at' => (string) ($row['closes_at'] ?? ''),
+            ];
+        }
+
+        return $state;
+    }
+
+    protected function normalizedRequirementRows(array $rows): array
+    {
+        $normalized = [];
+        foreach ($rows as $row) {
+            $normalized[] = [
+                'id' => array_key_exists('id', $row) && $row['id'] !== null ? (int) $row['id'] : null,
+                'name' => (string) ($row['name'] ?? ''),
+                'description' => (string) ($row['description'] ?? ''),
+                'hyperlink' => (string) ($row['hyperlink'] ?? ''),
+                'position' => (int) ($row['position'] ?? 0),
+            ];
+        }
+
+        usort($normalized, function (array $a, array $b): int {
+            return ($a['position'] <=> $b['position'])
+                ?: (($a['id'] ?? 0) <=> ($b['id'] ?? 0))
+                ?: strcmp($a['name'], $b['name']);
+        });
+
+        return array_values($normalized);
+    }
+
+    protected function recalculateDetailsDirty(): void
+    {
+        $this->detailsDirtyFlag = $this->snapshotDetails() !== $this->detailsSnapshot;
+    }
+
+    protected function recalculateRequirementsDirty(): void
+    {
+        $this->requirementsDirtyFlag = $this->snapshotRows($this->rows) !== $this->requirementsSnapshot;
     }
 }
 
