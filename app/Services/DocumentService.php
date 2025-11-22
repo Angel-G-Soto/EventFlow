@@ -225,7 +225,7 @@ class DocumentService
         return 'uploads_temp';
     }
 
-    public function showPDF(Document $document): BinaryFileResponse
+    public function showPDF(int $documentId): BinaryFileResponse
     {
         //
 
@@ -234,6 +234,7 @@ class DocumentService
 
         // Use your existing accessor if you prefer:
         // $filePath = $document->getFilePath();
+        $document = $this->getDocument($documentId);
 
 
         $filePath = $document->file_path;

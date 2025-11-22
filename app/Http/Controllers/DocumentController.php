@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Services\DocumentService;
 use Illuminate\Http\Request;
 
 class DocumentController extends Controller
 {
+
     /**
      * Display a listing of the resource.
      */
@@ -34,9 +36,11 @@ class DocumentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Document $document)
+    public function show(int $documentId)
     {
         //
+
+        return app(DocumentService::class)->showPDF($documentId);
     }
 
     /**
