@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Mail\RejectionEmail;
+use App\Models\Event;
+use App\Services\EventHistoryService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,6 +25,7 @@ use Illuminate\Support\Facades\Mail;
 class SendRejectionEmailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    protected $eventHistoryService;
 
     /**
      * Email address of the event creator who will receive the rejection notice.
@@ -44,11 +47,7 @@ class SendRejectionEmailJob implements ShouldQueue
      * @var string
      */
     public string $justification;
-
-    public array $recipientEmails;
-
-    public string $creatorRoute;
-    public string $approverRoute;   
+  
 
 
     /**
@@ -59,15 +58,14 @@ class SendRejectionEmailJob implements ShouldQueue
      * @param string              $justification Reason the event was rejected.
      */
     public function __construct(string $creatorEmail, 
-    array $recipientEmails, array $eventData, 
-    string $justification,$creatorRoute, string $approverRoute)
+    array $eventData, 
+    string $justification,)
     {
         $this->creatorEmail = $creatorEmail;
         $this->eventData = $eventData;
         $this->justification = $justification;
-        $this->recipientEmails = $recipientEmails;
-        $this->creatorRoute = $creatorRoute;
-        $this->approverRoute = $approverRoute;
+
+        $this->eventHistoryService=app(EventHistoryService::class);
     }
 
     /**
@@ -82,14 +80,17 @@ class SendRejectionEmailJob implements ShouldQueue
     public function handle(): void
     {
         Mail::to($this->creatorEmail)
-            ->cc($this->recipientEmails)
-            ->send(new RejectionEmail($this->eventData, $this->justification, $this->creatorRoute)
+            ->send(new RejectionEmail($this->eventData, $this->justification, route('user.request', ['event' => $this->eventData['id']]))
         );
 
-        foreach ($this->recipientEmails as $recipient) {
-                Mail::to($recipient)
-                    ->send(new RejectionEmail($this->eventData, $this->justification, $this->approverRoute)); 
-        }
+        $eventHistories= $this->eventHistoryService->getEventHistoriesByEventId($this->eventData['id']);
 
+        // $recipientEmails = $this->eventHistoryService->getEventApproverEmails(new Event($this->eventData));
+
+        foreach ($eventHistories as $eventHistory) {
+                $recipientEmail = $eventHistory->approver->email;
+                Mail::to($recipientEmail)
+                    ->send(new RejectionEmail($this->eventData, $this->justification, route('approver.history.request', ['eventHistory' => $eventHistory->id]))); 
+        }
     }
 }
