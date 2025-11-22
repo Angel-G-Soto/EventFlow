@@ -65,6 +65,7 @@ class Show extends Component
 //            'manager' => fn ($q) => $q->select('id', 'first_name', 'last_name'),
             'department' => fn ($q) => $q->select('id', 'name'), // adjust if your departments table differs
             'availabilities',
+            'requirements' => fn ($q) => $q->orderBy('name'),
         ]);
     }
 
@@ -100,6 +101,7 @@ class Show extends Component
 
         return view('livewire.venue.show', [
             'schedule' => $this->formatSchedule(),
+            'requirements' => $this->formatRequirements(),
         ]);
     }
 
@@ -117,6 +119,23 @@ class Show extends Component
                     'day' => $slot->day,
                     'opens' => $this->fmtTime($slot->opens_at),
                     'closes' => $this->fmtTime($slot->closes_at),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    protected function formatRequirements(): array
+    {
+        return $this->venue->requirements
+            ->sortBy(function ($req) {
+                return sprintf('%05d_%s', (int) ($req->position ?? 0), strtolower($req->name ?? ''));
+            })
+            ->map(function ($req) {
+                return [
+                    'name' => $req->name ?? '',
+                    'description' => $req->description ?? '',
+                    'hyperlink' => $req->hyperlink,
                 ];
             })
             ->values()

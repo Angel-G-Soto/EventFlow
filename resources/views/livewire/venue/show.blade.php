@@ -111,6 +111,36 @@
                 @endif
             </dd>
 
+            <dt class="col-sm-4">Use Requirements:</dt>
+            <dd class="col-sm-8">
+                @if(!empty($requirements))
+                    <div class="vstack gap-3">
+                        @foreach($requirements as $requirement)
+                            <div class="border rounded-3 p-3">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <p class="fw-semibold mb-1">{{ $requirement['name'] }}</p>
+                                        @if(!empty($requirement['description']))
+                                            <p class="mb-1 text-muted">{{ $requirement['description'] }}</p>
+                                        @endif
+                                    </div>
+                                    @if(!empty($requirement['hyperlink']))
+                                        <a href="{{ $requirement['hyperlink'] }}"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="btn btn-sm btn-primary">
+                                            View Document
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <span>—</span>
+                @endif
+            </dd>
+
         </dl>
     </div>
 </div>
