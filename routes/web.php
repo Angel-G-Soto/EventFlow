@@ -85,6 +85,13 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
         return $service->showPDF($document);
     })->name('documents.pdf');
 
+  Route::get('/documents/{document}/download', function (Document $document, DocumentService $service) {
+        // Optional: policy check here if you want
+        // $this->authorize('viewMyDocument', [$document->event]);
+
+        return $service->download($document);
+    })->name('documents.download');
+
 
 
 //  Route::get('/documents/{file_path}', function (string $file_path, Request $request) {

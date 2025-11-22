@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Response;
 
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * DocumentService
@@ -251,6 +252,26 @@ class DocumentService
             'Content-Disposition' => 'inline; filename="' . $downloadName . '"',
             'Cache-Control'       => 'private, max-age=3600',
         ]);
+    }
+
+    /**
+     * Return a download response for the given document.
+     */
+    public function download(Document $document): StreamedResponse
+    {
+        $filePath = $document->file_path;
+
+        abort_unless(Storage::disk($this->finalDisk())->exists($filePath), 404);
+
+        $downloadName = $document->name ?? ('requestFile' . $document->id);
+
+        return Storage::disk($this->finalDisk())->download(
+            $filePath,
+            $downloadName,
+            [
+                'Cache-Control' => 'private, max-age=3600',
+            ]
+        );
     }
 
     private function finalDisk(): string

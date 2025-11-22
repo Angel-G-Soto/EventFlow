@@ -29,15 +29,13 @@
                 </div>
                 <div class="d-grid d-sm-inline-flex ms-sm-auto" role="group" aria-label="Actions for {{ $doc['name'] }}">
 {{--                    <a class="btn btn-outline-primary" href="{{ $doc['file_path'] }}" target="_blank" rel="noopener">Open</a>--}}
-                    <a
+                    <button
+                        type="button"
                         class="btn btn-primary"
-                        href="{{ route('documents.show',$doc['id']
-                            ) }}"
-                        target="_blank"
-                        rel="noopener"
+                        wire:click="download({{ $doc['id'] }})"
                     >
-                        Open PDF
-                    </a>
+                        Download PDF
+                    </button>
 {{--                    <a class="btn btn-outline-secondary" href="{{ $doc['file_path'] }}" download>Download</a>--}}
                 </div>
             </div>
@@ -46,4 +44,3 @@
 </ul>
 
 </div>
-

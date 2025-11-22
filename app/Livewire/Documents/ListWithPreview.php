@@ -31,6 +31,7 @@ class ListWithPreview extends Component
  */
     public array $docs = []; // each: ['title' => '', 'url' => '', 'description' => '']
 
+
 /**
  * Render the list with preview view, including pagination and filters.
  * @return \Illuminate\Contracts\View\View
@@ -39,5 +40,13 @@ class ListWithPreview extends Component
     public function render()
     {
         return view('livewire.documents.list-with-preview');
+    }
+
+    /**
+     * Trigger a document download via the existing route.
+     */
+    public function download(int $documentId)
+    {
+        return redirect()->route('documents.download', ['document' => $documentId]);
     }
 }
