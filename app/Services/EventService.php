@@ -20,6 +20,7 @@ use PHPUnit\Event\EventCollection;
 use Illuminate\Database\Eloquent\Collection;
 use function PHPUnit\Framework\isEmpty;
 use DateTimeInterface;
+use Mockery\Matcher\Not;
 
 class EventService
 {
@@ -30,6 +31,7 @@ class EventService
     protected $categoryService;
     protected $auditService;
     protected $documentService;
+    protected $notificationService;
     protected UserService $userService;
 
     /**
@@ -41,13 +43,15 @@ class EventService
      * @param DocumentService $documentService
      * @param UserService $userService
      */
-    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService, UserService $userService)
+    public function __construct(VenueService $venueService, CategoryService $categoryService, AuditService $auditService, DocumentService $documentService, UserService $userService,
+    NotificationService $notificationService)
     {
         $this->venueService = $venueService;
         $this->categoryService = $categoryService;
         $this->auditService = $auditService;
         $this->documentService = $documentService;
         $this->userService = $userService;
+        $this->notificationService = $notificationService;
     }
 
 
@@ -120,7 +124,10 @@ class EventService
                     'end_time' => $data['end_time'],
 
                     'status' => $status,
-                    'guest_size' => $data['guest_size'] ?? null,
+                    // Ensure blank input doesn't attempt to persist an empty string to integer column
+                    'guest_size' => isset($data['guest_size']) && $data['guest_size'] !== ''
+                        ? (int) $data['guest_size']
+                        : null,
                     'handles_food' => $data['handles_food'] ?? false,
                     'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
                     'external_guest' => $data['external_guest'] ?? false,
@@ -240,17 +247,24 @@ class EventService
                 //                    }
             }
 
-                if (!empty($data['organization_advisor_email'])) {
-                $eventDetails = app(NotificationService::class)->getEventDetails($event);
-                app(NotificationService::class)->dispatchApprovalRequiredNotification(
+            
+            $eventDetails = $this->notificationService->getEventDetails($event);
+
+            $this->notificationService->dispatchRequestCreatedNotification(
+                creatorEmail: $eventDetails['creator_email'],
+                eventDetails: $eventDetails,
+            );
+
+            if (!empty($data['organization_advisor_email'])) {
+                $this->notificationService->dispatchApprovalRequiredNotification(
                     approverEmail: $event->organization_advisor_email,
                     eventDetails: $eventDetails,
                 );
-                }
+            }
 
-                return $event;
-            });
-        }
+            return $event;
+        });
+    }
 
     //  PIPELINE
 
@@ -310,16 +324,12 @@ class EventService
             // Send rejection email to prior approvers and creator
             $creatorEmail = $event->requester->email;
 
-        $eventDetails = app(NotificationService::class)->getEventDetails($event);
-        $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
-        app(NotificationService::class)->dispatchRejectionNotification(
+        $eventDetails = $this->notificationService->getEventDetails($event);
+    
+        $this->notificationService->dispatchRejectionNotification(
                 creatorEmail: $creatorEmail,
-                recipientEmails: $approverEmails,
                 eventDetails: $eventDetails,
-                justification: $justification,
-                creatorRoute: route('user.request', ['event' => $event->id]),
-                approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
-
+                justification: $justification
             );
 
 
@@ -553,26 +563,19 @@ class EventService
                 } catch (\Throwable) { /* best-effort */ }
             }
 
-                // Run audit trail
+            $creatorEmail = $event->requester->email;
+            $eventDetails = $this->notificationService->getEventDetails($event);
+            $justification = $comment ?? 'Event was withdrawn by the user.';
 
-                // Send email to the approvers
-                $creatorEmail = $event->requester->email;
-                $eventDetails = app(NotificationService::class)->getEventDetails($event);
-                $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
-                app(NotificationService::class)->dispatchWithdrawalNotifications(
-                    creatorEmail: $creatorEmail,
-                    recipientEmails: $approverEmails,
-                    eventDetails: $eventDetails,
-                    justification: $comment,
-                    approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
-                    creatorRoute: route('user.request', ['event' => $event->id])
+            $this->notificationService->dispatchWithdrawalNotifications(
+                creatorEmail: $creatorEmail,
+                eventDetails: $eventDetails,
+                justification: $justification,
+            );
 
-                );
-
-
-                return $event->refresh();
-            });
-        }
+            return $event->refresh();
+        });
+    }
 
 
     // Request creator cancels event (older signature removed; unified below)
@@ -1109,16 +1112,11 @@ class EventService
             try {
                 $creatorEmail = optional($event->requester)->email;
                 if ($creatorEmail) {
-                    $eventDetails = app(NotificationService::class)->getEventDetails($event);
-                    $approverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
-
-                    app(NotificationService::class)->dispatchCancellationNotifications(
+                    $eventDetails = $this->notificationService->getEventDetails($event);
+                    $this->notificationService->dispatchCancellationNotifications(
                         creatorEmail: $creatorEmail,
-                        recipientEmails: $approverEmails,
                         eventDetails: $eventDetails,
                         justification: $justification ?: 'Event was cancelled.',
-                        creatorRoute: route('user.request', ['event' => $event->id]),
-                        approverRoute: route('approver.history.request', ['eventHistory' => $event->id]),
                     );
                 }
             } catch (\Throwable $e) {
@@ -1597,19 +1595,19 @@ class EventService
 
         public function sendApproverEmails(Event $event){
 //            pending - venue manager approval' => 'pending - dsca approval',
-            $eventDetails = app(NotificationService::class)->getEventDetails($event);
+            $eventDetails = $this->notificationService->getEventDetails($event);
 
 
             switch ($event->status)
             {
                 case 'pending - venue manager approval':
-                    $venue = app(VenueService::class)->getVenueById($event->venue_id);
+                    $venue = $this->venueService->getVenueById($event->venue_id);
                     if($venue != null){
                         $departmentEmployees = Department::findOrFail($venue->department_id)->employees();
                         $recipientEmails = $departmentEmployees->pluck('email')->toArray();
                         
                         foreach ($recipientEmails as $recipientEmail) {
-                            app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                            $this->notificationService->dispatchApprovalRequiredNotification(
                                 $recipientEmail, $eventDetails);
                         }
 
@@ -1617,10 +1615,10 @@ class EventService
 
                     break;
                 case 'pending - dsca approval':
-                    $eventApproverEmails= app(UserService::class)->getUsersWithRole('event-approver')
+                    $eventApproverEmails= $this->userService->getUsersWithRole('event-approver')
                         ->pluck('email')->toArray();
                     foreach ($eventApproverEmails as $approverEmail) {
-                        app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                        $this->notificationService->dispatchApprovalRequiredNotification(
                             $approverEmail, $eventDetails);
                     }
                     break;
@@ -1628,7 +1626,7 @@ class EventService
 //                    $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
 //                    $eventApproverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
 //
-//                    app(NotificationService::class)->dispatchSanctionedNotification(
+//                    $this->notificationService->dispatchSanctionedNotification(
 //                        creatorEmail:$creatorEmail,
 //                        recipientEmails: $eventApproverEmails,
 //                        eventDetails: $eventDetails
@@ -1647,13 +1645,13 @@ class EventService
 
 
         $creatorEmail = $event->requester->email;
-        $eventDetails = app(NotificationService::class)->getEventDetails($event);
+        $eventDetails = $this->notificationService->getEventDetails($event);
 
 
         switch ($statusWhenApproved)
         {
             case 'pending - advisor approval':
-                app(NotificationService::class)->dispatchUpdateNotification(
+                $this->notificationService->dispatchUpdateNotification(
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
@@ -1664,7 +1662,7 @@ class EventService
 
             case 'pending - venue manager approval':
 
-                app(NotificationService::class)->dispatchUpdateNotification(
+                $this->notificationService->dispatchUpdateNotification(
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
@@ -1673,21 +1671,16 @@ class EventService
 
                 break;
             case 'pending - dsca approval':
-                app(NotificationService::class)->dispatchUpdateNotification(
+                $this->notificationService->dispatchUpdateNotification(
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
                     role: 'DSCA Staff'
                 );
 
-                $eventApproverEmails = app(EventHistoryService::class)->getEventApproverEmails($event);
-
-                app(NotificationService::class)->dispatchSanctionedNotification(
+                $this->notificationService->dispatchSanctionedNotification(
                     creatorEmail:$creatorEmail,
-                    recipientEmails: $eventApproverEmails,
                     eventDetails: $eventDetails,
-                    creatorRoute: route('user.request', ['event' => $event->id]),
-                    approverRoute: route('approver.history.request', ['eventHistory' => $event->id])
                 );
 
                 break;

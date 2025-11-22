@@ -12,17 +12,15 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e6e6e6;border-radius:8px;overflow:hidden;">
                     <!-- Header (optional) -->
                     <tr>
-                        <td style="padding:16px 20px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:24px;color:#212529;border-bottom:1px solid #e6e6e6;mso-line-height-rule:exactly;">
-                            <strong style="font-size:17px;display:block;">Event Title:  {{$event['title']}}</strong>
-                            <div>Request Creator: {{$event['creator_name']}} </div>
-                            <div>Request Creator Email: {{$event['creator_email']}}</div>
-                            <div>Organization: {{$event['organization_name']}}</div>
-                            <div>Organization Advisor: {{$event['organization_advisor_name']}}</div>
-                            <div>Organization Advisor Email: {{$event['organization_advisor_email']}} </div>
-                            <div>Event Start Time: {{$event['start_time']}}</div>
-                            <div>Event Start Time: {{$event['end_time']}}</div>
-                            <div>Venue: {{$event['venue_code']}}({{$event['venue_name']}})</div>
-
+                        <td
+                            style="padding:16px 20px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:24px;color:#212529;border-bottom:1px solid #e6e6e6;mso-line-height-rule:exactly;">
+                            <strong style="font-size:17px;display:block;">Event Title: {{ $event['title'] ?? '' }}</strong>
+                            <div>Organization: {{ $event['organization_name'] ?? '—' }}</div>
+                            <div>Advisor: {{ $event['organization_advisor_name'] ?? '—' }}
+                                ({{ $event['organization_advisor_email'] ?? 'N/A' }})</div>
+                            <div>Starts: {{ $event['start_time'] ?? '' }}</div>
+                            <div>Ends: {{ $event['end_time'] ?? '' }}</div>
+                            <div>Venue: {{ $event['venue_code'] ?? '' }} ({{ $event['venue_name'] ?? '' }})</div>
                         </td>
 
                     </tr>
