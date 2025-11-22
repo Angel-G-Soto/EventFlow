@@ -36,17 +36,24 @@ $downloadParams = array_filter([
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-3">
           <label class="form-label" for="audit_from">From</label>
-          <input id="audit_from" type="date" class="form-control" wire:model.live="from">
+          <input id="audit_from" type="date" class="form-control" wire:model.defer="from">
         </div>
 
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-3">
           <label class="form-label" for="audit_to">To</label>
-          <input id="audit_to" type="date" class="form-control" wire:model.live="to">
+          <input id="audit_to" type="date" class="form-control" wire:model.defer="to">
         </div>
 
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" wire:click="applyDateRange" type="button" aria-label="Apply date range">
+            Apply Date Range
+
+          </button>
+        </div>
+
+        <div class="col-12 col-md-4">
           <label class="form-label" for="audit_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
@@ -153,7 +160,7 @@ $downloadParams = array_filter([
           </tr>
           @empty
           <tr>
-            <td colspan="5" class="text-center text-secondary py-4">No audit entries found.</td>
+            <td colspan="6" class="text-center text-secondary py-4">No audit entries found.</td>
           </tr>
           @endforelse
         </tbody>

@@ -6,6 +6,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Services\AuditService;
+use Carbon\Carbon;
 
 #[Layout('layouts.app')]
 class AuditTrailIndex extends Component
@@ -60,6 +61,18 @@ class AuditTrailIndex extends Component
      */
     public function applySearch(): void
     {
+        $this->page = 1;
+    }
+
+    /**
+     * Apply the selected date range with validation, mirroring EventsIndex behavior.
+     */
+    public function applyDateRange(): void
+    {
+        $this->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
         $this->page = 1;
     }
 
@@ -203,10 +216,18 @@ class AuditTrailIndex extends Component
             $filters['q'] = (string) $this->search;
         }
         if ($this->from) {
-            $filters['date_from'] = $this->from;
+            try {
+                $filters['date_from'] = Carbon::parse($this->from)->startOfDay()->toDateTimeString();
+            } catch (\Throwable) {
+                $filters['date_from'] = $this->from;
+            }
         }
         if ($this->to) {
-            $filters['date_to'] = $this->to;
+            try {
+                $filters['date_to'] = Carbon::parse($this->to)->endOfDay()->toDateTimeString();
+            } catch (\Throwable) {
+                $filters['date_to'] = $this->to;
+            }
         }
 
         try {
