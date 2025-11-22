@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\Document;
 use App\Models\Event;
 use App\Models\EventHistory;
-use App\Models\Role;
 use App\Models\User;
 Use App\Models\Venue;
 use Carbon\Carbon;
@@ -38,9 +37,11 @@ class EventHistoryService
 
     public function genericApproverRequestHistoryV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
+        $userRoles = $user->roles()->pluck('name')->toArray();
+
         $activeRoles = !empty($roles)
-            ? $roles
-            : Role::all()->pluck('name')->toArray();
+            ? array_intersect($roles, $userRoles)
+            : $userRoles;
 
         $query = EventHistory::with([
                 'event:id,title,organization_name',

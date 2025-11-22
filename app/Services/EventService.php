@@ -678,7 +678,7 @@ class EventService
         $query = Event::query();
 
         // Get roles the user actually has
-        $userRoles = $user->roles->pluck('name')->toArray();
+        $userRoles = $user->roles()->pluck('name')->toArray();
 
         // If the user has no roles, end immediately
         if (empty($userRoles)) {
@@ -1347,35 +1347,6 @@ class EventService
         } catch (\Throwable) {
             // ignore
         }
-    }
-
-    /**
-     * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
-     *
-     * @return \Illuminate\Support\Collection<int,array{id:int,label:string}>
-     */
-    public function listVenuesForFilter(): SupportCollection
-    {
-        $venues = Venue::query()
-            ->whereNull('deleted_at')
-            ->select('id', 'name', 'code')
-            ->get();
-
-        // Build label, always appending code in parentheses if available
-        $options = $venues->map(function ($v) {
-            $name = (string)($v->name ?? '');
-            $code = trim((string)($v->code ?? ''));
-            $label = $name;
-            if ($code !== '') {
-                $label .= ' (' . $code . ')';
-            }
-            return ['id' => (int)$v->id, 'label' => $label];
-        });
-
-        // Natural, case-insensitive sort by label
-        return $options
-            ->sort(fn($a, $b) => strnatcasecmp($a['label'], $b['label']))
-            ->values();
     }
 
     /**

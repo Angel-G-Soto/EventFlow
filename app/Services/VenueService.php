@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection as SupportCollection;
 
 class VenueService
 {
@@ -235,6 +236,27 @@ class VenueService
             ->sortBy(fn($name) => mb_strtolower($name))
             ->values()
             ->all();
+    }
+
+    /**
+     * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
+     * Uses base query rows to avoid instantiating Venue models in memory.
+     */
+    public function listVenuesForFilter(): SupportCollection
+    {
+        $venues = Venue::query()
+            ->whereNull('deleted_at')
+            ->toBase()
+            ->select('id', 'name', 'code')
+            ->orderBy('name')
+            ->get();
+
+        return collect($venues)->map(function ($v) {
+            $name = (string)($v->name ?? '');
+            $code = trim((string)($v->code ?? ''));
+            $label = $code !== '' ? $name . ' (' . $code . ')' : $name;
+            return ['id' => (int)$v->id, 'label' => $label];
+        })->values();
     }
 
     /**
