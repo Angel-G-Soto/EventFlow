@@ -13,7 +13,7 @@
             <div class="input-group">
               <input id="dept_search" type="text" class="form-control" placeholder="Search by name or director"
                 wire:model.defer="search">
-              <button class="btn btn-secondary" type="submit" aria-label="Search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search" title="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -54,13 +54,9 @@
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th scope="col"
-              @if(($sortField ?? '') === 'name')
-                aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}"
-              @else
-                aria-sort="none"
-              @endif
-            >
+            <th scope="col" @if(($sortField ?? '' )==='name' )
+              aria-sort="{{ (($sortDirection ?? '') === 'asc') ? 'ascending' : 'descending' }}" @else aria-sort="none"
+              @endif>
               <button class="btn btn-link p-0 text-decoration-none text-black fw-bold" wire:click="sortBy('name')"
                 aria-label="Sort by name">
                 Name

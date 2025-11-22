@@ -50,7 +50,7 @@
             <div class="input-group">
               <input id="venue_search" type="text" class="form-control" placeholder="Search by name or code..."
                 wire:model.defer="search">
-              <button class="btn btn-secondary" type="submit" aria-label="Search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search" title="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -69,7 +69,7 @@
 
         <div class="col-6 col-md-2">
           <label class="form-label" for="venue_cap_min">Cap. Min</label>
-          <input id="venue_cap_min" type="number" class="form-control" wire:model.live="capMin" min="0"
+          <input id="venue_cap_min" type="number" class="form-control" wire:model.live.debounce.300ms="capMin" min="0"
             placeholder="Min capacity">
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">

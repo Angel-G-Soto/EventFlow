@@ -42,7 +42,7 @@
             <div class="input-group">
               <input id="ev_search" class="form-control" placeholder="Search title, requestor, or organization"
                 wire:model.defer="search">
-              <button class="btn btn-secondary" type="submit" aria-label="Search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search" title="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -76,8 +76,7 @@
         </div>
         <div class="col-md-4">
           <label class="form-label" for="ev_to">To</label>
-          <input id="ev_to" type="date" class="form-control @error('to') is-invalid @enderror"
-            wire:model.defer="to">
+          <input id="ev_to" type="date" class="form-control @error('to') is-invalid @enderror" wire:model.defer="to">
           @error('to')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
