@@ -37,7 +37,7 @@ class EventHistoryService
 
     public function genericApproverRequestHistoryV2(User $user, ?array $roles = []): \Illuminate\Database\Eloquent\Builder
     {
-        $userRoles = $user->roles()->pluck('name')->toArray();
+        $userRoles = $user->getRoleNames()->toArray();
 
         $activeRoles = !empty($roles)
             ? array_intersect($roles, $userRoles)

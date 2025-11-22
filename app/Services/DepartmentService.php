@@ -19,6 +19,9 @@ class DepartmentService
 {
 
     protected UserService $userService;
+    
+    /** @var array<int,Department|null> */
+    protected array $departmentCache = [];
 
     public function __construct(UserService $userService)
     {
@@ -42,7 +45,11 @@ class DepartmentService
             throw new InvalidArgumentException('Department ID must be a positive integer.');
         }
 
-        return Department::find($id);
+        if (!array_key_exists($id, $this->departmentCache)) {
+            $this->departmentCache[$id] = Department::find($id);
+        }
+
+        return $this->departmentCache[$id];
     }
 
     /**
@@ -636,8 +643,6 @@ class DepartmentService
      */
     public function getDepartmentVenues(Department $department): LengthAwarePaginator
     {
-        $department = Department::findOrFail($department->id);
-
         return $department->venues()->paginate(15);
     }
 
