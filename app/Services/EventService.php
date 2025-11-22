@@ -326,7 +326,7 @@ class EventService
 
         $eventDetails = $this->notificationService->getEventDetails($event);
     
-        app(NotificationService::class)->dispatchRejectionNotification(
+        $this->notificationService->dispatchRejectionNotification(
                 creatorEmail: $creatorEmail,
                 eventDetails: $eventDetails,
                 justification: $justification
@@ -1113,7 +1113,7 @@ class EventService
                 $creatorEmail = optional($event->requester)->email;
                 if ($creatorEmail) {
                     $eventDetails = $this->notificationService->getEventDetails($event);
-                    app(NotificationService::class)->dispatchCancellationNotifications(
+                    $this->notificationService->dispatchCancellationNotifications(
                         creatorEmail: $creatorEmail,
                         eventDetails: $eventDetails,
                         justification: $justification ?: 'Event was cancelled.',
@@ -1585,19 +1585,19 @@ class EventService
 
         public function sendApproverEmails(Event $event){
 //            pending - venue manager approval' => 'pending - dsca approval',
-            $eventDetails = app(NotificationService::class)->getEventDetails($event);
+            $eventDetails = $this->notificationService->getEventDetails($event);
 
 
             switch ($event->status)
             {
                 case 'pending - venue manager approval':
-                    $venue = app(VenueService::class)->getVenueById($event->venue_id);
+                    $venue = $this->venueService->getVenueById($event->venue_id);
                     if($venue != null){
                         $departmentEmployees = Department::findOrFail($venue->department_id)->employees();
                         $recipientEmails = $departmentEmployees->pluck('email')->toArray();
                         
                         foreach ($recipientEmails as $recipientEmail) {
-                            app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                            $this->notificationService->dispatchApprovalRequiredNotification(
                                 $recipientEmail, $eventDetails);
                         }
 
@@ -1605,10 +1605,10 @@ class EventService
 
                     break;
                 case 'pending - dsca approval':
-                    $eventApproverEmails= app(UserService::class)->getUsersWithRole('event-approver')
+                    $eventApproverEmails= $this->userService->getUsersWithRole('event-approver')
                         ->pluck('email')->toArray();
                     foreach ($eventApproverEmails as $approverEmail) {
-                        app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                        $this->notificationService->dispatchApprovalRequiredNotification(
                             $approverEmail, $eventDetails);
                     }
                     break;
@@ -1635,13 +1635,13 @@ class EventService
 
 
         $creatorEmail = $event->requester->email;
-        $eventDetails = app(NotificationService::class)->getEventDetails($event);
+        $eventDetails = $this->notificationService->getEventDetails($event);
 
 
         switch ($statusWhenApproved)
         {
             case 'pending - advisor approval':
-                app(NotificationService::class)->dispatchUpdateNotification(
+                $this->notificationService->dispatchUpdateNotification(
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
@@ -1652,7 +1652,7 @@ class EventService
 
             case 'pending - venue manager approval':
 
-                app(NotificationService::class)->dispatchUpdateNotification(
+                $this->notificationService->dispatchUpdateNotification(
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
@@ -1661,14 +1661,14 @@ class EventService
 
                 break;
             case 'pending - dsca approval':
-                app(NotificationService::class)->dispatchUpdateNotification(
+                $this->notificationService->dispatchUpdateNotification(
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
                     role: 'DSCA Staff'
                 );
 
-                app(NotificationService::class)->dispatchSanctionedNotification(
+                $this->notificationService->dispatchSanctionedNotification(
                     creatorEmail:$creatorEmail,
                     eventDetails: $eventDetails,
                 );
