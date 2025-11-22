@@ -75,7 +75,6 @@ class VenuesIndex extends Component
         $this->search = '';
         $this->department = '';
         $this->capMin = null;
-        $this->capMax = null;
         $this->page = 1;
     }
 
@@ -395,7 +394,6 @@ class VenuesIndex extends Component
             'search' => $this->search,
             'department_name' => $this->department ?: null,
             'cap_min' => $this->capMin,
-            'cap_max' => $this->capMax,
         ];
         $paginator = $svc->paginateVenueRows(
             $filters,
@@ -430,7 +428,6 @@ class VenuesIndex extends Component
             'search' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
             'capMin' => ['nullable', 'integer', 'min:0'],
-            'capMax' => ['nullable', 'integer', 'min:0', 'gte:capMin'],
             'pageSize' => ['integer', 'in:10,25,50'],
         ];
     }

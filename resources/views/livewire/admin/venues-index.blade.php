@@ -72,11 +72,6 @@
           <input id="venue_cap_min" type="number" class="form-control" wire:model.live="capMin" min="0"
             placeholder="Min capacity">
         </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label" for="venue_cap_max">Cap. Max</label>
-          <input id="venue_cap_max" type="number" class="form-control" wire:model.live="capMax" min="0"
-            placeholder="Max capacity">
-        </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear

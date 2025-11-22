@@ -182,9 +182,6 @@ class VenueService
         if (isset($filters['cap_min']) && $filters['cap_min'] !== null && $filters['cap_min'] !== '') {
             $query->where('capacity', '>=', (int)$filters['cap_min']);
         }
-        if (isset($filters['cap_max']) && $filters['cap_max'] !== null && $filters['cap_max'] !== '') {
-            $query->where('capacity', '<=', (int)$filters['cap_max']);
-        }
 
         $direction = strtolower($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
         $field = $sort['field'] ?? null;
