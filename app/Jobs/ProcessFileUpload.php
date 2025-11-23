@@ -3,10 +3,14 @@
 namespace App\Jobs;
 
 use App\Models\Document;
+use App\Models\Event;
+use App\Models\User;
 use App\Services\DocumentService;
+use App\Services\EventService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -71,9 +75,72 @@ class ProcessFileUpload implements ShouldQueue
             {
                 // Delete file
                 Storage::disk('uploads_temp')->delete($tempRelative);
-                app(DocumentService::class)->deleteDocument($document);
+                $actor = $this->handleInfectedDocument($document, $scan->getOutput());
+                app(DocumentService::class)->deleteDocument($document, $actor?->id);
             }
             else throw new ProcessFailedException($scan);
         }
     }
+
+    /**
+     * Handle event cancellation, auditing, and notifications when the virus scan flags a document.
+     */
+    protected function handleInfectedDocument(Document $document, string $scanOutput): ?User
+    {
+        $document->loadMissing(['event.requester']);
+        $event = $document->event;
+
+        if (!$event instanceof Event) {
+            Log::warning('ProcessFileUpload: virus detected but document is not linked to an event.', [
+                'document_id' => $document->id,
+            ]);
+            return null;
+        }
+
+        $actor = $this->resolveCancellationActor($event);
+        if (!$actor instanceof User) {
+            Log::warning('ProcessFileUpload: unable to resolve actor for virus cancellation.', [
+                'event_id' => $event->id,
+                'document_id' => $document->id,
+            ]);
+            return null;
+        }
+
+        $justification = sprintf(
+            'Automatically cancelled because the virus scanner flagged "%s" as infected.',
+            $document->getNameOfFile()
+        );
+
+        try {
+            /** @var EventService $eventService */
+            $eventService = app(EventService::class);
+            $eventService->cancelEventDueToVirus($event, $actor, $document, $scanOutput, $justification);
+        } catch (\Throwable $e) {
+            Log::error('ProcessFileUpload: failed to cancel event after virus detection.', [
+                'event_id' => $event->id,
+                'document_id' => $document->id,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+
+        return $actor;
+    }
+
+    /**
+     * Resolve the actor that will be associated with the automatic cancellation.
+     */
+    protected function resolveCancellationActor(Event $event): ?User
+    {
+        $systemUserId = (int) config('eventflow.system_user_id', 0);
+        if ($systemUserId > 0) {
+            $systemUser = User::find($systemUserId);
+            if ($systemUser) {
+                return $systemUser;
+            }
+        }
+
+        return $event->requester;
+    }
+
 }

@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use DateTime;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Event\EventCollection;
 use Illuminate\Database\Eloquent\Collection;
 use function PHPUnit\Framework\isEmpty;
@@ -1135,6 +1136,68 @@ class EventService
 
             return $event->refresh();
         });
+    }
+
+    /**
+     * Cancel an event due to a virus detection and capture specific audit context.
+     */
+    public function cancelEventDueToVirus(
+        Event $event,
+        User $actor,
+        Document $document,
+        string $scanOutput,
+        ?string $justification = null
+    ): Event {
+        $message = $justification ?: sprintf(
+            'Automatically cancelled because the virus scanner flagged "%s" as infected.',
+            (string) ($document->name ?? $document->getNameOfFile())
+        );
+
+        $result = $this->cancelEvent($event, $actor, $message);
+
+        $this->logVirusCancellationAudit($actor, $event, $document, $scanOutput);
+
+        return $result;
+    }
+
+    protected function logVirusCancellationAudit(User $actor, Event $event, Document $document, string $scanOutput): void
+    {
+        if ((int) $actor->id <= 0) {
+            return;
+        }
+
+        try {
+            $meta = [
+                'event_id'      => (int) $event->id,
+                'document_id'   => (int) $document->id,
+                'document_name' => (string) ($document->name ?? ''),
+                'scan_output'   => Str::limit(trim($scanOutput), 255),
+                'source'        => 'clamav',
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
+            $this->auditService->logAction(
+                (int) $actor->id,
+                'event',
+                'EVENT_CANCELLED_VIRUS_DETECTED',
+                $eventLabel,
+                $ctx
+            );
+        } catch (\Throwable $e) {
+            Log::warning('EventService: failed to write virus cancellation audit entry', [
+                'event_id' => $event->id,
+                'document_id' => $document->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
 
