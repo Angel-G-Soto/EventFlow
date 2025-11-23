@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection as SupportCollection;
 
 class VenueService
 {
@@ -235,6 +236,27 @@ class VenueService
     }
 
     /**
+     * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
+     * Uses base query rows to avoid instantiating Venue models in memory.
+     */
+    public function listVenuesForFilter(): SupportCollection
+    {
+        $venues = Venue::query()
+            ->whereNull('deleted_at')
+            ->toBase()
+            ->select('id', 'name', 'code')
+            ->orderBy('name')
+            ->get();
+
+        return collect($venues)->map(function ($v) {
+            $name = (string)($v->name ?? '');
+            $code = trim((string)($v->code ?? ''));
+            $label = $code !== '' ? $name . ' (' . $code . ')' : $name;
+            return ['id' => (int)$v->id, 'label' => $label];
+        })->values();
+    }
+
+    /**
      * Retrieve a Venue by its ID.
      *
      * This method attempts to find a venue with the given ID.
@@ -362,6 +384,18 @@ class VenueService
     }
 
     /**
+     * Retrieve a venue or fail.
+     */
+    public function requireById(int $venue_id): Venue
+    {
+        if ($venue_id <= 0) {
+            throw new InvalidArgumentException('Venue id must be greater than zero.');
+        }
+
+        return Venue::with('department')->findOrFail($venue_id);
+    }
+
+    /**
      * Retrieve all venues associated with the department of a specific user.
      *
      * This method fetches all Venue records where the department matches the department
@@ -394,6 +428,39 @@ class VenueService
             throw new InvalidArgumentException('Venue id must be greater than zero.');
         }
         return Venue::findOrFail($venue_id)->requirements;
+    }
+
+    /**
+     * Update a venue's description field.
+     */
+    public function updateVenueDescription(Venue $venue, string $description, User $actor): Venue
+    {
+        $venue->description = $description;
+        $venue->save();
+
+        try {
+            $meta = [
+                'venue_id' => (int) $venue->id,
+                'source'   => 'venue_description_update',
+            ];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            } else {
+                $ctx = ['meta' => $meta];
+            }
+
+            $this->auditService->logAction(
+                (int) ($actor->id ?? 0),
+                'venue',
+                'UPDATE_DESCRIPTION',
+                (string) $venue->id,
+                $ctx
+            );
+        } catch (\Throwable) {
+            // best effort
+        }
+
+        return $venue->refresh();
     }
 
     /**

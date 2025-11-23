@@ -65,7 +65,6 @@ class Index extends Component
     public function render()
     {
         $q = app(EventService::class)->getMyRequestedEvents(Auth::user());
-        $q->with(['venue','categories']);
 
         // Apply search filter
         if (!empty($this->filters['searchTitle'])) {

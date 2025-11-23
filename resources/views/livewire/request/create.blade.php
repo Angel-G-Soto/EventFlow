@@ -149,27 +149,18 @@
                                             type="search"
                                             class="form-control"
                                             placeholder="Search categories (e.g., Workshop, Fundraiser)"
-                                            wire:model.defer="categorySearchInput"
-                                            wire:keydown.enter.prevent="runCategorySearch"
+                                            wire:model.live.debounce.300ms="categorySearchInput"
                                             data-allow-enter-submit="true"
                                         >
-                                        <button
-                                            type="button"
-                                            class="btn btn-primary"
-                                            wire:click="runCategorySearch"
-                                            wire:loading.attr="disabled"
-                                            wire:target="runCategorySearch"
+                                        <span
+                                            class="input-group-text bg-transparent border-0"
+                                            wire:loading.remove
+                                            wire:target="categorySearchInput"
                                         >
-                                            <span
-                                                wire:loading
-                                                wire:target="runCategorySearch"
-                                                class="spinner-border spinner-border-sm me-1"
-                                                role="status"
-                                                aria-hidden="true"
-                                            ></span>
-                                            Search
-                                        </button>
+                                            <i class="bi bi-search text-muted"></i>
+                                        </span>
                                     </div>
+                                    <small class="text-muted">Results update automatically as you type.</small>
                                 </div>
                                 <div class="col-md-4 col-lg-3 text-md-end">
                                     <small class="text-muted">
@@ -322,7 +313,7 @@
 
 
             <div class="card shadow-sm mb-3">
-                <div class="card-body" wire:keydown.enter.prevent="runVenueSearch">
+                <div class="card-body">
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5 col-lg-4">
                             <label for="venueSearch" class="form-label">Search by name or code</label>
@@ -330,7 +321,7 @@
                                    type="text"
                                    class="form-control"
                                    placeholder="e.g., SALON DE CLASES or AE-102"
-                                   wire:model.defer="venueSearch">
+                                   wire:model.live.debounce.500ms="venueSearch">
                         </div>
                         <div class="col-md-3 col-lg-2">
                             <label for="venueCapacityFilter" class="form-label">Minimum capacity</label>
@@ -339,13 +330,13 @@
                                    min="0"
                                    class="form-control"
                                    placeholder="e.g., 50"
-                                   wire:model.defer="venueCapacityFilter">
+                                   wire:model.live.debounce.500ms="venueCapacityFilter">
                         </div>
                         <div class="col-md-4 col-lg-3">
                             <label for="venueDepartmentFilter" class="form-label">Department</label>
                             <select id="venueDepartmentFilter"
                                     class="form-select"
-                                    wire:model.defer="venueDepartmentFilter">
+                                    wire:model.live="venueDepartmentFilter">
                                 <option value="">All departments</option>
                                 @foreach($departments as $department)
                                     <option value="{{ $department['id'] }}">{{ $department['name'] }}</option>
@@ -358,11 +349,11 @@
                                 class="btn btn-primary flex-fill"
                                 wire:click="runVenueSearch"
                                 wire:loading.attr="disabled"
-                                wire:target="runVenueSearch">
+                                wire:target="runVenueSearch,venueSearch,venueCapacityFilter,venueDepartmentFilter">
                                 @if ($loadingVenues)
                                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 @endif
-                                Search
+                                Refresh
                             </button>
                             <button
                                 type="button"
@@ -374,8 +365,9 @@
                             </button>
                         </div>
                     </div>
-                    <div class="form-text mt-3">Adjust one or more filters and press Search to rerun the availability
-                        query.</div>
+                    <div class="form-text mt-3">
+                        Filters update automatically as you type. Use Refresh if you need to manually rerun the availability query.
+                    </div>
                 </div>
             </div>
 
