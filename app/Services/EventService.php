@@ -96,7 +96,6 @@ class EventService
                     : 'pending - approval',
                 default   => 'draft',
             };
-
             // Create or update the event
             $event = Event::updateOrCreate(
                 [
@@ -120,7 +119,9 @@ class EventService
                     'end_time' => $data['end_time'],
 
                     'status' => $status,
-                    'guest_size' => $data['guest_size'] ?? null,
+                    'guest_size' => ($data['guest_size'] ?? null) === ''
+                        ? null
+                        : ($data['guest_size'] ?? null),
                     'handles_food' => $data['handles_food'] ?? false,
                     'use_institutional_funds' => $data['use_institutional_funds'] ?? false,
                     'external_guest' => $data['external_guest'] ?? false,
