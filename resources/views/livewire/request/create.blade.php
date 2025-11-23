@@ -647,7 +647,7 @@
                                     </div>
                                 </div>
 
-                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                <button type="button" class="btn btn-danger btn-sm"
                                     wire:click="removeRequirementFile({{ $index }})">
                                     Remove
                                 </button>
