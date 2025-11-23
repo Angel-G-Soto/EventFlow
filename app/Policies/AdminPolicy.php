@@ -45,6 +45,6 @@ class AdminPolicy
      */
     public function manageCategories(User $user): bool
     {
-        return $user->getRoleNames()->contains('system-admin');
+        return $user->getRoleNames()->contains('event-approver');
     }
 }

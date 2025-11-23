@@ -111,9 +111,18 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
         </li>
         @endif
 
+        @if($navbar['isApprover'])
+        <li class="nav-item">
+          <a class="nav-link text-nowrap fw-bold {{ Route::is('dsca.categories') ? 'active' : '' }}"
+            href="{{ route('dsca.categories') }}">
+            Categories
+          </a>
+        </li>
+        @endif
+
         @if($navbar['isAdmin'])
         <li class="nav-item dropdown">
-          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.categories') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
             href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Administrator
           </a>
@@ -124,8 +133,6 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
                 href="{{ route('admin.departments') }}">Departments</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.venues') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.venues') }}">Venues</a></li>
-            <li><a class="dropdown-item {{ Route::is('admin.categories') ? 'active fw-bold bg-accent' : '' }}"
-                href="{{ route('admin.categories') }}">Categories</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.events') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.events') }}">Events</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.audit') ? 'active fw-bold bg-accent' : '' }}"
