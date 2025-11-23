@@ -36,10 +36,13 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withSchedule(function (Schedule $schedule) {
+        // Mark events as completed daily at 1:00 AM
         $schedule->call(function () {
             app(EventService::class)->markEventAsCompleted();
-        })->dailyAt('00:00');
+        })->dailyAt('01:00');
 
-        $schedule->exec('freshclam')->weeklyOn(6, '00:00');
+        // Peform daily backup at 2:00 AM
+
+        // $schedule->exec('freshclam')->weeklyOn(6, '00:00'); // Commented out since freshclam is running on the background as a daemon
     })
     ->create();
