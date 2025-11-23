@@ -665,10 +665,36 @@
 
             <div class="d-flex justify-content-between mt-4">
                 <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
-                <button type="submit" class="btn btn-success">Submit Event</button>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                    Submit Event
+                </button>
             </div>
         </form>
     @endif
+
+    {{-- Submit confirmation modal --}}
+    <div wire:ignore.self class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmSubmitModalLabel">Submit Event</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to submit this event for approval? <br><br>
+                    After submission, you will not be able to make further changes. Missing required documents may incur in the dismissal of your request.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" wire:click="submit" wire:loading.attr="disabled"
+                            data-bs-dismiss="modal">
+                        Yes, Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>

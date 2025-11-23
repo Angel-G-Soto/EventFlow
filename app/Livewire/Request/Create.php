@@ -780,7 +780,7 @@ public function removeRequirementFile(int $index): void
         session()->flash('success', 'Event submitted successfully.');
         $this->dispatch('event-form-submitted');
 
-        redirect()->route('public.calendar'); // or to a details/thanks page
+        redirect()->route('user.index'); // redirect to My Requests page
     }
 
     public function clearCategories(): void
