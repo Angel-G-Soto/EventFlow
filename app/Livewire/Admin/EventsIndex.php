@@ -9,6 +9,7 @@ use App\Livewire\Traits\EventFilters;
 use App\Livewire\Traits\EventEditState;
 use App\Services\CategoryService;
 use App\Services\EventService;
+use App\Services\VenueService;
 // Note: Admin views must use services only (no direct models). Venue lookups are avoided here.
 use Carbon\Carbon;
 use DateTimeInterface;
@@ -154,7 +155,7 @@ class EventsIndex extends Component
     public function updatedEVenueId($value): void
     {
         try {
-            $opts = app(EventService::class)->listVenuesForFilter();
+            $opts = app(VenueService::class)->listVenuesForFilter();
             $match = collect($opts)->firstWhere('id', (int)$value);
             if (is_array($match) && isset($match['label'])) {
                 $this->eVenue = (string)$match['label'];
@@ -547,7 +548,7 @@ class EventsIndex extends Component
         $visibleIds = $paginator->pluck('id')->all();
         // Venue options for filter (disambiguate duplicate names)
         try {
-            $venues = app(EventService::class)->listVenuesForFilter()->values()->all();
+            $venues = app(VenueService::class)->listVenuesForFilter()->values()->all();
         } catch (\Throwable $e) {
             $venues = [];
         }

@@ -19,7 +19,11 @@ class Filters extends Component
     public function mount(): void
     {
         // Load roles for current user
-        $this->roles = Auth::user()->roles()->where('name', '<>', 'user')->get(['name'])->toArray();
+        $this->roles = Auth::user()->roles()
+            ->where('name', '<>', 'user')
+            ->pluck('name')
+            ->map(fn ($name) => ['name' => $name])
+            ->toArray();
     }
 
     public function apply(): void

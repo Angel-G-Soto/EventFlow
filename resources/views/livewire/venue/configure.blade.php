@@ -45,14 +45,6 @@
     {{-- resources/views/livewire/venues/requirements-editor.blade.php --}}
     <div>
         <div class="container py-2">
-
-            @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            @endif
-
             {{-- Global validation errors --}}
             @if ($errors->any())
             <div class="alert alert-danger">
@@ -60,7 +52,12 @@
             </div>
             @endif
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <h1 class="h4 mb-0">Configure Venue</h1>
+                <h1 class="h4 mb-0 d-flex flex-wrap align-items-center gap-2">
+                    <span>Configure Venue:</span>
+                    <span class="text-muted fw-normal">
+                        {{ $venue->name }}@if(!empty($venue->code)) ({{ $venue->code }})@endif
+                    </span>
+                </h1>
 
                 <div class="d-flex gap-2">
                     <a href="{{ route('venues.manage') }}" class="btn btn-secondary"
@@ -73,8 +70,12 @@
             <div class="py-4">
 
                 <div class="card shadow-sm mb-3">
-                    <div class="card-header">
+                    <div class="card-header d-flex align-items-center gap-2 justify-content-between flex-wrap">
                         <h2 id="availability-title" class="h5 mb-0">Venue Description & Weekly Availability</h2>
+                        <button class="btn btn-primary" wire:click="saveAvailability" @disabled(! $this->detailsDirty)>
+                            <i class="bi bi-save me-1"></i>
+                            Save details
+                        </button>
                     </div>
 
                     <div class="card-body">
@@ -100,9 +101,10 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($weekDays as $day)
-                                    @php($row = $availabilityForm[$day] ?? ['enabled' => false, 'opens_at' => '',
-                                    'closes_at' => ''])
-                                    @php($dayId = strtolower($day))
+                                    @php
+                                    $row = $availabilityForm[$day] ?? ['enabled' => false, 'opens_at' => '', 'closes_at' => ''];
+                                    $dayId = strtolower($day);
+                                    @endphp
                                     <tr>
                                         <td class="fw-semibold">
                                             <div class="form-check">
@@ -144,112 +146,131 @@
                         @enderror
                     </div>
 
-                    <div class="card-footer d-flex gap-2 align-items-center">
-                        <button class="btn btn-primary ms-auto" wire:click="saveAvailability">
-                            <i class="bi bi-save"></i>
-                            Save details
-                        </button>
+                    <div class="card-footer p-0 border-0" aria-hidden="true"></div>
+                </div>
+            </div>
+
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center justify-content-between gap-3">
+                        <div>
+                            <h2 class="h5 mb-0">Use Requirements</h2>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-secondary" type="button" wire:click="addRow"
+                                wire:loading.attr="disabled" wire:target="addRow">
+                                <i class="bi bi-plus-lg"></i>
+                                Add requirement
+                            </button>
+                            {{-- <button class="btn btn-danger" type="button"
+                                wire:click="confirmClearRequirements" wire:loading.attr="disabled"
+                                wire:target="confirmClearRequirements">
+                                <i class="bi bi-trash"></i>
+                                Clear all
+                            </button> --}}
+                            <button class="btn btn-primary" type="button" wire:click="save" wire:loading.attr="disabled"
+                                wire:target="save" @disabled(! $this->requirementsDirty)>
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"
+                                    wire:loading wire:target="save"></span>
+                                <i class="bi bi-save me-1" wire:loading.remove wire:target="save"></i>
+                                Save changes
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
+                <div class="card-body">
+                    <div class="vstack gap-3">
+                                @forelse ($rows as $i => $row)
+                                @php
+                                $rowUuid = $row['uuid'];
+                                @endphp
+                                <div class="card border-0 shadow-sm" wire:key="req-{{ $rowUuid }}">
+                                    <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between gap-2">
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <span class="text-uppercase small text-muted fw-semibold">Requirement {{ $i + 1 }}</span>
+                                            @if (!empty($row['id']))
+                                            <span class="text-success small">
+                                                <i class="bi bi-check-circle-fill me-1"></i>Saved to venue
+                                            </span>
+                                            @else
+                                            <span class="text-muted small">Draft only. Don't forget to save.</span>
+                                            @endif
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                wire:click="confirmRemoveRow('{{ $rowUuid }}')"
+                                                wire:loading.attr="disabled"
+                                                title="Remove requirement {{ $i + 1 }}">
+                                                <i class="bi bi-trash"></i>
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="req-name-{{ $rowUuid }}" class="form-label">Requirement title
+                                                <span class="text-danger">*</span></label>
+                                            <input id="req-name-{{ $rowUuid }}" type="text"
+                                                class="form-control @error('rows.'.$i.'.name') is-invalid @enderror"
+                                                placeholder="e.g., Safety Plan, Risk Assessment"
+                                                wire:model.lazy="rows.{{ $i }}.name">
+                                            @error('rows.'.$i.'.name')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
 
+                                        <div class="mb-3">
+                                            <label for="req-description-{{ $rowUuid }}" class="form-label">Guidance or
+                                                checklist</label>
+                                            <textarea id="req-description-{{ $rowUuid }}" rows="3"
+                                                class="form-control @error('rows.'.$i.'.description') is-invalid @enderror"
+                                                placeholder="Briefly describe what the requester must do."
+                                                wire:model.lazy="rows.{{ $i }}.description"></textarea>
+                                            @error('rows.'.$i.'.description')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
 
-
-
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h1 class="h4 mb-0">Requirements for: {{ $venue->name }}</h1>
-
-                <div class="d-flex gap-2">
-                    <button class="btn btn-danger" type="button" wire:click="confirmClearRequirements">
-                        <i class="bi bi-trash"></i> Clear requirements
-                    </button>
-                    <button class="btn btn-secondary" type="button" wire:click="addRow">
-                        <i class="bi bi-plus-lg"></i> Add requirement
-                    </button>
-                    <button class="btn btn-primary" type="button" wire:click="save">
-                        <i class="bi bi-save"></i> Save changes
-                    </button>
-                </div>
-            </div>
-
-
-            <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 20%">Name <span class="text-danger">*</span></th>
-                            <th style="width: 45%">Description</th>
-                            <th style="width: 25%">Document link (URL)</th>
-                            <th style="width: 10%" class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($rows as $i => $row)
-                        <tr wire:key="req-{{ $row['uuid'] }}">
-                            <td>
-                                <input
-                                    type="text"
-                                    class="form-control @error('rows.'.$i.'.name') is-invalid @enderror"
-                                    placeholder="e.g., Safety Plan"
-                                    wire:model.lazy="rows.{{ $i }}.name"
-                                >
-                                @error('rows.'.$i.'.name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </td>
-
-                            <td>
-                                <textarea
-                                    rows="2"
-                                    class="form-control @error('rows.'.$i.'.description') is-invalid @enderror"
-                                    placeholder="Brief description…"
-                                    wire:model.lazy="rows.{{ $i }}.description"
-                                ></textarea>
-                                @error('rows.'.$i.'.description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </td>
-
-                            <td>
-                                <div class="input-group">
-                                    <input
-                                        type="url"
-                                        class="form-control @error('rows.'.$i.'.hyperlink') is-invalid @enderror"
-                                        placeholder="https://…"
-                                        wire:model.lazy="rows.{{ $i }}.hyperlink"
-                                    >
-                                    @if (!empty($row['hyperlink']))
-
-                                    <a class="btn btn-secondary" href="{{ $row['hyperlink'] }}" target="_blank"
-                                        rel="noopener noreferrer">
-                                        <i class="bi bi-box-arrow-up-right ms-1" aria-hidden="true"></i>
-                                        Open
-                                    </a>
-                                    @endif
-                                    @error('rows.'.$i.'.hyperlink')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                    @enderror
+                                        <div class="mb-2">
+                                            <label for="req-link-{{ $rowUuid }}" class="form-label">Document link
+                                                (URL)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-link-45deg"
+                                                        aria-hidden="true"></i></span>
+                                                <input id="req-link-{{ $rowUuid }}" type="url"
+                                                    class="form-control @error('rows.'.$i.'.hyperlink') is-invalid @enderror"
+                                                    placeholder="https://example.edu/requirements.pdf"
+                                                    wire:model.lazy="rows.{{ $i }}.hyperlink">
+                                                @if (!empty($row['hyperlink']))
+                                                <a class="btn btn-outline-secondary" href="{{ $row['hyperlink'] }}"
+                                                    target="_blank" rel="noopener noreferrer">
+                                                    Open
+                                                </a>
+                                                @endif
+                                            </div>
+                                            @error('rows.'.$i.'.hyperlink')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                            <div class="form-text">Attach a policy PDF, web page, or shared doc the
+                                                requester must review.</div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </td>
+                                @empty
+                                <div class="text-center text-muted py-5 border rounded-3">
+                                    <p class="mb-1 fw-semibold">No requirements yet</p>
+                                    <p class="mb-0">Use the buttons above to add your first requirement.</p>
+                                </div>
+                                @endforelse
 
-                            <td class="text-end">
-                                <button type="button"
-                                    class="btn btn-sm btn-danger"
-                                    wire:click="confirmRemoveRow('{{ $row['uuid'] }}')"
-                                    wire:loading.attr="disabled"
-                                    title="Remove Requirement">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="mt-3 text-muted small">
-                <span class="text-danger">*</span> Required field. Empty rows are skipped automatically.
+                        <p class="text-muted small mb-0">
+                            <span class="text-danger">*</span> Required field. All updates are saved to the venue
+                            after you provide justification and select <strong>Save changes</strong>.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 
