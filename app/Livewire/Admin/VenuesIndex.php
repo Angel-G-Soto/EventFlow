@@ -240,6 +240,10 @@ class VenuesIndex extends Component
             $venue->loadMissing('availabilities');
             // Normalize details payload for the view
             $features = $this->mapFeaturesStringToLabels((string)($venue->features ?? ''));
+            // Treat a non-zero test_capacity (final exams capacity) as a feature flag
+            if ((int) ($venue->test_capacity ?? 0) > 0) {
+                $features[] = 'Allow Final Exams (capacity ' . (int) $venue->test_capacity . ')';
+            }
             $this->detailsId = (int) $venue->id;
             $this->details = [
                 'id'         => (int) $venue->id,

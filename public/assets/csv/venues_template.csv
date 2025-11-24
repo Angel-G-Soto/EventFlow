@@ -1,0 +1,11 @@
+name,room_code,department_name,department,capacity,final_exams_capacity,allow_teaching_with_multimedia,allow_teaching_with_computers,allow_teaching,allow_teaching_online
+SALON DE CLASES,AE-102,COLLEGE OF BUSINESS ADMINISTRATION,378,28,,1,0,1,1
+,,,,,,,,,
+# INSTRUCTIONS: One row per venue. ,,,,,,,,,
+name = full room name.,,,,,,,,,
+room_code = building+room identifier (e.g. AE-102). ,,,,,,,,,
+department_name = owning unit.,,,,,,,,,
+department =  department code (e.g. 378).,,,,,,,,,
+capacity = normal room capacity.,,,,,,,,,
+final_exams_capacity = capacity during finals (leave blank to reuse capacity). ,,,,,,,,,
+For all allow_* columns," use 1 for ""yes"" and 0 or blank for ""no"".",,,,,,,,
