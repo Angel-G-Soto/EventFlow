@@ -39,9 +39,9 @@ export const options = {
 
 const defaults = {
     BASE_URL: 'https://eventflow.uprm.edu',
-    SESSION_COOKIE: 'eventflow_session=eyJpdiI6Ikh4OGRHTXFBbE1HTGNORVUxZWZWbEE9PSIsInZhbHVlIjoiU2lXTTdTc0VoQVFJbjViMVR2OXhVM0VZb0k0WUJkNUQ4ZHh1MDlMRDdUN1lSYXZrVHJPZm4vVHVVSzZEVTNvQ2NkS1lRZDRKbit5di8zNFN0Zm1xUFhFc250OXVtSmxndm1zdWVDWHFTbnpPeWx6bEVmWlpiNEkxQVI0WWh4TEsiLCJtYWMiOiJiMTRhY2FiYTE1YWQ0MGIwOGZlY2YxNmE2MGQzZGNhMmRmZGZkZDJlY2MwMTRkYjQyNmM3MWYzNDJhMmYzYWMxIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6IkM5NHlLZk95SitXTzNFcGZUbHpwQ1E9PSIsInZhbHVlIjoiOGt2M1B6bmZMSTRaaUhBVzFyNitsSkRBQUhoaW9QZ3B4bWt6K3kydGdzU2N5MkZyS0g2RWxNa0EvUjRLZGd5Wm9ORDdQeW04UFNJMlF3NEE0T3I4NVVUSXd2dDZnN1NBSU5zUGxtRWtyZWhtaUFSaUlvZzE3N3dtejlSdHdiUkwiLCJtYWMiOiIwMWJhZGQ2YzZjNmFjMmQ3MDM3MGEyMTRiNzE0MmU5MGM3ZTFiMDdhNWRiYzEzOWRiMGE1NWE2YjBiMmM5NjgyIiwidGFnIjoiIn0%3D',
-    APPROVER_HISTORY_EVENT_ID: '48',
-    APPROVER_PENDING_EVENT_ID: '48',
+    SESSION_COOKIE: 'eventflow_session=eyJpdiI6InBRSmxCQnUzbXU0cC82cU1nWGJ4eEE9PSIsInZhbHVlIjoiYVQ4U3E2eHllK084SVYwT2tvbCtFM05sZmdQNHpDRkQxOWVQbldKQ1hjVHVVT1JWR1VMY2swUXQ0WmFtRVNacFlmZ2x3TlVhV0VlRi8rNTF3eFlHQU81bkVvSTNpRUFkTHRySXlxVSt5eVoxRkVGTUZtbzFXcTVseFB1cXNLb1EiLCJtYWMiOiIyNDY0NTY5M2E2YTg1ZDdmY2FkOTg0NGUyYzdhNTg3ODI5ZGJiYzI5MWNlMmQxMTI0YWExNmNiNjQyZjE3NTQyIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6InJBZDZicjlUdVh5ekNCblBpdXVMQlE9PSIsInZhbHVlIjoiZHlaRXBka0QxWkh2YVNlTjlhcWp3eWpRcEwwbDJxM0MrNW9NMVRZMHE4b1R3c2tRQ24vVlpxS2p0RW1hUkJmYU1RWk1nd0NIdE9zWm9zWm1pU3VRRlBtYnc5WmVRbElBOWJMaDBsSmpuNk4xQVJiakNLTElaL1B6V05hYWFuYWsiLCJtYWMiOiI5MTJmNjA0NWY4MDg0NzE5MWZhN2I4ZGUxNWY4MjdiNTEwNzQzMGJlMDEyMGIyNTU2ZTEyYTA3NDY4MTBlYmRiIiwidGFnIjoiIn0%3D',
+    APPROVER_HISTORY_EVENT_ID: '42',
+    APPROVER_PENDING_EVENT_ID: '42',
     ORG_EVENT_ID: '48',
     VENUE_ID: '2',
     DOCUMENT_ID: '55',
@@ -81,7 +81,7 @@ const endpoints = [
     { tag: 'dsca-categories', path: '/dsca/categories' },
     { tag: 'admin-events', path: '/admin/events' },
     { tag: 'admin-audit-log', path: '/admin/audit-log' },
-    { tag: 'admin-audit-download', path: '/admin/audit-log/download' },
+    // { tag: 'admin-audit-download', path: '/admin/audit-log/download' },
     { tag: 'approver-history-index', path: '/approver/requests/history' },
     { tag: 'approver-history-details', path: () => `/approver/requests/history/${ids.approverHistoryEventId}` },
     { tag: 'approver-pending-index', path: '/approver/requests/pending' },
