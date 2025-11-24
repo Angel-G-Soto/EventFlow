@@ -452,14 +452,14 @@ class EventsIndex extends Component
                     return;
                 }
 
-                if ($this->actionType === 'approve') {
-                    $svc->approveEvent($event, Auth::user());
-                    $toastMsg = 'Event approved';
-                } elseif ($this->actionType === 'deny') {
-                    $this->validateJustification();
-                    $svc->denyEvent((string) ($this->justification ?? ''), $event, Auth::user());
-                    $toastMsg = 'Event denied';
-                }
+                // if ($this->actionType === 'approve') {
+                //     $svc->approveEvent($event, Auth::user());
+                //     $toastMsg = 'Event approved';
+                // } elseif ($this->actionType === 'deny') {
+                //     $this->validateJustification();
+                //     $svc->denyEvent((string) ($this->justification ?? ''), $event, Auth::user());
+                //     $toastMsg = 'Event denied';
+                // }
             } catch (\Throwable $e) {
                 $this->addError('justification', 'Unable to ' . $this->actionType . ' event.');
                 return;
@@ -627,7 +627,7 @@ class EventsIndex extends Component
             'pending_dsca'          => ['label' => 'Awaiting DSCA Approval',          'variant' => 'warning'],
             'pending_deanship'      => ['label' => 'Awaiting Deanship Approval',      'variant' => 'warning'],
             'approved'              => ['label' => 'Approved',                        'variant' => 'success'],
-            'denied'                => ['label' => 'Denied',                          'variant' => 'danger'],
+            'rejected'                => ['label' => 'Rejected',                          'variant' => 'danger'],
             'cancelled'             => ['label' => 'Cancelled',                       'variant' => 'danger'],
             'withdrawn'             => ['label' => 'Withdrawn',                       'variant' => 'danger'],
             'completed'             => ['label' => 'Completed',                       'variant' => 'success'],
