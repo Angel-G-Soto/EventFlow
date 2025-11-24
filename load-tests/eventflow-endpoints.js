@@ -17,36 +17,36 @@ import exec from 'k6/execution';
  */
 
 export const options = {
-  scenarios: {
-    ramp_and_hold: {
-      executor: 'ramping-vus',
-      startVUs: 20,
-      stages: [
-        { duration: '1m', target: 100 },
-        { duration: '1m', target: 100 },
-        { duration: '30s', target: 0 },
-      ],
-      gracefulRampDown: '30s',
+    scenarios: {
+        ramp_and_hold: {
+            executor: 'ramping-vus',
+            startVUs: 20,
+            stages: [
+                { duration: '1m', target: 100 },
+                { duration: '3m', target: 100 },
+                { duration: '30s', target: 0 },
+            ],
+            gracefulRampDown: '30s',
+        },
     },
-  },
-  thresholds: {
-    http_req_duration: ['avg<3000', 'p(95)<3000'],
-    http_req_failed: ['rate<0.01'],
-    checks: ['rate>0.99'],
-  },
-  userAgent: 'eventflow-load-test/1.0',
+    thresholds: {
+        http_req_duration: ['avg<2000', 'p(95)<3000'],
+        http_req_failed: ['rate<0.01'],
+        checks: ['rate>0.99'],
+    },
+    userAgent: 'eventflow-load-test/1.0',
 };
 
 const defaults = {
-  BASE_URL: 'https://eventflow.test',
-  SESSION_COOKIE: 'laravel_session=eyJpdiI6IlFWM0d0L3dDSm95TXhCN0pXcXdtTXc9PSIsInZhbHVlIjoiaGVwUFA3dCt3SG5XR1VRL09CQUozZUFDVGRFMVVIUUt6SGZ6YTFzdjJ1RGV3K2tnTWlMQm1OR2ZBVWdUSlFPMFdHbGNLblljai94cDM5bFNYamxxUGdIbDB3NzlSTFR3ME9VWWN4SFQ3QUdpZlcwV2s2YytVUnJIT0kzdXdFMWMiLCJtYWMiOiJhMmNkNTBjZWQ3ZGNkNzhmODZkODFiMzkzMjRlYTk1MmQ0YjZhNGUwZjQ1NDY0YTMyMjY1NzBkMjg4YzNkY2EwIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6IkcrY0VpQ1BjSEQvbDdPNVJjT05vcFE9PSIsInZhbHVlIjoidUZ3L2VDcHprQnhoeFZtcEpWczNPaHZxc3RFUWtNdkpRV1B6WnpnOXNZSHhEQWNhRVFRNExIUkxJcmJkbW5vaGV2Q21leW82UHd2akJJaHNsUEJ6aitnZjdXL1lCUGFsOEk4UTdicGE5SlF4OHZTandWTi8zamZ4ZGlhbGh3UnEiLCJtYWMiOiIxYjA4Y2Q5NGQwZDIzY2VhZDdjM2EyMDM3YmUxNDhkZTc3ZjRmMWI1YThhZGJjN2IwY2Q1ZGI4Yjg4YTFjMzJkIiwidGFnIjoiIn0%3D',
-  APPROVER_HISTORY_EVENT_ID: '23',
-  APPROVER_PENDING_EVENT_ID: '23',
-  ORG_EVENT_ID: '23',
-  VENUE_ID: '2',
-  DOCUMENT_ID: '28',
-  NEXO_API_KEY: 'evf_live_Gd4bJHnCksU1cOzUba2vZVd0P3m7WQi-8F2y9tLrAcY',
-  NEXO_SOURCE_ID: 'nexo',
+    BASE_URL: 'https://eventflow.uprm.edu',
+    SESSION_COOKIE: 'eventflow_session=eyJpdiI6IkF6Y3dDYWJVTXhjd1pMaTN2Z2huTEE9PSIsInZhbHVlIjoiLzFyRk8ybUhyQU4zcForRGw2S01EMldGbCt6aXJ4azZCQUFPNjRmTnl0ZDlzRU12ZkcxYWE4WVduOXB1TTRVWktrNmo5OFFTTk9TZjRBb3dQM1RjR05UTW1RTTl3SWJtbXc4YjUwbndvRHRyNmE2OGV0ZGxWbDZzSDh2UFZQUUkiLCJtYWMiOiIwNGNkZGIyYmE5YzVmMjc2ZDU4MTE4MWJlOWE0OWFlYTNmZmIzOGY3MmQ4OWVhOTBmMzYxYjFmMmRmMzA3NDUwIiwidGFnIjoiIn0%3D; XSRF-TOKEN=.eyJpdiI6Ilc3UVhUZmdheDZnUnFIY3hoa08yaHc9PSIsInZhbHVlIjoicEVNT3B0YTBmNDZheG0rL3F6VVNleVBrWTlxY3J4aXExUWhvcW9oTEdvMkJ3THhyaktQMk45SGVIbjBDZmEzeXBWeFVqbWZZT2NMdlVPNWFBZUhGVE5FZUZiNXNoQm04QmJOdzJORmFydjhuMzh3QVZZczNnZG1uUW9kV0s0TUwiLCJtYWMiOiIwNmFiZjFmMGNmYWQ0M2EyZTM1NTE5NTAwYTQ0NDhiZDY1ZmU0NzIxMmQ4MTZlMmI1MTYzYWUyMjBiYWJhYmZhIiwidGFnIjoiIn0%3D',
+    APPROVER_HISTORY_EVENT_ID: '48',
+    APPROVER_PENDING_EVENT_ID: '48',
+    ORG_EVENT_ID: '48',
+    VENUE_ID: '2',
+    DOCUMENT_ID: '55',
+    NEXO_API_KEY: 'evf_live_Gd4bJHnCksU1cOzUba2vZVd0P3m7WQi-8F2y9tLrAcY',
+    NEXO_SOURCE_ID: 'nexo',
 };
 
 const BASE_URL = (__ENV.BASE_URL || defaults.BASE_URL).replace(/\/+$/, '');
@@ -56,14 +56,14 @@ const sessionCookie = __ENV.SESSION_COOKIE || defaults.SESSION_COOKIE;
 if (!sessionCookie) throw new Error('SESSION_COOKIE is required to hit authenticated routes.');
 
 const ids = {
-  approverHistoryEventId: __ENV.APPROVER_HISTORY_EVENT_ID || defaults.APPROVER_HISTORY_EVENT_ID,
-  approverPendingEventId: __ENV.APPROVER_PENDING_EVENT_ID || defaults.APPROVER_PENDING_EVENT_ID,
-  orgEventId: __ENV.ORG_EVENT_ID || defaults.ORG_EVENT_ID,
-  venueId: __ENV.VENUE_ID || defaults.VENUE_ID,
-  documentId: __ENV.DOCUMENT_ID || defaults.DOCUMENT_ID,
+    approverHistoryEventId: __ENV.APPROVER_HISTORY_EVENT_ID || defaults.APPROVER_HISTORY_EVENT_ID,
+    approverPendingEventId: __ENV.APPROVER_PENDING_EVENT_ID || defaults.APPROVER_PENDING_EVENT_ID,
+    orgEventId: __ENV.ORG_EVENT_ID || defaults.ORG_EVENT_ID,
+    venueId: __ENV.VENUE_ID || defaults.VENUE_ID,
+    documentId: __ENV.DOCUMENT_ID || defaults.DOCUMENT_ID,
 };
 Object.entries(ids).forEach(([key, value]) => {
-  if (!value) throw new Error(`Set ${key} to resolve dynamic Livewire routes.`);
+    if (!value) throw new Error(`Set ${key} to resolve dynamic Livewire routes.`);
 });
 
 const nexoApiKey = __ENV.NEXO_API_KEY || defaults.NEXO_API_KEY;
@@ -73,91 +73,92 @@ const nexoSourceId = __ENV.NEXO_SOURCE_ID || defaults.NEXO_SOURCE_ID;
 const authHeaders = { Cookie: sessionCookie };
 
 const endpoints = [
-  { tag: 'public-calendar', path: '/', requiresAuth: false },
-  { tag: 'admin-users', path: '/admin/users' },
-  { tag: 'admin-departments', path: '/admin/departments' },
-  { tag: 'admin-venues', path: '/admin/venues' },
-  { tag: 'dsca-categories', path: '/dsca/categories' },
-  { tag: 'admin-events', path: '/admin/events' },
-  { tag: 'admin-audit-log', path: '/admin/audit-log' },
-  { tag: 'admin-audit-download', path: '/admin/audit-log/download' },
-  { tag: 'approver-history-index', path: '/approver/requests/history' },
-  { tag: 'approver-history-details', path: () => `/approver/requests/history/${ids.approverHistoryEventId}` },
-  { tag: 'approver-pending-index', path: '/approver/requests/pending' },
-  { tag: 'approver-pending-details', path: () => `/approver/requests/pending/${ids.approverPendingEventId}` },
-  { tag: 'org-requests-index', path: '/user/requests' },
-  { tag: 'org-requests-details', path: () => `/user/requests/${ids.orgEventId}` },
-  { tag: 'venues-index', path: '/venues' },
-  { tag: 'venues-show', path: () => `/venues/${ids.venueId}` },
-  { tag: 'venues-requirements', path: () => `/venues/requirements/${ids.venueId}` },
-  { tag: 'event-create', path: '/event/create' },
-  { tag: 'events-create-alias', path: '/events/create' },
-  { tag: 'director-venues', path: '/director' },
-  { tag: 'documents-show', path: () => `/documents/${ids.documentId}` },
-  { tag: 'documents-pdf', path: () => `/documents/${ids.documentId}/pdf` },
-  {
-    tag: 'nexo-import',
-    method: 'POST',
-    path: '/api/nexo-import',
-    requiresAuth: false,
-    requiresApiKey: true,
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    payload: (vu, iter) => JSON.stringify({
-      source_id: nexoSourceId,
-      payload: {
-        name: `Load Test Org ${vu}-${iter}`,
-        email: `loadtest+${vu}-${iter}@example.com`,
-        assoc_id: 10000 + vu * 100 + iter,
-        association_name: 'Load Test Association',
-        counselor: 'Load Tester',
-        email_counselor: 'loadtester@example.com',
-      },
-    }),
-    expectedStatus: [200],
-  },
+    { tag: 'public-calendar', path: '/', requiresAuth: false },
+    { tag: 'mail-preview', path: '/mail/test', requiresAuth: false },
+    { tag: 'admin-users', path: '/admin/users' },
+    { tag: 'admin-departments', path: '/admin/departments' },
+    { tag: 'admin-venues', path: '/admin/venues' },
+    { tag: 'dsca-categories', path: '/dsca/categories' },
+    { tag: 'admin-events', path: '/admin/events' },
+    { tag: 'admin-audit-log', path: '/admin/audit-log' },
+    { tag: 'admin-audit-download', path: '/admin/audit-log/download' },
+    { tag: 'approver-history-index', path: '/approver/requests/history' },
+    { tag: 'approver-history-details', path: () => `/approver/requests/history/${ids.approverHistoryEventId}` },
+    { tag: 'approver-pending-index', path: '/approver/requests/pending' },
+    { tag: 'approver-pending-details', path: () => `/approver/requests/pending/${ids.approverPendingEventId}` },
+    { tag: 'org-requests-index', path: '/user/requests' },
+    { tag: 'org-requests-details', path: () => `/user/requests/${ids.orgEventId}` },
+    { tag: 'venues-index', path: '/venues' },
+    { tag: 'venues-show', path: () => `/venues/${ids.venueId}` },
+    { tag: 'venues-requirements', path: () => `/venues/requirements/${ids.venueId}` },
+    { tag: 'event-create', path: '/event/create' },
+    { tag: 'events-create-alias', path: '/events/create' },
+    { tag: 'director-venues', path: '/director' },
+    { tag: 'documents-show', path: () => `/documents/${ids.documentId}` },
+    { tag: 'documents-pdf', path: () => `/documents/${ids.documentId}/pdf` },
+    {
+        tag: 'nexo-import',
+        method: 'POST',
+        path: '/api/nexo-import',
+        requiresAuth: false,
+        requiresApiKey: true,
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        payload: (vu, iter) => JSON.stringify({
+            source_id: nexoSourceId,
+            payload: {
+                name: `Load Test Org ${vu}-${iter}`,
+                email: `loadtest+${vu}-${iter}@example.com`,
+                assoc_id: 10000 + vu * 100 + iter,
+                association_name: 'Load Test Association',
+                counselor: 'Load Tester',
+                email_counselor: 'loadtester@example.com',
+            },
+        }),
+        expectedStatus: [200],
+    },
 ];
 
 export default function () {
-  const vu = exec.vu.idInInstance;
-  const iter = exec.scenario.iterationInInstance;
+    const vu = exec.vu.idInInstance;
+    const iter = exec.scenario.iterationInInstance;
 
-  endpoints.forEach((endpoint) => {
-    const res = hitEndpoint(endpoint, vu, iter);
-    check(res, {
-      [`${endpoint.tag}: status`]: (r) => (endpoint.expectedStatus || [200]).includes(r.status),
-      [`${endpoint.tag}: <3s`]: (r) => r.timings.duration < 3000,
-    }, { endpoint: endpoint.tag });
+    endpoints.forEach((endpoint) => {
+        const res = hitEndpoint(endpoint, vu, iter);
+        check(res, {
+            [`${endpoint.tag}: status`]: (r) => (endpoint.expectedStatus || [200]).includes(r.status),
+            [`${endpoint.tag}: <3s`]: (r) => r.timings.duration < 3000,
+        }, { endpoint: endpoint.tag });
 
-    sleep(0.3 + Math.random() * 0.7);
-  });
+        sleep(0.3 + Math.random() * 0.7);
+    });
 }
 
 function hitEndpoint(endpoint, vu, iter) {
-  const method = endpoint.method || 'GET';
-  const path = typeof endpoint.path === 'function' ? endpoint.path() : endpoint.path;
-  const url = `${BASE_URL}${path}`;
-  const params = buildParams(endpoint);
-  const bodyBuilder = endpoint.payload;
-  const body = (method === 'GET' || method === 'DELETE')
-    ? null
-    : (typeof bodyBuilder === 'function' ? bodyBuilder(vu, iter) : bodyBuilder);
+    const method = endpoint.method || 'GET';
+    const path = typeof endpoint.path === 'function' ? endpoint.path() : endpoint.path;
+    const url = `${BASE_URL}${path}`;
+    const params = buildParams(endpoint);
+    const bodyBuilder = endpoint.payload;
+    const body = (method === 'GET' || method === 'DELETE')
+        ? null
+        : (typeof bodyBuilder === 'function' ? bodyBuilder(vu, iter) : bodyBuilder);
 
-  return http.request(method, url, body, params);
+    return http.request(method, url, body, params);
 }
 
 function buildParams(endpoint) {
-  const headers = Object.assign(
-    { 'User-Agent': 'eventflow-load-test/1.0' },
-    endpoint.requiresAuth === false ? {} : authHeaders,
-    endpoint.requiresApiKey ? { 'X-API-KEY': nexoApiKey } : {},
-    endpoint.headers || {},
-  );
+    const headers = Object.assign(
+        { 'User-Agent': 'eventflow-load-test/1.0' },
+        endpoint.requiresAuth === false ? {} : authHeaders,
+        endpoint.requiresApiKey ? { 'X-API-KEY': nexoApiKey } : {},
+        endpoint.headers || {},
+    );
 
-  return {
-    headers,
-    tags: {
-      endpoint: endpoint.tag,
-      group: endpoint.tag.includes('nexo') ? 'api' : 'web',
-    },
-  };
+    return {
+        headers,
+        tags: {
+            endpoint: endpoint.tag,
+            group: endpoint.tag.includes('nexo') ? 'api' : 'web',
+        },
+    };
 }
