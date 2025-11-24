@@ -22,8 +22,8 @@ export const options = {
             executor: 'ramping-vus',
             startVUs: 20,
             stages: [
-                { duration: '1m', target: 100 },
-                { duration: '3m', target: 100 },
+                { duration: '1m', target: 200 },
+                { duration: '3m', target: 200 },
                 { duration: '30s', target: 0 },
             ],
             gracefulRampDown: '30s',
@@ -39,7 +39,7 @@ export const options = {
 
 const defaults = {
     BASE_URL: 'https://eventflow.uprm.edu',
-    SESSION_COOKIE: 'eventflow_session=eyJpdiI6ImJhZlhuUFhxcGNOSzlPT0piaW5ObFE9PSIsInZhbHVlIjoiNTdHNHJlajU0aUl0THg3TjJCY25hWnF1NVZSVUxFRVhsWitIWUV6Und4UUpEZGlqVXFyVnVxNXJFQ3Z0ckRSZ1poRDF0RjdCNVRuVWpEUXZ0dGY2TnIyMGY0SE0yaEt0dWdwR282d092TGUrM2ZQQ1hhSmNvNUdhSEUyd3JibDQiLCJtYWMiOiI5MGRiMTcyNmM4OTU4OTdiMjBjZDIwNGNiYWFiMTVkM2JlZDM3NGNjNWFmZDBlYjA0YTg5ODFhMTVlYjdlNGI4IiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6IllrVko4Zno0NElONjI3b0hEZ2ZMQmc9PSIsInZhbHVlIjoibk9zM2NKQ216eEg2NTRBL3hNRG55RmNVNWJNaUd4dXJrb0hoYWVEWEdRWUxIWTlwazEzUE50RnEzOFF2VHJIL2Z0djJLU1dwNytBellJSEFVekJYVGs5TVI1Y1Q5V3d0NUVma0JDTjVYd0o3eEh4K2pwa0JidjNDZmlCVUlMMkMiLCJtYWMiOiI0MjkyYjU5OGU2NzVmMzQyOGMxNDM3MDE4MjAwMDEzY2E5ZTdmODRjYzcyMzJlZWNhNDNjNWUzNzZiZGU1Y2YzIiwidGFnIjoiIn0%3D',
+    SESSION_COOKIE: 'eventflow_session=eyJpdiI6Ikh4OGRHTXFBbE1HTGNORVUxZWZWbEE9PSIsInZhbHVlIjoiU2lXTTdTc0VoQVFJbjViMVR2OXhVM0VZb0k0WUJkNUQ4ZHh1MDlMRDdUN1lSYXZrVHJPZm4vVHVVSzZEVTNvQ2NkS1lRZDRKbit5di8zNFN0Zm1xUFhFc250OXVtSmxndm1zdWVDWHFTbnpPeWx6bEVmWlpiNEkxQVI0WWh4TEsiLCJtYWMiOiJiMTRhY2FiYTE1YWQ0MGIwOGZlY2YxNmE2MGQzZGNhMmRmZGZkZDJlY2MwMTRkYjQyNmM3MWYzNDJhMmYzYWMxIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6IkM5NHlLZk95SitXTzNFcGZUbHpwQ1E9PSIsInZhbHVlIjoiOGt2M1B6bmZMSTRaaUhBVzFyNitsSkRBQUhoaW9QZ3B4bWt6K3kydGdzU2N5MkZyS0g2RWxNa0EvUjRLZGd5Wm9ORDdQeW04UFNJMlF3NEE0T3I4NVVUSXd2dDZnN1NBSU5zUGxtRWtyZWhtaUFSaUlvZzE3N3dtejlSdHdiUkwiLCJtYWMiOiIwMWJhZGQ2YzZjNmFjMmQ3MDM3MGEyMTRiNzE0MmU5MGM3ZTFiMDdhNWRiYzEzOWRiMGE1NWE2YjBiMmM5NjgyIiwidGFnIjoiIn0%3D',
     APPROVER_HISTORY_EVENT_ID: '48',
     APPROVER_PENDING_EVENT_ID: '48',
     ORG_EVENT_ID: '48',
@@ -74,7 +74,7 @@ const authHeaders = { Cookie: sessionCookie };
 
 const endpoints = [
     { tag: 'public-calendar', path: '/', requiresAuth: false },
-    { tag: 'mail-preview', path: '/mail/test', requiresAuth: false },
+    // { tag: 'mail-preview', path: '/mail/test', requiresAuth: false },
     { tag: 'admin-users', path: '/admin/users' },
     { tag: 'admin-departments', path: '/admin/departments' },
     { tag: 'admin-venues', path: '/admin/venues' },
