@@ -37,26 +37,38 @@ export const options = {
   userAgent: 'eventflow-load-test/1.0',
 };
 
-const BASE_URL = (__ENV.BASE_URL || '').replace(/\/+$/, '');
+const defaults = {
+  BASE_URL: 'https://eventflow.uprm.edu',
+  SESSION_COOKIE: 'eventflow_session=eyJpdiI6IkF6Y3dDYWJVTXhjd1pMaTN2Z2huTEE9PSIsInZhbHVlIjoiLzFyRk8ybUhyQU4zcForRGw2S01EMldGbCt6aXJ4azZCQUFPNjRmTnl0ZDlzRU12ZkcxYWE4WVduOXB1TTRVWktrNmo5OFFTTk9TZjRBb3dQM1RjR05UTW1RTTl3SWJtbXc4YjUwbndvRHRyNmE2OGV0ZGxWbDZzSDh2UFZQUUkiLCJtYWMiOiIwNGNkZGIyYmE5YzVmMjc2ZDU4MTE4MWJlOWE0OWFlYTNmZmIzOGY3MmQ4OWVhOTBmMzYxYjFmMmRmMzA3NDUwIiwidGFnIjoiIn0%3D; XSRF-TOKEN=.eyJpdiI6Ilc3UVhUZmdheDZnUnFIY3hoa08yaHc9PSIsInZhbHVlIjoicEVNT3B0YTBmNDZheG0rL3F6VVNleVBrWTlxY3J4aXExUWhvcW9oTEdvMkJ3THhyaktQMk45SGVIbjBDZmEzeXBWeFVqbWZZT2NMdlVPNWFBZUhGVE5FZUZiNXNoQm04QmJOdzJORmFydjhuMzh3QVZZczNnZG1uUW9kV0s0TUwiLCJtYWMiOiIwNmFiZjFmMGNmYWQ0M2EyZTM1NTE5NTAwYTQ0NDhiZDY1ZmU0NzIxMmQ4MTZlMmI1MTYzYWUyMjBiYWJhYmZhIiwidGFnIjoiIn0%3D',
+  APPROVER_HISTORY_EVENT_ID: '48',
+  APPROVER_PENDING_EVENT_ID: '48',
+  ORG_EVENT_ID: '48',
+  VENUE_ID: '2',
+  DOCUMENT_ID: '55',
+  NEXO_API_KEY: 'evf_live_Gd4bJHnCksU1cOzUba2vZVd0P3m7WQi-8F2y9tLrAcY',
+  NEXO_SOURCE_ID: 'nexo',
+};
+
+const BASE_URL = (__ENV.BASE_URL || defaults.BASE_URL).replace(/\/+$/, '');
 if (!BASE_URL) throw new Error('Set BASE_URL (e.g., https://eventflow.test)');
 
-const sessionCookie = __ENV.SESSION_COOKIE;
+const sessionCookie = __ENV.SESSION_COOKIE || defaults.SESSION_COOKIE;
 if (!sessionCookie) throw new Error('SESSION_COOKIE is required to hit authenticated routes.');
 
 const ids = {
-  approverHistoryEventId: __ENV.APPROVER_HISTORY_EVENT_ID,
-  approverPendingEventId: __ENV.APPROVER_PENDING_EVENT_ID,
-  orgEventId: __ENV.ORG_EVENT_ID,
-  venueId: __ENV.VENUE_ID,
-  documentId: __ENV.DOCUMENT_ID,
+  approverHistoryEventId: __ENV.APPROVER_HISTORY_EVENT_ID || defaults.APPROVER_HISTORY_EVENT_ID,
+  approverPendingEventId: __ENV.APPROVER_PENDING_EVENT_ID || defaults.APPROVER_PENDING_EVENT_ID,
+  orgEventId: __ENV.ORG_EVENT_ID || defaults.ORG_EVENT_ID,
+  venueId: __ENV.VENUE_ID || defaults.VENUE_ID,
+  documentId: __ENV.DOCUMENT_ID || defaults.DOCUMENT_ID,
 };
 Object.entries(ids).forEach(([key, value]) => {
   if (!value) throw new Error(`Set ${key} to resolve dynamic Livewire routes.`);
 });
 
-const nexoApiKey = __ENV.NEXO_API_KEY;
+const nexoApiKey = __ENV.NEXO_API_KEY || defaults.NEXO_API_KEY;
 if (!nexoApiKey) throw new Error('Set NEXO_API_KEY to call /api/nexo-import.');
-const nexoSourceId = __ENV.NEXO_SOURCE_ID || 'nexo';
+const nexoSourceId = __ENV.NEXO_SOURCE_ID || defaults.NEXO_SOURCE_ID;
 
 const authHeaders = { Cookie: sessionCookie };
 
