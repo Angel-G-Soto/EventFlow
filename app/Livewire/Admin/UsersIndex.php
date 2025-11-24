@@ -7,6 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
 use App\Livewire\Traits\UserEditState;
+use App\Livewire\Traits\HasJustification;
 use App\Services\UserService;
 use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class UsersIndex extends Component
 
 
     // Traits / shared state
-    use UserFilters, UserEditState;
+    use UserFilters, UserEditState, HasJustification;
 
 
     // Sorting
@@ -294,6 +295,9 @@ class UsersIndex extends Component
         // Allowed departments from DB
         $allowedDepartments = app(DepartmentService::class)->getAllDepartments()->pluck('name')->all();
 
+        // Require justification when editing an existing user or clearing roles
+        $justificationRequired = $this->editId !== null || (($this->actionType ?? '') === 'clear-roles');
+
         return [
             'editName'       => [
                 'required', 'string', 'min:5', 'max:255', 'regex:/^[A-Za-z\s\'\.-]+$/', 'not_regex:/^\s*$/',
@@ -317,7 +321,7 @@ class UsersIndex extends Component
                 }],
             'editRoles.*'    => ['string', 'in:' . implode(',', $allowedRoleCodes)], // validate by ROLE CODE
             'editDepartment' => $deptRequired ? ['required', 'string', 'in:' . implode(',', $allowedDepartments)] : ['nullable', 'string'],
-            'justification'  => ['nullable', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],
+            'justification'  => $this->justificationRules($justificationRequired),
         ];
     }
 

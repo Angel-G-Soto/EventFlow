@@ -8,6 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\VenueFilters;
 use App\Livewire\Traits\VenueEditState;
+use App\Livewire\Traits\HasJustification;
 use App\Services\VenueService;
 use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Log;
 class VenuesIndex extends Component
 {
     // Traits / shared state
-    use VenueFilters, VenueEditState, WithFileUploads;
+    use VenueFilters, VenueEditState, WithFileUploads, HasJustification;
 
     // Properties / backing stores
     public $csvFile;
@@ -292,10 +293,7 @@ class VenuesIndex extends Component
      */
     protected function validateJustification(): void
     {
-        // Enforce normalized justification requirement
-        $this->validate([
-            'justification' => ['required', 'string', 'min:10', 'max:200'],
-        ]);
+        $this->validateJustificationField(true);
     }
 
     // Persist edits / session writes
