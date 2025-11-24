@@ -151,6 +151,30 @@ class VenueService
     }
 
     /**
+     * Get venues for a specific department with optional search and pagination.
+     *
+     * @param int $departmentId
+     * @param string $searchTerm
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getVenuesByDepartmentWithSearch(int $departmentId, string $searchTerm = '', int $perPage = 8): LengthAwarePaginator
+    {
+        $query = Venue::query()
+            ->where('department_id', $departmentId);
+
+        if (!empty(trim($searchTerm))) {
+            $term = '%' . trim($searchTerm) . '%';
+            $query->where(function ($builder) use ($term) {
+                $builder->where('name', 'like', $term)
+                    ->orWhere('code', 'like', $term);
+            });
+        }
+
+        return $query->latest()->paginate($perPage);
+    }
+
+    /**
      * Paginate venues with filtering and lightweight rows for the admin component.
      *
      * @param array<string,mixed> $filters
@@ -1401,4 +1425,6 @@ class VenueService
 
         return $url;
     }
+
+    
 }
