@@ -1467,6 +1467,21 @@ class EventService
         $statusCompleted = str_contains($statusNorm, 'completed');
         $statusApproved = $statusNorm === 'approved';
 
+        // Derive a canonical status code for UI use
+        $statusCode = match (true) {
+            str_contains($statusNorm, 'advisor') => 'pending_advisor',
+            str_contains($statusNorm, 'venue manager') => 'pending_venue_manager',
+            str_contains($statusNorm, 'dsca') => 'pending_dsca',
+            str_contains($statusNorm, 'deanship of administration') => 'pending_deanship',
+            $statusNorm === 'approved' => 'approved',
+            str_contains($statusNorm, 'cancel') => 'cancelled',
+            str_contains($statusNorm, 'withdraw') => 'withdrawn',
+            str_contains($statusNorm, 'reject') || str_contains($statusNorm, 'deny') => 'denied',
+            str_contains($statusNorm, 'complete') || $statusNorm === 'completed' => 'completed',
+            $statusNorm === 'draft' => 'draft',
+            default => $statusNorm !== '' ? $statusNorm : 'unknown',
+        };
+
         $isPast = false;
         try {
             $endAt = null;
@@ -1497,6 +1512,7 @@ class EventService
             'from_edit' => $fromEdit,
             'to_edit' => $toEdit,
             'status' => $status,
+            'status_code' => $statusCode,
             'category' => $category,
             'category_ids' => $categoryIds,
             'updated' => now()->format('Y-m-d H:i'),
