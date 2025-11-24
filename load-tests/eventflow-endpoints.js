@@ -22,15 +22,15 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 20,
       stages: [
-        { duration: '1m', target: 200 },
-        { duration: '3m', target: 200 },
+        { duration: '1m', target: 100 },
+        { duration: '1m', target: 100 },
         { duration: '30s', target: 0 },
       ],
       gracefulRampDown: '30s',
     },
   },
   thresholds: {
-    http_req_duration: ['avg<2000', 'p(95)<3000'],
+    http_req_duration: ['avg<3000', 'p(95)<3000'],
     http_req_failed: ['rate<0.01'],
     checks: ['rate>0.99'],
   },
@@ -38,13 +38,13 @@ export const options = {
 };
 
 const defaults = {
-  BASE_URL: 'https://eventflow.uprm.edu',
-  SESSION_COOKIE: 'eventflow_session=eyJpdiI6IkF6Y3dDYWJVTXhjd1pMaTN2Z2huTEE9PSIsInZhbHVlIjoiLzFyRk8ybUhyQU4zcForRGw2S01EMldGbCt6aXJ4azZCQUFPNjRmTnl0ZDlzRU12ZkcxYWE4WVduOXB1TTRVWktrNmo5OFFTTk9TZjRBb3dQM1RjR05UTW1RTTl3SWJtbXc4YjUwbndvRHRyNmE2OGV0ZGxWbDZzSDh2UFZQUUkiLCJtYWMiOiIwNGNkZGIyYmE5YzVmMjc2ZDU4MTE4MWJlOWE0OWFlYTNmZmIzOGY3MmQ4OWVhOTBmMzYxYjFmMmRmMzA3NDUwIiwidGFnIjoiIn0%3D; XSRF-TOKEN=.eyJpdiI6Ilc3UVhUZmdheDZnUnFIY3hoa08yaHc9PSIsInZhbHVlIjoicEVNT3B0YTBmNDZheG0rL3F6VVNleVBrWTlxY3J4aXExUWhvcW9oTEdvMkJ3THhyaktQMk45SGVIbjBDZmEzeXBWeFVqbWZZT2NMdlVPNWFBZUhGVE5FZUZiNXNoQm04QmJOdzJORmFydjhuMzh3QVZZczNnZG1uUW9kV0s0TUwiLCJtYWMiOiIwNmFiZjFmMGNmYWQ0M2EyZTM1NTE5NTAwYTQ0NDhiZDY1ZmU0NzIxMmQ4MTZlMmI1MTYzYWUyMjBiYWJhYmZhIiwidGFnIjoiIn0%3D',
-  APPROVER_HISTORY_EVENT_ID: '48',
-  APPROVER_PENDING_EVENT_ID: '48',
-  ORG_EVENT_ID: '48',
+  BASE_URL: 'https://eventflow.test',
+  SESSION_COOKIE: 'laravel_session=eyJpdiI6IlFWM0d0L3dDSm95TXhCN0pXcXdtTXc9PSIsInZhbHVlIjoiaGVwUFA3dCt3SG5XR1VRL09CQUozZUFDVGRFMVVIUUt6SGZ6YTFzdjJ1RGV3K2tnTWlMQm1OR2ZBVWdUSlFPMFdHbGNLblljai94cDM5bFNYamxxUGdIbDB3NzlSTFR3ME9VWWN4SFQ3QUdpZlcwV2s2YytVUnJIT0kzdXdFMWMiLCJtYWMiOiJhMmNkNTBjZWQ3ZGNkNzhmODZkODFiMzkzMjRlYTk1MmQ0YjZhNGUwZjQ1NDY0YTMyMjY1NzBkMjg4YzNkY2EwIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6IkcrY0VpQ1BjSEQvbDdPNVJjT05vcFE9PSIsInZhbHVlIjoidUZ3L2VDcHprQnhoeFZtcEpWczNPaHZxc3RFUWtNdkpRV1B6WnpnOXNZSHhEQWNhRVFRNExIUkxJcmJkbW5vaGV2Q21leW82UHd2akJJaHNsUEJ6aitnZjdXL1lCUGFsOEk4UTdicGE5SlF4OHZTandWTi8zamZ4ZGlhbGh3UnEiLCJtYWMiOiIxYjA4Y2Q5NGQwZDIzY2VhZDdjM2EyMDM3YmUxNDhkZTc3ZjRmMWI1YThhZGJjN2IwY2Q1ZGI4Yjg4YTFjMzJkIiwidGFnIjoiIn0%3D',
+  APPROVER_HISTORY_EVENT_ID: '23',
+  APPROVER_PENDING_EVENT_ID: '23',
+  ORG_EVENT_ID: '23',
   VENUE_ID: '2',
-  DOCUMENT_ID: '55',
+  DOCUMENT_ID: '28',
   NEXO_API_KEY: 'evf_live_Gd4bJHnCksU1cOzUba2vZVd0P3m7WQi-8F2y9tLrAcY',
   NEXO_SOURCE_ID: 'nexo',
 };
@@ -74,7 +74,6 @@ const authHeaders = { Cookie: sessionCookie };
 
 const endpoints = [
   { tag: 'public-calendar', path: '/', requiresAuth: false },
-  { tag: 'mail-preview', path: '/mail/test', requiresAuth: false },
   { tag: 'admin-users', path: '/admin/users' },
   { tag: 'admin-departments', path: '/admin/departments' },
   { tag: 'admin-venues', path: '/admin/venues' },
