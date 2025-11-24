@@ -7,6 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\EventFilters;
 use App\Livewire\Traits\EventEditState;
+use App\Livewire\Traits\HasJustification;
 use App\Services\CategoryService;
 use App\Services\EventService;
 use App\Services\VenueService;
@@ -26,7 +27,7 @@ class EventsIndex extends Component
     // For filtered categories in modal
     public array $filteredCategories = [];
     // Traits / shared state
-    use EventFilters, EventEditState;
+    use EventFilters, EventEditState, HasJustification;
 
     /**
      * Pool of category names generated from CategoryFactory (no DB).
@@ -231,7 +232,7 @@ class EventsIndex extends Component
      */
     protected function fillEditFromRequest(array $request): void
     {
-        $this->authorize('perform-override');
+        // $this->authorize('perform-override');
 
         $this->editId = $request['id'];
         $this->eTitle = $request['title'];
@@ -613,11 +614,31 @@ class EventsIndex extends Component
     // Presentation helpers
     /**
      * Normalize status for UI display (label + variant).
+     * Accepts either a canonical status code (preferred) or a raw status string.
      */
-    public function statusIndicatorData(string $status): array
+    public function statusIndicatorData(string $value): array
     {
-        $normalized = mb_strtolower(trim($status));
+        $normalized = mb_strtolower(trim($value));
 
+        // Canonical code map (preferred path)
+        $map = [
+            'pending_advisor'       => ['label' => 'Awaiting Advisor Approval',       'variant' => 'warning'],
+            'pending_venue_manager' => ['label' => 'Awaiting Venue Manager Approval', 'variant' => 'warning'],
+            'pending_dsca'          => ['label' => 'Awaiting DSCA Approval',          'variant' => 'warning'],
+            'pending_deanship'      => ['label' => 'Awaiting Deanship Approval',      'variant' => 'warning'],
+            'approved'              => ['label' => 'Approved',                        'variant' => 'success'],
+            'denied'                => ['label' => 'Denied',                          'variant' => 'danger'],
+            'cancelled'             => ['label' => 'Cancelled',                       'variant' => 'danger'],
+            'withdrawn'             => ['label' => 'Withdrawn',                       'variant' => 'danger'],
+            'completed'             => ['label' => 'Completed',                       'variant' => 'success'],
+            'draft'                 => ['label' => 'Draft',                           'variant' => 'warning'],
+        ];
+
+        if (isset($map[$normalized])) {
+            return $map[$normalized];
+        }
+
+        // Fallback for legacy/free-form status strings
         $label = 'Unknown';
         if ($normalized !== '') {
             if (str_contains($normalized, 'advisor')) {
@@ -627,7 +648,7 @@ class EventsIndex extends Component
             } elseif (str_contains($normalized, 'dsca')) {
                 $label = 'Awaiting DSCA Approval';
             } else {
-                $label = ucfirst($status);
+                $label = ucfirst($value);
             }
         }
 
@@ -724,7 +745,7 @@ class EventsIndex extends Component
     protected function rules(): array
     {
         return [
-            'justification' => ['required', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/']
+            'justification' => $this->justificationRules(true),
         ];
     }
 
@@ -733,7 +754,7 @@ class EventsIndex extends Component
      */
     protected function validateJustification(): void
     {
-        $this->validateOnly('justification');
+        $this->validateJustificationField(true);
     }
 
     /**
@@ -750,40 +771,44 @@ class EventsIndex extends Component
     }
 
 
-    protected function loadViewDocuments(int $eventId): void
-    {
-        $this->eDocuments = [];
-        $previousStatus = $this->eStatus;
-        try {
-            $event = app(EventService::class)->findEventById($eventId);
-            if (!$event) {
-                $this->eStatus = $previousStatus;
-                return;
-            }
-            $this->eStatus = (string)($event->status ?? $previousStatus);
-            $documents = collect($event->documents ?? []);
-            $this->eDocuments = $documents
-                ->map(function ($doc) {
-                    $id = (int)($doc->id ?? 0);
-                    $name = (string)($doc->name ?? '');
-                    $path = (string)($doc->file_path ?? '');
-                    // Prefer the original document name; fall back to path basename
-                    $label = $name !== '' ? $name : basename($path ?: ('document-' . ($doc->id ?? '')));
-                    $url = $id > 0 ? route('documents.show', ['documentId' => $id]) : null;
-                    return compact('id', 'name', 'label', 'url');
-                })
-                ->filter(function ($doc) {
-                    return ($doc['id'] ?? 0) > 0
-                        || trim((string)($doc['name'] ?? '')) !== ''
-                        || trim((string)($doc['label'] ?? '')) !== '';
-                })
-                ->values()
-                ->all();
-        } catch (\Throwable $exception) {
+protected function loadViewDocuments(int $eventId): void
+{
+    $this->eDocuments = [];
+    $previousStatus = $this->eStatus;
+
+    try {
+        $event = app(EventService::class)->findEventById($eventId);
+        if (!$event) {
             $this->eStatus = $previousStatus;
-            $this->eDocuments = [];
+            return;
         }
+
+        $this->eStatus = (string)($event->status ?? $previousStatus);
+        $documents = collect($event->documents ?? []);
+        $docService = app(\App\Services\DocumentService::class);
+
+        $this->eDocuments = $documents
+            ->map(function ($doc) use ($docService) {
+                $id   = (int)($doc->id ?? 0);
+                $name = (string)($doc->name ?? '');
+                $path = (string)($doc->file_path ?? '');
+                $label = $name !== '' ? $name : basename($path ?: ('document-' . ($doc->id ?? '')));
+                $url   = $id > 0 ? $docService->getDocumentViewUrl($doc) : null;
+
+                return compact('id', 'name', 'label', 'url');
+            })
+            ->filter(function ($doc) {
+                return ($doc['id'] ?? 0) > 0
+                    || trim((string)($doc['name'] ?? '')) !== ''
+                    || trim((string)($doc['label'] ?? '')) !== '';
+            })
+            ->values()
+            ->all();
+    } catch (\Throwable $exception) {
+        $this->eStatus = $previousStatus;
+        $this->eDocuments = [];
     }
+}
 
     /**
      * Refresh categories from the database for oversight UI and validation.

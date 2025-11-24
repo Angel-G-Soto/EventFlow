@@ -320,4 +320,14 @@ class DocumentService
             ]);
         }
     }*/
+    public function getDocumentViewUrl(Document $document): ?string
+    {
+        $id = (int) ($document->id ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+
+        // Single place to define the route name/parameter
+        return route('documents.show', ['documentId' => $id]);
+    }
 }

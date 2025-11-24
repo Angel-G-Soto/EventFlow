@@ -130,7 +130,7 @@
             <td>{{ $r['organization'] ?? ($r['organization_nexo_name'] ?? '') }}</td>
             <td>{{ $r['venue'] }}</td>
             <td>
-              @php($status = $this->statusIndicatorData($r['status'] ?? ''))
+              @php($status = $this->statusIndicatorData($r['status_code'] ?? ($r['status'] ?? '')))
               <span class="status-indicator status-indicator--{{ $status['variant'] }}">
                 <span class="status-dot" aria-hidden="true"></span>
                 <span>{{ $status['label'] }}</span>
