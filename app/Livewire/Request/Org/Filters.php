@@ -18,8 +18,8 @@ class Filters extends Component
 
     public function mount(): void
     {
-        // Load roles for current user
-        $this->roles = Auth::user()->roles()->where('name', '<>', 'user')->get(['name'])->toArray();
+        // My Requests view does not filter by role; avoid loading roles.
+        // $this->roles = [];
     }
 
     public function apply(): void

@@ -1,0 +1,475 @@
+{
+    "metrics": {
+        "http_reqs": {
+            "count": 21420,
+            "rate": 71.50692549747848
+        },
+        "http_req_receiving": {
+            "p(80)": 0.144,
+            "p(90)": 0.188,
+            "p(95)": 0.622,
+            "p(99)": 17.186029999999988,
+            "avg": 0.8080857609710556,
+            "min": 0.018,
+            "med": 0.096
+        },
+        "vus": {
+            "min": 4,
+            "max": 200,
+            "value": 4
+        },
+        "iteration_duration": {
+            "p(90)": 241940.4869834,
+            "p(95)": 247065.1710418,
+            "p(99)": 251880.794028,
+            "avg": 164316.81771637057,
+            "min": 21172.519125,
+            "med": 204781.935792,
+            "p(80)": 233612.8509336
+        },
+        "vus_max": {
+            "min": 200,
+            "max": 200,
+            "value": 200
+        },
+        "http_req_blocked": {
+            "p(80)": 0.006,
+            "p(90)": 0.008,
+            "p(95)": 0.01,
+            "p(99)": 28.0502699999997,
+            "avg": 29.05813039216698,
+            "min": 0,
+            "med": 0.001
+        },
+        "iterations": {
+            "count": 197,
+            "rate": 0.6576500617648581
+        },
+        "http_req_failed": {
+            "fails": 19827,
+            "passes": 1593,
+            "thresholds": {
+                "rate<0.01": true
+            },
+            "value": 0.07436974789915966
+        },
+        "http_req_waiting": {
+            "med": 16.494,
+            "p(80)": 5635.254,
+            "p(90)": 7676.3719,
+            "p(95)": 9088.0658,
+            "p(99)": 12688.5998,
+            "avg": 2113.947904388413,
+            "min": 3.728
+        },
+        "http_req_duration": {
+            "p(90)": 7676.4824,
+            "p(95)": 9088.2346,
+            "p(99)": 12688.68978,
+            "avg": 2114.8112051353787,
+            "min": 3.815,
+            "med": 16.7285,
+            "p(80)": 5636.3738,
+            "thresholds": {
+                "avg<2000": true,
+                "p(95)<3000": true
+            }
+        },
+        "http_req_sending": {
+            "avg": 0.05521498599439662,
+            "min": 0.003,
+            "med": 0.041,
+            "p(80)": 0.087,
+            "p(90)": 0.126,
+            "p(95)": 0.156,
+            "p(99)": 0.199
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(99)": 13104.648459999997,
+            "avg": 2283.8776924900317,
+            "min": 5.122,
+            "med": 21.158,
+            "p(80)": 5946.910600000001,
+            "p(90)": 7846.6744,
+            "p(95)": 9218.788499999999
+        },
+        "http_req_connecting": {
+            "avg": 0.8980099439775915,
+            "min": 0,
+            "med": 0,
+            "p(80)": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0.5557399999999897
+        },
+        "data_sent": {
+            "count": 18625023,
+            "rate": 62176.38338234468
+        },
+        "checks": {
+            "passes": 8998,
+            "fails": 4482,
+            "thresholds": {
+                "rate>0.99": true
+            },
+            "value": 0.6675074183976261
+        },
+        "http_req_tls_handshaking": {
+            "min": 0,
+            "med": 0,
+            "p(80)": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 24.594929999999934,
+            "avg": 28.141819000933715
+        },
+        "data_received": {
+            "count": 100129556,
+            "rate": 334265.0187202427
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "public-calendar: status": {
+                    "id": "f4a2bd2a905ce54949f6557dbd0b01da",
+                    "passes": 315,
+                    "fails": 0,
+                    "name": "public-calendar: status",
+                    "path": "::public-calendar: status"
+                },
+                "public-calendar: <3s": {
+                    "passes": 315,
+                    "fails": 0,
+                    "name": "public-calendar: <3s",
+                    "path": "::public-calendar: <3s",
+                    "id": "fed5553f5a4ba7e364e348f2bfc33c61"
+                },
+                "mail-preview: status": {
+                    "name": "mail-preview: status",
+                    "path": "::mail-preview: status",
+                    "id": "a6264d6586667efa795b8b6a3c2e9cd8",
+                    "passes": 0,
+                    "fails": 315
+                },
+                "mail-preview: <3s": {
+                    "name": "mail-preview: <3s",
+                    "path": "::mail-preview: <3s",
+                    "id": "0490845b7b9f553426fb4d8963afe613",
+                    "passes": 315,
+                    "fails": 0
+                },
+                "admin-users: status": {
+                    "passes": 315,
+                    "fails": 0,
+                    "name": "admin-users: status",
+                    "path": "::admin-users: status",
+                    "id": "a9710937c46f5b2e99645d0429e27c5c"
+                },
+                "admin-users: <3s": {
+                    "id": "84f8b3aff97af6eb8436fdf19b2fa2d5",
+                    "passes": 193,
+                    "fails": 122,
+                    "name": "admin-users: <3s",
+                    "path": "::admin-users: <3s"
+                },
+                "admin-departments: status": {
+                    "passes": 315,
+                    "fails": 0,
+                    "name": "admin-departments: status",
+                    "path": "::admin-departments: status",
+                    "id": "33a4a0b8468b3524e11d36ea48f586cb"
+                },
+                "admin-departments: <3s": {
+                    "name": "admin-departments: <3s",
+                    "path": "::admin-departments: <3s",
+                    "id": "80eacdb608db414983654bcc4c094418",
+                    "passes": 151,
+                    "fails": 164
+                },
+                "admin-venues: status": {
+                    "passes": 315,
+                    "fails": 0,
+                    "name": "admin-venues: status",
+                    "path": "::admin-venues: status",
+                    "id": "60c83966b153783a1a9e53b5baa05296"
+                },
+                "admin-venues: <3s": {
+                    "name": "admin-venues: <3s",
+                    "path": "::admin-venues: <3s",
+                    "id": "90c8f4def4b1b17a2940b5712d588f59",
+                    "passes": 148,
+                    "fails": 167
+                },
+                "dsca-categories: status": {
+                    "id": "f201acb8b4874f682a56f58fe37b0f81",
+                    "passes": 314,
+                    "fails": 0,
+                    "name": "dsca-categories: status",
+                    "path": "::dsca-categories: status"
+                },
+                "dsca-categories: <3s": {
+                    "id": "e906a27d6e2e769c35f2c3cf0c1d056d",
+                    "passes": 135,
+                    "fails": 179,
+                    "name": "dsca-categories: <3s",
+                    "path": "::dsca-categories: <3s"
+                },
+                "admin-events: status": {
+                    "name": "admin-events: status",
+                    "path": "::admin-events: status",
+                    "id": "33e9db26773e5b20b8a41482751f3650",
+                    "passes": 311,
+                    "fails": 0
+                },
+                "admin-events: <3s": {
+                    "id": "9befa219043a919f9dd955e8a5b4a5ae",
+                    "passes": 129,
+                    "fails": 182,
+                    "name": "admin-events: <3s",
+                    "path": "::admin-events: <3s"
+                },
+                "admin-audit-log: status": {
+                    "name": "admin-audit-log: status",
+                    "path": "::admin-audit-log: status",
+                    "id": "e515e5030c3c0092f3184f557a8569b0",
+                    "passes": 305,
+                    "fails": 0
+                },
+                "admin-audit-log: <3s": {
+                    "name": "admin-audit-log: <3s",
+                    "path": "::admin-audit-log: <3s",
+                    "id": "806387bc80d04f4c16d14cfdd48dde3d",
+                    "passes": 124,
+                    "fails": 181
+                },
+                "admin-audit-download: status": {
+                    "name": "admin-audit-download: status",
+                    "path": "::admin-audit-download: status",
+                    "id": "b350183c6e836e5c8b1ccaaba03e5a66",
+                    "passes": 301,
+                    "fails": 0
+                },
+                "admin-audit-download: <3s": {
+                    "name": "admin-audit-download: <3s",
+                    "path": "::admin-audit-download: <3s",
+                    "id": "66a5ec90155f422edfeae2949cd2c577",
+                    "passes": 125,
+                    "fails": 176
+                },
+                "approver-history-index: status": {
+                    "name": "approver-history-index: status",
+                    "path": "::approver-history-index: status",
+                    "id": "9e7786505c1a370c699e0b040afa6994",
+                    "passes": 298,
+                    "fails": 0
+                },
+                "approver-history-index: <3s": {
+                    "name": "approver-history-index: <3s",
+                    "path": "::approver-history-index: <3s",
+                    "id": "8db1d991e0c7d46d49c0e92deb2738b6",
+                    "passes": 113,
+                    "fails": 185
+                },
+                "approver-history-details: status": {
+                    "passes": 0,
+                    "fails": 296,
+                    "name": "approver-history-details: status",
+                    "path": "::approver-history-details: status",
+                    "id": "5c694062eb855816861607bbfb4f5ab9"
+                },
+                "approver-history-details: <3s": {
+                    "name": "approver-history-details: <3s",
+                    "path": "::approver-history-details: <3s",
+                    "id": "14449d47a740a7352289a58bb715a519",
+                    "passes": 296,
+                    "fails": 0
+                },
+                "approver-pending-index: status": {
+                    "fails": 0,
+                    "name": "approver-pending-index: status",
+                    "path": "::approver-pending-index: status",
+                    "id": "248e031c5639a82e7444f543b39dd2c0",
+                    "passes": 294
+                },
+                "approver-pending-index: <3s": {
+                    "name": "approver-pending-index: <3s",
+                    "path": "::approver-pending-index: <3s",
+                    "id": "9ecd331b8bbfb967068da0339076e80f",
+                    "passes": 118,
+                    "fails": 176
+                },
+                "approver-pending-details: status": {
+                    "name": "approver-pending-details: status",
+                    "path": "::approver-pending-details: status",
+                    "id": "f60afb75bcfee7db19d12255d4ca3a3b",
+                    "passes": 0,
+                    "fails": 291
+                },
+                "approver-pending-details: <3s": {
+                    "id": "09733cd5814091924b721f8a699a61fd",
+                    "passes": 291,
+                    "fails": 0,
+                    "name": "approver-pending-details: <3s",
+                    "path": "::approver-pending-details: <3s"
+                },
+                "org-requests-index: status": {
+                    "name": "org-requests-index: status",
+                    "path": "::org-requests-index: status",
+                    "id": "cd30c4a02aa380fdf56146a721a19df7",
+                    "passes": 289,
+                    "fails": 0
+                },
+                "org-requests-index: <3s": {
+                    "name": "org-requests-index: <3s",
+                    "path": "::org-requests-index: <3s",
+                    "id": "41680ba6c1daadd33bbdd3674ddc94b1",
+                    "passes": 97,
+                    "fails": 192
+                },
+                "org-requests-details: status": {
+                    "name": "org-requests-details: status",
+                    "path": "::org-requests-details: status",
+                    "id": "6397044ef7e4605fa0c2adb73a68256e",
+                    "passes": 0,
+                    "fails": 288
+                },
+                "org-requests-details: <3s": {
+                    "name": "org-requests-details: <3s",
+                    "path": "::org-requests-details: <3s",
+                    "id": "814ef153ac71d3367a27a8f689217d73",
+                    "passes": 288,
+                    "fails": 0
+                },
+                "venues-index: status": {
+                    "name": "venues-index: status",
+                    "path": "::venues-index: status",
+                    "id": "60b647095bd5c9e7a13fdfa4d90dfd60",
+                    "passes": 283,
+                    "fails": 0
+                },
+                "venues-index: <3s": {
+                    "name": "venues-index: <3s",
+                    "path": "::venues-index: <3s",
+                    "id": "b40efa8955dc86833f58c78a328b96dd",
+                    "passes": 105,
+                    "fails": 178
+                },
+                "venues-show: status": {
+                    "fails": 0,
+                    "name": "venues-show: status",
+                    "path": "::venues-show: status",
+                    "id": "6c496e236f1af46b92d0f57c82c1cada",
+                    "passes": 282
+                },
+                "venues-show: <3s": {
+                    "id": "8c69d8e4735c72747989940109057c20",
+                    "passes": 87,
+                    "fails": 195,
+                    "name": "venues-show: <3s",
+                    "path": "::venues-show: <3s"
+                },
+                "venues-requirements: status": {
+                    "fails": 0,
+                    "name": "venues-requirements: status",
+                    "path": "::venues-requirements: status",
+                    "id": "a6d3b0946915686d6dd2c1a517be418c",
+                    "passes": 278
+                },
+                "venues-requirements: <3s": {
+                    "name": "venues-requirements: <3s",
+                    "path": "::venues-requirements: <3s",
+                    "id": "5130daadda82c663662aa2ccb43eebae",
+                    "passes": 87,
+                    "fails": 191
+                },
+                "event-create: status": {
+                    "name": "event-create: status",
+                    "path": "::event-create: status",
+                    "id": "b90065210ad7f2963beafade795807f9",
+                    "passes": 263,
+                    "fails": 0
+                },
+                "event-create: <3s": {
+                    "name": "event-create: <3s",
+                    "path": "::event-create: <3s",
+                    "id": "fecbcc9a33e1da3f5391edbf5e3f925e",
+                    "passes": 88,
+                    "fails": 175
+                },
+                "events-create-alias: status": {
+                    "passes": 239,
+                    "fails": 0,
+                    "name": "events-create-alias: status",
+                    "path": "::events-create-alias: status",
+                    "id": "ba5c2d6950b92a8065b8cf93cd450eb9"
+                },
+                "events-create-alias: <3s": {
+                    "name": "events-create-alias: <3s",
+                    "path": "::events-create-alias: <3s",
+                    "id": "38b3b48cb031f044d63cd36ef21d9bb0",
+                    "passes": 83,
+                    "fails": 156
+                },
+                "director-venues: status": {
+                    "fails": 0,
+                    "name": "director-venues: status",
+                    "path": "::director-venues: status",
+                    "id": "a4b8b7c7bcac20fcf4131c437fe46e7d",
+                    "passes": 223
+                },
+                "director-venues: <3s": {
+                    "id": "b2630f027652d9318ec0f8f730f53c97",
+                    "passes": 89,
+                    "fails": 134,
+                    "name": "director-venues: <3s",
+                    "path": "::director-venues: <3s"
+                },
+                "documents-show: status": {
+                    "name": "documents-show: status",
+                    "path": "::documents-show: status",
+                    "id": "6081b3cc06bb9ba6ab31f2317e461934",
+                    "passes": 207,
+                    "fails": 0
+                },
+                "documents-show: <3s": {
+                    "fails": 136,
+                    "name": "documents-show: <3s",
+                    "path": "::documents-show: <3s",
+                    "id": "18e667251dee6f84c3de02e09522f2ba",
+                    "passes": 71
+                },
+                "documents-pdf: status": {
+                    "fails": 204,
+                    "name": "documents-pdf: status",
+                    "path": "::documents-pdf: status",
+                    "id": "7f3f4c04ac3952231c46673b6093175a",
+                    "passes": 0
+                },
+                "documents-pdf: <3s": {
+                    "passes": 204,
+                    "fails": 0,
+                    "name": "documents-pdf: <3s",
+                    "path": "::documents-pdf: <3s",
+                    "id": "d0b57561c6016af0944c22f5469a88b4"
+                },
+                "nexo-import: status": {
+                    "name": "nexo-import: status",
+                    "path": "::nexo-import: status",
+                    "id": "b19754878acf5bcb7e27b5f44bab4b99",
+                    "passes": 0,
+                    "fails": 199
+                },
+                "nexo-import: <3s": {
+                    "id": "d62a463ef931199e508e14c9d1fcc51c",
+                    "passes": 199,
+                    "fails": 0,
+                    "name": "nexo-import: <3s",
+                    "path": "::nexo-import: <3s"
+                }
+            }
+    }
+}
