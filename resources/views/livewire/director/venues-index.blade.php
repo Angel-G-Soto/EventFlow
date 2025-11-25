@@ -2,11 +2,14 @@
 <div>
 <div class="container py-4">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="h4 mb-0">{{ $department->name ?? 'Department' }} Venues</h1>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h4 mb-0">Department Venues</h1>
+            <span class="text-muted small">({{ $department->name ?? 'Department' }})</span>
+        </div>
 
         <div class="d-none d-md-flex gap-2">
             <button type="button" class="btn btn-primary btn-sm"  wire:click="$dispatch('open-modal', { id: 'emailModal' })" aria-label="Add manager" title="Add manager to department">
-                <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Add Manager
+                <i class="bi bi-plus-circle me-1" aria-hidden="true"></i> Add Venue Manager
             </button>
         </div>
     </div>

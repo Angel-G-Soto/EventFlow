@@ -714,6 +714,7 @@ public function removeRequirementFile(int $index): void
             'guest_size' => $this->guest_size??0,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
+            'organization_name' => $this->organization_name,
             'organization_advisor_name' => $this->organization_advisor_name,
             'organization_advisor_email' => $this->organization_advisor_email,
             'organization_advisor_phone' => $this->organization_advisor_phone,

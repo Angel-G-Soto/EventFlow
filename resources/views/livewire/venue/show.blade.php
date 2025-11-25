@@ -65,8 +65,13 @@
     <div class="card-body">
         {{-- Definition list provides good semantics for “label : value” layouts --}}
         <dl class="row mb-0">
+            <dt class="col-sm-4">Code:</dt>
+            <dd class="col-sm-8">{{ $venue->code }}</dd>
+
             <dt class="col-sm-4">Name:</dt>
             <dd class="col-sm-8">{{ $venue->name }}</dd>
+
+
 
             <dt class="col-sm-4">Department:</dt>
             <dd class="col-sm-8">{{ $venue->department->name ?? '—' }}</dd>

@@ -50,6 +50,8 @@ class Index extends Component
      */
     public string $searchTerm = '';
 
+    public string $departmentName = '';
+
     protected VenueService $venueService;
 /**
  * Configure action.
@@ -93,6 +95,8 @@ class Index extends Component
             Auth::user()->department_id,
             $this->searchTerm
         );
+
+        $this->departmentName = Auth::user()->department->name ?? 'Department';
 
         return view('livewire.venue.index', compact('venues'));
     }
