@@ -42,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         })->dailyAt('01:00');
 
         // Perform daily backup at 2:00 AM
-        $schedule->command('backup:daily')->dailyAt('02:00');
+        $schedule->command('backup:dump')->dailyAt('02:00');
 
         // $schedule->exec('freshclam')->weeklyOn(6, '00:00'); // Commented out since freshclam is running on the background as a daemon
     })
