@@ -315,7 +315,7 @@ class EventService
             $this->auditService->logAction(
                 $actorId,
                 'event',
-                'EVENT_DENIED',
+                'EVENT_REJECTED',
                 $eventLabel,
                 $ctx
             );
@@ -1538,7 +1538,7 @@ class EventService
             $statusNorm === 'approved' => 'approved',
             str_contains($statusNorm, 'cancel') => 'cancelled',
             str_contains($statusNorm, 'withdraw') => 'withdrawn',
-            str_contains($statusNorm, 'reject') || str_contains($statusNorm, 'deny') => 'denied',
+            str_contains($statusNorm, 'reject') || str_contains($statusNorm, 'deny') => 'rejected',
             str_contains($statusNorm, 'complete') || $statusNorm === 'completed' => 'completed',
             $statusNorm === 'draft' => 'draft',
             default => $statusNorm !== '' ? $statusNorm : 'unknown',
