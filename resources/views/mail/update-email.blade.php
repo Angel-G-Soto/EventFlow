@@ -5,7 +5,14 @@
 
 @section('content')
 
-    <h3>The following event has been approved by {{$approverName}} ({{$role}})</h3>
+    @if ($role === "System Administrator" )
+        <h3>The following event request has been advanced in the approval process by a System Adminstrator</h3>
+
+    @else
+        <h3>The following event request has been approved by {{$approverName}} ({{$role}})</h3>
+    @endif
+
+    
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
         <tr>
             <td align="center" style="padding:16px;">

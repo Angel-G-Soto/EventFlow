@@ -439,6 +439,10 @@ class EventService
                     ]
                 );
             }
+            $this->sendApproverEmails($result);
+            $this->sendCreatorUpdateEmail($result, $user->first_name . ' ' . $user->last_name, $currentStatus,true);
+
+            
 
             return $result;
         });
@@ -1694,7 +1698,7 @@ class EventService
         }
 
 
-    public function sendCreatorUpdateEmail(Event $event, string $approverName, string $statusWhenApproved){
+    public function sendCreatorUpdateEmail(Event $event, string $approverName, string $statusWhenApproved, bool $advance = false){
 //            pending - venue manager approval' => 'pending - dsca approval',
 
 //        $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
@@ -1711,7 +1715,7 @@ class EventService
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
-                    role: 'Advisor'
+                    role: $advance ? 'System Administrator' : 'Advisor'
                 );
 
                 break;
@@ -1722,7 +1726,7 @@ class EventService
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
-                    role: 'Venue Manager'
+                    role: $advance ? 'System Administrator': 'Venue Manager'
                 );
 
                 break;
@@ -1731,15 +1735,16 @@ class EventService
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
-                    role: 'DSCA Staff'
-                );
+                    role: $advance ? 'System Administrator':'DSCA Staff'
+                );               
+               
 
                 $this->notificationService->dispatchSanctionedNotification(
                     creatorEmail:$creatorEmail,
                     eventDetails: $eventDetails,
                 );
 
-                break;
+            break;
 
         }
 

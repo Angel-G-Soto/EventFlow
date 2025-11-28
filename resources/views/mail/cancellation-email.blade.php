@@ -5,7 +5,7 @@
 
 @section('content')
     <!-- Email-safe, inline-styled list -->
-    <h3>The following event has been cancelled</h3>
+    <h3>The following event request has been cancelled</h3>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
         <tr>
             <td align="center" style="padding:16px;">
