@@ -1,26 +1,37 @@
 @php
-use Illuminate\Support\Facades\Auth;
-$user = Auth::user();
-$roleNames = $user && method_exists($user, 'getRoleNames') ? $user->getRoleNames()->map(fn($r) =>
-Illuminate\Support\Str::slug($r)) : collect();
-$isAdmin = $roleNames->contains('system-admin') || $roleNames->contains('system-administrator') ||
-$roleNames->contains('admin');
-$isAdvisor = $roleNames->contains('advisor');
-$isApprover = $roleNames->contains('event-approver');
-$isVenueManager = $roleNames->contains('venue-manager');
-$isDirector = $roleNames->contains('department-director');
+$navbar = app(\App\Services\UserService::class)->getNavbarContext();
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark" aria-label="Primary site navigation"
   style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
-    <a class="navbar-brand fw-semibold" href="https://eventflow.uprm.edu/">
+    <div class="d-flex align-items-center justify-content-between gap-2 d-lg-none mb-2 w-100">
+      <a class="navbar-brand fw-semibold" href="https://eventflow.uprm.edu/">
+        <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
+        EventFlow</a>
+      <div class="d-flex align-items-center gap-1">
+        @if($navbar['shouldShowPendingBell'])
+        <a href="{{ route('approver.pending.index') }}"
+          class="btn btn-success-subtle p-2 text-white position-relative d-inline-flex align-items-center"
+          title="Pending approvals" aria-label="View pending approvals ({{ $navbar['pendingApprovalsCount'] }})">
+          <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
+          @if($navbar['pendingApprovalsCount'] > 0)
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
+          </span>
+          @endif
+        </a>
+        @endif
+        <button class="navbar-toggler d-flex align-items-center d-lg-none" type="button" data-bs-toggle="collapse"
+          data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </div>
+
+    <a class="navbar-brand fw-semibold d-none d-lg-inline-flex align-items-center" href="https://eventflow.uprm.edu/">
       <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
       EventFlow</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
-      aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
 
     <style>
       /* Accent color */
@@ -47,7 +58,7 @@ $isDirector = $roleNames->contains('department-director');
 
     <div id="navMain" class="collapse navbar-collapse">
       <ul class="navbar-nav mr-auto">
-        @if($user)
+        @if($navbar['user'])
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('public.calendar') ? 'active' : '' }}"
             href="{{ route('public.calendar') }}">
@@ -63,7 +74,7 @@ $isDirector = $roleNames->contains('department-director');
         </li>
         @endif
 
-        @if($isAdvisor || $isApprover)
+        @if($navbar['isAdvisor'] || $navbar['isApprover'])
         <li class="nav-item dropdown">
           <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('approver.history.index') || Route::is('approver.pending.index') ? 'active' : '' }}"
             href="#" id="requestsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -82,7 +93,7 @@ $isDirector = $roleNames->contains('department-director');
         </li>
         @endif
 
-        @if($isVenueManager)
+        @if($navbar['isVenueManager'])
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ (Route::is('venues.manage') || Route::is('venue.index')) ? 'active ' : '' }}"
             href="{{ route('venues.manage') }}">
@@ -91,7 +102,7 @@ $isDirector = $roleNames->contains('department-director');
         </li>
         @endif
 
-        @if($isDirector)
+        @if($navbar['isDirector'])
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('director.venues.index') ? 'active' : '' }}"
             href="{{ route('director.venues.index') }}">
@@ -100,9 +111,18 @@ $isDirector = $roleNames->contains('department-director');
         </li>
         @endif
 
-        @if($isAdmin)
+        @if($navbar['isApprover'])
+        <li class="nav-item">
+          <a class="nav-link text-nowrap fw-bold {{ Route::is('dsca.categories') ? 'active' : '' }}"
+            href="{{ route('dsca.categories') }}">
+            Categories
+          </a>
+        </li>
+        @endif
+
+        @if($navbar['isAdmin'])
         <li class="nav-item dropdown">
-          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.categories') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
+          <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('admin.users') || Route::is('admin.departments') || Route::is('admin.venues') || Route::is('admin.events') || Route::is('admin.audit') ? 'active' : '' }}"
             href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Administrator
           </a>
@@ -113,8 +133,6 @@ $isDirector = $roleNames->contains('department-director');
                 href="{{ route('admin.departments') }}">Departments</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.venues') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.venues') }}">Venues</a></li>
-            <li><a class="dropdown-item {{ Route::is('admin.categories') ? 'active fw-bold bg-accent' : '' }}"
-                href="{{ route('admin.categories') }}">Categories</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.events') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.events') }}">Events</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.audit') ? 'active fw-bold bg-accent' : '' }}"
@@ -126,16 +144,24 @@ $isDirector = $roleNames->contains('department-director');
 
       <div class="d-flex w-100 mt-2 mt-lg-0 justify-content-between justify-content-lg-end align-items-center gap-2">
         <div class="d-flex gap-2">
-          {{-- <button class="btn btn-success-subtle p-2 text-white" type="button" title="Notifications"
-            aria-label="Open notifications">
-            <i class="bi bi-bell"></i>
-          </button>--}}
+          @if($navbar['shouldShowPendingBell'])
+          <a href="{{ route('approver.pending.index') }}"
+            class="btn btn-success-subtle p-2 text-white position-relative d-none d-lg-inline-flex align-items-center"
+            title="Pending approvals" aria-label="View pending approvals ({{ $navbar['pendingApprovalsCount'] }})">
+          <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
+          @if($navbar['pendingApprovalsCount'] > 0)
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
+          </span>
+          @endif
+        </a>
+          @endif
           <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
             <i class="bi bi-question-lg"></i>
           </button>
         </div>
         <div class="ms-auto ms-lg-0">
-          @if(Auth::check())
+          @if(auth()->check())
           <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0"
             aria-label="Log out form">
             @csrf

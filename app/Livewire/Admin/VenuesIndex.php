@@ -8,6 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\VenueFilters;
 use App\Livewire\Traits\VenueEditState;
+use App\Livewire\Traits\HasJustification;
 use App\Services\VenueService;
 use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Log;
 class VenuesIndex extends Component
 {
     // Traits / shared state
-    use VenueFilters, VenueEditState, WithFileUploads;
+    use VenueFilters, VenueEditState, WithFileUploads, HasJustification;
 
     // Properties / backing stores
     public $csvFile;
@@ -75,7 +76,6 @@ class VenuesIndex extends Component
         $this->search = '';
         $this->department = '';
         $this->capMin = null;
-        $this->capMax = null;
         $this->page = 1;
     }
 
@@ -93,6 +93,14 @@ class VenuesIndex extends Component
     public function goToPage(int $target): void
     {
         $this->page = max(1, $target);
+    }
+
+    /**
+     * Normalize capMin as user types and reset pagination.
+     */
+    public function updatedCapMin($value): void
+    {
+        $this->page = 1;
     }
 
     // Filters: search update reaction
@@ -232,6 +240,10 @@ class VenuesIndex extends Component
             $venue->loadMissing('availabilities');
             // Normalize details payload for the view
             $features = $this->mapFeaturesStringToLabels((string)($venue->features ?? ''));
+            // Treat a non-zero test_capacity (final exams capacity) as a feature flag
+            if ((int) ($venue->test_capacity ?? 0) > 0) {
+                $features[] = 'Allow Final Exams (capacity ' . (int) $venue->test_capacity . ')';
+            }
             $this->detailsId = (int) $venue->id;
             $this->details = [
                 'id'         => (int) $venue->id,
@@ -285,10 +297,7 @@ class VenuesIndex extends Component
      */
     protected function validateJustification(): void
     {
-        // Enforce normalized justification requirement
-        $this->validate([
-            'justification' => ['required', 'string', 'min:10', 'max:200'],
-        ]);
+        $this->validateJustificationField(true);
     }
 
     // Persist edits / session writes
@@ -362,6 +371,11 @@ class VenuesIndex extends Component
     {
         $this->authorize('manage-venues');
 
+        // Normalize numeric filters so validation doesn't choke on empty strings while typing
+        if ($this->capMin === '') {
+            $this->capMin = null;
+        }
+
         try {
             $this->validate();
         } catch (\Throwable $e) {
@@ -395,7 +409,6 @@ class VenuesIndex extends Component
             'search' => $this->search,
             'department_name' => $this->department ?: null,
             'cap_min' => $this->capMin,
-            'cap_max' => $this->capMax,
         ];
         $paginator = $svc->paginateVenueRows(
             $filters,
@@ -430,7 +443,6 @@ class VenuesIndex extends Component
             'search' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
             'capMin' => ['nullable', 'integer', 'min:0'],
-            'capMax' => ['nullable', 'integer', 'min:0', 'gte:capMin'],
             'pageSize' => ['integer', 'in:10,25,50'],
         ];
     }

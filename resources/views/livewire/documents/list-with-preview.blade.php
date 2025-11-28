@@ -36,6 +36,7 @@
                         target="_blank"
                         rel="noopener"
                     >
+                        <i class="bi bi-filetype-pdf"></i>
                         Open PDF
                     </a>
 {{--                    <a class="btn btn-outline-secondary" href="{{ $doc['file_path'] }}" download>Download</a>--}}

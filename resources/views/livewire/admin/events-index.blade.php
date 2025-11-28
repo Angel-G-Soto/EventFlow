@@ -36,13 +36,13 @@
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
-        <div class="col-md-4">
+        <div class="col-12 col-md-4">
           <label class="form-label" for="ev_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
               <input id="ev_search" class="form-control" placeholder="Search title, requestor, or organization"
                 wire:model.defer="search">
-              <button class="btn btn-secondary" type="submit" aria-label="Search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search" title="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -70,14 +70,13 @@
         {{-- Organization filter removed; included in search --}}
         <div class="col-md-4">
           <label class="form-label" for="ev_from">From</label>
-          <input id="ev_from" type="datetime-local" class="form-control @error('from') is-invalid @enderror"
+          <input id="ev_from" type="date" class="form-control @error('from') is-invalid @enderror"
             wire:model.defer="from">
           @error('from')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="col-md-4">
           <label class="form-label" for="ev_to">To</label>
-          <input id="ev_to" type="datetime-local" class="form-control @error('to') is-invalid @enderror"
-            wire:model.defer="to">
+          <input id="ev_to" type="date" class="form-control @error('to') is-invalid @enderror" wire:model.defer="to">
           @error('to')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
@@ -131,7 +130,7 @@
             <td>{{ $r['organization'] ?? ($r['organization_nexo_name'] ?? '') }}</td>
             <td>{{ $r['venue'] }}</td>
             <td>
-              @php($status = $this->statusIndicatorData($r['status'] ?? ''))
+              @php($status = $this->statusIndicatorData($r['status_code'] ?? ($r['status'] ?? '')))
               <span class="status-indicator status-indicator--{{ $status['variant'] }}">
                 <span class="status-dot" aria-hidden="true"></span>
                 <span>{{ $status['label'] }}</span>
@@ -180,7 +179,7 @@
           </tr>
           @empty
           <tr>
-            <td colspan="7" class="text-center text-secondary py-4">No requests found.</td>
+            <td colspan="8" class="text-center text-secondary py-4">No requests found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -424,7 +423,7 @@
             <div class="col-md-3">
               <label class="form-label" for="ev_e_from">From</label>
               <input id="ev_e_from" type="datetime-local" class="form-control @error('eFrom') is-invalid @enderror"
-                wire:model.live="eFrom">
+                wire:model.live="eFrom" min="{{ now()->format('Y-m-d\\TH:i') }}">
               @error('eFrom')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">

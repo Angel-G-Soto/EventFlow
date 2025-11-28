@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use DateTime;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Event\EventCollection;
 use Illuminate\Database\Eloquent\Collection;
 use function PHPUnit\Framework\isEmpty;
@@ -100,7 +101,6 @@ class EventService
                     : 'pending - approval',
                 default   => 'draft',
             };
-
             // Create or update the event
             $event = Event::updateOrCreate(
                 [
@@ -315,7 +315,7 @@ class EventService
             $this->auditService->logAction(
                 $actorId,
                 'event',
-                'EVENT_DENIED',
+                'EVENT_REJECTED',
                 $eventLabel,
                 $ctx
             );
@@ -674,17 +674,21 @@ class EventService
      */
     public function genericGetPendingRequests(User $user, Role $role): \Illuminate\Database\Eloquent\Builder
     {
+        $departmentId = $user->department?->id;
+
         return match ($role->name) {
             'advisor' => Event::query()
                 ->where('organization_advisor_email', $user->email)
                 ->where('status', 'pending - advisor approval'),
             'venue-manager' => Event::query()
-                ->whereIn('venue_id', $user->department->venues()->pluck('id'))
+                ->whereHas('venue', fn ($q) => $departmentId
+                    ? $q->where('department_id', $departmentId)
+                    : $q->whereRaw('0 = 1'))
                 ->where('status', 'pending - venue manager approval'),
             'event-approver' => Event::query()
                 ->where('status', 'pending - dsca approval'),
-            'deanship-of-administration-approver' => Event::query()
-                ->where('status', 'pending - deanship of administration approval'),
+            // 'deanship-of-administration-approver' => Event::query()
+            //     ->where('status', 'pending - deanship of administration approval'),
             default => Event::query()
                 ->where('creator_id', $user->id),
         };
@@ -702,7 +706,7 @@ class EventService
         $query = Event::query();
 
         // Get roles the user actually has
-        $userRoles = $user->roles->pluck('name')->toArray();
+        $userRoles = $user->roles()->pluck('name')->toArray();
 
         // If the user has no roles, end immediately
         if (empty($userRoles)) {
@@ -722,9 +726,10 @@ class EventService
 
         // Group all role conditions together
         $query->where(function ($outer) use ($activeRoles, $user) {
+            $departmentId = $user->department?->id;
+
             foreach ($activeRoles as $role) {
-                //dd($user->roles->contains('name', $role));
-                $outer->orWhere(function ($q) use ($role, $user) {
+                $outer->orWhere(function ($q) use ($role, $user, $departmentId) {
                     switch ($role) {
                         case 'advisor':
                             $q->where('organization_advisor_email', $user->email)
@@ -732,7 +737,9 @@ class EventService
                             break;
 
                         case 'venue-manager':
-                            $q->whereIn('venue_id', $user->department->venues()->pluck('id'))
+                            $q->whereHas('venue', fn ($venueQuery) => $departmentId
+                                ? $venueQuery->where('department_id', $departmentId)
+                                : $venueQuery->whereRaw('0 = 1'))
                                 ->where('status', 'pending - venue manager approval');
                             break;
 
@@ -740,9 +747,9 @@ class EventService
                             $q->where('status', 'pending - dsca approval');
                             break;
 
-                        case 'deanship-of-administration-approver':
-                            $q->where('status', 'pending - deanship of administration approval');
-                            break;
+                        // case 'deanship-of-administration-approver':
+                        //     $q->where('status', 'pending - deanship of administration approval');
+                        //     break;
                     }
                 });
             }
@@ -821,9 +828,9 @@ class EventService
                                     $q->where('status_when_signed', 'pending - dsca approval');
                                     break;
 
-                                case 'deanship-of-administration-approver':
-                                    $q->where('status_when_signed', 'pending - deanship of administration approval');
-                                    break;
+                                // case 'deanship-of-administration-approver':
+                                //     $q->where('status_when_signed', 'pending - deanship of administration approval');
+                                //     break;
                             }
                         });
                     }
@@ -1131,6 +1138,68 @@ class EventService
         });
     }
 
+    /**
+     * Cancel an event due to a virus detection and capture specific audit context.
+     */
+    public function cancelEventDueToVirus(
+        Event $event,
+        User $actor,
+        Document $document,
+        string $scanOutput,
+        ?string $justification = null
+    ): Event {
+        $message = $justification ?: sprintf(
+            'Automatically cancelled because the virus scanner flagged "%s" as infected.',
+            (string) ($document->name ?? $document->getNameOfFile())
+        );
+
+        $result = $this->cancelEvent($event, $actor, $message);
+
+        $this->logVirusCancellationAudit($actor, $event, $document, $scanOutput);
+
+        return $result;
+    }
+
+    protected function logVirusCancellationAudit(User $actor, Event $event, Document $document, string $scanOutput): void
+    {
+        if ((int) $actor->id <= 0) {
+            return;
+        }
+
+        try {
+            $meta = [
+                'event_id'      => (int) $event->id,
+                'document_id'   => (int) $document->id,
+                'document_name' => (string) ($document->name ?? ''),
+                'scan_output'   => Str::limit(trim($scanOutput), 255),
+                'source'        => 'clamav',
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
+            $this->auditService->logAction(
+                (int) $actor->id,
+                'event',
+                'EVENT_CANCELLED_VIRUS_DETECTED',
+                $eventLabel,
+                $ctx
+            );
+        } catch (\Throwable $e) {
+            Log::warning('EventService: failed to write virus cancellation audit entry', [
+                'event_id' => $event->id,
+                'document_id' => $document->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
 
     // GET
 
@@ -1338,15 +1407,25 @@ class EventService
                 $categoryQuery->where('name', $category);
             });
         }
-            if (!empty($filters['from'])) {
-                try {
-                    $from = Carbon::parse(str_replace('T', ' ', (string)$filters['from']));
-                    $query->where('start_time', '>=', $from);
-                    } catch (\Throwable) {}
+        if (!empty($filters['from'])) {
+            try {
+                $rawFrom = (string)$filters['from'];
+                $from = Carbon::parse(str_replace('T', ' ', $rawFrom));
+                if (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', trim($rawFrom))) {
+                    $from = $from->startOfDay();
+                }
+                $query->where('start_time', '>=', $from);
+            } catch (\Throwable) {
+                // ignore invalid date
+            }
         }
-            if (!empty($filters['to'])) {
-                try {
-                $to = Carbon::parse(str_replace('T', ' ', (string)$filters['to']));
+        if (!empty($filters['to'])) {
+            try {
+                $rawTo = (string)$filters['to'];
+                $to = Carbon::parse(str_replace('T', ' ', $rawTo));
+                if (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', trim($rawTo))) {
+                    $to = $to->endOfDay();
+                }
                 $query->where('end_time', '<=', $to);
             } catch (\Throwable) {
                 // ignore invalid date
@@ -1373,35 +1452,6 @@ class EventService
         } catch (\Throwable) {
             // ignore
         }
-    }
-
-    /**
-     * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
-     *
-     * @return \Illuminate\Support\Collection<int,array{id:int,label:string}>
-     */
-    public function listVenuesForFilter(): SupportCollection
-    {
-        $venues = Venue::query()
-            ->whereNull('deleted_at')
-            ->select('id', 'name', 'code')
-            ->get();
-
-        // Build label, always appending code in parentheses if available
-        $options = $venues->map(function ($v) {
-            $name = (string)($v->name ?? '');
-            $code = trim((string)($v->code ?? ''));
-            $label = $name;
-            if ($code !== '') {
-                $label .= ' (' . $code . ')';
-            }
-            return ['id' => (int)$v->id, 'label' => $label];
-        });
-
-        // Natural, case-insensitive sort by label
-        return $options
-            ->sort(fn($a, $b) => strnatcasecmp($a['label'], $b['label']))
-            ->values();
     }
 
     /**
@@ -1479,6 +1529,21 @@ class EventService
         $statusCompleted = str_contains($statusNorm, 'completed');
         $statusApproved = $statusNorm === 'approved';
 
+        // Derive a canonical status code for UI use
+        $statusCode = match (true) {
+            str_contains($statusNorm, 'advisor') => 'pending_advisor',
+            str_contains($statusNorm, 'venue manager') => 'pending_venue_manager',
+            str_contains($statusNorm, 'dsca') => 'pending_dsca',
+            str_contains($statusNorm, 'deanship of administration') => 'pending_deanship',
+            $statusNorm === 'approved' => 'approved',
+            str_contains($statusNorm, 'cancel') => 'cancelled',
+            str_contains($statusNorm, 'withdraw') => 'withdrawn',
+            str_contains($statusNorm, 'reject') || str_contains($statusNorm, 'deny') => 'rejected',
+            str_contains($statusNorm, 'complete') || $statusNorm === 'completed' => 'completed',
+            $statusNorm === 'draft' => 'draft',
+            default => $statusNorm !== '' ? $statusNorm : 'unknown',
+        };
+
         $isPast = false;
         try {
             $endAt = null;
@@ -1509,6 +1574,7 @@ class EventService
             'from_edit' => $fromEdit,
             'to_edit' => $toEdit,
             'status' => $status,
+            'status_code' => $statusCode,
             'category' => $category,
             'category_ids' => $categoryIds,
             'updated' => now()->format('Y-m-d H:i'),

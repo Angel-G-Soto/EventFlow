@@ -10,6 +10,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -35,16 +36,15 @@ class UserService
      */
     public function findOrCreateUser(string $email, ?string $name = null): User
     {
+        // ['first_name' => $name] placeholder kept commented to avoid accidental overrides.
         $user = User::firstOrCreate(
-            ['email' => $email]
-            //            ['first_name' => $name],
-            ,
+            ['email' => $email],
             [
                 'first_name' => 'first_name',
-                'last_name' => 'last_name',
-                'email' => $email,
-                'password' => bcrypt('password'),
-                'auth_type' => 'saml2',
+                'last_name'  => 'last_name',
+                'email'      => $email,
+                'password'   => bcrypt('password'),
+                'auth_type'  => 'saml2',
             ]
         );
 
@@ -659,5 +659,71 @@ class UserService
 
         $onlyAdminId = (int) $adminIds->first();
         return $userId === null ? true : $onlyAdminId === (int) $userId;
+    }
+
+    /**
+     * Build navbar-related context (role flags, pending counts, etc.).
+     *
+     * @param User|null $user
+     * @return array{
+     *  user: ?User,
+     *  roleNames: \Illuminate\Support\Collection,
+     *  isAdmin: bool,
+     *  isAdvisor: bool,
+     *  isApprover: bool,
+     *  isVenueManager: bool,
+     *  isDirector: bool,
+     *  shouldShowPendingBell: bool,
+     *  pendingApprovalsCount: int
+     * }
+     */
+    public function getNavbarContext(?User $user = null): array
+    {
+        $user ??= Auth::user();
+        $roleNames = $this->getRoleSlugs($user);
+
+        $isAdmin = $roleNames->contains('system-admin')
+            || $roleNames->contains('system-administrator')
+            || $roleNames->contains('admin');
+        $isAdvisor = $roleNames->contains('advisor');
+        $isApprover = $roleNames->contains('event-approver');
+        $isVenueManager = $roleNames->contains('venue-manager');
+        $isDirector = $roleNames->contains('department-director');
+
+        $approverRoleSlugs = collect([
+            'advisor',
+            'venue-manager',
+            'event-approver',
+            'deanship-of-administration-approver',
+        ]);
+
+        $shouldShowPendingBell = $user && $roleNames->intersect($approverRoleSlugs)->isNotEmpty();
+        $pendingApprovalsCount = $shouldShowPendingBell
+            ? app(EventService::class)->genericGetPendingRequestsV2($user)->count()
+            : 0;
+
+        return compact(
+            'user',
+            'roleNames',
+            'isAdmin',
+            'isAdvisor',
+            'isApprover',
+            'isVenueManager',
+            'isDirector',
+            'shouldShowPendingBell',
+            'pendingApprovalsCount'
+        );
+    }
+
+    /**
+     * Return slugified role names for the provided user.
+     */
+    public function getRoleSlugs(?User $user)
+    {
+        if (!$user || !method_exists($user, 'getRoleNames')) {
+            return collect();
+        }
+
+        return $user->getRoleNames()->map(fn($role) => Str::slug($role));
     }
 }

@@ -50,6 +50,7 @@
         <a href="{{ route('venues.manage') }}"
            class="btn btn-secondary"
            onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
+            <i class="bi bi-arrow-left"></i>
             Back
         </a>
 
@@ -65,8 +66,13 @@
     <div class="card-body">
         {{-- Definition list provides good semantics for “label : value” layouts --}}
         <dl class="row mb-0">
+            <dt class="col-sm-4">Code:</dt>
+            <dd class="col-sm-8">{{ $venue->code }}</dd>
+
             <dt class="col-sm-4">Name:</dt>
             <dd class="col-sm-8">{{ $venue->name }}</dd>
+
+
 
             <dt class="col-sm-4">Department:</dt>
             <dd class="col-sm-8">{{ $venue->department->name ?? '—' }}</dd>
@@ -106,6 +112,36 @@
                             <li>{{ $feature }}</li>
                         @endforeach
                     </ul>
+                @else
+                    <span>—</span>
+                @endif
+            </dd>
+
+            <dt class="col-sm-4">Use Requirements:</dt>
+            <dd class="col-sm-8">
+                @if(!empty($requirements))
+                    <div class="vstack gap-3">
+                        @foreach($requirements as $requirement)
+                            <div class="border rounded-3 p-3">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <p class="fw-semibold mb-1">{{ $requirement['name'] }}</p>
+                                        @if(!empty($requirement['description']))
+                                            <p class="mb-1 text-muted">{{ $requirement['description'] }}</p>
+                                        @endif
+                                    </div>
+                                    @if(!empty($requirement['hyperlink']))
+                                        <a href="{{ $requirement['hyperlink'] }}"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="btn btn-sm btn-primary">
+                                            View Document
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 @else
                     <span>—</span>
                 @endif

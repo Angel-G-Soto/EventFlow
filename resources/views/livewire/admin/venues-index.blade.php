@@ -17,6 +17,10 @@
       <button class="btn btn-primary btn-sm" wire:click="openCsvModal" type="button" aria-label="Open CSV upload modal">
         <i class="bi bi-upload me-1"></i> Add Venues by CSV
       </button>
+      <a href="{{ asset('assets/csv/venues_template.csv') }}" class="btn btn-secondary btn-sm" type="button"
+        aria-label="Download venues CSV template">
+        <i class="bi bi-download me-1"></i> Download CSV template
+      </a>
     </div>
   </div>
 
@@ -50,7 +54,7 @@
             <div class="input-group">
               <input id="venue_search" type="text" class="form-control" placeholder="Search by name or code..."
                 wire:model.defer="search">
-              <button class="btn btn-secondary" type="submit" aria-label="Search">
+              <button class="btn btn-secondary" type="submit" aria-label="Search" title="Search">
                 <i class="bi bi-search"></i>
               </button>
             </div>
@@ -71,11 +75,6 @@
           <label class="form-label" for="venue_cap_min">Cap. Min</label>
           <input id="venue_cap_min" type="number" class="form-control" wire:model.live="capMin" min="0"
             placeholder="Min capacity">
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label" for="venue_cap_max">Cap. Max</label>
-          <input id="venue_cap_max" type="number" class="form-control" wire:model.live="capMax" min="0"
-            placeholder="Max capacity">
         </div>
         <div class="col-12 col-md-2 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
@@ -153,23 +152,6 @@
             <td>{{ $v['department'] }}</td>
             <td>{{ $v['room'] }}</td>
             <td>{{ $v['capacity'] }}</td>
-            {{-- <td class="text-truncate" style="max-width:220px;">
-              @php $hasOC = !empty($v['opening'] ?? '') || !empty($v['closing'] ?? ''); @endphp
-              @if ($hasOC)
-              <div class="small">{{ $fmtTime($v['opening'] ?? '') }} – {{ $fmtTime($v['closing'] ?? '') }}</div>
-              @elseif (isset($v['timeRanges']) && is_array($v['timeRanges']) && count($v['timeRanges']) > 0)
-              @foreach ($v['timeRanges'] as $tr)
-              <div class="small">
-                {{ $fmtTime($tr['from'] ?? '') }} – {{ $fmtTime($tr['to'] ?? '') }}
-                @if (!empty($tr['reason']))
-                ({{ $tr['reason'] }})
-                @endif
-              </div>
-              @endforeach
-              @else
-              <span class="text-muted small">No availability</span>
-              @endif
-            </td> --}}
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-info" wire:click="showDetails({{ $v['id'] }})"
@@ -213,9 +195,14 @@
           <div class="mb-3">
             <label class="form-label required" for="csv_file">CSV File</label>
             <input id="csv_file" type="file" class="form-control" accept=".csv,text/csv" wire:model="csvFile">
-            <small class="text-muted d-block mt-1">Required headers: name, room_code, department_name, capacity,
-              final_exams_capacity. Optional flags: allow_teaching_with_multimedia, allow_teaching_with_computers,
-              allow_teaching, allow_teaching_online.</small>
+            <small class="text-muted d-block mt-1">
+              Use the “Download CSV template” button for the correct format. Required columns:
+              <code>name</code>, <code>room_code</code>, <code>department_name</code>, <code>department</code>,
+              <code>capacity</code>. Optional: <code>final_exams_capacity</code> and <code>allow_*</code> flags
+              (<code>allow_teaching_with_multimedia</code>, <code>allow_teaching_with_computers</code>,
+              <code>allow_teaching</code>, <code>allow_teaching_online</code>) with <code>1</code> for yes,
+              <code>0</code> or blank for no.
+            </small>
             <div class="mt-2">
               <!-- True percent-based upload progress -->
               <div id="csvProgressContainer" class="progress d-none" aria-hidden="true">

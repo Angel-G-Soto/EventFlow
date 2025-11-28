@@ -7,6 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use App\Livewire\Traits\UserFilters;
 use App\Livewire\Traits\UserEditState;
+use App\Livewire\Traits\HasJustification;
 use App\Services\UserService;
 use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class UsersIndex extends Component
 
 
     // Traits / shared state
-    use UserFilters, UserEditState;
+    use UserFilters, UserEditState, HasJustification;
 
 
     // Sorting
@@ -151,6 +152,9 @@ class UsersIndex extends Component
         $svc = app(UserService::class);
         if ($this->editId) {
             try {
+                // For edits, require a non-empty justification
+                $this->validateJustificationField(true);
+
                 $user = $svc->findUserById((int)$this->editId);
                 [$first, $last] = $this->splitName($this->editName);
                 $svc->updateUserProfile($user, [
@@ -239,7 +243,8 @@ class UsersIndex extends Component
     {
         $this->authorize('manage-users');
 
-        $this->validateOnly('justification');
+        // Require a non-empty justification for clearing roles
+        $this->validateJustificationField(true);
 
         if ($this->editId) {
             try {
@@ -317,7 +322,8 @@ class UsersIndex extends Component
                 }],
             'editRoles.*'    => ['string', 'in:' . implode(',', $allowedRoleCodes)], // validate by ROLE CODE
             'editDepartment' => $deptRequired ? ['required', 'string', 'in:' . implode(',', $allowedDepartments)] : ['nullable', 'string'],
-            'justification'  => ['nullable', 'string', 'min:10', 'max:200', 'not_regex:/^\s*$/'],
+            // Justification is validated separately when required (edits / clear-roles)
+            'justification'  => $this->justificationRules(false),
         ];
     }
 

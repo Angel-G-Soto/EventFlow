@@ -249,9 +249,6 @@ class AuditService
             $term = trim((string) $filters['q']);
             if ($term !== '') {
                 $q->where(function ($sub) use ($term, $applyTextLike) {
-                    if (ctype_digit($term)) {
-                        $sub->orWhere('user_id', (int) $term);
-                    }
                     $like = $applyTextLike($term);
                     $sub->orWhereHas('actor', function ($uq) use ($like) {
                         $uq->whereRaw(
@@ -263,6 +260,7 @@ class AuditService
                     $sub->orWhere('action', 'like', $like);
                     $sub->orWhere('target_type', 'like', $like);
                     $sub->orWhere('target_id', 'like', $like);
+                    $sub->orWhere('ip', 'like', $like);
                 });
             }
         } else {

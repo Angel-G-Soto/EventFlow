@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection as SupportCollection;
 
 class VenueService
 {
@@ -150,6 +151,30 @@ class VenueService
     }
 
     /**
+     * Get venues for a specific department with optional search and pagination.
+     *
+     * @param int $departmentId
+     * @param string $searchTerm
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getVenuesByDepartmentWithSearch(int $departmentId, string $searchTerm = '', int $perPage = 8): LengthAwarePaginator
+    {
+        $query = Venue::query()
+            ->where('department_id', $departmentId);
+
+        if (!empty(trim($searchTerm))) {
+            $term = '%' . trim($searchTerm) . '%';
+            $query->where(function ($builder) use ($term) {
+                $builder->where('name', 'like', $term)
+                    ->orWhere('code', 'like', $term);
+            });
+        }
+
+        return $query->latest()->paginate($perPage);
+    }
+
+    /**
      * Paginate venues with filtering and lightweight rows for the admin component.
      *
      * @param array<string,mixed> $filters
@@ -181,9 +206,6 @@ class VenueService
 
         if (isset($filters['cap_min']) && $filters['cap_min'] !== null && $filters['cap_min'] !== '') {
             $query->where('capacity', '>=', (int)$filters['cap_min']);
-        }
-        if (isset($filters['cap_max']) && $filters['cap_max'] !== null && $filters['cap_max'] !== '') {
-            $query->where('capacity', '<=', (int)$filters['cap_max']);
         }
 
         $direction = strtolower($sort['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
@@ -235,6 +257,27 @@ class VenueService
             ->sortBy(fn($name) => mb_strtolower($name))
             ->values()
             ->all();
+    }
+
+    /**
+     * Venue options for filters with duplicate names disambiguated as "Name (CODE)".
+     * Uses base query rows to avoid instantiating Venue models in memory.
+     */
+    public function listVenuesForFilter(): SupportCollection
+    {
+        $venues = Venue::query()
+            ->whereNull('deleted_at')
+            ->toBase()
+            ->select('id', 'name', 'code')
+            ->orderBy('name')
+            ->get();
+
+        return collect($venues)->map(function ($v) {
+            $name = (string)($v->name ?? '');
+            $code = trim((string)($v->code ?? ''));
+            $label = $code !== '' ? $name . ' (' . $code . ')' : $name;
+            return ['id' => (int)$v->id, 'label' => $label];
+        })->values();
     }
 
     /**
@@ -365,6 +408,18 @@ class VenueService
     }
 
     /**
+     * Retrieve a venue or fail.
+     */
+    public function requireById(int $venue_id): Venue
+    {
+        if ($venue_id <= 0) {
+            throw new InvalidArgumentException('Venue id must be greater than zero.');
+        }
+
+        return Venue::with('department')->findOrFail($venue_id);
+    }
+
+    /**
      * Retrieve all venues associated with the department of a specific user.
      *
      * This method fetches all Venue records where the department matches the department
@@ -397,6 +452,39 @@ class VenueService
             throw new InvalidArgumentException('Venue id must be greater than zero.');
         }
         return Venue::findOrFail($venue_id)->requirements;
+    }
+
+    /**
+     * Update a venue's description field.
+     */
+    public function updateVenueDescription(Venue $venue, string $description, User $actor): Venue
+    {
+        $venue->description = $description;
+        $venue->save();
+
+        try {
+            $meta = [
+                'venue_id' => (int) $venue->id,
+                'source'   => 'venue_description_update',
+            ];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            } else {
+                $ctx = ['meta' => $meta];
+            }
+
+            $this->auditService->logAction(
+                (int) ($actor->id ?? 0),
+                'venue',
+                'UPDATE_DESCRIPTION',
+                (string) $venue->id,
+                $ctx
+            );
+        } catch (\Throwable) {
+            // best effort
+        }
+
+        return $venue->refresh();
     }
 
     /**
@@ -1337,4 +1425,6 @@ class VenueService
 
         return $url;
     }
+
+    
 }

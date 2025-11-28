@@ -526,6 +526,21 @@ public function removeRequirementFile(int $index): void
         }
     }
 
+    public function updatedVenueSearch(): void
+    {
+        $this->triggerLiveVenueSearch();
+    }
+
+    public function updatedVenueCapacityFilter(): void
+    {
+        $this->triggerLiveVenueSearch();
+    }
+
+    public function updatedVenueDepartmentFilter(): void
+    {
+        $this->triggerLiveVenueSearch();
+    }
+
     public function runVenueSearch(): void
     {
         if (!$this->validTimeRange()) {
@@ -533,7 +548,7 @@ public function removeRequirementFile(int $index): void
             return;
         }
 
-        $this->loadAvailableVenues(filters: $this->buildVenueFilters());
+        $this->triggerLiveVenueSearch(force: true);
     }
 
     public function resetVenueFilters(): void
@@ -543,7 +558,7 @@ public function removeRequirementFile(int $index): void
         $this->venueDepartmentFilter = null;
 
         if ($this->validTimeRange()) {
-            $this->loadAvailableVenues();
+            $this->triggerLiveVenueSearch(force: true);
         }
 
         $this->resetVenuePagination();
@@ -570,6 +585,19 @@ public function removeRequirementFile(int $index): void
         }
 
         return $filters;
+    }
+
+    protected function triggerLiveVenueSearch(bool $force = false): void
+    {
+        if ($this->step !== 2 || !$this->validTimeRange()) {
+            return;
+        }
+
+        if ($this->loadingVenues && !$force) {
+            return;
+        }
+
+        $this->loadAvailableVenues(filters: $this->buildVenueFilters());
     }
 
     public function updatedVenueId($value): void
@@ -686,6 +714,7 @@ public function removeRequirementFile(int $index): void
             'guest_size' => $this->guest_size??0,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
+            'organization_name' => $this->organization_name,
             'organization_advisor_name' => $this->organization_advisor_name,
             'organization_advisor_email' => $this->organization_advisor_email,
             'organization_advisor_phone' => $this->organization_advisor_phone,
@@ -752,7 +781,7 @@ public function removeRequirementFile(int $index): void
         session()->flash('success', 'Event submitted successfully.');
         $this->dispatch('event-form-submitted');
 
-        redirect()->route('public.calendar'); // or to a details/thanks page
+        redirect()->route('user.index'); // redirect to My Requests page
     }
 
     public function clearCategories(): void
@@ -768,10 +797,24 @@ public function removeRequirementFile(int $index): void
         ));
     }
 
+    public function updatedCategorySearchInput(): void
+    {
+        $this->applyCategorySearchFilter();
+    }
+
     public function runCategorySearch(): void
     {
-        $this->categorySearchInput = trim($this->categorySearchInput);
-        $this->categorySearch = $this->categorySearchInput;
+        $this->applyCategorySearchFilter();
+    }
+
+    protected function applyCategorySearchFilter(): void
+    {
+        $nextValue = trim($this->categorySearchInput);
+        if ($nextValue === $this->categorySearch) {
+            return;
+        }
+
+        $this->categorySearch = $nextValue;
     }
 
     /**

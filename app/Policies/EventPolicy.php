@@ -52,15 +52,17 @@ class EventPolicy
      *
      * @param User $user The user requesting the management permission.
      * @param Event $event The event to check.
-     * @return bool Returns true if the user has the appropriate role and meets the conditions, false otherwise.
+     * @return \Illuminate\Auth\Access\Response
      */
-    public function manageMyPendingRequests(User $user, Event $event): bool
+    public function manageMyPendingRequests(User $user, Event $event): Response
     {
+        $user->loadMissing('roles');
+
         // Extract the status of the event
         $eventStatus = $event->status;
 
         // Check the user's roles based on the event status
-        return match ($eventStatus) {
+        $allowed = match ($eventStatus) {
             // 'advisor' role can manage events pending advisor approval if the user's email matches the event's advisor email
             'pending - advisor approval' => $user->roles->contains('name', 'advisor')
                 && $event->organization_advisor_email === $user->email,
@@ -75,6 +77,10 @@ class EventPolicy
             // Default case: returns false if the event status does not match any of the above conditions
             default => false,
         };
+
+        return $allowed
+            ? Response::allow()
+            : Response::deny('This action is unauthorized or the request has already been processed.');
     }
 
     /**

@@ -125,6 +125,12 @@ class User extends Authenticatable
 
     public function getRoleNames(): Collection
     {
-        return $this->roles()->pluck('name')->unique();
+        $this->loadMissing(['roles:id,name']);
+
+        return $this->roles
+            ->pluck('name')
+            ->filter()
+            ->unique()
+            ->values();
     }
 }

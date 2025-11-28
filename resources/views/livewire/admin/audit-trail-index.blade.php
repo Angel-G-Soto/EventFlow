@@ -11,6 +11,20 @@ return \Carbon\Carbon::parse($dt)
 return $dt;
 }
 };
+
+$userSearch = $userSearch ?? null;
+$action = $action ?? '';
+$from = $from ?? null;
+$to = $to ?? null;
+$pageSize = $pageSize ?? 25;
+
+$downloadParams = array_filter([
+'user' => $userSearch,
+'action' => $action,
+'date_from' => $from,
+'date_to' => $to,
+'limit' => $pageSize,
+], fn ($v) => $v !== null && $v !== '');
 @endphp
 
 <div>
@@ -22,27 +36,34 @@ return $dt;
   <div class="card shadow-sm mb-3">
     <div class="card-body">
       <div class="row g-2">
-        <div class="col-12 col-md-6">
+        <div class="col-6 col-md-3">
+          <label class="form-label" for="audit_from">From</label>
+          <input id="audit_from" type="date" class="form-control" wire:model.defer="from">
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label" for="audit_to">To</label>
+          <input id="audit_to" type="date" class="form-control" wire:model.defer="to">
+        </div>
+
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" wire:click="applyDateRange" type="button" aria-label="Apply date range">
+            Apply Date Range
+
+          </button>
+        </div>
+
+        <div class="col-12 col-md-4">
           <label class="form-label" for="audit_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
               <input id="audit_search" type="text" class="form-control" wire:model.defer="search"
-                placeholder="Search by user, action, target, or ID…">
+                placeholder="Search by user, action, target, or IP…">
               <button class="btn btn-secondary" type="submit" aria-label="Search">
-                <i class="bi bi-search"></i>
+                <i class="bi bi-search" title="Search"></i>
               </button>
             </div>
           </form>
-        </div>
-
-        <div class="col-6 col-md-2">
-          <label class="form-label" for="audit_from">From</label>
-          <input id="audit_from" type="date" class="form-control" wire:model.live="from">
-        </div>
-
-        <div class="col-6 col-md-2">
-          <label class="form-label" for="audit_to">To</label>
-          <input id="audit_to" type="date" class="form-control" wire:model.live="to">
         </div>
 
         {{--<div class="col-12 col-md-2 d-flex align-items-end">
@@ -52,7 +73,7 @@ return $dt;
           </div>
         </div>--}}
 
-        <div class="col-6 col-md-1 d-flex align-items-end">
+        <div class="col-12 col-md-1 d-flex align-items-end">
           <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
           </button>
@@ -73,6 +94,10 @@ return $dt;
         <option>50</option>
         <option>100</option>
       </select>
+      <a class="btn btn-primary btn-sm" href="{{ route('admin.audit.download', $downloadParams) }}" target="_blank"
+        rel="noopener">
+        <i class="bi bi-download me-1"></i> PDF
+      </a>
     </div>
   </div>
 
@@ -86,6 +111,7 @@ return $dt;
             <th scope="col">User</th>
             <th scope="col">Action</th>
             <th scope="col">Target</th>
+            <th scope="col">IP</th>
             <th scope="col" class="text-end">Details</th>
           </tr>
         </thead>
@@ -122,6 +148,9 @@ return $dt;
               {{ $r->target_id }}
               @endif
             </td>
+            <td class="text-truncate" style="max-width:130px;">
+              <small class="fw-bold">{{ $r->ip ?? '—' }}</small>
+            </td>
             <td class="text-end">
               <button class="btn btn-info btn-sm" wire:click="showDetails({{ $r->id }})"
                 aria-label="Show details for audit #{{ $r->id }}" title="Show details for audit #{{ $r->id }}">
@@ -131,7 +160,7 @@ return $dt;
           </tr>
           @empty
           <tr>
-            <td colspan="5" class="text-center text-secondary py-4">No audit entries found.</td>
+            <td colspan="6" class="text-center text-secondary py-4">No audit entries found.</td>
           </tr>
           @endforelse
         </tbody>
@@ -177,6 +206,10 @@ return $dt;
             <dd class="col-sm-9"><small class="text-break">{{ $details['ip'] ?? 'Unknown' }}</small></dd>
             <dt class="col-sm-3">Created</dt>
             <dd class="col-sm-9">{{ $fmtAudit($details['created_at']) }}</dd>
+            @if(!empty($details['justification']))
+            <dt class="col-sm-3">Justification</dt>
+            <dd class="col-sm-9">{{ $details['justification'] }}</dd>
+            @endif
           </dl>
 
           @if(!empty($details['meta']) && is_array($details['meta']))

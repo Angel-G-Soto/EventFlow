@@ -69,10 +69,12 @@
                         } elseif (str_contains($roleName, 'event-approver') || str_contains($roleName, 'dsca')) {
                             $display = 'Event Approver'; $value = 'event-approver';
                         } else {
-                            $display = $roleName; $value = $roleName;
+                            $display = null; $value = null;
                         }
                     @endphp
-                    <option value="{{ $value }}">{{ $display }}</option>
+                    @if ($display && $value)
+                        <option value="{{ $value }}">{{ $display }}</option>
+                    @endif
                 @endforeach
             </select>
         </div>

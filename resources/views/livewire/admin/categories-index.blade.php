@@ -14,7 +14,7 @@
                     <div class="input-group">
                         <input type="search" class="form-control" id="categorySearch" placeholder="Search by name"
                             wire:model.defer="search">
-                        <button class="btn btn-secondary" type="submit" aria-label="Search" title="Run search">
+                        <button class="btn btn-secondary" type="submit" aria-label="Search" title="Search">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
@@ -57,8 +57,9 @@
                         'descending') : 'none';
                         @endphp
                         <th scope="col" aria-sort="{{ $nameSort }}">
-                            <button class="btn btn-link p-0 text-decoration-none text-black fw-semibold"
-                                type="button" wire:click="sortBy('name')" aria-label="Sort by category name" title="Sort by category name">
+                            <button class="btn btn-link p-0 text-decoration-none text-black fw-semibold" type="button"
+                                wire:click="sortBy('name')" aria-label="Sort by category name"
+                                title="Sort by category name">
                                 Name
                                 @if($sortField === 'name')
                                 <i class="bi bi-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-short"
@@ -69,8 +70,9 @@
                             </button>
                         </th>
                         <th scope="col" style="width:160px;" aria-sort="{{ $createdSort }}">
-                            <button class="btn btn-link p-0 text-decoration-none text-black fw-semibold"
-                                type="button" wire:click="sortBy('created_at')" aria-label="Sort by creation date" title="Sort by creation date">
+                            <button class="btn btn-link p-0 text-decoration-none text-black fw-semibold" type="button"
+                                wire:click="sortBy('created_at')" aria-label="Sort by creation date"
+                                title="Sort by creation date">
                                 Created
                                 @if($sortField === 'created_at')
                                 <i class="bi bi-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-short"
@@ -153,8 +155,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                        wire:click="cancelForm" title="Return without saving">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" wire:click="cancelForm"
+                        title="Return without saving">
                         Back
                     </button>
                     <button type="submit" class="btn btn-primary"
@@ -190,8 +192,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
-                        wire:click="cancelDelete" title="Return without deleting">Back</button>
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" wire:click="cancelDelete"
+                        title="Return without deleting">Back</button>
                     <button class="btn btn-primary" type="submit" title="Confirm deletion of this category">
                         <i class="bi bi-check2 me-1"></i>Confirm
                     </button>
@@ -214,11 +216,12 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">Are you sure you want to delete <strong>{{ $deleteName ?: 'this category' }}</strong>?</p>
+                    <p class="mb-0">Are you sure you want to delete <strong>{{ $deleteName ?: 'this category'
+                            }}</strong>?</p>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"
-                        wire:click="cancelDelete" title="Return without deleting">
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" wire:click="cancelDelete"
+                        title="Return without deleting">
                         Back
                     </button>
                     <button class="btn btn-danger" type="button" wire:click="proceedDelete"
