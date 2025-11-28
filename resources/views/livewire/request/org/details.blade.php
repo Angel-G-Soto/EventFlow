@@ -47,6 +47,8 @@
                     class="btn btn-secondary"
                     wire:target="back"
                     aria-label="Go Back">
+                <i class="bi bi-arrow-left"></i>
+
                 Back
             </button>
         </div>
@@ -279,6 +281,7 @@
                     data-bs-toggle="modal"
                     data-bs-target="#denyModal"
                     aria-label="Cancel {{ $event->title }}">
+                <i class="bi bi-x-circle me-2"></i>
                 Cancel
             </button>
         @elseif(str_contains($event->status,'pending'))
@@ -287,6 +290,7 @@
                     data-bs-toggle="modal"
                     data-bs-target="#denyModal"
                     aria-label="Withdraw {{ $event->title }}">
+                <i class="bi bi-x-circle me-2"></i>
                 Withdraw
             </button>
         @endif
@@ -320,6 +324,7 @@
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
+                            <i class="bi bi-x-circle"></i>
                             Cancel Request
                         </button>
                     @elseif(str_contains($event->status,'pending'))
@@ -328,6 +333,7 @@
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
+                            <i class="bi bi-x-circle"></i>
                             Withdraw Request
                         </button>
                     @endif

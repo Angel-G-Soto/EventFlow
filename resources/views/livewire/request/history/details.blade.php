@@ -34,6 +34,7 @@
                         class="btn btn-secondary"
                         wire:target="back"
                         aria-label="Go Back">
+                    <i class="bi bi-arrow-left"></i>
                     Back
                 </button>
             </div>
@@ -283,6 +284,7 @@
                         data-bs-toggle="modal"
                         data-bs-target="#denyModal"
                         aria-label="Cancel Request Approval">
+                    <i class="bi bi-x-circle"></i>
                     Cancel Request Approval
                 </button>
             </div>

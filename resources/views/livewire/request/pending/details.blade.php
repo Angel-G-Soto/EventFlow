@@ -76,6 +76,7 @@
                 class="btn btn-secondary"
                 wire:click="back"
                 wire:target="back">
+            <i class="bi bi-arrow-left"></i>
             Back
         </button>
     </div>
@@ -281,6 +282,7 @@
                 class="btn btn-success"
                 wire:target="approve"
                 aria-label="Approve {{ $event->title }}">
+            <i class="bi bi-check-circle"></i>
             Approve
         </button>
         <button type="button"
@@ -288,6 +290,7 @@
                 data-bs-toggle="modal"
                 data-bs-target="#denyModal"
                 aria-label="Reject {{ $event->title }}">
+            <i class="bi bi-x-circle"></i>
             Reject
         </button>
     </div>
