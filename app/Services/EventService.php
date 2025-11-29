@@ -250,16 +250,32 @@ class EventService
             
             $eventDetails = $this->getEventDetails($event);
 
+            try {
             $this->notificationService->dispatchRequestCreatedNotification(
                 creatorEmail: $eventDetails['creator_email'],
                 eventDetails: $eventDetails,
             );
+            } catch (\Throwable $e) {
+                Log::warning('Event creation notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
-            if (!empty($data['organization_advisor_email'])) {
-                $this->notificationService->dispatchApprovalRequiredNotification(
-                    approverEmail: $event->organization_advisor_email,
-                    eventDetails: $eventDetails,
-                );
+
+            try 
+            {
+                if (!empty($data['organization_advisor_email'])) {
+                    $this->notificationService->dispatchApprovalRequiredNotification(
+                        approverEmail: $event->organization_advisor_email,
+                        eventDetails: $eventDetails,
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Approval required notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             return $event;
@@ -320,17 +336,29 @@ class EventService
                 $ctx
             );
         } catch (\Throwable) { /* best-effort */ }
+        
+        
         // Send rejection email to prior approvers and creator
-            // Send rejection email to prior approvers and creator
+        // Send rejection email to prior approvers and creator
+            
+        try{
             $creatorEmail = $event->requester->email;
 
-        $eventDetails = $this->getEventDetails($event);
-    
-        $this->notificationService->dispatchRejectionNotification(
-                creatorEmail: $creatorEmail,
-                eventDetails: $eventDetails,
-                justification: $justification
-            );
+            $eventDetails = $this->getEventDetails($event);
+        
+            $this->notificationService->dispatchRejectionNotification(
+                    creatorEmail: $creatorEmail,
+                    eventDetails: $eventDetails,
+                    justification: $justification
+                );
+
+        }
+        catch (\Throwable $e) {
+                Log::warning('Event rejection notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
 
         return $event->refresh();
@@ -406,10 +434,19 @@ class EventService
                 $this->createPendingHistory($event, $nextStatus, $approver);
             }
 
-            $approverName = $approver->first_name . ' ' . $approver->last_name;
-            $this->sendCreatorUpdateEmail($event, $approverName, $currentStatus);
-            $event->refresh();
-            $this->sendApproverEmails($event);
+            try {
+                // Send notifications to next approver(s)
+                $approverName = $approver->first_name . ' ' . $approver->last_name;
+                $this->sendCreatorUpdateEmail($event, $approverName, $currentStatus);
+                $event->refresh();
+                $this->sendApproverEmails($event);
+            } catch (\Throwable $e) {
+                    Log::warning('Event update notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
 
 
             return $event->refresh();
@@ -439,9 +476,16 @@ class EventService
                     ]
                 );
             }
-            $this->sendApproverEmails($result);
-            $this->sendCreatorUpdateEmail($result, $user->first_name . ' ' . $user->last_name, $currentStatus,true);
-
+            try {
+                    $this->sendApproverEmails($result);
+                    $this->sendCreatorUpdateEmail($result, $user->first_name . ' ' . $user->last_name, $currentStatus,true);
+            } catch (\Throwable $e) {
+                    Log::warning('Event advance notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
             
 
             return $result;
@@ -567,6 +611,8 @@ class EventService
                 } catch (\Throwable) { /* best-effort */ }
             }
 
+            try {
+
             $creatorEmail = $event->requester->email;
             $eventDetails = $this->getEventDetails($event);
             $justification = $comment ?? 'Event was withdrawn by the user.';
@@ -576,6 +622,15 @@ class EventService
                 eventDetails: $eventDetails,
                 justification: $justification,
             );
+
+            } catch (\Throwable $e) {
+                Log::warning('Event withdrawal notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+
 
             return $event->refresh();
         });
