@@ -248,7 +248,7 @@ class EventService
             }
 
             
-            $eventDetails = $this->notificationService->getEventDetails($event);
+            $eventDetails = $this->getEventDetails($event);
 
             $this->notificationService->dispatchRequestCreatedNotification(
                 creatorEmail: $eventDetails['creator_email'],
@@ -324,7 +324,7 @@ class EventService
             // Send rejection email to prior approvers and creator
             $creatorEmail = $event->requester->email;
 
-        $eventDetails = $this->notificationService->getEventDetails($event);
+        $eventDetails = $this->getEventDetails($event);
     
         $this->notificationService->dispatchRejectionNotification(
                 creatorEmail: $creatorEmail,
@@ -564,7 +564,7 @@ class EventService
             }
 
             $creatorEmail = $event->requester->email;
-            $eventDetails = $this->notificationService->getEventDetails($event);
+            $eventDetails = $this->getEventDetails($event);
             $justification = $comment ?? 'Event was withdrawn by the user.';
 
             $this->notificationService->dispatchWithdrawalNotifications(
@@ -1119,7 +1119,7 @@ class EventService
             try {
                 $creatorEmail = optional($event->requester)->email;
                 if ($creatorEmail) {
-                    $eventDetails = $this->notificationService->getEventDetails($event);
+                    $eventDetails = $this->getEventDetails($event);
                     $this->notificationService->dispatchCancellationNotifications(
                         creatorEmail: $creatorEmail,
                         eventDetails: $eventDetails,
@@ -1651,7 +1651,7 @@ class EventService
 
         public function sendApproverEmails(Event $event){
 //            pending - venue manager approval' => 'pending - dsca approval',
-            $eventDetails = $this->notificationService->getEventDetails($event);
+            $eventDetails = $this->getEventDetails($event);
 
 
             switch ($event->status)
@@ -1701,7 +1701,7 @@ class EventService
 
 
         $creatorEmail = $event->requester->email;
-        $eventDetails = $this->notificationService->getEventDetails($event);
+        $eventDetails = $this->getEventDetails($event);
 
 
         switch ($statusWhenApproved)
@@ -1744,5 +1744,44 @@ class EventService
         }
 
     }
+
+    private function getEventDetails(Event $event):array
+    {
+        $venue = app(VenueService::class)->getVenueById($event->venue_id);
+        $user = app(UserService::class)->findUserById($event->creator_id);
+
+        return [
+            'title' => $event->title,
+            'organization_name' => $event->organization_name,
+            'creator_name' => $user->first_name . ' ' . $user->last_name,
+            'organization_advisor_name' => $event->organization_advisor_name,
+            'organization_advisor_email' => $event->organization_advisor_email,
+            'creator_email' => $user->email,
+            'start_time' => $this->formatDateTime($event->start_time),
+            'end_time' => $this->formatDateTime($event->end_time),
+            'venue_name' => $venue->name,
+            'id' => $event->id,
+            'venue_code' => $venue->code,
+            ];
+    }
+
+        /**
+     * Format a datetime string into a human friendly representation.
+     */
+    private function formatDateTime(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)
+                ->timezone(config('app.timezone'))
+                ->format('M j, Y g:i A');
+        } catch (\Throwable) {
+            return $value;
+        }
+    }
+
 
 }
