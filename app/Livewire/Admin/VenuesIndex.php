@@ -66,11 +66,7 @@ class VenuesIndex extends Component
 
 
     // Filters: clear/reset
-    /**
-     * Resets all filters to their default values, and resets the current page to 1.
-     *
-     * This method is called when the user clicks the "Clear" button on the filter form.
-     */
+    // Reset filters and pagination to defaults
     public function clearFilters(): void
     {
         $this->search = '';
@@ -80,16 +76,7 @@ class VenuesIndex extends Component
     }
 
     // Pagination & filter reactions
-    /**
-     * Navigates to a given page number.
-     *
-     * @param int $target The target page number.
-     *
-     * This function will compute bounds from the current filters, and then
-     * set the page number to the maximum of 1 and the minimum of the
-     * target and the last page number. If the class has a 'selected'
-     * property, it will be cleared when the page changes.
-     */
+    // Keep pagination within bounds when a page number is chosen
     public function goToPage(int $target): void
     {
         $this->page = max(1, $target);
@@ -104,12 +91,7 @@ class VenuesIndex extends Component
     }
 
     // Filters: search update reaction
-    /**
-     * Resets the current page to 1 when the search filter is updated.
-     *
-     * This function will be called whenever the search filter is updated,
-     * and will reset the current page to 1.
-     */
+    // Search change should restart pagination
     public function applySearch()
     {
         $this->page = 1;
