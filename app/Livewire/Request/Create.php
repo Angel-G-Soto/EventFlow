@@ -317,7 +317,7 @@ class Create extends Component
                 'organization_id' => ['nullable','integer'],
                 'organization_advisor_name' => ['required','string','max:150'],
                 'organization_advisor_phone' => ['required','string','regex:/^\D*(\d\D*){10}$/','max:30'],
-                'organization_advisor_email' => ['required','email','max:150'],
+                'organization_advisor_email' => ['required','email:rfc,dns','max:150'],
                 'handles_food' => ['boolean'],
                 'external_guest' => ['boolean'],
                 'use_institutional_funds' => ['boolean'],

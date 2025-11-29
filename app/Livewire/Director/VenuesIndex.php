@@ -27,10 +27,10 @@ class VenuesIndex extends Component
   public string $pendingManagerEmail = '';
   public string $pendingManagerDepartment = '';
 
-  #[Validate('required|email:rfc,dns|max:255')]
+  #[Validate('required|email:rfc,dns|max:150')]
   public string $email = '';
 
-  #[Validate('required|same:email')]
+  #[Validate('required|same:email|max:150')]
   public string $emailConfirmation = '';
 
 

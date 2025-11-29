@@ -26,8 +26,6 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-use App\Models\Event;
-
 /**
  * Class Details
  *
@@ -60,25 +58,13 @@ class Details extends Component
     {
         $this->authorize('manageMyApprovalHistory', $this->eventHistory);
 
-        $this->validate(['justification' => 'required|min:10']);
+        $this->validate(['justification' => 'required|min:10|max:255']);
         // ... do your action
         $eventService = app(EventService::class);
         $eventService->cancelEvent($this->eventHistory->event,Auth::user(),$this->justification);
         $this->redirectRoute('approver.history.index');
     }
-/**
- * Approve action. Redirects to request history
- * @return mixed
- */
 
-    public function approve(): void
-    {
-        $this->authorize('manageMyApprovalHistory', $this->eventHistory);
-
-        // ... do your action
-        app(EventService::class)->approve($this->eventHistory->event);
-        $this->redirectRoute('approver.history.index');
-    }
 /**
  * Back action. Redirects to request history
  * @return mixed
