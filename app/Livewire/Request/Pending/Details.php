@@ -62,7 +62,7 @@ class Details extends Component
     {
 
 
-        $this->validate(['justification' => 'required|min:10']);
+        $this->validate(['justification' => 'required|min:10|max:255']);
         // ... do your action
 
 

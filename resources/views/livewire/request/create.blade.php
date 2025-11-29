@@ -107,7 +107,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
+                    <textarea class="form-control" rows="6" maxlength="2000" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -122,13 +122,21 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Start time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="start_time" placeholder="e.g., 2025-05-15T09:00">
+                    <input type="datetime-local"
+                           class="form-control"
+                           wire:model.live="start_time"
+                           min="{{ now()->format('Y-m-d\\TH:i') }}"
+                           placeholder="e.g., 2025-05-15T09:00">
                     @error('start_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">End time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="end_time" placeholder="e.g., 2025-05-15T12:00">
+                    <input type="datetime-local"
+                           class="form-control"
+                           wire:model.live="end_time"
+                           min="{{ now()->format('Y-m-d\\TH:i') }}"
+                           placeholder="e.g., 2025-05-15T12:00">
                     @error('end_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -287,7 +295,11 @@
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Next</button>
+                <button type="submit" class="btn btn-primary">
+                    Next
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+                
             </div>
         </form>
     @endif
@@ -460,14 +472,18 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">
+                    <i class="bi bi-arrow-left"></i>
+                    Back
+                </button>
                 <button
                     type="submit"
                     class="btn btn-primary"
                     wire:loading.attr="disabled"
                     wire:target="next"
                     @disabled(!$venue_id)
-                >Next</button>
+                >Next
+            <i class="bi bi-arrow-right"></i></button>
             </div>
         </form>
     @endif
@@ -664,8 +680,12 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">
+                    <i class="bi bi-arrow-left"></i>
+                    Back
+                </button>
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                    <i class="bi bi-send"></i>
                     Submit Event
                 </button>
             </div>

@@ -413,7 +413,7 @@ class Configure extends Component
     public function submitJustification(): void
     {
         $this->validate([
-            'justification' => ['required', 'string', 'min:10'],
+            'justification' => ['required', 'string', 'min:10', 'max:255'],
         ], [], [
             'justification' => 'justification',
         ]);

@@ -16,7 +16,6 @@
 
 namespace App\Livewire\Request\Org;
 
-use App\Models\Event;
 use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
