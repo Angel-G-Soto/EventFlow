@@ -1843,5 +1843,19 @@ class EventService
         }
     }
 
+    public function getApprovedPublicEvents(): array
+    {
+        return Event::whereIn('status', ['approved', 'completed'])
+            ->orderBy('start_time')
+            ->orderBy('end_time')
+            ->get()
+            ->toArray();
+    }
+
+    public function findPublicEventById(int $id): ?Event
+    {
+        return Event::find($id);
+    }
+
 
 }

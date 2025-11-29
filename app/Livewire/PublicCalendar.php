@@ -22,11 +22,14 @@ class PublicCalendar extends Component
     // Read-only public, approved events (mocked for now)
     protected function allApprovedPublic(): array
     {
-        return Event::whereIn('status', ['approved', 'completed'])
-            ->orderBy('start_time')
-            ->orderBy('end_time')
-            ->get()
-            ->toArray();
+            //             return Event::whereIn('status', ['approved', 'completed'])
+            // ->orderBy('start_time')
+            // ->orderBy('end_time')
+            // ->get()
+            // ->toArray();
+        $approvedEvents = app(EventService::class)->getApprovedPublicEvents();
+        return $approvedEvents;
+
     }
 
     public ?array $modal = null; // {title, venue, time, summary}
@@ -85,7 +88,8 @@ class PublicCalendar extends Component
 
     public function openEvent(int $id): void
     {
-        $event = Event::find($id); // Fetch the event by ID (this returns an instance of the Event model)
+        // $event =  Event::find($id);
+        $event = app(EventService::class)->findPublicEventById($id); // Fetch the event by ID (this returns an instance of the Event model)
         $this->modal = [
             'event' => $event
         ];

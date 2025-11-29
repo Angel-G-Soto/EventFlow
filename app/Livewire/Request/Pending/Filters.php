@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Request\Pending;
 
+
+use App\Services\UserService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -19,11 +21,7 @@ class Filters extends Component
     public function mount(): void
     {
         // Load roles for current user
-        $this->roles = Auth::user()->roles()
-            ->where('name', '<>', 'user')
-            ->pluck('name')
-            ->map(fn ($name) => ['name' => $name])
-            ->toArray();
+        $this->roles = app(UserService::class)->rolesPending(Auth::user());
     }
 
     public function apply(): void
