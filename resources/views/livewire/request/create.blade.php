@@ -110,6 +110,18 @@
                     <textarea class="form-control" rows="6" maxlength="2000" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
+                <div class="col-12">
+                    <label class="form-label">Multimedia equipment needed</label>
+                    <textarea
+                        class="form-control"
+                        rows="4"
+                        maxlength="2000"
+                        wire:model.defer="multimedia_equipment"
+                        placeholder="List any audio/visual or other multimedia equipment you need ready before the event (e.g., projector, microphones, speakers)."
+                    ></textarea>
+                    <small class="text-muted">Optional: share the multimedia setup you need pre-installed.</small>
+                    @error('multimedia_equipment') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
 
                 <div class="col-md-12">
                     <label class="form-label">Number of Guests</label>
