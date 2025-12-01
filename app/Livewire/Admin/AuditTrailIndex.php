@@ -181,8 +181,9 @@ class AuditTrailIndex extends Component
 
             'ua' => $log->user_agent ?? ($log->ua ?? '—'),
             'ip' => (string) ($log->ip ?? 'Unknown'),
-            'created_at' => optional($log->created_at ?? null)->format('Y-m-d H:i:s')
-                ?: (is_string($log->created_at ?? null) ? $log->created_at : ''),
+            'created_at' => ($log->created_at instanceof \DateTimeInterface)
+                ? $log->created_at->format('Y-m-d H:i:s')
+                : (is_string($log->created_at ?? null) ? (string) $log->created_at : ''),
 
             // raw meta payload (pretty-printed in blade)
             'meta' => $rawMeta,

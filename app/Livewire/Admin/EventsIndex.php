@@ -80,7 +80,11 @@ class EventsIndex extends Component
 
     protected function getFilteredCategories(): array
     {
-        $categories = app(CategoryService::class)->getAllCategories();
+        try {
+            $categories = app(CategoryService::class)->getAllCategories();
+        } catch (\Throwable $e) {
+            return [];
+        }
         $search = trim($this->categorySearch);
         if ($search === '') {
             return $categories->map(fn($cat) => [
@@ -100,11 +104,15 @@ class EventsIndex extends Component
 
     protected function updateSelectedCategoryLabels(): void
     {
-        $categories = app(CategoryService::class)->getAllCategories();
-        $this->selectedCategoryLabels = collect($categories)
-            ->whereIn('id', $this->eCategoryIds)
-            ->pluck('name', 'id')
-            ->all();
+        try {
+            $categories = app(CategoryService::class)->getAllCategories();
+            $this->selectedCategoryLabels = collect($categories)
+                ->whereIn('id', $this->eCategoryIds)
+                ->pluck('name', 'id')
+                ->all();
+        } catch (\Throwable $e) {
+            $this->selectedCategoryLabels = [];
+        }
     }
 
     public function removeCategory($id)
@@ -234,10 +242,10 @@ class EventsIndex extends Component
     {
         // $this->authorize('perform-override');
 
-        $this->editId = $request['id'];
-        $this->eTitle = $request['title'];
-        $this->ePurpose = $request['description'] ?? ($request['purpose'] ?? '');
-        $this->eVenue = $request['venue'];
+        $this->editId = (int)($request['id'] ?? 0);
+        $this->eTitle = (string)($request['title'] ?? '');
+        $this->ePurpose = (string)($request['description'] ?? ($request['purpose'] ?? ''));
+        $this->eVenue = (string)($request['venue'] ?? '');
         $this->eVenueId = (int)($request['venue_id'] ?? 0);
         $this->eFrom = (string)($request['from_edit'] ?? $request['from'] ?? '');
         $this->eTo   = (string)($request['to_edit'] ?? $request['to'] ?? '');
@@ -302,46 +310,47 @@ class EventsIndex extends Component
 
         $this->validateJustification();
         $isEditing = !empty($this->editId);
-        $this->dispatch('bs:close', id: 'oversightJustify');
-        $this->dispatch('bs:close', id: 'oversightEdit');
-        // Persist edits to DB when applicable
-        if (!empty($this->editId)) {
-            try {
+
+        try {
+            if ($isEditing) {
                 $svc = app(EventService::class);
                 $event = $this->getEventFromServiceById((int)$this->editId);
-                if ($event) {
-                    $venueId = (int)($this->eVenueId ?: ($event->venue_id ?? 0));
-                    // Build full payload for performManualOverride
-                    $payload = [
-                        'venue_id'     => $venueId,
-                        'title'        => (string)$this->eTitle,
-                        'description'  => (string)$this->ePurpose,
-                        'start_time'   => str_replace('T', ' ', (string)$this->eFrom),
-                        'end_time'     => str_replace('T', ' ', (string)$this->eTo),
-                        'status'       => (string)($event->status ?? 'approved'),
-                            'guest_size'   => (int)$this->eAttendees,
-                        'organization_name' => (string)$this->eOrganization,
-                        'organization_advisor_name'  => (string)$this->eAdvisorName,
-                        'organization_advisor_email' => (string)$this->eAdvisorEmail,
-                        'organization_advisor_phone' => (string)$this->eAdvisorPhone,
-                        'creator_institutional_number' => (string)$this->eStudentNumber,
-                        'creator_phone_number'          => (string)$this->eStudentPhone,
-                        'handles_food' => (bool)$this->eHandlesFood,
-                        'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
-                            'external_guest' => (bool)$this->eExternalGuest,
-                    ];
-                    // Route edits through performManualOverride (service-only, no model access here)
-                    $saved = $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
-                    // Sync categories by IDs (multiselect)
-                    if (!empty($this->eCategoryIds)) {
-                        try { $svc->syncEventCategoriesByIds($saved, $this->eCategoryIds); } catch (\Throwable) { /* noop */ }
-                    }
+                if (!$event) {
+                    $this->addError('justification', 'Event no longer exists or cannot be loaded.');
+                    return;
                 }
-            } catch (\Throwable $e) {
-                // swallow update errors
+
+                $venueId = (int)($this->eVenueId ?: ($event->venue_id ?? 0));
+                $payload = [
+                    'venue_id'     => $venueId,
+                    'title'        => (string)$this->eTitle,
+                    'description'  => (string)$this->ePurpose,
+                    'start_time'   => str_replace('T', ' ', (string)$this->eFrom),
+                    'end_time'     => str_replace('T', ' ', (string)$this->eTo),
+                    'status'       => (string)($event->status ?? 'approved'),
+                    'guest_size'   => (int)$this->eAttendees,
+                    'organization_name' => (string)$this->eOrganization,
+                    'organization_advisor_name'  => (string)$this->eAdvisorName,
+                    'organization_advisor_email' => (string)$this->eAdvisorEmail,
+                    'organization_advisor_phone' => (string)$this->eAdvisorPhone,
+                    'creator_institutional_number' => (string)$this->eStudentNumber,
+                    'creator_phone_number'          => (string)$this->eStudentPhone,
+                    'handles_food' => (bool)$this->eHandlesFood,
+                    'use_institutional_funds' => (bool)$this->eUseInstitutionalFunds,
+                    'external_guest' => (bool)$this->eExternalGuest,
+                ];
+                $saved = $svc->performManualOverride($event, $payload, Auth::user(), (string)($this->justification ?? ''), 'save');
+                if (!empty($this->eCategoryIds)) {
+                    try { $svc->syncEventCategoriesByIds($saved, $this->eCategoryIds); } catch (\Throwable) { /* noop */ }
+                }
             }
+        } catch (\Throwable $e) {
+            $this->addError('justification', 'Unable to save event.');
+            return;
         }
 
+        $this->dispatch('bs:close', id: 'oversightJustify');
+        $this->dispatch('bs:close', id: 'oversightEdit');
         $this->dispatch('toast', message: 'Event saved');
         $this->reset(['actionType', 'justification']);
     }
@@ -353,61 +362,20 @@ class EventsIndex extends Component
      * This function sets the currently edited event ID and the actionType to 'delete', and then opens the justification modal.
      * @param int $id The ID of the event to delete
      */
+    // Delete flows disabled for admin oversight; keep stub for compatibility
     public function delete(int $id): void
     {
-        $this->authorize('perform-override');
-
-        $this->resetErrorBag();
-        $this->resetValidation();
-
-        $this->editId = isset($id) && is_int($id) ? $id : null;
-        $this->actionType = 'delete';
-        $this->dispatch('bs:open', id: 'oversightConfirm');
+        $this->addError('justification', 'Delete is disabled for this view.');
     }
 
-    /**
-     * Proceeds from the delete confirmation to the justification modal.
-     */
     public function proceedDelete(): void
     {
-        $this->authorize('perform-override');
-
-        $this->resetErrorBag();
-        $this->resetValidation();
-
-        $this->dispatch('bs:close', id: 'oversightConfirm');
-        $this->dispatch('bs:open', id: 'oversightJustify');
+        $this->addError('justification', 'Delete is disabled for this view.');
     }
 
-    /**
-     * Confirms the deletion of an event.
-     *
-     * This function will validate the justification entered by the user, and then delete the event with the given ID.
-     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating the event was deleted.
-     */
     public function confirmDelete(): void
     {
-        $this->authorize('perform-override');
-
-        if ($this->editId) {
-            $this->validateJustification();
-            try {
-                $svc = app(EventService::class);
-                $event = $this->getEventFromServiceById((int)$this->editId);
-                if ($event) {
-                    // Delegate cancellation to service (no status hardcoding in UI)
-                    $svc->cancelEvent($event, Auth::user(), (string)($this->justification ?? ''));
-                }
-            } catch (\Throwable $e) {
-                // Surface a validation error instead of falling back
-                $this->addError('justification', 'Unable to delete event.');
-                return;
-            }
-        }
-        $this->dispatch('bs:close', id: 'oversightJustify');
-        $this->dispatch('toast', message: 'Event deleted');
-        $this->reset(['editId', 'actionType', 'justification']);
+        $this->addError('justification', 'Delete is disabled for this view.');
     }
 
     /**
@@ -473,10 +441,7 @@ class EventsIndex extends Component
         $this->authorize('perform-override');
 
         $type = $this->actionType ?? '';
-        if ($type === 'delete') {
-            $this->confirmDelete();
-            return;
-        }
+        // Delete flows are disabled.
         if ($type === 'advance') {
             $this->validateJustification();
             try {
