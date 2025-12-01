@@ -430,7 +430,7 @@ class Configure extends Component
 
         $this->description = (string) ($this->venue->description ?? '');
 
-        $this->venueService->updateVenueOperatingHours($this->venue, $payload, Auth::user());
+        $this->venueService->updateVenueOperatingHours($this->venue, $payload, Auth::user(), $justification);
 
         $this->refreshAvailabilityForm();
 
@@ -446,7 +446,8 @@ class Configure extends Component
             $this->venueService->updateOrCreateVenueRequirements(
                 $this->venue,
                 [],
-                Auth::user()
+                Auth::user(),
+                $justification
             );
 
             $this->dispatchGreenToast('All requirements have been cleared.');
@@ -474,7 +475,8 @@ class Configure extends Component
         $this->venueService->updateOrCreateVenueRequirements(
             $this->venue,
             $this->rows,
-            Auth::user()
+            Auth::user(),
+            $justification
         );
 
         $this->dispatchGreenToast('Venue requirements saved.');
@@ -488,7 +490,8 @@ class Configure extends Component
         $this->venueService->updateOrCreateVenueRequirements(
             $this->venue,
             [],
-            Auth::user()
+            Auth::user(),
+            $justification
         );
 
         $this->rows = [];

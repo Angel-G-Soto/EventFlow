@@ -619,10 +619,16 @@ class VenueService
      * @param Venue $venue
      * @param array<int,array<string,mixed>> $availabilityData
      * @param User $manager
+     * @param string $justification Optional justification appended to audit meta.
      * @return Venue
      * @throws Exception
      */
-    public function updateVenueOperatingHours(Venue $venue, array $availabilityData, User $manager): Venue
+    public function updateVenueOperatingHours(
+        Venue $venue,
+        array $availabilityData,
+        User $manager,
+        string $justification = ''
+    ): Venue
     {
         try {
 
@@ -642,6 +648,10 @@ class VenueService
                 'venue_name' => (string) $venue->name,
                 'source'     => 'venue_hours_update',
             ];
+            $justification = trim((string) $justification);
+            if ($justification !== '') {
+                $meta['justification'] = $justification;
+            }
             $ctx = ['meta' => $meta];
             if (function_exists('request') && request()) {
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
@@ -687,12 +697,19 @@ class VenueService
      * @param Venue $venue
      * @param array $requirementsData
      * @param User $manager
+     * @param string $justification Optional justification appended to audit meta.
      * @return Void
      * @throws Exception
      */
-    public function updateOrCreateVenueRequirements(Venue $venue, array $requirementsData, User $manager): Void
+    public function updateOrCreateVenueRequirements(
+        Venue $venue,
+        array $requirementsData,
+        User $manager,
+        string $justification = ''
+    ): Void
     {
         try {
+            $justification = trim((string) $justification);
             // Validate manager role to be 'venue-manager' and to belong to the departments of the venues
             if (!$manager->getRoleNames()->contains('venue-manager')) {
                 throw new InvalidArgumentException('Manager does not have the required role.');
@@ -797,6 +814,9 @@ class VenueService
                         'name'           => (string) $requirement->name,
                         'source'         => 'venue_requirement_create',
                     ];
+                    if ($justification !== '') {
+                        $meta['justification'] = $justification;
+                    }
                     $ctx = ['meta' => $meta];
                     if (function_exists('request') && request()) {
                         $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
@@ -811,6 +831,28 @@ class VenueService
                     );
                 }
             }
+
+            $updateMeta = [
+                'venue_id'        => (int) $venue->id,
+                'total_submitted' => count($trimmedData),
+                'deleted_ids'     => $deletedIds,
+                'deleted_names'   => $deletedNames,
+                'source'          => 'venue_requirements_update',
+            ];
+            if ($justification !== '') {
+                $updateMeta['justification'] = $justification;
+            }
+            $ctx = ['meta' => $updateMeta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $updateMeta);
+            }
+            $this->auditService->logAction(
+                $manager->id,
+                'venue',
+                'UPDATE_REQUIREMENTS',
+                (string) ($venue->name ?? (string) $venue->id),
+                $ctx
+            );
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
