@@ -51,23 +51,45 @@
                 <strong>Please fix the errors below:</strong>
             </div>
             @endif
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h1 class="h4 mb-0 d-flex flex-wrap align-items-center gap-2">
-                    <span>Configure Venue:</span>
-                    <span class="text-muted fw-normal">
-                        {{ $venue->name }}@if(!empty($venue->code)) ({{ $venue->code }})@endif
-                    </span>
-                </h1>
+            {{-- Header: desktop + mobile variants --}}
+            <div class="mb-3">
+                {{-- Desktop / tablet (≥ sm): original layout --}}
+                <div class="d-none d-sm-flex align-items-center justify-content-between gap-2">
+                    <h1 class="h4 mb-0 d-flex flex-wrap align-items-center gap-2">
+                        <span>Configure Venue:</span>
+                        <span class="text-muted fw-normal">
+                            {{ $venue->name }}@if(!empty($venue->code)) ({{ $venue->code }})@endif
+                        </span>
+                    </h1>
 
-                <div class="d-flex gap-2">
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('venues.manage') }}"
+                        class="btn btn-secondary flex-shrink-0 text-nowrap"
+                        onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
+                            <i class="bi bi-arrow-left"></i>
+                            Back
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Mobile (< sm): "Configure Venue" + Back on same row --}}
+                <div class="d-flex d-sm-none align-items-center justify-content-between gap-2">
+                    <h1 class="h5 mb-0">Configure Venue</h1>
 
                     <a href="{{ route('venues.manage') }}"
-                       class="btn btn-secondary"
-                        onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
+                    class="btn btn-secondary flex-shrink-0 text-nowrap"
+                    onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
                         <i class="bi bi-arrow-left"></i>
                         Back
                     </a>
                 </div>
+
+                {{-- Mobile secondary line: venue name + code --}}
+                <div class="d-sm-none text-muted small mt-1">
+                    {{ $venue->name }}@if(!empty($venue->code)) ({{ $venue->code }})@endif
+                </div>
+            </div>
+
             </div>
 
             <div class="py-4">
