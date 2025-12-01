@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Middleware\EnsureAuthentication;
 use App\Services\EventService;
+use App\Services\DocumentService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -43,6 +43,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Perform daily backup at 2:00 AM
         $schedule->command('backup:dump')->dailyAt('02:00');
+
+        // Purge documents older than 4 years daily at 3:00 AM
+        $schedule->call(function () {
+            app(DocumentService::class)->purgeOldDocuments();
+        })->dailyAt('03:00');
 
         // $schedule->exec('freshclam')->weeklyOn(6, '00:00'); // Commented out since freshclam is running on the background as a daemon
     })
