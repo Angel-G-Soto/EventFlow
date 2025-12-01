@@ -70,8 +70,8 @@
     @endif
 
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
-        <h1 class="fw-bold mb-0">Event Details</h1>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2 detail-header">
+        <h1 class="fw-bold mb-0 detail-header__title">Event Details</h1>
         <button type="button"
                 class="btn btn-secondary"
                 wire:click="back"
@@ -112,6 +112,17 @@
 
     .status-indicator--neutral {
         color: #495057;
+    }
+
+    @media (max-width: 767.98px) {
+        .detail-header {
+            flex-direction: row !important;
+            align-items: center !important;
+        }
+
+        .detail-header > button {
+            margin-left: auto;
+        }
     }
 </style>
 

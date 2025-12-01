@@ -181,7 +181,7 @@
                                     aria-label="View details"
                                     onclick="window.location='{{ route('user.request',['event'=>$event]) }}'">
                                 <i class="bi bi-eye" aria-hidden="true"></i>
-                                <span class="d-none d-sm-inline">View details</span>
+                                <span>View details</span>
                             </button>
                         </td>
                     </tr>

@@ -39,9 +39,9 @@
 @endphp
 
 <div class="container my-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
-        <h1 class="fw-bold mb-0">Event Details</h1>
-        <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2 detail-header">
+        <h1 class="fw-bold mb-0 detail-header__title">Event Details</h1>
+        <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto detail-header__actions">
             <button type="button"
                     wire:click="back"
                     class="btn btn-secondary"
@@ -85,6 +85,22 @@
 
         .status-indicator--warning {
             color: #856404;
+        }
+
+        @media (max-width: 767.98px) {
+            .detail-header {
+                flex-direction: row !important;
+                align-items: center !important;
+            }
+
+            .detail-header__actions {
+                margin-left: auto !important;
+                width: auto;
+            }
+
+            .detail-header__actions .btn {
+                width: auto;
+            }
         }
     </style>
 
