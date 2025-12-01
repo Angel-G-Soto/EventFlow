@@ -28,7 +28,7 @@
                         @php $missing = ! $this->documentExists($doc['file_path'] ?? null, 'documents'); @endphp
                         @if ($missing)
                             <p class="mb-0 text-danger small">
-                                This document is unavailable and may have been removed after virus detection.
+                                This document is unavailable. May have been removed due to retention policies or security concerns.
                             </p>
                         @endif
                     </div>
