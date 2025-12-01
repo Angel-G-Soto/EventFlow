@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
+use App\Models\Document;
 use App\Models\Event;
 use Illuminate\Database\Seeder;
 
@@ -29,7 +30,12 @@ class EventSeeder extends Seeder
             $event->categories()->sync(
                 $categories->random(random_int(1, $count))->pluck('id')->all()
             );
+
+            // Attach sample documents to each event
+            Document::factory()
+                ->count(random_int(1, 3))
+                ->state(fn () => ['event_id' => $event->id])
+                ->create();
         });
     }
 }
-
