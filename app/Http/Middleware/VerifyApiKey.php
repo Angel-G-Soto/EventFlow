@@ -16,7 +16,9 @@ class VerifyApiKey
     public function handle(Request $request, Closure $next)
     {
         $apiKeyHeader  = (string) $request->header('X-API-KEY', '');
-        $configuredKey = (string) env('API_KEY', '');
+        $configuredKey = (string) config('services.nexo.api_key', '');
+
+
 
         dd([
             'apiKeyHeader'        => $apiKeyHeader,
@@ -28,7 +30,7 @@ class VerifyApiKey
             'hash_equals_result'  => hash_equals($configuredKey, $apiKeyHeader),
             'condition_result'    => ($apiKeyHeader !== '' && $configuredKey !== '' && hash_equals($configuredKey, $apiKeyHeader)),
         ]);
-        
+
         // Success path
         if ($apiKeyHeader !== '' && $configuredKey !== '' && hash_equals($configuredKey, $apiKeyHeader)) {
 
