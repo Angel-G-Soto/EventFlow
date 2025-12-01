@@ -1,54 +1,33 @@
-
 {{--    View: Index (Livewire)--}}
 {{--    Project: EventFlow (Laravel 12 + Livewire 3 + Bootstrap 5)--}}
 {{--    Date: 2025-11-01--}}
 
-{{--    Description:--}}
-{{--    - Renders a paginated, filterable table/list (e.g., events/requests).--}}
-{{--    - Integrates with Livewire for reactive filtering and pagination links.--}}
-
-{{--    Variables (typical):--}}
-{{--    @var \Illuminate\Pagination\LengthAwarePaginator<\App\Models\Event> $items--}}
-{{--    @var array{categories:array<int|string>,venues:array<int|string>,orgs:array<int|string>} $filters--}}
-
-{{--    Accessibility notes:--}}
-{{--    - Use <th scope="col"> for headers; give rows <th scope="row"> if first cell is a label.--}}
-{{--    - Ensure interactive elements have discernible text; use aria-labels as needed.--}}
-{{--    - Pagination via $items->links() includes ARIA attributes; place it within <nav>.--}}
-
 <x-slot:pageActions>
-    <ul class="navbar-nav mx-auto">
+    <ul class="navbar-nav mx-auto page-actions-nav">
         <li class="nav-item">
-            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('public.calendar') }}">Home</a>
-        </li>
-        {{--        <li class="nav-item">--}}
-        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('approver.pending.index') }}">Pending Request</a>--}}
-        {{--        </li>--}}
-
-        <li class="nav-item">
-            <a class="fw-bold nav-link {{ Route::is('approver.history.index') ? 'active' : '' }} " href="{{ route('approver.history.index') }}">Request History</a>
+            <a class="fw-bold nav-link {{ request()->routeIs('public.calendar') ? 'active' : '' }}"
+               href="{{ route('public.calendar') }}">
+                Home
+            </a>
         </li>
 
-        {{--        <li class="nav-item">--}}
-        {{--            <a class="fw-bold nav-link ? 'active' : '' " href="{{ route('home') }}">My Venues</a>--}}
-        {{--        </li>--}}
-
+        <li class="nav-item">
+            <a class="fw-bold nav-link {{ request()->routeIs('approver.history.index') ? 'active' : '' }}"
+               href="{{ route('approver.history.index') }}">
+                Request History
+            </a>
+        </li>
     </ul>
-
 </x-slot:pageActions>
 
 <div>
     <h1 class="h4 mb-3">My Requests</h1>
 
-
-
-
     <div class="card shadow-sm mb-3">
         <livewire:request.org.filters/>
-
     </div>
 
-    <style>
+        <style>
         .status-indicator {
             display: inline-flex;
             align-items: center;
@@ -76,41 +55,123 @@
         .status-indicator--warning {
             color: #856404;
         }
+
+        /* Mobile-specific tweaks (iPhone SE width) */
+        @media (max-width: 575.98px) {
+            /* Stack page actions vertically on phones */
+            .page-actions-nav {
+                flex-direction: column !important;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .page-actions-nav .nav-link {
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            /* Hide the "middle" table columns on mobile (Org, Date, Status) */
+            .requests-table th:nth-child(2),
+            .requests-table td:nth-child(2),
+            .requests-table th:nth-child(3),
+            .requests-table td:nth-child(3),
+            .requests-table th:nth-child(4),
+            .requests-table td:nth-child(4) {
+                display: none;
+            }
+
+            /* Make stacked text more readable on small screens */
+            .requests-table td:first-child {
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+
+            .requests-table .request-title {
+                font-size: 0.9rem;
+                line-height: 1.25;
+            }
+
+            .requests-table .request-meta {
+                font-size: 0.75rem;
+                line-height: 1.3;
+            }
+
+            /* 🔽 Fix: shrink search box placeholder on small screens */
+            .card .form-control {
+                font-size: 0.85rem;
+                padding-top: 0.35rem;
+                padding-bottom: 0.35rem;
+            }
+
+            .card .form-control::placeholder {
+                font-size: 0.8rem;
+                line-height: 1.2;
+            }
+        }
     </style>
 
     <div class="card shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 requests-table">
                 <thead class="table-light">
                 <tr>
-                    <th>Title</th>
-                    <th>Organization</th>
-                    <th>Date Submitted</th>
-                    <th>Status</th>
-
-                    <th class="text-end">Actions</th>
+                    <th scope="col">Title</th>
+                    <th scope="col" class="d-none d-md-table-cell">Organization</th>
+                    <th scope="col" class="d-none d-md-table-cell">Date Submitted</th>
+                    <th scope="col" class="d-none d-md-table-cell">Status</th>
+                    <th scope="col" class="text-end">Actions</th>
                 </tr>
                 </thead>
 
                 <tbody>
                 @forelse ($events as $event)
+                    @php
+                        $statusVariant = match (true) {
+                            in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
+                            in_array($event->status, ['approved', 'completed']) => 'success',
+                            default => 'warning',
+                        };
+                        $submittedAt = \Carbon\Carbon::parse($event->created_at)
+                            ->format('D, M j, Y g:i A');
+                    @endphp
+
                     <tr>
-                        <td class="fw-medium">{{$event->title ?? '—' }}</td>
-                        <td class="fw-medium">{{$event->organization_name  ?? '—' }}</td>
-                        <td class="fw-medium">{{ \Carbon\Carbon::parse($event->created_at)->format('D, M j, Y g:i A') }}</td>
+                        {{-- Title + stacked mobile info --}}
                         <td class="fw-medium">
-                            @php
-                                $statusVariant = match (true) {
-                                    in_array($event->status, ['cancelled', 'withdrawn', 'rejected']) => 'danger',
-                                    in_array($event->status, ['approved', 'completed']) => 'success',
-                                    default => 'warning'
-                                };
-                            @endphp
+                            <div class="fw-medium request-title">
+                                {{ $event->title ?? '—' }}
+                            </div>
+
+                            {{-- Organization under title, smaller + lighter (mobile only) --}}
+                            @if($event->organization_name)
+                                <div class="text-muted request-meta d-md-none">
+                                    {{ $event->organization_name }}
+                                </div>
+                            @endif
+
+                            {{-- Date Submitted (mobile only, small text) --}}
+                            <div class="text-muted request-meta d-md-none">
+                                {{ $submittedAt }}
+                            </div>
+                            {{-- NOTE: status removed from mobile stack for readability --}}
+                        </td>
+
+                        {{-- Desktop / tablet-only columns --}}
+                        <td class="fw-medium d-none d-md-table-cell">
+                            {{ $event->organization_name ?? '—' }}
+                        </td>
+
+                        <td class="fw-medium d-none d-md-table-cell">
+                            {{ $submittedAt }}
+                        </td>
+
+                        <td class="fw-medium d-none d-md-table-cell">
                             <span class="status-indicator status-indicator--{{ $statusVariant }}">
                                 <span class="status-dot" aria-hidden="true"></span>
                                 <span>{{ $event->getSimpleStatus() }}</span>
                             </span>
                         </td>
+
                         <td class="fw-medium text-end">
                             <button type="button"
                                     class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
@@ -123,10 +184,13 @@
                                 <span class="d-none d-sm-inline">View details</span>
                             </button>
                         </td>
-
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="text-center text-secondary py-4">No venues found.</td></tr>
+                    <tr>
+                        <td colspan="5" class="text-center text-secondary py-4">
+                            No requests found.
+                        </td>
+                    </tr>
                 @endforelse
                 </tbody>
             </table>
