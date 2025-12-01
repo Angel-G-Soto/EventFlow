@@ -3,16 +3,16 @@
 namespace App\Services;
 
 use App\Exceptions\StorageException;
-use App\Models\Document;
 use App\Jobs\ProcessFileUpload;
+use App\Models\Document;
 use App\Services\AuditService;
-
+use Carbon\Carbon;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
-
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -225,7 +225,7 @@ class DocumentService
         return 'uploads_temp';
     }
 
-    public function showPDF(Document $document): BinaryFileResponse
+    public function showPDF(int $documentId): BinaryFileResponse
     {
         //
 
@@ -234,6 +234,7 @@ class DocumentService
 
         // Use your existing accessor if you prefer:
         // $filePath = $document->getFilePath();
+        $document = $this->getDocument($documentId);
 
 
         $filePath = $document->file_path;
@@ -261,6 +262,30 @@ class DocumentService
     public function getDocument(int $id): Document
     {
         return Document::findOrFail($id);
+    }
+
+    /**
+     * Delete documents (and their files) that were created on or before the cutoff.
+     * Defaults to purging anything older than four years.
+     */
+    public function purgeOldDocuments(?Carbon $cutoff = null): int
+    {
+        $cutoff ??= Carbon::now()->subYears(4);
+
+        $deletedCount = 0;
+
+        Document::query()
+            ->where('created_at', '<=', $cutoff)
+            ->orderBy('id')
+            ->chunkById(200, function ($documents) use (&$deletedCount) {
+                foreach ($documents as $document) {
+                    if ($this->deleteDocument($document)) {
+                        $deletedCount++;
+                    }
+                }
+            });
+
+        return $deletedCount;
     }
 
     /**

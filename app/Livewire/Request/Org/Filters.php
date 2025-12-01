@@ -5,7 +5,7 @@ namespace App\Livewire\Request\Org;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-
+use App\Services\UserService;
 class Filters extends Component
 {
     public array $roles = [];
@@ -19,7 +19,7 @@ class Filters extends Component
     public function mount(): void
     {
         // Load roles for current user
-        $this->roles = Auth::user()->roles()->where('name', '<>', 'user')->get(['name'])->toArray();
+        $this->roles = app(UserService::class)->rolesOrg(Auth::user());
     }
 
     public function apply(): void

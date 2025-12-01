@@ -39,14 +39,16 @@
 @endphp
 
 <div class="container my-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
-        <h1 class="fw-bold mb-0">Event Details</h1>
-        <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2 detail-header">
+        <h1 class="fw-bold mb-0 detail-header__title">Event Details</h1>
+        <div class="d-flex flex-column flex-sm-row gap-2 ms-md-auto detail-header__actions">
             <button type="button"
                     wire:click="back"
                     class="btn btn-secondary"
                     wire:target="back"
                     aria-label="Go Back">
+                <i class="bi bi-arrow-left"></i>
+
                 Back
             </button>
         </div>
@@ -83,6 +85,22 @@
 
         .status-indicator--warning {
             color: #856404;
+        }
+
+        @media (max-width: 767.98px) {
+            .detail-header {
+                flex-direction: row !important;
+                align-items: center !important;
+            }
+
+            .detail-header__actions {
+                margin-left: auto !important;
+                width: auto;
+            }
+
+            .detail-header__actions .btn {
+                width: auto;
+            }
         }
     </style>
 
@@ -232,6 +250,10 @@
                         <span>{{ $event->external_guest ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
+                <div>
+                    <span class="fw-semibold me-2">Multimedia Required:</span>
+                    <span>{{ $event->multimedia_equipment ?: '—' }}</span>
+                </div>
             </div>
         </div>
     </section>
@@ -279,6 +301,7 @@
                     data-bs-toggle="modal"
                     data-bs-target="#denyModal"
                     aria-label="Cancel {{ $event->title }}">
+                <i class="bi bi-x-circle me-2"></i>
                 Cancel
             </button>
         @elseif(str_contains($event->status,'pending'))
@@ -287,6 +310,7 @@
                     data-bs-toggle="modal"
                     data-bs-target="#denyModal"
                     aria-label="Withdraw {{ $event->title }}">
+                <i class="bi bi-x-circle me-2"></i>
                 Withdraw
             </button>
         @endif
@@ -320,6 +344,7 @@
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
+                            <i class="bi bi-x-circle"></i>
                             Cancel Request
                         </button>
                     @elseif(str_contains($event->status,'pending'))
@@ -328,6 +353,7 @@
                                 wire:click="save"
                                 :disabled="justification.trim().length < 10"
                                 wire:loading.attr="disabled" wire:target="save">
+                            <i class="bi bi-x-circle"></i>
                             Withdraw Request
                         </button>
                     @endif

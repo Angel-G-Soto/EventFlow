@@ -107,8 +107,20 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="4" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
+                    <textarea class="form-control" rows="6" maxlength="2000" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Multimedia equipment needed</label>
+                    <textarea
+                        class="form-control"
+                        rows="4"
+                        maxlength="2000"
+                        wire:model.defer="multimedia_equipment"
+                        placeholder="List any audio/visual or other multimedia equipment you need ready before the event (e.g., projector, microphones, speakers)."
+                    ></textarea>
+                    <small class="text-muted">Optional: share the multimedia setup you need pre-installed.</small>
+                    @error('multimedia_equipment') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-12">
@@ -122,13 +134,21 @@
 
                 <div class="col-md-6">
                     <label class="form-label required">Start time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="start_time" placeholder="e.g., 2025-05-15T09:00">
+                    <input type="datetime-local"
+                           class="form-control"
+                           wire:model.live="start_time"
+                           min="{{ now()->format('Y-m-d\\TH:i') }}"
+                           placeholder="e.g., 2025-05-15T09:00">
                     @error('start_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label required">End time</label>
-                    <input type="datetime-local" class="form-control" wire:model.live="end_time" placeholder="e.g., 2025-05-15T12:00">
+                    <input type="datetime-local"
+                           class="form-control"
+                           wire:model.live="end_time"
+                           min="{{ now()->format('Y-m-d\\TH:i') }}"
+                           placeholder="e.g., 2025-05-15T12:00">
                     @error('end_time') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -287,7 +307,11 @@
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Next</button>
+                <button type="submit" class="btn btn-primary">
+                    Next
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+                
             </div>
         </form>
     @endif
@@ -460,14 +484,18 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">
+                    <i class="bi bi-arrow-left"></i>
+                    Back
+                </button>
                 <button
                     type="submit"
                     class="btn btn-primary"
                     wire:loading.attr="disabled"
                     wire:target="next"
                     @disabled(!$venue_id)
-                >Next</button>
+                >Next
+            <i class="bi bi-arrow-right"></i></button>
             </div>
         </form>
     @endif
@@ -647,7 +675,7 @@
                                     </div>
                                 </div>
 
-                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                <button type="button" class="btn btn-danger btn-sm"
                                     wire:click="removeRequirementFile({{ $index }})">
                                     Remove
                                 </button>
@@ -664,11 +692,41 @@
 
 
             <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-secondary" wire:click="back">Back</button>
-                <button type="submit" class="btn btn-success">Submit Event</button>
+                <button type="button" class="btn btn-secondary" wire:click="back">
+                    <i class="bi bi-arrow-left"></i>
+                    Back
+                </button>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                    <i class="bi bi-send"></i>
+                    Submit Event
+                </button>
             </div>
         </form>
     @endif
+
+    {{-- Submit confirmation modal --}}
+    <div wire:ignore.self class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmSubmitModalLabel">Submit Event</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to submit this event for approval? <br><br>
+                    After submission, you will not be able to make further changes. Missing required documents may incur in the dismissal of your request.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" wire:click="submit" wire:loading.attr="disabled"
+                            data-bs-dismiss="modal">
+                        Yes, Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>

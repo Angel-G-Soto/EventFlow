@@ -17,6 +17,10 @@ class VenuePolicy
         return (($user->getRoleNames()->contains('department-director') || $user->getRoleNames()->contains('venue-manager'))
                 && $user->department_id == $venue->department_id);
     }
+    public function viewIndex(User $user): bool
+    {
+        return  $user->getRoleNames()->contains('venue-manager');
+    }
 
     /**
      * Determine whether the user can update the model's requirements.

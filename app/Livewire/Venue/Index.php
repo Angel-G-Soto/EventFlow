@@ -18,6 +18,7 @@
 namespace App\Livewire\Venue;
 
 use App\Models\Venue;
+use App\Services\VenueService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -48,6 +49,10 @@ class Index extends Component
      * Search term currently being applied to the query.
      */
     public string $searchTerm = '';
+
+    public string $departmentName = '';
+
+    protected VenueService $venueService;
 /**
  * Configure action.
  * @param Venue $venue
@@ -78,20 +83,20 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function boot(VenueService $venueService): void
+    {
+        $this->venueService = $venueService;
+    }
+
     public function render()
     {
-        $query = Venue::query()
-            ->where('department_id', Auth::user()->department_id);
+        $this->authorize('viewIndex', Venue::class);
+        $venues = $this->venueService->getVenuesByDepartmentWithSearch(
+            Auth::user()->department_id,
+            $this->searchTerm
+        );
 
-        if (!empty($this->searchTerm)) {
-            $term = '%'.$this->searchTerm.'%';
-            $query->where(function ($builder) use ($term) {
-                $builder->where('name', 'like', $term)
-                    ->orWhere('code', 'like', $term);
-            });
-        }
-
-        $venues = $query->latest()->paginate(8);
+        $this->departmentName = Auth::user()->department->name ?? 'Department';
 
         return view('livewire.venue.index', compact('venues'));
     }

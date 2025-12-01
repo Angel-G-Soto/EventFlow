@@ -88,6 +88,10 @@ class Create extends Component
 /**
  * @var string
  */
+    public string $multimedia_equipment = '';
+/**
+ * @var string
+ */
     public string $guest_size = '';
 /**
  * @var string
@@ -305,19 +309,20 @@ class Create extends Component
     {
         if ($step === 1) {
             return [
-                'creator_phone_number' => ['required','string','regex:/^\D*(\d\D*){10}$/'],
+                'creator_phone_number' => ['required','string','regex:/^\D*(\d\D*){10}$/','max:30'],
                 'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
-                'description' => ['required','string','min:10'],
+                'description' => ['required','string','min:10','max:2000'],
+                'multimedia_equipment' => ['nullable','string','max:2000'],
                 'guest_size' => ['nullable','integer','min:0'],
-                'start_time' => ['required','date'],
+                'start_time' => ['required','date','after_or_equal:today'],
                 'end_time' => ['required','date','after:start_time'],
                 'category_ids' => ['array','min:1'],
                 'organization_name' => ['required','string','max:255'],
                 'organization_id' => ['nullable','integer'],
                 'organization_advisor_name' => ['required','string','max:150'],
-                'organization_advisor_phone' => ['required','string','max:30'],
-                'organization_advisor_email' => ['required','email','max:150'],
+                'organization_advisor_phone' => ['required','string','regex:/^\D*(\d\D*){10}$/','max:30'],
+                'organization_advisor_email' => ['required','email:rfc,dns','max:150'],
                 'handles_food' => ['boolean'],
                 'external_guest' => ['boolean'],
                 'use_institutional_funds' => ['boolean'],
@@ -401,6 +406,31 @@ class Create extends Component
     {
         $this->resetVenueSelectionState();
         $this->refreshVenuesIfPossible();
+    }
+
+    public function updatedCreatorPhoneNumber($value): void
+    {
+        $this->creator_phone_number = $this->formatPhoneNumber($value);
+    }
+
+    public function updatedOrganizationAdvisorPhone($value): void
+    {
+        $this->organization_advisor_phone = $this->formatPhoneNumber($value);
+    }
+
+    protected function formatPhoneNumber(?string $value): string
+    {
+        $digits = substr(preg_replace('/\D+/', '', (string)$value), 0, 10);
+
+        if (strlen($digits) <= 3) {
+            return $digits;
+        }
+
+        if (strlen($digits) <= 6) {
+            return sprintf('(%s) %s', substr($digits, 0, 3), substr($digits, 3));
+        }
+
+        return sprintf('(%s) %s-%s', substr($digits, 0, 3), substr($digits, 3, 3), substr($digits, 6));
     }
 /**
  * ValidTimeRange action.
@@ -714,12 +744,14 @@ public function removeRequirementFile(int $index): void
             'guest_size' => $this->guest_size??0,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
+            'organization_name' => $this->organization_name,
             'organization_advisor_name' => $this->organization_advisor_name,
             'organization_advisor_email' => $this->organization_advisor_email,
             'organization_advisor_phone' => $this->organization_advisor_phone,
             'handles_food' => $this->handles_food,
             'external_guest' => $this->external_guest,
             'use_institutional_funds' => $this->use_institutional_funds,
+            'multimedia_equipment' => trim($this->multimedia_equipment) !== '' ? $this->multimedia_equipment : null,
         ];
 
         $eventService = $eventService ?? app(EventService::class);
@@ -780,7 +812,7 @@ public function removeRequirementFile(int $index): void
         session()->flash('success', 'Event submitted successfully.');
         $this->dispatch('event-form-submitted');
 
-        redirect()->route('public.calendar'); // or to a details/thanks page
+        redirect()->route('user.index'); // redirect to My Requests page
     }
 
     public function clearCategories(): void

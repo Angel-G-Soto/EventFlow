@@ -39,6 +39,7 @@
 
 <div class="container">
     <h1 class="h4 mb-3">My Venues</h1>
+    <h6 class="text-muted">{{$departmentName}}</h6>
 
     <div class="card shadow-sm mb-3 pb-1">
         <div class="card-body py-2" style="font-size: 1.05rem;">

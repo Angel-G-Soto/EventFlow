@@ -36,7 +36,7 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
   Route::get('/admin/users', UsersIndex::class)->name('admin.users');
   Route::get('/admin/departments', DepartmentsIndex::class)->name('admin.departments');
   Route::get('/admin/venues', VenuesIndex::class)->name('admin.venues');
-  Route::get('/admin/categories', CategoriesIndex::class)->name('admin.categories');
+  Route::get('/dsca/categories', CategoriesIndex::class)->name('dsca.categories');
   Route::get('/admin/events', EventsIndex::class)->name('admin.events');
   Route::get('/admin/audit-log', AuditTrailIndex::class)
     ->name('admin.audit');
@@ -78,15 +78,21 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
   Route::get('director', \App\Livewire\Director\VenuesIndex::class)->name('director.venues.index');
 
   //Documents
-  Route::get('/documents/{documentId}', \App\Livewire\ShowDocument::class)
+
+
+    Route::get('/documents/{documentId}', [DocumentController::class, 'show'])
       ->name('documents.show');
 
-  Route::get('/documents/{document}/pdf', function (Document $document, DocumentService $service) {
-        // Optional: policy check here if you want
-        // $this->authorize('viewMyDocument', [$document->event]);
+  // Route::get('/documents/{documentId}', \App\Livewire\ShowDocument::class)
+  //     ->name('documents.show');
 
-        return $service->showPDF($document);
-    })->name('documents.pdf');
+
+  // Route::get('/documents/{document}/pdf', function (Document $document, DocumentService $service) {
+  //       // Optional: policy check here if you want
+  //       // $this->authorize('viewMyDocument', [$document->event]);
+
+  //       return $service->showPDF($document);
+  //   })->name('documents.pdf');
 
 
 

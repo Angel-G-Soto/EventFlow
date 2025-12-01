@@ -60,8 +60,11 @@
                 </h1>
 
                 <div class="d-flex gap-2">
-                    <a href="{{ route('venues.manage') }}" class="btn btn-secondary"
+
+                    <a href="{{ route('venues.manage') }}"
+                       class="btn btn-secondary"
                         onclick="if (history.length > 1 && document.referrer?.startsWith(location.origin)) { history.back(); return false; }">
+                        <i class="bi bi-arrow-left"></i>
                         Back
                     </a>
                 </div>

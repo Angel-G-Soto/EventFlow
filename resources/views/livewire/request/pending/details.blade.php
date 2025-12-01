@@ -70,12 +70,13 @@
     @endif
 
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
-        <h1 class="fw-bold mb-0">Event Details</h1>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2 detail-header">
+        <h1 class="fw-bold mb-0 detail-header__title">Event Details</h1>
         <button type="button"
                 class="btn btn-secondary"
                 wire:click="back"
                 wire:target="back">
+            <i class="bi bi-arrow-left"></i>
             Back
         </button>
     </div>
@@ -111,6 +112,17 @@
 
     .status-indicator--neutral {
         color: #495057;
+    }
+
+    @media (max-width: 767.98px) {
+        .detail-header {
+            flex-direction: row !important;
+            align-items: center !important;
+        }
+
+        .detail-header > button {
+            margin-left: auto;
+        }
     }
 </style>
 
@@ -239,6 +251,10 @@
                         <span>{{ $event->external_guest ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
+                <div>
+                    <span class="fw-semibold me-2">Multimedia Required:</span>
+                    <span>{{ $event->multimedia_equipment ?: '—' }}</span>
+                </div>
             </div>
         </div>
     </section>
@@ -281,6 +297,7 @@
                 class="btn btn-success"
                 wire:target="approve"
                 aria-label="Approve {{ $event->title }}">
+            <i class="bi bi-check-circle"></i>
             Approve
         </button>
         <button type="button"
@@ -288,6 +305,7 @@
                 data-bs-toggle="modal"
                 data-bs-target="#denyModal"
                 aria-label="Reject {{ $event->title }}">
+            <i class="bi bi-x-circle"></i>
             Reject
         </button>
     </div>

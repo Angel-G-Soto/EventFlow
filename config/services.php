@@ -36,7 +36,7 @@ return [
     ],
 
     'nexo' => [
-        'api_key' => env('NEXO_API_KEY'),
+        'api_key' => env('API_KEY'),
     ],
 
     'saml2' => [

@@ -8,6 +8,14 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+/**
+ * Admin category management view.
+ *
+ * Provides search/sort/pagination plus create, update (with justification),
+ * and delete (with justification) flows, delegating all persistence to
+ * CategoryService so validation, audit logging, and side effects stay
+ * centralized outside the Livewire layer.
+ */
 #[Layout('layouts.app')]
 class CategoriesIndex extends Component
 {
@@ -28,11 +36,17 @@ class CategoriesIndex extends Component
     public string $deleteJustification = '';
     public bool $showModal = false;
 
+    /**
+     * Ensure the current user can manage categories before interacting.
+     */
     public function mount(): void
     {
         $this->authorizeManage();
     }
 
+    /**
+     * Render the paginated categories table for admins.
+     */
     public function render()
     {
         $this->authorizeManage();
@@ -83,6 +97,9 @@ class CategoriesIndex extends Component
         $this->page = 1;
     }
 
+    /**
+     * Open create modal with a clean form.
+     */
     public function startCreate(): void
     {
         $this->authorizeManage();
@@ -91,6 +108,9 @@ class CategoriesIndex extends Component
         $this->dispatch('bs:open', id: 'categoryModal');
     }
 
+    /**
+     * Load an existing category into the edit modal.
+     */
     public function startEdit(int $categoryId): void
     {
         $this->authorizeManage();
@@ -106,6 +126,9 @@ class CategoriesIndex extends Component
         }
     }
 
+    /**
+     * Validate and persist a category; edits require justification.
+     */
     public function saveCategory(): void
     {
         $this->authorizeManage();
@@ -134,6 +157,9 @@ class CategoriesIndex extends Component
         $this->dispatch('bs:close', id: 'categoryModal');
     }
 
+    /**
+     * Launch the delete confirmation/justification flow for a category.
+     */
     public function confirmDelete(int $categoryId): void
     {
         $this->authorizeManage();
@@ -166,6 +192,9 @@ class CategoriesIndex extends Component
         $this->dispatch('bs:close', id: 'categoryJustify');
     }
 
+    /**
+     * Delete a category after justification, delegating to the service layer.
+     */
     public function deleteCategory(): void
     {
         $this->authorizeManage();
@@ -208,6 +237,11 @@ class CategoriesIndex extends Component
         $this->editJustification = '';
     }
 
+    /**
+     * Build a paginator for categories using the service layer.
+     *
+     * Keeps pagination state in sync when filters/page size change.
+     */
     protected function categoriesPaginator(): LengthAwarePaginator
     {
         $service = app(CategoryService::class);
@@ -242,6 +276,9 @@ class CategoriesIndex extends Component
         $this->authorize('manage-categories');
     }
 
+    /**
+     * Validate justification and persist an existing category.
+     */
     public function confirmEditSave(): void
     {
         $this->authorizeManage();
@@ -262,6 +299,11 @@ class CategoriesIndex extends Component
         }
     }
 
+    /**
+     * Create or update a category through the service layer.
+     *
+     * Justification is required for edits (passed through to the service for audit).
+     */
     protected function persistCategory(?string $justification = null): bool
     {
         $service = app(CategoryService::class);

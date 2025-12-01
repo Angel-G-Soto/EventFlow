@@ -37,6 +37,7 @@ class Event extends Model
         'creator_phone_number',
         'title',
         'description',
+        'multimedia_equipment',
         'start_time',
         'end_time',
         'status',
@@ -44,6 +45,7 @@ class Event extends Model
         'handles_food',
         'use_institutional_funds',
         'external_guest',
+        'type',
     ];
 
     /**

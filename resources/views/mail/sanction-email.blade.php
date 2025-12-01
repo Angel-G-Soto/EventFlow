@@ -5,7 +5,7 @@
 
 @section('content')
 
-    <h3>The following event has been fully approved</h3>
+    <h3>The following event request has been fully approved</h3>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
         style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
         <tr>

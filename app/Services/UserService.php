@@ -726,4 +726,24 @@ class UserService
 
         return $user->getRoleNames()->map(fn($role) => Str::slug($role));
     }
+
+    public function rolesPending(User $user): array
+    {
+        return $user->roles()
+            ->where('name', '<>', 'user')
+            ->pluck('name')
+            ->map(fn ($name) => ['name' => $name])
+            ->toArray();
+    }
+
+    public function rolesOrg(User $user): array
+    {
+        return $user->roles()
+            ->where('name', '<>', 'user')
+            ->get(['name'])
+            ->toArray();
+    }
+
+
+
 }

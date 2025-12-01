@@ -1,8 +1,13 @@
 <?php
 
 use App\Jobs\ProcessFileUpload;
+use App\Jobs\SendCancellationEmailJob;
+use App\Models\AuditTrail;
 use App\Models\Document;
+use App\Models\Event;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
@@ -98,3 +103,48 @@ it('scans and moves a clean file using ClamAV1', function () {
     // Assert that the file path is updated correctly in the Document model
     $this->assertEquals($new_file_path, $document->file_path);
 });
+
+it('cancels the event, audits, and notifies when an infected file is detected', function () {
+    Queue::fake();
+
+    $systemUser = User::factory()->create();
+    $requester = User::factory()->create();
+    config()->set('eventflow.system_user_id', $systemUser->id);
+
+    $event = Event::factory()
+        ->for($requester, 'requester')
+        ->create(['status' => 'pending - advisor approval']);
+
+    $document = Document::factory()
+        ->for($event)
+        ->create(['name' => 'infected.pdf']);
+
+    $job = new TestableProcessFileUpload();
+    $job->callHandleInfectedDocument($document, 'EICAR-Test-Signature FOUND');
+
+    $event->refresh();
+
+    expect($event->status)->toBe('cancelled');
+
+    $audit = AuditTrail::query()
+        ->where('action', 'EVENT_CANCELLED_VIRUS_DETECTED')
+        ->first();
+
+    expect($audit)->not->toBeNull()
+        ->and($audit->meta['event_id'] ?? null)->toBe($event->id);
+
+    Queue::assertPushed(SendCancellationEmailJob::class);
+});
+
+class TestableProcessFileUpload extends ProcessFileUpload
+{
+    public function __construct()
+    {
+        parent::__construct(new Collection());
+    }
+
+    public function callHandleInfectedDocument(Document $document, string $scanOutput): void
+    {
+        $this->handleInfectedDocument($document, $scanOutput);
+    }
+}

@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use DateTime;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Event\EventCollection;
 use Illuminate\Database\Eloquent\Collection;
 use function PHPUnit\Framework\isEmpty;
@@ -100,7 +101,6 @@ class EventService
                     : 'pending - approval',
                 default   => 'draft',
             };
-
             // Create or update the event
             $event = Event::updateOrCreate(
                 [
@@ -120,6 +120,7 @@ class EventService
 
                     'title' => $data['title'],
                     'description' => $data['description'] ?? null,
+                    'multimedia_equipment' => $data['multimedia_equipment'] ?? null,
                     'start_time' => $data['start_time'],
                     'end_time' => $data['end_time'],
 
@@ -248,18 +249,34 @@ class EventService
             }
 
             
-            $eventDetails = $this->notificationService->getEventDetails($event);
+            $eventDetails = $this->getEventDetails($event);
 
+            try {
             $this->notificationService->dispatchRequestCreatedNotification(
                 creatorEmail: $eventDetails['creator_email'],
                 eventDetails: $eventDetails,
             );
+            } catch (\Throwable $e) {
+                Log::warning('Event creation notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
-            if (!empty($data['organization_advisor_email'])) {
-                $this->notificationService->dispatchApprovalRequiredNotification(
-                    approverEmail: $event->organization_advisor_email,
-                    eventDetails: $eventDetails,
-                );
+
+            try 
+            {
+                if (!empty($data['organization_advisor_email'])) {
+                    $this->notificationService->dispatchApprovalRequiredNotification(
+                        approverEmail: $event->organization_advisor_email,
+                        eventDetails: $eventDetails,
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Approval required notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             return $event;
@@ -320,17 +337,29 @@ class EventService
                 $ctx
             );
         } catch (\Throwable) { /* best-effort */ }
+        
+        
         // Send rejection email to prior approvers and creator
-            // Send rejection email to prior approvers and creator
+        // Send rejection email to prior approvers and creator
+            
+        try{
             $creatorEmail = $event->requester->email;
 
-        $eventDetails = $this->notificationService->getEventDetails($event);
-    
-        $this->notificationService->dispatchRejectionNotification(
-                creatorEmail: $creatorEmail,
-                eventDetails: $eventDetails,
-                justification: $justification
-            );
+            $eventDetails = $this->getEventDetails($event);
+        
+            $this->notificationService->dispatchRejectionNotification(
+                    creatorEmail: $creatorEmail,
+                    eventDetails: $eventDetails,
+                    justification: $justification
+                );
+
+        }
+        catch (\Throwable $e) {
+                Log::warning('Event rejection notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
 
         return $event->refresh();
@@ -406,10 +435,19 @@ class EventService
                 $this->createPendingHistory($event, $nextStatus, $approver);
             }
 
-            $approverName = $approver->first_name . ' ' . $approver->last_name;
-            $this->sendCreatorUpdateEmail($event, $approverName, $currentStatus);
-            $event->refresh();
-            $this->sendApproverEmails($event);
+            try {
+                // Send notifications to next approver(s)
+                $approverName = $approver->first_name . ' ' . $approver->last_name;
+                $this->sendCreatorUpdateEmail($event, $approverName, $currentStatus);
+                $event->refresh();
+                $this->sendApproverEmails($event);
+            } catch (\Throwable $e) {
+                    Log::warning('Event update notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
 
 
             return $event->refresh();
@@ -439,6 +477,17 @@ class EventService
                     ]
                 );
             }
+            try {
+                    $this->sendApproverEmails($result);
+                    $this->sendCreatorUpdateEmail($result, $user->first_name . ' ' . $user->last_name, $currentStatus,true);
+            } catch (\Throwable $e) {
+                    Log::warning('Event advance notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
+            
 
             return $result;
         });
@@ -563,8 +612,10 @@ class EventService
                 } catch (\Throwable) { /* best-effort */ }
             }
 
+            try {
+
             $creatorEmail = $event->requester->email;
-            $eventDetails = $this->notificationService->getEventDetails($event);
+            $eventDetails = $this->getEventDetails($event);
             $justification = $comment ?? 'Event was withdrawn by the user.';
 
             $this->notificationService->dispatchWithdrawalNotifications(
@@ -572,6 +623,15 @@ class EventService
                 eventDetails: $eventDetails,
                 justification: $justification,
             );
+
+            } catch (\Throwable $e) {
+                Log::warning('Event withdrawal notifications failed', [
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+
 
             return $event->refresh();
         });
@@ -977,6 +1037,7 @@ class EventService
                 'creator_phone_number'          => 'creator_phone_number',
                 'title'                         => 'title',
                 'description'                   => 'description',
+                'multimedia_equipment'          => 'multimedia_equipment',
                 'start_time'                    => 'start_time',
                 'end_time'                      => 'end_time',
                 'status'                        => 'status',
@@ -1119,7 +1180,7 @@ class EventService
             try {
                 $creatorEmail = optional($event->requester)->email;
                 if ($creatorEmail) {
-                    $eventDetails = $this->notificationService->getEventDetails($event);
+                    $eventDetails = $this->getEventDetails($event);
                     $this->notificationService->dispatchCancellationNotifications(
                         creatorEmail: $creatorEmail,
                         eventDetails: $eventDetails,
@@ -1136,6 +1197,68 @@ class EventService
 
             return $event->refresh();
         });
+    }
+
+    /**
+     * Cancel an event due to a virus detection and capture specific audit context.
+     */
+    public function cancelEventDueToVirus(
+        Event $event,
+        User $actor,
+        Document $document,
+        string $scanOutput,
+        ?string $justification = null
+    ): Event {
+        $message = $justification ?: sprintf(
+            'Automatically cancelled because the virus scanner flagged "%s" as infected.',
+            (string) ($document->name ?? $document->getNameOfFile())
+        );
+
+        $result = $this->cancelEvent($event, $actor, $message);
+
+        $this->logVirusCancellationAudit($actor, $event, $document, $scanOutput);
+
+        return $result;
+    }
+
+    protected function logVirusCancellationAudit(User $actor, Event $event, Document $document, string $scanOutput): void
+    {
+        if ((int) $actor->id <= 0) {
+            return;
+        }
+
+        try {
+            $meta = [
+                'event_id'      => (int) $event->id,
+                'document_id'   => (int) $document->id,
+                'document_name' => (string) ($document->name ?? ''),
+                'scan_output'   => Str::limit(trim($scanOutput), 255),
+                'source'        => 'clamav',
+            ];
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            }
+
+            $eventLabel = trim((string) ($event->title ?? ''));
+            if ($eventLabel === '') {
+                $eventLabel = 'Event #' . (string) $event->id;
+            }
+
+            $this->auditService->logAction(
+                (int) $actor->id,
+                'event',
+                'EVENT_CANCELLED_VIRUS_DETECTED',
+                $eventLabel,
+                $ctx
+            );
+        } catch (\Throwable $e) {
+            Log::warning('EventService: failed to write virus cancellation audit entry', [
+                'event_id' => $event->id,
+                'document_id' => $document->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
 
@@ -1517,6 +1640,7 @@ class EventService
             'category_ids' => $categoryIds,
             'updated' => now()->format('Y-m-d H:i'),
             'description' => (string)($event->description ?? ''),
+            'multimedia_equipment' => (string)($event->multimedia_equipment ?? ''),
             'attendees' => (int)($event->guest_size ?? 0),
             'handles_food' => (bool)($event->handles_food ?? false),
             'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),
@@ -1589,7 +1713,7 @@ class EventService
 
         public function sendApproverEmails(Event $event){
 //            pending - venue manager approval' => 'pending - dsca approval',
-            $eventDetails = $this->notificationService->getEventDetails($event);
+            $eventDetails = $this->getEventDetails($event);
 
 
             switch ($event->status)
@@ -1632,14 +1756,14 @@ class EventService
         }
 
 
-    public function sendCreatorUpdateEmail(Event $event, string $approverName, string $statusWhenApproved){
+    public function sendCreatorUpdateEmail(Event $event, string $approverName, string $statusWhenApproved, bool $advance = false){
 //            pending - venue manager approval' => 'pending - dsca approval',
 
 //        $creatorEmail = app(UserService::class)->findUserById($event->creator_id)->email;
 
 
         $creatorEmail = $event->requester->email;
-        $eventDetails = $this->notificationService->getEventDetails($event);
+        $eventDetails = $this->getEventDetails($event);
 
 
         switch ($statusWhenApproved)
@@ -1649,7 +1773,7 @@ class EventService
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
-                    role: 'Advisor'
+                    role: $advance ? 'System Administrator' : 'Advisor'
                 );
 
                 break;
@@ -1660,7 +1784,7 @@ class EventService
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
-                    role: 'Venue Manager'
+                    role: $advance ? 'System Administrator': 'Venue Manager'
                 );
 
                 break;
@@ -1669,18 +1793,72 @@ class EventService
                     creatorEmail: $creatorEmail,
                     eventDetails: $eventDetails,
                     approverName: $approverName,
-                    role: 'DSCA Staff'
-                );
+                    role: $advance ? 'System Administrator':'DSCA Staff'
+                );               
+               
 
                 $this->notificationService->dispatchSanctionedNotification(
                     creatorEmail:$creatorEmail,
                     eventDetails: $eventDetails,
                 );
 
-                break;
+            break;
 
         }
 
     }
+
+    private function getEventDetails(Event $event):array
+    {
+        $venue = app(VenueService::class)->getVenueById($event->venue_id);
+        $user = app(UserService::class)->findUserById($event->creator_id);
+
+        return [
+            'title' => $event->title,
+            'organization_name' => $event->organization_name,
+            'creator_name' => $user->first_name . ' ' . $user->last_name,
+            'organization_advisor_name' => $event->organization_advisor_name,
+            'organization_advisor_email' => $event->organization_advisor_email,
+            'creator_email' => $user->email,
+            'start_time' => $this->formatDateTime($event->start_time),
+            'end_time' => $this->formatDateTime($event->end_time),
+            'venue_name' => $venue->name,
+            'id' => $event->id,
+            'venue_code' => $venue->code,
+            ];
+    }
+
+        /**
+     * Format a datetime string into a human friendly representation.
+     */
+    private function formatDateTime(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)
+                ->timezone(config('app.timezone'))
+                ->format('M j, Y g:i A');
+        } catch (\Throwable) {
+            return $value;
+        }
+    }
+
+    public function getApprovedPublicEvents(): array
+    {
+        return Event::whereIn('status', ['approved', 'completed'])
+            ->orderBy('start_time')
+            ->orderBy('end_time')
+            ->get()
+            ->toArray();
+    }
+
+    public function findPublicEventById(int $id): ?Event
+    {
+        return Event::find($id);
+    }
+
 
 }

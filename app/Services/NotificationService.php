@@ -178,43 +178,8 @@ class NotificationService
 
 
     }
-    public function getEventDetails(Event $event):array
-    {
-        $venue = app(VenueService::class)->getVenueById($event->venue_id);
-        $user = app(UserService::class)->findUserById($event->creator_id);
 
-        return [
-            'title' => $event->title,
-            'organization_name' => $event->organization_name,
-            'creator_name' => $user->first_name . ' ' . $user->last_name,
-            'organization_advisor_name' => $event->organization_advisor_name,
-            'organization_advisor_email' => $event->organization_advisor_email,
-            'creator_email' => $user->email,
-            'start_time' => $this->formatDateTime($event->start_time),
-            'end_time' => $this->formatDateTime($event->end_time),
-            'venue_name' => $venue->name,
-            'id' => $event->id,
-            'venue_code' => $venue->code,
-            ];
-    }
 
-    /**
-     * Format a datetime string into a human friendly representation.
-     */
-    private function formatDateTime(?string $value): ?string
-    {
-        if (empty($value)) {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($value)
-                ->timezone(config('app.timezone'))
-                ->format('M j, Y g:i A');
-        } catch (\Throwable) {
-            return $value;
-        }
-    }
 
 
 }
