@@ -100,7 +100,7 @@
         <div class="card shadow-sm mb-3">
             <div class="card-header d-flex align-items-center gap-2 justify-content-between flex-wrap">
                 <h2 id="availability-title" class="h5 mb-0">Venue Description & Weekly Availability</h2>
-                <button class="btn btn-primary"
+                <button class="btn {{ $this->detailsDirty ? 'btn-primary' : 'btn-outline-primary' }}"
                         wire:click="saveAvailability"
                         @disabled(! $this->detailsDirty)>
                     <i class="bi bi-save me-1"></i>
@@ -214,7 +214,7 @@
                     </button>
                     --}}
 
-                    <button class="btn btn-primary"
+                    <button class="btn {{ $this->requirementsDirty ? 'btn-primary' : 'btn-outline-primary' }}"
                             type="button"
                             wire:click="save"
                             wire:loading.attr="disabled"
@@ -312,7 +312,7 @@
                                            placeholder="https://example.edu/requirements.pdf"
                                            wire:model.lazy="rows.{{ $i }}.hyperlink">
                                     @if (!empty($row['hyperlink']))
-                                        <a class="btn btn-outline-secondary"
+                                        <a class="btn btn-primary"
                                            href="{{ $row['hyperlink'] }}"
                                            target="_blank"
                                            rel="noopener noreferrer">
