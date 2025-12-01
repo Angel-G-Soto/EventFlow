@@ -43,6 +43,8 @@ class AuditTrailIndex extends Component
      */
     public function clearFilters(): void
     {
+        $this->resetErrorBag(['from', 'to']);
+        $this->resetValidation(['from', 'to']);
         $this->reset(['search', 'from', 'to']);
         $this->pageSize = 25;
         $this->page = 1;

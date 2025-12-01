@@ -250,4 +250,31 @@ describe('AuditService', function () {
         // And the ordering is newest first by created_at
         expect($items[0]->created_at->greaterThanOrEqualTo($items[1]->created_at))->toBeTrue();
     });
+
+    it('getPaginatedLogs supports text search across actor, action, target, and IP', function () {
+        $service = new AuditService();
+        $user = User::factory()->create([
+            'first_name' => 'Search',
+            'last_name' => 'User',
+            'email' => 'searcher@example.com',
+        ]);
+
+        $service->logAction(
+            $user->id,
+            'EventTarget',
+            'SEARCH_ACTION',
+            'Target#42',
+            ['ip' => '10.20.30.40']
+        );
+
+        $assertMatches = function (string $term) use ($service) {
+            $page = $service->getPaginatedLogs(['q' => $term], perPage: 10);
+            expect($page->total())->toBe(1);
+        };
+
+        $assertMatches('Search User');      // actor name (first + last)
+        $assertMatches('SEARCH_ACTION');    // action code
+        $assertMatches('Target#42');        // target id
+        $assertMatches('10.20.30.40');      // IP address
+    });
 });

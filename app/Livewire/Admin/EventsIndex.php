@@ -463,27 +463,21 @@ class EventsIndex extends Component
         $this->dispatch('bs:open', id: 'oversightAdvance');
     }
 
-    // Confirm action flows
-    /**
-     * Apply an approve/deny style action after justification.
-     *
-     * Status changes are delegated to EventService (no hardcoded statuses in UI)
-     * so audit logging and side-effects stay centralized.
-     */
-    public function confirmAction(): void
-    {
-        $this->authorize('perform-override');
+    // Approve/deny flows disabled: only advance/save/delete are allowed
+    // public function confirmAction(): void
+    // {
+    //     $this->authorize('perform-override');
 
-        // Apply status change via service (no hardcoded statuses)
-        $toastMsg = null;
-        if ($this->editId && in_array($this->actionType, ['approve', 'deny'], true)) {
-            try {
-                $svc = app(EventService::class);
-                $event = $this->getEventFromServiceById((int) $this->editId);
-                if (! $event) {
-                    $this->addError('justification', 'Unable to load event for action.');
-                    return;
-                }
+    //     // Apply status change via service (no hardcoded statuses)
+    //     $toastMsg = null;
+    //     if ($this->editId && in_array($this->actionType, ['approve', 'deny'], true)) {
+    //         try {
+    //             $svc = app(EventService::class);
+    //             $event = $this->getEventFromServiceById((int) $this->editId);
+    //             if (! $event) {
+    //                 $this->addError('justification', 'Unable to load event for action.');
+    //                 return;
+    //             }
 
                 // if ($this->actionType === 'approve') {
                 //     $svc->approveEvent($event, Auth::user());
@@ -493,17 +487,17 @@ class EventsIndex extends Component
                 //     $svc->denyEvent((string) ($this->justification ?? ''), $event, Auth::user());
                 //     $toastMsg = 'Event denied';
                 // }
-            } catch (\Throwable $e) {
-                $this->addError('justification', 'Unable to ' . $this->actionType . ' event.');
-                return;
-            }
-        }
+    //         } catch (\Throwable $e) {
+    //             $this->addError('justification', 'Unable to ' . $this->actionType . ' event.');
+    //             return;
+    //         }
+    //     }
 
-        $this->dispatch('bs:close', id: 'oversightJustify');
-        $this->dispatch('bs:close', id: 'oversightEdit');
-        $this->dispatch('toast', message: $toastMsg ?? (ucfirst($this->actionType) . ' completed'));
-        $this->reset('actionType', 'justification');
-    }
+    //     $this->dispatch('bs:close', id: 'oversightJustify');
+    //     $this->dispatch('bs:close', id: 'oversightEdit');
+    //     $this->dispatch('toast', message: $toastMsg ?? (ucfirst($this->actionType) . ' completed'));
+    //     $this->reset('actionType', 'justification');
+    // }
 
     /**
      * Unified justification submit handler routing to the appropriate action.
@@ -536,10 +530,7 @@ class EventsIndex extends Component
             $this->reset('actionType', 'justification');
             return;
         }
-        if (in_array($type, ['approve', 'deny'], true)) {
-            $this->confirmAction();
-            return;
-        }
+        // Approve/Deny flows are disabled; fall through to save.
         // 'reroute' removed
         $this->confirmSave();
     }

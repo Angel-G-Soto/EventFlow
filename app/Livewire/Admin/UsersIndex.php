@@ -50,6 +50,17 @@ class UsersIndex extends Component
         $this->page = 1;
     }
 
+/**
+ * Resets the current page to 1 when the search form is submitted.
+ *
+ * This is necessary to prevent the pagination from breaking when a new search query is executed.
+ */
+    public function applySearch(): void
+{
+    $this->page = 1;
+}
+
+
     // Filters: clear/reset
     /**
      * Clears all user filters and resets pagination.
