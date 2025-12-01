@@ -88,6 +88,10 @@ class Create extends Component
 /**
  * @var string
  */
+    public string $multimedia_equipment = '';
+/**
+ * @var string
+ */
     public string $guest_size = '';
 /**
  * @var string
@@ -309,6 +313,7 @@ class Create extends Component
                 'creator_institutional_number' => ['required','string','max:30'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10','max:2000'],
+                'multimedia_equipment' => ['nullable','string','max:2000'],
                 'guest_size' => ['nullable','integer','min:0'],
                 'start_time' => ['required','date','after_or_equal:today'],
                 'end_time' => ['required','date','after:start_time'],
@@ -746,6 +751,7 @@ public function removeRequirementFile(int $index): void
             'handles_food' => $this->handles_food,
             'external_guest' => $this->external_guest,
             'use_institutional_funds' => $this->use_institutional_funds,
+            'multimedia_equipment' => trim($this->multimedia_equipment) !== '' ? $this->multimedia_equipment : null,
         ];
 
         $eventService = $eventService ?? app(EventService::class);

@@ -240,6 +240,10 @@
                         <span>{{ $event->external_guest ? 'Yes' : 'No' }}</span>
                     </span>
                 </div>
+                <div>
+                    <span class="fw-semibold me-2">Multimedia Required:</span>
+                    <span>{{ $event->multimedia_equipment ?: '—' }}</span>
+                </div>
             </div>
         </div>
     </section>

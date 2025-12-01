@@ -59,8 +59,8 @@ $downloadParams = array_filter([
             <div class="input-group">
               <input id="audit_search" type="text" class="form-control" wire:model.defer="search"
                 placeholder="Search by user, action, target, or IP…">
-              <button class="btn btn-secondary" type="submit" aria-label="Search">
-                <i class="bi bi-search" title="Search"></i>
+              <button class="btn btn-secondary" type="submit" aria-label="Search" title="Search">
+                <i class="bi bi-search"></i>
               </button>
             </div>
           </form>

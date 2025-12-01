@@ -13,6 +13,14 @@ use App\Services\DepartmentService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
+/**
+ * Admin users index / management view.
+ *
+ * Exposes filtering, pagination, and create/edit flows for user accounts,
+ * routing all persistence through UserService/DepartmentService so that
+ * audit logging and domain rules (roles, department requirement) remain
+ * centralized in the service layer rather than Livewire or controllers.
+ */
 #[Layout('layouts.app')] // loads your Bootstrap layout
 class UsersIndex extends Component
 {
@@ -27,15 +35,7 @@ class UsersIndex extends Component
     public string $sortDirection = 'asc';
 
     // Pagination & filter reactions
-    /**
-     * Navigates to a given page number.
-     *
-     * @param int $target The target page number.
-     *
-     * This function will compute bounds from the current filters, and then
-     * set the page number to the maximum of 1 and the minimum of the
-     * target and the last page number.
-     */
+    // Keep pagination within bounds when a page number is chosen
     /**
      * Toggle or set the active sort column and direction.
      */
@@ -49,6 +49,17 @@ class UsersIndex extends Component
         }
         $this->page = 1;
     }
+
+/**
+ * Resets the current page to 1 when the search form is submitted.
+ *
+ * This is necessary to prevent the pagination from breaking when a new search query is executed.
+ */
+    public function applySearch(): void
+{
+    $this->page = 1;
+}
+
 
     // Filters: clear/reset
     /**
@@ -280,7 +291,13 @@ class UsersIndex extends Component
 
     // Private/Protected Helper Methods
     /**
-     * Returns an array of validation rules for the user edit form.
+     * Validation rules for the user edit form.
+     *
+     * Rules intentionally encode domain constraints such as:
+     * - institutional email domains (upr/uprm),
+     * - required presence of at least one role,
+     * - preventing removal of the last remaining admin user, and
+     * - requiring a valid department when the role implies departmental ownership.
      */
     protected function rules(): array
     {
@@ -330,12 +347,14 @@ class UsersIndex extends Component
     // Removed legacy in-memory ID generator; DB auto-increment IDs are used
 
     /**
-     * Determine if any of the given roles do not require a department.
+     * Determine whether the current role set requires a department assignment.
      *
-     * @param array<int,string> $roles The set of role names to evaluate.
+     * Only "department-director" and "venue-manager" are allowed to (and must)
+     * be tied to a department; all other role combinations are treated as
+     * department-agnostic from the admin UI's perspective.
+     *
+     * @param array<int,string> $roles The set of role codes to evaluate.
      */
-
-    // Only 'department-director' and 'venue-manager' can have a department
     protected function roleRequiresDepartment(array $roles): bool
     {
         // Roles are provided as codes (e.g., 'department-director', 'venue-manager')

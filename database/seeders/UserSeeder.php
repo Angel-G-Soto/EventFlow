@@ -86,13 +86,23 @@ class UserSeeder extends Seeder
             $requiresDept = in_array('department-director', $rolesForUser, true)
                 || in_array('venue-manager', $rolesForUser, true);
 
-            $user = User::factory()->create([
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'department_id' => $requiresDept ? $department?->id : null,
-                'auth_type' => 'saml',
-            ]);
+            $password = bcrypt(str()->random(16));
+
+            $user = User::withTrashed()->updateOrCreate(
+                ['email' => $data['email']],
+                [
+                    'first_name'    => $data['first_name'],
+                    'last_name'     => $data['last_name'],
+                    'department_id' => $requiresDept ? $department?->id : null,
+                    'auth_type'     => 'saml',
+                    'password'      => $password,
+                    'email_verified_at' => now(),
+                ]
+            );
+            // Ensure soft-deleted baseline users are restored instead of duplicating.
+            if ($user->trashed()) {
+                $user->restore();
+            }
 
             $attachRoles = collect($data['roles'])
                 ->push('user') // guarantee base user role

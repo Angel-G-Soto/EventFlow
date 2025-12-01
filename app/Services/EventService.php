@@ -120,6 +120,7 @@ class EventService
 
                     'title' => $data['title'],
                     'description' => $data['description'] ?? null,
+                    'multimedia_equipment' => $data['multimedia_equipment'] ?? null,
                     'start_time' => $data['start_time'],
                     'end_time' => $data['end_time'],
 
@@ -1036,6 +1037,7 @@ class EventService
                 'creator_phone_number'          => 'creator_phone_number',
                 'title'                         => 'title',
                 'description'                   => 'description',
+                'multimedia_equipment'          => 'multimedia_equipment',
                 'start_time'                    => 'start_time',
                 'end_time'                      => 'end_time',
                 'status'                        => 'status',
@@ -1638,6 +1640,7 @@ class EventService
             'category_ids' => $categoryIds,
             'updated' => now()->format('Y-m-d H:i'),
             'description' => (string)($event->description ?? ''),
+            'multimedia_equipment' => (string)($event->multimedia_equipment ?? ''),
             'attendees' => (int)($event->guest_size ?? 0),
             'handles_food' => (bool)($event->handles_food ?? false),
             'use_institutional_funds' => (bool)($event->use_institutional_funds ?? false),

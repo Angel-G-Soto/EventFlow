@@ -232,30 +232,25 @@ class AuditService
      *
      * @param array<string,mixed> $filters
      * @param int                 $perPage
+     * @param int|null            $page
      * @return LengthAwarePaginator<AuditTrail>
      */
     public function getPaginatedLogs(array $filters = [], int $perPage = 25, ?int $page = null): LengthAwarePaginator
     {
-        // Select all columns to avoid referencing optional columns that may not exist
-        $q = AuditTrail::query()
+        $query = AuditTrail::query()
             ->with('actor')
             ->orderByDesc('created_at');
 
-        $applyTextLike = function (string $value): string {
-            return '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value) . '%';
-        };
-
-        if (!empty($filters['q'])) {
+        if (isset($filters['q'])) {
             $term = trim((string) $filters['q']);
             if ($term !== '') {
-                $q->where(function ($sub) use ($term, $applyTextLike) {
-                    $like = $applyTextLike($term);
+                $query->where(function ($sub) use ($term) {
+                    $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
                     $sub->orWhereHas('actor', function ($uq) use ($like) {
                         $uq->whereRaw(
                             "TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ? ESCAPE '\\\\'",
                             [$like]
-                        )->orWhere('name', 'like', $like)
-                          ->orWhere('email', 'like', $like);
+                        )->orWhere('email', 'like', $like);
                     });
                     $sub->orWhere('action', 'like', $like);
                     $sub->orWhere('target_type', 'like', $like);
@@ -264,44 +259,43 @@ class AuditService
                 });
             }
         } else {
-            if (!empty($filters['user'])) {
+            if (isset($filters['user'])) {
                 $term = trim((string) $filters['user']);
                 if ($term !== '') {
                     if (ctype_digit($term)) {
                         // Numeric: treat as exact user ID
-                        $q->where('user_id', (int) $term);
+                        $query->where('user_id', (int) $term);
                     } else {
                         // Text: search on related user name/email
-                        $like = $applyTextLike($term);
-                        $q->whereHas('actor', function ($uq) use ($like) {
+                        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
+                        $query->whereHas('actor', function ($uq) use ($like) {
                             $uq->whereRaw(
                                 "TRIM(CONCAT(COALESCE(first_name,''),' ',COALESCE(last_name,''))) LIKE ? ESCAPE '\\\\'",
                                 [$like]
-                            )->orWhere('name', 'like', $like)
-                              ->orWhere('email', 'like', $like);
+                            )->orWhere('email', 'like', $like);
                         });
                     }
                 }
             }
 
-            if (!empty($filters['action'])) {
-                $q->where('action', 'like', $applyTextLike(trim((string) $filters['action'])));
+            if (isset($filters['action'])) {
+                $query->where('action', 'like', '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim((string) $filters['action'])) . '%');
             }
         }
 
-        if (!empty($filters['date_from'])) {
-            $q->whereDate('created_at', '>=', (string) $filters['date_from']);
+        if (isset($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', (string) $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
-            $q->whereDate('created_at', '<=', (string) $filters['date_to']);
+        if (isset($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', (string) $filters['date_to']);
         }
 
         $currentPage = $page !== null ? max(1, $page) : null;
 
         $paginator = $currentPage === null
-            ? $q->paginate($perPage)
-            : $q->paginate($perPage, ['*'], 'page', $currentPage);
+            ? $query->paginate($perPage)
+            : $query->paginate($perPage, ['*'], 'page', $currentPage);
 
         $paginator->appends(array_filter([
             'user_id'   => $filters['user_id']   ?? null,

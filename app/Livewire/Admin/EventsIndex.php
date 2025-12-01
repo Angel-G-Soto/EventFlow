@@ -17,6 +17,14 @@ use DateTimeInterface;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Admin oversight view for event requests.
+ *
+ * Enables privileged users to search/filter requests, inspect full details
+ * (including attached documents), and perform manual overrides (save, cancel,
+ * advance, approve, deny). All persistence is delegated to EventService to
+ * keep business rules and audit logging out of the UI layer.
+ */
 #[Layout('layouts.app')]
 class EventsIndex extends Component
 {
@@ -62,22 +70,39 @@ class EventsIndex extends Component
         $this->refreshCategoryPool();
         $this->filteredCategories = $this->getFilteredCategories();
     }
+    /**
+     * Refresh filtered category options whenever the search term changes.
+     *
+     * Keeps the modal list in sync with the latest DB state without requiring
+     * a full page reload.
+     */
     public function updatedCategorySearch()
     {
         $this->filteredCategories = $this->getFilteredCategories();
     }
 
+    /**
+     * Rebuild the selected category label map when IDs change in edit/view state.
+     */
     public function updatedECategoryIds()
     {
         $this->updateSelectedCategoryLabels();
     }
 
+    /**
+     * Clear all selected categories from the edit state.
+     */
     public function clearCategories()
     {
         $this->eCategoryIds = [];
         $this->updateSelectedCategoryLabels();
     }
 
+    /**
+     * Resolve and filter categories from the database for the modal multiselect.
+     *
+     * @return array<int,array{id:int,name:string,description:?string}>
+     */
     protected function getFilteredCategories(): array
     {
         $categories = app(CategoryService::class)->getAllCategories();
@@ -98,6 +123,10 @@ class EventsIndex extends Component
         ])->all();
     }
 
+    /**
+     * Build a map of category id => name for currently selected IDs.
+     * This keeps labels stable in the UI even if categories change in the DB.
+     */
     protected function updateSelectedCategoryLabels(): void
     {
         $categories = app(CategoryService::class)->getAllCategories();
@@ -107,6 +136,11 @@ class EventsIndex extends Component
             ->all();
     }
 
+    /**
+     * Remove a single category from the selected ID list and refresh labels.
+     *
+     * @param int|string $id
+     */
     public function removeCategory($id)
     {
         $this->eCategoryIds = array_values(array_diff($this->eCategoryIds, [(int)$id]));
@@ -429,28 +463,21 @@ class EventsIndex extends Component
         $this->dispatch('bs:open', id: 'oversightAdvance');
     }
 
-    // Confirm action flows
-    /**
-     * Closes the justification and edit modals and displays a toast message indicating that the action has been completed.
-     *
-     * This function is called after the user has submitted the justification form.
-     * It will close the justification and edit modals, and then display a toast message indicating that the action has been completed.
-     * The toast message will be in the format "Action completed", where "Action" is the value of the `actionType` property.
-     */
-    public function confirmAction(): void
-    {
-        $this->authorize('perform-override');
+    // Approve/deny flows disabled: only advance/save/delete are allowed
+    // public function confirmAction(): void
+    // {
+    //     $this->authorize('perform-override');
 
-        // Apply status change via service (no hardcoded statuses)
-        $toastMsg = null;
-        if ($this->editId && in_array($this->actionType, ['approve', 'deny'], true)) {
-            try {
-                $svc = app(EventService::class);
-                $event = $this->getEventFromServiceById((int) $this->editId);
-                if (! $event) {
-                    $this->addError('justification', 'Unable to load event for action.');
-                    return;
-                }
+    //     // Apply status change via service (no hardcoded statuses)
+    //     $toastMsg = null;
+    //     if ($this->editId && in_array($this->actionType, ['approve', 'deny'], true)) {
+    //         try {
+    //             $svc = app(EventService::class);
+    //             $event = $this->getEventFromServiceById((int) $this->editId);
+    //             if (! $event) {
+    //                 $this->addError('justification', 'Unable to load event for action.');
+    //                 return;
+    //             }
 
                 // if ($this->actionType === 'approve') {
                 //     $svc->approveEvent($event, Auth::user());
@@ -460,20 +487,24 @@ class EventsIndex extends Component
                 //     $svc->denyEvent((string) ($this->justification ?? ''), $event, Auth::user());
                 //     $toastMsg = 'Event denied';
                 // }
-            } catch (\Throwable $e) {
-                $this->addError('justification', 'Unable to ' . $this->actionType . ' event.');
-                return;
-            }
-        }
+    //         } catch (\Throwable $e) {
+    //             $this->addError('justification', 'Unable to ' . $this->actionType . ' event.');
+    //             return;
+    //         }
+    //     }
 
-        $this->dispatch('bs:close', id: 'oversightJustify');
-        $this->dispatch('bs:close', id: 'oversightEdit');
-        $this->dispatch('toast', message: $toastMsg ?? (ucfirst($this->actionType) . ' completed'));
-        $this->reset('actionType', 'justification');
-    }
+    //     $this->dispatch('bs:close', id: 'oversightJustify');
+    //     $this->dispatch('bs:close', id: 'oversightEdit');
+    //     $this->dispatch('toast', message: $toastMsg ?? (ucfirst($this->actionType) . ' completed'));
+    //     $this->reset('actionType', 'justification');
+    // }
 
     /**
      * Unified justification submit handler routing to the appropriate action.
+     *
+     * Central entry point for the justification modal; routes to delete,
+     * advance, approve/deny, or save branches while enforcing justification
+     * when required by policy.
      */
     public function confirmJustify(): void
     {
@@ -499,10 +530,7 @@ class EventsIndex extends Component
             $this->reset('actionType', 'justification');
             return;
         }
-        if (in_array($type, ['approve', 'deny'], true)) {
-            $this->confirmAction();
-            return;
-        }
+        // Approve/Deny flows are disabled; fall through to save.
         // 'reroute' removed
         $this->confirmSave();
     }
@@ -771,44 +799,51 @@ class EventsIndex extends Component
     }
 
 
-protected function loadViewDocuments(int $eventId): void
-{
-    $this->eDocuments = [];
-    $previousStatus = $this->eStatus;
-
-    try {
-        $event = app(EventService::class)->findEventById($eventId);
-        if (!$event) {
-            $this->eStatus = $previousStatus;
-            return;
-        }
-
-        $this->eStatus = (string)($event->status ?? $previousStatus);
-        $documents = collect($event->documents ?? []);
-        $docService = app(\App\Services\DocumentService::class);
-
-        $this->eDocuments = $documents
-            ->map(function ($doc) use ($docService) {
-                $id   = (int)($doc->id ?? 0);
-                $name = (string)($doc->name ?? '');
-                $path = (string)($doc->file_path ?? '');
-                $label = $name !== '' ? $name : basename($path ?: ('document-' . ($doc->id ?? '')));
-                $url   = $id > 0 ? $docService->getDocumentViewUrl($doc) : null;
-
-                return compact('id', 'name', 'label', 'url');
-            })
-            ->filter(function ($doc) {
-                return ($doc['id'] ?? 0) > 0
-                    || trim((string)($doc['name'] ?? '')) !== ''
-                    || trim((string)($doc['label'] ?? '')) !== '';
-            })
-            ->values()
-            ->all();
-    } catch (\Throwable $exception) {
-        $this->eStatus = $previousStatus;
+    /**
+     * Load and normalize attached documents for the read-only view modal.
+     *
+     * Documents are mapped to a lightweight array (id, name, label, url)
+     * via DocumentService so the Blade template stays decoupled from
+     * storage implementation details and concrete model types.
+     */
+    protected function loadViewDocuments(int $eventId): void
+    {
         $this->eDocuments = [];
+        $previousStatus = $this->eStatus;
+
+        try {
+            $event = app(EventService::class)->findEventById($eventId);
+            if (!$event) {
+                $this->eStatus = $previousStatus;
+                return;
+            }
+
+            $this->eStatus = (string)($event->status ?? $previousStatus);
+            $documents = collect($event->documents ?? []);
+            $docService = app(\App\Services\DocumentService::class);
+
+            $this->eDocuments = $documents
+                ->map(function ($doc) use ($docService) {
+                    $id   = (int)($doc->id ?? 0);
+                    $name = (string)($doc->name ?? '');
+                    $path = (string)($doc->file_path ?? '');
+                    $label = $name !== '' ? $name : basename($path ?: ('document-' . ($doc->id ?? '')));
+                    $url   = $id > 0 ? $docService->getDocumentViewUrl($doc) : null;
+
+                    return compact('id', 'name', 'label', 'url');
+                })
+                ->filter(function ($doc) {
+                    return ($doc['id'] ?? 0) > 0
+                        || trim((string)($doc['name'] ?? '')) !== ''
+                        || trim((string)($doc['label'] ?? '')) !== '';
+                })
+                ->values()
+                ->all();
+        } catch (\Throwable $exception) {
+            $this->eStatus = $previousStatus;
+            $this->eDocuments = [];
+        }
     }
-}
 
     /**
      * Refresh categories from the database for oversight UI and validation.
