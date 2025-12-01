@@ -18,18 +18,16 @@ class VerifyApiKey
         $apiKeyHeader  = (string) $request->header('X-API-KEY', '');
         $configuredKey = (string) config('services.nexo.api_key', '');
 
-
-
-        dd([
-            'apiKeyHeader'        => $apiKeyHeader,
-            'apiKeyHeader_len'    => strlen($apiKeyHeader),
-            'configuredKey'       => $configuredKey,
-            'configuredKey_len'   => strlen($configuredKey),
-            'configuredKey_type'  => gettype($configuredKey),
-            'apiKeyHeader_type'   => gettype($apiKeyHeader),
-            'hash_equals_result'  => hash_equals($configuredKey, $apiKeyHeader),
-            'condition_result'    => ($apiKeyHeader !== '' && $configuredKey !== '' && hash_equals($configuredKey, $apiKeyHeader)),
-        ]);
+        // dd([
+        //     'apiKeyHeader'        => $apiKeyHeader,
+        //     'apiKeyHeader_len'    => strlen($apiKeyHeader),
+        //     'configuredKey'       => $configuredKey,
+        //     'configuredKey_len'   => strlen($configuredKey),
+        //     'configuredKey_type'  => gettype($configuredKey),
+        //     'apiKeyHeader_type'   => gettype($apiKeyHeader),
+        //     'hash_equals_result'  => hash_equals($configuredKey, $apiKeyHeader),
+        //     'condition_result'    => ($apiKeyHeader !== '' && $configuredKey !== '' && hash_equals($configuredKey, $apiKeyHeader)),
+        // ]);
 
         // Success path
         if ($apiKeyHeader !== '' && $configuredKey !== '' && hash_equals($configuredKey, $apiKeyHeader)) {
