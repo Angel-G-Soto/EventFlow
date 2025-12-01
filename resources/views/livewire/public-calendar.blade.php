@@ -11,33 +11,109 @@
         <p class="mb-0 text-dark">We hope you have an amazing time at the events!</p>
     </div>
 
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    {{-- Shared styles for the toggle --}}
+    <style>
+        /* Blue switch toggle */
+        .filter-my-venues-toggle:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+    </style>
+
+    {{-- Desktop header (md+) – original layout preserved --}}
+    <div class="d-none d-md-flex align-items-center justify-content-between mb-3">
         <div>
             <h1 class="h4 mb-0">Events This Week</h1>
+
             @if($canFilterMyVenues)
-            <style>
-                /* Blue switch toggle */
-                #filterMyVenues:checked {
-                    background-color: #0d6efd;
-                    border-color: #0d6efd;
-                }
-            </style>
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="filterMyVenues" wire:click="toggleFilterMyVenues"
-                    @checked($filterMyVenues)>
-                <label class="form-check-label" for="filterMyVenues">Filter By My Venues</label>
-            </div>
+                <div class="form-check form-switch">
+                    <input
+                        class="form-check-input filter-my-venues-toggle"
+                        type="checkbox"
+                        id="filterMyVenuesDesktop"
+                        wire:click="toggleFilterMyVenues"
+                        @checked($filterMyVenues)
+                    >
+                    <label class="form-check-label" for="filterMyVenuesDesktop">
+                        Filter By My Venues
+                    </label>
+                </div>
             @endif
         </div>
+
         <div class="d-flex align-items-center gap-2">
             <div class="btn-group">
-                <button type="button" class="btn btn-primary btn-sm" wire:click="goWeek('prev')"
-                    aria-label="Previous week">
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    wire:click="goWeek('prev')"
+                    aria-label="Previous week"
+                >
                     &laquo; Previous
                 </button>
-                <span class="btn btn-primary btn-sm disabled">{{ $weekLabel }}</span>
-                <button type="button" class="btn btn-primary btn-sm" wire:click="goWeek('next')" aria-label="Next week">
+
+                <span class="btn btn-primary btn-sm disabled">
+                    {{ $weekLabel }}
+                </span>
+
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    wire:click="goWeek('next')"
+                    aria-label="Next week"
+                >
                     Next &raquo;
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Mobile header (< md) – toggle on the right, nav full width --}}
+    <div class="d-flex d-md-none flex-column gap-2 mb-3">
+        <div class="d-flex align-items-center">
+            <h1 class="h4 mb-0">Events This Week</h1>
+
+            @if($canFilterMyVenues)
+                <div class="form-check form-switch ms-auto">
+                    <input
+                        class="form-check-input filter-my-venues-toggle"
+                        type="checkbox"
+                        id="filterMyVenuesMobile"
+                        wire:click="toggleFilterMyVenues"
+                        @checked($filterMyVenues)
+                    >
+                    <label class="form-check-label" for="filterMyVenuesMobile">
+                        Filter By My Venues
+                    </label>
+                </div>
+            @endif
+        </div>
+
+        <div>
+            <div class="btn-group w-100" role="group" aria-label="Change week">
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    wire:click="goWeek('prev')"
+                    aria-label="Previous week"
+                >
+                    {{-- Icons on xs, text+icons on sm --}}
+                    <span class="d-inline d-sm-none">&laquo;</span>
+                    <span class="d-none d-sm-inline">&laquo; Previous</span>
+                </button>
+
+                <span class="btn btn-primary btn-sm disabled text-truncate">
+                    {{ $weekLabel }}
+                </span>
+
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    wire:click="goWeek('next')"
+                    aria-label="Next week"
+                >
+                    <span class="d-inline d-sm-none">&raquo;</span>
+                    <span class="d-none d-sm-inline">Next &raquo;</span>
                 </button>
             </div>
         </div>
