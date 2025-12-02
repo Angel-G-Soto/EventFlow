@@ -156,7 +156,7 @@ class EventService
                     $actorId,
                     'event',
                     $event->wasRecentlyCreated ? 'EVENT_CREATED' : 'EVENT_UPDATED',
-                    (string) $event->id,
+                    (string) ($event->title ?? (string) $event->id),
                     $ctx
                 );
             } catch (\Throwable) { /* best-effort */ }
@@ -655,7 +655,21 @@ class EventService
             // Update events that ended yesterday and are approved
             $events = Event::where('status', 'approved')
                 ->whereBetween('end_time', [$yesterdayStart, $yesterdayEnd])
-                ->update(['status' => 'completed']);
+                ->get();
+
+            foreach ($events as $event) {
+                $updated = Event::where('id', $event->id)
+                    ->where('status', 'approved')
+                    ->update(['status' => 'completed']);
+
+                if ($updated === 0) {
+                    continue;
+                }
+
+                try {
+                    $this->logAutoCompletion($event);
+                } catch (\Throwable) { /* best-effort */ }
+            }
 
             // AUDIT: system batch marked events as completed (yesterday range)
             try {
@@ -664,6 +678,7 @@ class EventService
                     $meta = [
                         'range_start' => (string) $yesterdayStart,
                         'range_end'   => (string) $yesterdayEnd,
+                        'count'       => $events->count(),
                     ];
                     $ctx = ['meta' => $meta];
                     if (function_exists('request') && request()) {
@@ -1323,7 +1338,7 @@ class EventService
         $statuses = collect(array_keys($flow))->merge(array_values($flow));
         if ($includeTerminals) {
             // Include terminal states except 'draft'
-            $statuses = $statuses->merge(['rejected', 'cancelled', 'withdrawn']);
+            $statuses = $statuses->merge(['rejected', 'cancelled', 'withdrawn', 'completed']);
         }
         return $statuses
             ->map(fn($v) => trim((string) $v))
