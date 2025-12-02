@@ -416,6 +416,7 @@ class DepartmentService
      *
      * @param Department $department
      * @param User $manager
+     * @param string $justification Optional explanation recorded with the audit trail.
      * @return User
      * @throws Exception
      */
@@ -489,7 +490,7 @@ class DepartmentService
      * @return User
      * @throws Exception
      */
-    public function addUserToDepartment(Department $department, User $manager): User
+    public function addUserToDepartment(Department $department, User $manager, string $justification = ''): User
     {
         try {
             // Validate that both models exist in the database
@@ -526,6 +527,11 @@ class DepartmentService
                         'role_id'           => (int) ($vmRole->id ?? 0),
                         'source'            => 'dept_add_user',
                     ];
+
+                    $trimmedJustification = trim($justification);
+                    if ($trimmedJustification !== '') {
+                        $meta['justification'] = $trimmedJustification;
+                    }
 
                     $ctx = ['meta' => $meta];
                     if (function_exists('request') && request()) {
@@ -566,10 +572,11 @@ class DepartmentService
      *
      * @param Department $department
      * @param User $manager
+     * @param string $justification Optional explanation recorded with the audit trail.
      * @return User
      * @throws Exception
      */
-    public function removeUserFromDepartment(Department $department, User $manager): User
+    public function removeUserFromDepartment(Department $department, User $manager, string $justification = ''): User
     {
         try {
             // Validate that both models exist in the database
@@ -612,6 +619,11 @@ class DepartmentService
                         'cleared_department' => !$manager->getRoleNames()->contains('department-director'),
                         'source'             => 'dept_remove_user',
                     ];
+
+                    $trimmedJustification = trim($justification);
+                    if ($trimmedJustification !== '') {
+                        $meta['justification'] = $trimmedJustification;
+                    }
 
                     $ctx = ['meta' => $meta];
                     if (function_exists('request') && request()) {

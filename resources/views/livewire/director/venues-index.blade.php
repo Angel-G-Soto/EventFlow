@@ -113,7 +113,7 @@
                                     <button
                                         type="button"
                                         class="btn btn-danger btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
-                                        wire:click="openModal({{ $employee }})"
+                                        wire:click="requestManagerRemoval({{ $employee['id'] }})"
                                         aria-label="Remove manager"
                                         title="Remove manager"
                                     >
@@ -136,51 +136,6 @@
         {{-- Paginator (same style as Manage Venues) --}}
         <div class="mt-3">
             {{ $employees->links() }}
-        </div>
-
-        {{-- Reusable modal (single instance) --}}
-        <div wire:ignore.self class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            Action for user:
-                            @if($selectedEmployee)
-                                {{ $selectedEmployee->first_name.' '.$selectedEmployee->last_name }}
-                            @endif
-                        </h5>
-                        <button
-                            type="button"
-                            class="btn-close"
-                            data-bs-dismiss="modal"
-                            aria-label="Close"
-                        ></button>
-                    </div>
-
-                    <div class="modal-body">
-                        Are you sure you want to remove
-                        <strong>
-                            @if($selectedEmployee)
-                                {{ $selectedEmployee->first_name.' '.$selectedEmployee->last_name }}
-                            @else
-                                (none selected)
-                            @endif
-                        </strong>?
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
-                        <button
-                            type="button"
-                            class="btn btn-danger"
-                            wire:click="removeManager"
-                            wire:loading.attr="disabled"
-                        >
-                            Remove Manager
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         {{-- Add Manager modal --}}
@@ -282,6 +237,12 @@
                 </div>
             </div>
         </div>
+
+        <x-justification
+            id="departmentJustificationModal"
+            submit="confirmJustification"
+            model="justification"
+        />
     </div>
 </div>
 
