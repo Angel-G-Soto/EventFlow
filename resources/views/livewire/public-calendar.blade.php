@@ -2,7 +2,7 @@
     <!-- Welcoming message with a grayer background, shadow, border, centered, and elegant styling -->
     <div class="alert alert-transparent text-center py-4 mb-4"
         style="background-color: rgba(240, 240, 240, 0.85); border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-        <h4 class="alert-heading text-dark fw-semibold">Welcome to the Eventflow!</h4>
+        <h4 class="alert-heading text-dark fw-semibold">Welcome to the UPRM Eventflow!</h4>
         <p class="lead text-dark">Stay updated with all the exciting events this week. If you want to request
             participation or learn more, click the button below to initiate the request on the Nexo platform.</p>
         <a href="https://nexo.uprm.edu" target="_blank" class="btn btn-primary mt-3" role="button"

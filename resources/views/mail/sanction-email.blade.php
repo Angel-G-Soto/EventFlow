@@ -1,6 +1,6 @@
 @extends('mail.mail-layout')
 
-@section('subject', 'Event Sanctioned')
+@section('subject', 'Event Fully Approved')
 @section('preheader', 'Your request has been fully approved.')
 
 @section('content')
@@ -28,13 +28,12 @@
 
                     </tr>
 
-                    {{--                    <!-- Example of a “subtle” item without a button --> --}}
-                    {{--                    <tr> --}}
-                    {{--                        <td style="padding:14px 16px;border-top:1px solid #e6e6e6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;color:#212529;mso-line-height-rule:exactly;"> --}}
-                    {{--                            Floor Map.png --}}
-                    {{--                            <div style="font-size:12px;color:#6c757d;margin-top:2px;">PNG • 512 KB</div> --}}
-                    {{--                        </td> --}}
-                    {{--                    </tr> --}}
+                    <tr>
+                        <td
+                            style="padding:14px 16px;border-top:1px solid #e6e6e6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;color:#212529;mso-line-height-rule:exactly;background:#f8f9fa;">
+                            *Approvers can retract their decision anytime before the event takes place.
+                        </td>
+                    </tr>
 
 
                 </table>

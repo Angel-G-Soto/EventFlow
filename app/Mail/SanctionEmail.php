@@ -59,7 +59,7 @@ class SanctionEmail extends Mailable implements ShouldQueue
         $subjectTitle = $this->eventData['title'] ?? 'Event';
 
         return new Envelope(
-            subject: "Event Sanctioned: {$subjectTitle}",
+            subject: "Event Fully Approved: {$subjectTitle}",
         );
     }
 

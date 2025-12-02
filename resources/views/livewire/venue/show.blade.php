@@ -97,7 +97,7 @@
                                                target="_blank"
                                                rel="noopener noreferrer"
                                                class="btn btn-sm btn-primary">
-                                                View Document
+                                                Open Document
                                             </a>
                                         @endif
                                     </div>
