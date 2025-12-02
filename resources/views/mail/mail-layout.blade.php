@@ -15,7 +15,7 @@
 </head>
 <body style="margin:0; padding:0; background:#f5f7fb;">
   <span class="preheader">
-    @yield('preheader', 'EventFlow notification')
+    @yield('preheader', 'EventFlow UPRM notification')
   </span>
 
   <!-- Wrapper -->
@@ -36,7 +36,7 @@
                                       @if($logo)
                                           <img src="{{ $logo }}" alt="{{ config('app.name', 'EventFlow') }} logo" width="140" style="display:block; border:0; outline:none; text-decoration:none;">
                                       @else
-                                          {{ config('app.name', 'EventFlow') }}
+                                          {{ 'EventFlow UPRM' }}
                                       @endif
                                   </td>
                                   <td align="right" style="font-family:Arial, Helvetica, sans-serif; color:#cde9d8; font-size:12px;">

@@ -601,6 +601,11 @@
                 </div>
             @endif
 
+            @if(!$handles_food && !$use_institutional_funds && !$external_guest)
+            <div class="alert alert-secondary">No documents required based 
+                on the nature of the event.</div>
+            @endif
+
             <div class="mb-3">
                     <div class="form-text">Upload the documents required for this venue.</div>
             </div>

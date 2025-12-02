@@ -12,7 +12,7 @@
         <h3>The following event request has been approved by {{$approverName}} ({{$role}})</h3>
     @endif
 
-    
+
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
         <tr>
             <td align="center" style="padding:16px;">
@@ -46,7 +46,7 @@
                 <div style="width: 100%">
                     <a href="{{$route}}"
                        style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:14px;text-decoration:none;background:#0d6efd;color:#ffffff;padding:8px 12px;border-radius:6px;display:inline-block;">
-                        View in EventFlow
+                        View in EventFlow UPRM
                     </a>
                 </div>
 
