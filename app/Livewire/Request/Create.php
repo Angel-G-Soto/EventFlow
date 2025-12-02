@@ -352,7 +352,7 @@ class Create extends Component
             || (bool) $this->external_guest) {
             array_unshift($rules['requirementFiles'], 'required');
             $rules['requirementFiles'][] = 'min:1';
-            $rules['requirementFiles'][] = 'max:12'; // arbitrary upper limit
+            $rules['requirementFiles'][] = 'max:10'; // arbitrary upper limit
         }
 
         return $rules;
@@ -377,7 +377,7 @@ class Create extends Component
     public function uploadValidation(){
         return
             [
-                'newRequirementFiles'   => ['array', 'max:12'], // arbitrary upper limit
+                'newRequirementFiles'   => ['array', 'max:10'], // arbitrary upper limit
                 'newRequirementFiles.*' => ['file', 'mimes:pdf', 'max:10240']
             ]; // 10 MB each
     }

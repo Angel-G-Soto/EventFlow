@@ -630,7 +630,7 @@
                     <label for="requirementFiles" class="form-label fw-semibold">
                         Upload Requirement Documents
                         <span class="text-muted">
-                            (PDF, max 10MB each{{ $this->requirementUploadsAreMandatory ? '' : ', optional' }})
+                            (PDF, max 10MB each. Maximum of 10 files allowed.)
                         </span>
                     </label>
 
