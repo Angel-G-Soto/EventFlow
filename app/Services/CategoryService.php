@@ -89,16 +89,21 @@ class CategoryService {
     }
 
     /**
-     * Create a new category.
+     * Create a new category with a justification for auditing.
      *
      * @throws Exception
      */
-    public function createCategory(string $name): Category
+    public function createCategory(string $name, string $justification): Category
     {
         try {
             $name = trim($name);
             if ($name === '') {
                 throw new InvalidArgumentException('Category name is required.');
+            }
+
+            $trimmedJustification = trim($justification);
+            if (mb_strlen($trimmedJustification) < 10) {
+                throw new InvalidArgumentException('Justification must be at least 10 characters.');
             }
 
             $exists = Category::query()
@@ -123,6 +128,7 @@ class CategoryService {
                         'category_id'   => (int) $category->id,
                         'category_name' => (string) $category->name,
                         'source'        => 'category_create',
+                        'justification' => $trimmedJustification,
                     ];
                     $ctx = ['meta' => $meta];
                     if (function_exists('request') && request()) {
