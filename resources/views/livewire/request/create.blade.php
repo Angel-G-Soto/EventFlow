@@ -575,7 +575,10 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="event-form-link-btn" wire:click.prevent="showInstitutionalFundsDetails">Institutional Funds Details</a>
+                            {{-- wire:click.prevent="showInstitutionalFundsDetails"  --}}
+                            <a href="{{ asset('assets/documents/ejemplo_carta_del_rector.pdf') }}" class="event-form-link-btn" 
+                            target="_blank"
+                            rel="noopener">Institutional Funds Details</a>
                         </li>
                     </ul>
                 </div>
@@ -586,7 +589,11 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="event-form-link-btn" wire:click.prevent="showExternalGuestDetails">External Guest Name</a>
+                            {{-- wire:click.prevent="showInstitutionalFundsDetails" --}}
+                        <a href="{{ asset('assets/documents/ejemplo_carta_del_rector.pdf') }}" class="event-form-link-btn"  
+                            target="_blank"
+                            rel="noopener">External Guest Name
+                        </a>
                         </li>
                     </ul>
                 </div>
