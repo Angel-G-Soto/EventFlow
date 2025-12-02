@@ -82,6 +82,8 @@ class SendWithdrawalEmailJob implements ShouldQueue
         $eventHistories = $this->eventHistoryService->getEventHistoriesByEventId($this->eventData['id']);
 
         foreach ($eventHistories as $eventHistory) {
+            if($eventHistory->action == 'approved'){ 
+        
             $recipientEmail = $eventHistory->approver->email;
             Mail::to($recipientEmail)->send(
                 new WithdrawalEmail(
@@ -90,6 +92,9 @@ class SendWithdrawalEmailJob implements ShouldQueue
                     route('approver.history.request', ['eventHistory' => $eventHistory->id])
                 )
             );
+
+            }
+
         }
     }
 }
