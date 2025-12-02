@@ -477,7 +477,7 @@ class VenueService
                 (int) ($actor->id ?? 0),
                 'venue',
                 'UPDATE_DESCRIPTION',
-                (string) $venue->id,
+                (string) ($venue->name ?? (string) $venue->id),
                 $ctx
             );
         } catch (\Throwable) {
@@ -1431,7 +1431,7 @@ class VenueService
                         $admin->id,
                         'venue',
                         'VENUE_DEACTIVATED',
-                        (string) $venue->id,
+                        (string) ($venue->name ?? (string) $venue->id),
                         $ctx
                     );
                 }
