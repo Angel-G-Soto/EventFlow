@@ -199,8 +199,8 @@
               Use the “Download CSV template” button for the correct format. Required columns:
               <code>name</code>, <code>room_code</code>, <code>department_name</code>, <code>department</code>,
               <code>capacity</code>. Optional: <code>final_exams_capacity</code> and <code>allow_*</code> flags
-              (<code>allow_teaching_with_multimedia</code>, <code>allow_teaching_with_computers</code>,
-              <code>allow_teaching</code>, <code>allow_teaching_online</code>) with <code>1</code> for yes,
+              (<code>allow_teaching_online</code>, <code>allow_teaching_with_multimedia</code>,
+              <code>allow_teaching_with_computers</code>, <code>allow_teaching</code>) with <code>1</code> for yes,
               <code>0</code> or blank for no.
             </small>
             <div class="mt-2">
