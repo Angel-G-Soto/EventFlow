@@ -187,7 +187,7 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
                             <button type="submit" class="btn btn-primary" wire:click="addManager">
-                                Save Email
+                                Save
                             </button>
                         </div>
                     </form>

@@ -129,7 +129,7 @@
                     </button>
                     <button type="submit" class="btn btn-primary"
                             title="{{ $editingId ? 'Apply changes to this category' : 'Create the category' }}">
-                        {{ $editingId ? 'Update Category' : 'Create Category' }}
+                        Save
                     </button>
                 </div>
             </form>
@@ -169,7 +169,7 @@
                     </button>
                     <button class="btn btn-primary" type="submit"
                             title="Confirm deletion of this category">
-                        <i class="bi bi-check2 me-1"></i>Confirm
+                        <i class="bi me-1"></i>Confirm
                     </button>
                 </div>
             </form>
@@ -247,7 +247,7 @@
                     </button>
                     <button class="btn btn-primary" type="submit"
                             title="Apply category changes">
-                        <i class="bi bi-check2 me-1"></i>Confirm
+                        <i class="bi me-1"></i>Confirm
                     </button>
                 </div>
             </form>
