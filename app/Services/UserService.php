@@ -280,7 +280,7 @@ class UserService
                 $meta = [
                     'user_id'    => (int) ($user->id ?? 0),
                     'user_email' => (string) ($user->email ?? ''),
-                    'removed_department' => true,
+                    'removed_department' => $deptName !== '' ? $deptName : null,
                     'source' => 'user_roles_update',
                 ];
                 if (($just = trim((string) $justification)) !== '') {
@@ -508,7 +508,12 @@ class UserService
             }
 
             // Optional HTTP context (falls back to meta-only if no request)
-            $ctx = ['meta' => ['source' => 'user_create']];
+            $ctx = ['meta' => [
+                'source'    => 'user_create',
+                'user_id'   => (int) ($user->id ?? 0),
+                'user_name' => trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? ''))),
+                'user_email'=> (string) ($user->email ?? ''),
+            ]];
             try {
                 if (request()) {
                     $ctx = app(AuditService::class)
