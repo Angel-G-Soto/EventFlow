@@ -564,7 +564,9 @@
                 <div class="mb-3">
                     <ul>
                         <li>
-                            <a href="#" class="event-form-link-btn" wire:click.prevent="showFoodHandlingDetails">Food Handling Details</a>
+                            <a href="https://www.uprm.edu/p/actividades-sociales/certificado_de_manejador_de_alimentos" class="event-form-link-btn" 
+                            target="_blank"
+                            rel="noopener">Food Handling Details</a>
                         </li>
                     </ul>
                 </div>
