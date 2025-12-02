@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 /**
  * UserService
@@ -32,9 +33,10 @@ class UserService
      *
      * @param string $email The unique email address from the SSO provider.
      * @param string $name The full name of the user from the SSO provider.
+     * @param bool $audit Whether to emit SSO audit logs (default true).
      * @return User The found or newly created Eloquent User object.
      */
-    public function findOrCreateUser(string $email, ?string $name = null): User
+    public function findOrCreateUser(string $email, ?string $name = null, bool $audit = true): User
     {
         // ['first_name' => $name] placeholder kept commented to avoid accidental overrides.
         $user = User::firstOrCreate(
@@ -73,36 +75,37 @@ class UserService
         }
 
 
-        // AUDIT: record SSO user bootstrap/login (created vs found)
-        try {
-            $ctx = ['meta' => ['source' => 'saml2_login']];
-            if (function_exists('request') && request()) {
-                $ctx = app(AuditService::class)
-                    ->buildContextFromRequest(request(), $ctx['meta']);
+        if ($audit) {
+            // AUDIT: record SSO user bootstrap/login (created vs found)
+            $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
+            if ($label === '') {
+                $label = (string)($user->email ?? $user->id);
             }
-        } catch (\Throwable) { /* no-http/queue */ }
+            $meta = [
+                'source'  => 'saml2_login',
+                'email'   => $email,
+                'user_id' => (int) ($user->id ?? 0),
+                'name'    => $label,
+            ];
+            try {
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = app(AuditService::class)
+                        ->buildContextFromRequest(request(), $meta);
+                }
+            } catch (\Throwable) { /* no-http/queue */ }
 
-        $label = trim(((string)($user->first_name ?? '')) . ' ' . ((string)($user->last_name ?? '')));
-        if ($label === '') {
-            $label = (string)($user->email ?? $user->id);
-        }
+            $justCreated = (bool)($user->wasRecentlyCreated ?? false);
 
-        if ($user->wasRecentlyCreated ?? false) {
-            $this->auditService->logAction(
-                (int) $user->id,
-                'user',                    // targetType
-                'USER_CREATED_SSO',        // actionCode
-                $label,                    // targetId (display label)
-                $ctx
-            );
-        } else {
-            $this->auditService->logAction(
-                (int) $user->id,
-                'user',
-                'USER_LOGGED_IN_SSO',
-                $label,
-                $ctx
-            );
+            if ($justCreated) {
+                $this->auditService->logAction(
+                    (int) $user->id,
+                    'user',                    // targetType
+                    'USER_CREATED_SSO',        // actionCode
+                    (string) $email,           // targetId should be the email
+                    $ctx
+                );
+            }
         }
 
         return $user;
