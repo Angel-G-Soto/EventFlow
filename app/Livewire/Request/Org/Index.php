@@ -76,7 +76,7 @@ class Index extends Component
 
         // Apply sort direction
         $sortDir = in_array($this->filters['sortDirection'], ['asc','desc']) ? $this->filters['sortDirection'] : 'desc';
-        $q->orderBy('updated_at', $sortDir);
+        $q->orderBy('created_at', $sortDir);
 
         $events = $q->paginate(8);
 
