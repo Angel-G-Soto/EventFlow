@@ -230,6 +230,9 @@ class Create extends Component
         'requirementFiles.min'      => 'Please upload all required documents.',
         'requirementFiles.max'      => 'Please upload no more than the required amount of documents.',
 
+        'category_ids.array' => 'Please select at least one category.',
+        'category_ids.min' => 'Please select at least one category.',
+
 
 
         // // New batch (before merge)

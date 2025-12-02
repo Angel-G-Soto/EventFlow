@@ -361,7 +361,7 @@ class DocumentService
         return collect(File::files($root))
             ->filter(fn($file) => $file->isFile())
             ->sortByDesc(fn($file) => $file->getMTime())
-            ->take(5)
+            ->take(14)
             ->map(function ($file) {
                 return [
                     'name' => $file->getFilename(),
