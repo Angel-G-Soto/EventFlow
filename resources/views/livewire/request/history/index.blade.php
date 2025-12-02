@@ -117,7 +117,7 @@
                     <th scope="col">Title</th>
                     <th scope="col" class="d-none d-md-table-cell">Organization</th>
                     <th scope="col" class="d-none d-md-table-cell">Action</th>
-                    <th scope="col" class="d-none d-md-table-cell">Date Submitted</th>
+                    <th scope="col" class="d-none d-md-table-cell">Date Approved</th>
                     <th scope="col" class="text-end">Actions</th>
                 </tr>
                 </thead>
@@ -128,7 +128,7 @@
                         $event = $history->event;
                         $orgName = $event->organization_name ?? '—';
                         $action  = $history->action ? ucfirst(strtolower($history->action)) : '—';
-                        $submittedAt = \Carbon\Carbon::parse($history->created_at)
+                        $submittedAt = \Carbon\Carbon::parse($history->updated_at)
                             ->format('D, M j, Y g:i A');
                     @endphp
                     <tr>
