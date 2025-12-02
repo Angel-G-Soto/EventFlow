@@ -599,14 +599,15 @@
                 </div>
             @endif
 
+            <div class="mb-3">
+                    <div class="form-text">Upload the documents required for this venue.</div>
+            </div>
 
             @if (empty($requiredDocuments))
                 <div class="alert alert-secondary">No documents required for this venue.</div>
             @else
 
-                <div class="mb-3">
-                    <div class="form-text">Upload the documents required for this venue.</div>
-                </div>
+
             <div class="mb-3">
 
                 <ul>
