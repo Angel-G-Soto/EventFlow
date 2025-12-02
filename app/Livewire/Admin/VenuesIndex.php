@@ -433,7 +433,8 @@ class VenuesIndex extends Component
      */
     protected function mapFeaturesStringToLabels(string $features): array
     {
-        $labels = ['Allow Teaching Online', 'Allow Teaching With Multimedia', 'Allow Teaching with computer', 'Allow Teaching'];
+        // Stored bit order: [online, multimedia, teaching, computers]
+        $labels = ['Allow Teaching Online', 'Allow Teaching With Multimedia', 'Allow Teaching', 'Allow Teaching with computer'];
         $out = [];
         $chars = str_split($features);
         foreach ($labels as $i => $lab) {
