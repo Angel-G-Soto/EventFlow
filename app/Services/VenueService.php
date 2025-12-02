@@ -464,8 +464,10 @@ class VenueService
 
         try {
             $meta = [
-                'venue_id' => (int) $venue->id,
-                'source'   => 'venue_description_update',
+                'venue_id'    => (int) $venue->id,
+                'venue_name'  => (string) $venue->name,
+                'description' => (string) $description,
+                'source'      => 'venue_description_update',
             ];
             if (function_exists('request') && request()) {
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
@@ -575,26 +577,26 @@ class VenueService
             }
 
             // Audit: director assigns manager to venue
-            $meta = [
-                'venue_id'      => (int) $venue->id,
-                'venue_name'    => (string) $venue->name,
-                'manager_id'    => (int) $manager->id,
-                'manager_email' => (string) ($manager->email ?? ''),
-                'director_id'   => (int) $director->id,
-                'source'        => 'assign_manager',
-            ];
-            $ctx = ['meta' => $meta];
-            if (function_exists('request') && request()) {
-                $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
-            }
+            // $meta = [
+            //     'venue_id'      => (int) $venue->id,
+            //     'venue_name'    => (string) $venue->name,
+            //     'manager_id'    => (int) $manager->id,
+            //     'manager_email' => (string) ($manager->email ?? ''),
+            //     'director_id'   => (int) $director->id,
+            //     'source'        => 'assign_manager',
+            // ];
+            // $ctx = ['meta' => $meta];
+            // if (function_exists('request') && request()) {
+            //     $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+            // }
 
-            $this->auditService->logAction(
-                $director->id,
-                'venue',
-                'ASSIGN_MANAGER',
-                (string) ($venue->name ?? (string) $venue->id),
-                $ctx
-            );
+            // $this->auditService->logAction(
+            //     $director->id,
+            //     'venue',
+            //     'ASSIGN_MANAGER',
+            //     (string) ($venue->name ?? (string) $venue->id),
+            //     $ctx
+            // );
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -641,11 +643,53 @@ class VenueService
             }
 
             $normalized = $this->normalizeAvailabilityPayload($availabilityData);
+            // Capture before/after slots for audit context
+            $currentSlots = $venue->availabilities()
+                ->get(['day', 'opens_at', 'closes_at'])
+                ->map(function ($slot) {
+                    return [
+                        'day'       => (string) ($slot->day ?? ''),
+                        'opens_at'  => substr((string) ($slot->opens_at ?? ''), 0, 5),
+                        'closes_at' => substr((string) ($slot->closes_at ?? ''), 0, 5),
+                    ];
+                })
+                ->sortBy('day')
+                ->values()
+                ->all();
+            $nextSlots = collect($normalized)
+                ->map(function ($slot) {
+                    return [
+                        'day'       => (string) ($slot['day'] ?? ''),
+                        'opens_at'  => substr((string) ($slot['opens_at'] ?? ''), 0, 5),
+                        'closes_at' => substr((string) ($slot['closes_at'] ?? ''), 0, 5),
+                    ];
+                })
+                ->sortBy('day')
+                ->values()
+                ->all();
+            // Compute delta for audit context
+            $currentByDay = collect($currentSlots)->keyBy('day');
+            $nextByDay = collect($nextSlots)->keyBy('day');
+            $changes = [];
+            foreach ($nextByDay as $day => $slot) {
+                $prev = $currentByDay->get($day);
+                if (!$prev) {
+                    $changes[] = ['day' => $day, 'from' => null, 'to' => $slot];
+                } elseif ($prev['opens_at'] !== $slot['opens_at'] || $prev['closes_at'] !== $slot['closes_at']) {
+                    $changes[] = ['day' => $day, 'from' => $prev, 'to' => $slot];
+                }
+            }
+            foreach ($currentByDay as $day => $slot) {
+                if (!$nextByDay->has($day)) {
+                    $changes[] = ['day' => $day, 'from' => $slot, 'to' => null];
+                }
+            }
 
             // Audit: operating hours update
             $meta = [
                 'venue_id'   => (int) $venue->id,
                 'venue_name' => (string) $venue->name,
+                'availability_changes' => $changes,
                 'source'     => 'venue_hours_update',
             ];
             $justification = trim((string) $justification);
@@ -778,7 +822,7 @@ class VenueService
             }
 
             // Capture existing requirements to determine which were removed for audit context.
-            $existingRequirements = UseRequirement::where('venue_id', $venue->id)->get(['id', 'name']);
+            $existingRequirements = UseRequirement::where('venue_id', $venue->id)->get(['id', 'name', 'description', 'hyperlink'])->keyBy('id');
             $survivingIds = array_values(array_filter(array_map(
                 fn(array $req) => $req['_original_id'] ?? null,
                 $trimmedData
@@ -789,6 +833,8 @@ class VenueService
                 ->values();
             $deletedNames = $deletedEntries->pluck('name')->filter()->values()->all();
             $deletedIds = $deletedEntries->pluck('id')->filter()->values()->all();
+            $editedExisting = false;
+            $requirementChanges = [];
 
             // Remove all requirements
             $this->useRequirementService->deleteVenueUseRequirements($venue->id, $deletedNames, $deletedIds); // MOCK FROM SERVICE
@@ -829,30 +875,68 @@ class VenueService
                         (string) ($venue->name ?? (string) $venue->id),
                         $ctx
                     );
+                } else {
+                    // Track edits: compare incoming data to previous values
+                    $prev = $existingRequirements->get($originalId);
+                    if ($prev) {
+                        $prevHyper = (string) ($prev->hyperlink ?? '');
+                        $prevDesc = (string) ($prev->description ?? '');
+                        $changes = [];
+                        if ($prev->name !== $requirement->name) {
+                            $changes[] = [
+                                'field' => 'name',
+                                'from'  => (string) $prev->name,
+                                'to'    => (string) $requirement->name,
+                            ];
+                        }
+                        if ($prevDesc !== (string) $requirement->description) {
+                            $changes[] = [
+                                'field' => 'description',
+                                'from'  => $prevDesc,
+                                'to'    => (string) $requirement->description,
+                            ];
+                        }
+                        if ($prevHyper !== (string) $requirement->hyperlink) {
+                            $changes[] = [
+                                'field' => 'hyperlink',
+                                'from'  => $prevHyper,
+                                'to'    => (string) $requirement->hyperlink,
+                            ];
+                        }
+                        if (!empty($changes)) {
+                            $editedExisting = true;
+                            $requirementChanges[] = [
+                                'original_id' => (int) $originalId,
+                                'new_id'      => (int) ($requirement->id ?? 0),
+                                'changes'     => $changes,
+                            ];
+                        }
+                    }
                 }
             }
 
-            $updateMeta = [
-                'venue_id'        => (int) $venue->id,
-                'total_submitted' => count($trimmedData),
-                'deleted_ids'     => $deletedIds,
-                'deleted_names'   => $deletedNames,
-                'source'          => 'venue_requirements_update',
-            ];
-            if ($justification !== '') {
-                $updateMeta['justification'] = $justification;
+            // Log UPDATE_REQUIREMENTS only when an existing requirement was actually edited
+            if ($editedExisting) {
+                $updateMeta = [
+                    'requirement_id' => $originalId,
+                    'changes'         => $requirementChanges,
+                    'source'          => 'venue_requirements_update',
+                ];
+                if ($justification !== '') {
+                    $updateMeta['justification'] = $justification;
+                }
+                $ctx = ['meta' => $updateMeta];
+                if (function_exists('request') && request()) {
+                    $ctx = $this->auditService->buildContextFromRequest(request(), $updateMeta);
+                }
+                $this->auditService->logAction(
+                    $manager->id,
+                    'requirement',
+                    'UPDATE_REQUIREMENTS',
+                    (string) ($venue->name ?? (string) $venue->id),
+                    $ctx
+                );
             }
-            $ctx = ['meta' => $updateMeta];
-            if (function_exists('request') && request()) {
-                $ctx = $this->auditService->buildContextFromRequest(request(), $updateMeta);
-            }
-            $this->auditService->logAction(
-                $manager->id,
-                'venue',
-                'UPDATE_REQUIREMENTS',
-                (string) ($venue->name ?? (string) $venue->id),
-                $ctx
-            );
         } catch (InvalidArgumentException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -1199,7 +1283,7 @@ class VenueService
                                 $admin->id,
                                 'venue',
                                 'VENUE_UPDATED',
-                                (string) $existing->id,
+                                (string) ($existing->name ?? (string) $existing->id),
                                 $ctx
                             );
                         }

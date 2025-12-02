@@ -64,8 +64,9 @@ class Configure extends Component
     public string $pendingAction = '';
     public ?string $pendingUuid = null;
 
-    protected string $detailsSnapshot = '';
-    protected string $requirementsSnapshot = '';
+protected string $detailsSnapshot = '';
+protected string $requirementsSnapshot = '';
+protected string $availabilitySnapshot = '';
     protected bool $detailsDirtyFlag = false;
     protected bool $requirementsDirtyFlag = false;
 
@@ -262,6 +263,7 @@ class Configure extends Component
         $records = $this->venueAvailabilityService->listByVenueId((int) $this->venue->id);
         $this->availabilityForm = $this->buildAvailabilityForm($records);
         $this->updateDetailsSnapshot();
+        $this->availabilitySnapshot = $this->snapshotAvailability();
     }
 
     protected function refreshRequirements(): void
@@ -420,17 +422,44 @@ class Configure extends Component
             'description' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $availabilityChanged = false;
+        $payload = [];
+
+        $newDescription = (string) $this->description;
+        $currentDescription = (string) ($this->venue->description ?? '');
+        if (trim($newDescription) !== trim($currentDescription)) {
+            $this->venue = $this->venueService->updateVenueDescription(
+                $this->venue,
+                $newDescription,
+                Auth::user()
+            );
+        }
+        $this->description = (string) ($this->venue->description ?? $newDescription);
+
+        // Only persist operating hours if the incoming state differs from current DB values
         $payload = $this->normalizeAvailabilityInput();
-
-        $this->venue = $this->venueService->updateVenueDescription(
-            $this->venue,
-            $this->description,
-            Auth::user()
-        );
-
-        $this->description = (string) ($this->venue->description ?? '');
-
-        $this->venueService->updateVenueOperatingHours($this->venue, $payload, Auth::user(), $justification);
+        $currentAvailability = $this->venueAvailabilityService
+            ->listByVenueId((int) $this->venue->id)
+            ->map(fn($slot) => [
+                'day' => (string) $slot->day,
+                'opens_at' => substr((string) $slot->opens_at, 0, 5),
+                'closes_at' => substr((string) $slot->closes_at, 0, 5),
+            ])
+            ->sortBy('day')
+            ->values()
+            ->all();
+        $incomingAvailability = collect($payload)
+            ->map(fn($slot) => [
+                'day' => (string) $slot['day'],
+                'opens_at' => (string) $slot['opens_at'],
+                'closes_at' => (string) $slot['closes_at'],
+            ])
+            ->sortBy('day')
+            ->values()
+            ->all();
+        if ($incomingAvailability !== $currentAvailability) {
+            $this->venueService->updateVenueOperatingHours($this->venue, $payload, Auth::user(), $justification);
+        }
 
         $this->refreshAvailabilityForm();
 
@@ -544,6 +573,11 @@ class Configure extends Component
             'description' => (string) $this->description,
             'availability' => $this->normalizedAvailabilityState(),
         ]));
+    }
+
+    protected function snapshotAvailability(): string
+    {
+        return md5(serialize($this->normalizedAvailabilityState()));
     }
 
     public function getRequirementsDirtyProperty(): bool
