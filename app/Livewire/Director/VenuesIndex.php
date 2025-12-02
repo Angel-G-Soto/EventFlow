@@ -11,7 +11,6 @@ use App\Services\VenueService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Livewire\Attributes\Validate;
 use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
@@ -31,11 +30,14 @@ class VenuesIndex extends Component
   public string $pendingAction = '';
   public ?int $pendingActionUserId = null;
 
-  #[Validate('required|email:rfc,dns|max:150')]
   public string $email = '';
 
-  #[Validate('required|same:email|max:150')]
   public string $emailConfirmation = '';
+
+  protected array $rules = [
+      'email'             => 'required|email:rfc,dns|max:150',
+      'emailConfirmation' => 'required|same:email|max:150',
+  ];
 
 
   public function requestManagerRemoval(int $userId): void
