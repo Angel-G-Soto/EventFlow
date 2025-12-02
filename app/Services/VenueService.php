@@ -1240,24 +1240,30 @@ class VenueService
                 } else {
                     // Only log and count as updated if something actually changed
                     $changedFields = [];
+                    $changes = [];
                     if ($existing->name !== $venue['name']) {
                         $changedFields[] = 'name';
+                        $changes[] = ['field' => 'name', 'from' => (string) $existing->name, 'to' => (string) $venue['name']];
                         $existing->name = $venue['name'];
                     }
                     if ($existing->department_id !== $department->id) {
                         $changedFields[] = 'department_id';
+                        $changes[] = ['field' => 'department_id', 'from' => (int) $existing->department_id, 'to' => (int) $department->id];
                         $existing->department_id = $department->id;
                     }
                     if ($existing->features !== $venue['features']) {
                         $changedFields[] = 'features';
+                        $changes[] = ['field' => 'features', 'from' => (string) $existing->features, 'to' => (string) $venue['features']];
                         $existing->features = $venue['features'];
                     }
                     if ((int)$existing->capacity !== (int)$venue['capacity']) {
                         $changedFields[] = 'capacity';
+                        $changes[] = ['field' => 'capacity', 'from' => (int) $existing->capacity, 'to' => (int) $venue['capacity']];
                         $existing->capacity = $venue['capacity'];
                     }
                     if ((int)$existing->test_capacity !== (int)$venue['test_capacity']) {
                         $changedFields[] = 'test_capacity';
+                        $changes[] = ['field' => 'test_capacity', 'from' => (int) $existing->test_capacity, 'to' => (int) $venue['test_capacity']];
                         $existing->test_capacity = $venue['test_capacity'];
                     }
 
@@ -1271,6 +1277,10 @@ class VenueService
                                 'source' => 'csv-import',
                                 'code'   => $venue['code'],
                                 'changed_fields' => $changedFields,
+                                'changes_summary' => array_map(
+                                    fn($c) => $c['field'] . ': ' . (string) ($c['from'] ?? '') . ' -> ' . (string) ($c['to'] ?? ''),
+                                    $changes
+                                ),
                             ];
                             $ctx = $context;
                             if (function_exists('request') && request()) {
@@ -1283,7 +1293,7 @@ class VenueService
                                 $admin->id,
                                 'venue',
                                 'VENUE_UPDATED',
-                                (string) ($existing->name ?? (string) $existing->id),
+                                (string) ($existing->name),
                                 $ctx
                             );
                         }
@@ -1504,6 +1514,7 @@ class VenueService
                 if ($admin) {
                     $meta = [
                         'venue_id' => (int) $venue->id,
+                        'venue_name' => (string) ($venue->name ?? ''),
                         'source'   => 'venue_deactivate',
                     ];
                     $ctx = ['meta' => $meta];
