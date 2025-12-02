@@ -53,7 +53,7 @@
     <div class="container py-4">
         {{-- Header + Add button to the right --}}
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h1 class="h4 mb-0">Department Managers</h1>
+            <h1 class="h4 mb-0">Venue Managers</h1>
 
             {{-- Desktop: button to the right of the title --}}
             <div class="d-none d-md-flex">
