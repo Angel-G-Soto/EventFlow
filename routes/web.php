@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\BackupController;
 use App\Http\Middleware\EnsureAuthentication;
 use App\Models\Document;
 use App\Services\DocumentService;
@@ -33,6 +34,8 @@ Route::get('/mail/test', function () {
 
 Route::middleware([EnsureAuthentication::class])->group(function () {
   //Admin---------------------------------------------------------------------------------------------
+  Route::get('/admin/backups', \App\Livewire\Admin\Backups::class)->name('admin.backups');
+  Route::get('/admin/backups/download', [BackupController::class, 'download'])->name('admin.backups.download');
   Route::get('/admin/users', UsersIndex::class)->name('admin.users');
   Route::get('/admin/departments', DepartmentsIndex::class)->name('admin.departments');
   Route::get('/admin/venues', VenuesIndex::class)->name('admin.venues');

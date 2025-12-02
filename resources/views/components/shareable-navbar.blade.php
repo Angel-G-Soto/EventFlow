@@ -137,6 +137,9 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
                 href="{{ route('admin.events') }}">Events</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.audit') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.audit') }}">Audit Log</a></li>
+            <li><a class="dropdown-item {{ Route::is('admin.backups') ? 'active fw-bold bg-accent' : '' }}"
+                href="{{ route('admin.backups') }}">Backups</a></li>
+            
           </ul>
         </li>
         @endif

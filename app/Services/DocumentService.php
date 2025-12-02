@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-
+use Illuminate\Support\Facades\File;
 /**
  * DocumentService
  *
@@ -355,4 +355,38 @@ class DocumentService
         // Single place to define the route name/parameter
         return route('documents.show', ['documentId' => $id]);
     }
+
+    public function getRecentBackups(string $root): array
+    {
+        return collect(File::files($root))
+            ->filter(fn($file) => $file->isFile())
+            ->sortByDesc(fn($file) => $file->getMTime())
+            ->take(5)
+            ->map(function ($file) {
+                return [
+                    'name' => $file->getFilename(),
+                    'size' => $this->formatBytes((int) $file->getSize()),
+                    'modified' => date('Y-m-d H:i', $file->getMTime()),
+                ];
+            })
+            ->values()
+            ->all();
+
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = 0;
+
+        while ($bytes >= 1024 && $i < count($units) - 1) {
+            $bytes /= 1024;
+            $i++;
+        }
+
+        $precision = $i === 0 ? 0 : 1;
+
+        return round($bytes, $precision) . ' ' . $units[$i];
+    }
+
 }
