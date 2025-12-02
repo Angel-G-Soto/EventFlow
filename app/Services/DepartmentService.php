@@ -745,13 +745,12 @@ class DepartmentService
     }
 
     public function getDepartmentManagers(Department $department): LengthAwarePaginator
-    {
-
-
-        return $department->employees()
+    {        return $department->employees()
             ->with('roles')
             ->whereHas('roles', fn ($q) => $q->where('name', 'venue-manager'))
             ->paginate(15); // or ->paginate(15)
     }
+
+
 
 }

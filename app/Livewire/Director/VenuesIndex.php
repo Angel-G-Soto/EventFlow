@@ -35,7 +35,7 @@ class VenuesIndex extends Component
   public string $emailConfirmation = '';
 
   protected array $rules = [
-      'email'             => 'required|email:rfc,dns|max:150',
+      'email'             => 'required|email:rfc,dns|max:150|regex:/^[^@]+@upr\.edu$/i',
       'emailConfirmation' => 'required|same:email|max:150',
   ];
 
@@ -180,14 +180,28 @@ class VenuesIndex extends Component
   protected function completeManagerAssignment(User $user, string $justification)
   {
       $this->authorize('assign-manager', $this->department);
+      
 
+      if ($user->department_id === $this->department->id) {
+          $this->dispatch('toast', message: 'User is already part of this department.');
+          $this->reset(['email', 'emailConfirmation']);
+          $this->resetManagerForms();
+          $this->dispatch('close-modal', id: 'emailModal');
+          $this->dispatch('close-modal', id: 'confirmManagerTransferModal');         
+          
+      }
+      else{
       app(DepartmentService::class)->addUserToDepartment($this->department, $user, $justification);
       $this->reset(['email', 'emailConfirmation']);
       $this->resetManagerForms();
       $this->dispatch('close-modal', id: 'emailModal');
       $this->dispatch('close-modal', id: 'confirmManagerTransferModal');
-
       return $this->redirect(route('director.venues.index'), navigate: false);
+      }      
+      
+
+
+      
   }
 
   protected function completeManagerRemovalById(?int $userId, string $justification)

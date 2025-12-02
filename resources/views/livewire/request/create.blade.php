@@ -633,7 +633,7 @@
             @if ($this->shouldShowRequirementUploads)
                 <div class="mb-3">
                     <label for="requirementFiles" class="form-label fw-semibold">
-                        Upload Requirement Documents
+                        Upload Required Documents
                         <span class="text-muted">
                             (PDF, max 10MB each. Maximum of 10 files allowed.)
                         </span>

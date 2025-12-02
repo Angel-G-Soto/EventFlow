@@ -313,7 +313,7 @@ class Create extends Component
         if ($step === 1) {
             return [
                 'creator_phone_number' => ['required','string','regex:/^\D*(\d\D*){10}$/','max:30'],
-                'creator_institutional_number' => ['required','string','max:30'],
+                'creator_institutional_number' => ['required','string','max:30','regex:/^802\d{6}$/' ],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10','max:2000'],
                 'multimedia_equipment' => ['nullable','string','max:2000'],
@@ -325,7 +325,7 @@ class Create extends Component
                 'organization_id' => ['nullable','integer'],
                 'organization_advisor_name' => ['required','string','max:150'],
                 'organization_advisor_phone' => ['required','string','regex:/^\D*(\d\D*){10}$/','max:30'],
-                'organization_advisor_email' => ['required','email:rfc,dns','max:150'],
+                'organization_advisor_email' => ['required','email:rfc,dns','max:150','regex:/^[^@]+@upr\.edu$/i'],
                 'handles_food' => ['boolean'],
                 'external_guest' => ['boolean'],
                 'use_institutional_funds' => ['boolean'],
@@ -350,8 +350,8 @@ class Create extends Component
             || (bool) $this->handles_food
             || (bool) $this->use_institutional_funds
             || (bool) $this->external_guest) {
-            array_unshift($rules['requirementFiles'], 'required');
-            $rules['requirementFiles'][] = 'min:1';
+            array_unshift($rules['requirementFiles'],);
+            
             $rules['requirementFiles'][] = 'max:10'; // arbitrary upper limit
         }
 
