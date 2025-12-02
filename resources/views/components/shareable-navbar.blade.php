@@ -2,10 +2,10 @@
 $navbar = app(\App\Services\UserService::class)->getNavbarContext();
 @endphp
 
-<nav class="navbar navbar-expand-lg navbar-dark" aria-label="Primary site navigation"
+<nav class="navbar navbar-expand-xl navbar-dark" aria-label="Primary site navigation"
   style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
-    <div class="d-flex align-items-center justify-content-between gap-2 d-lg-none mb-2 w-100">
+    <div class="d-flex align-items-center justify-content-between gap-2 d-xl-none mb-2 w-100">
       <a class="navbar-brand fw-semibold" href="https://eventflow.uprm.edu/">
         <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
         EventFlow</a>
@@ -22,14 +22,14 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
           @endif
         </a>
         @endif
-        <button class="navbar-toggler d-flex align-items-center d-lg-none" type="button" data-bs-toggle="collapse"
+        <button class="navbar-toggler d-flex align-items-center d-xl-none" type="button" data-bs-toggle="collapse"
           data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
       </div>
     </div>
 
-    <a class="navbar-brand fw-semibold d-none d-lg-inline-flex align-items-center" href="https://eventflow.uprm.edu/">
+    <a class="navbar-brand fw-semibold d-none d-xl-inline-flex align-items-center" href="https://eventflow.uprm.edu/">
       <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
       EventFlow</a>
 
@@ -139,7 +139,7 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
                 href="{{ route('admin.audit') }}">Audit Log</a></li>
             <li><a class="dropdown-item {{ Route::is('admin.backups') ? 'active fw-bold bg-accent' : '' }}"
                 href="{{ route('admin.backups') }}">Backups</a></li>
-            
+
           </ul>
         </li>
         @endif
@@ -149,15 +149,15 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
         <div class="d-flex gap-2">
           @if($navbar['shouldShowPendingBell'])
           <a href="{{ route('approver.pending.index') }}"
-            class="btn btn-success-subtle p-2 text-white position-relative d-none d-lg-inline-flex align-items-center"
+            class="btn btn-success-subtle p-2 text-white position-relative d-none d-xl-inline-flex align-items-center"
             title="Pending approvals" aria-label="View pending approvals ({{ $navbar['pendingApprovalsCount'] }})">
-          <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
-          @if($navbar['pendingApprovalsCount'] > 0)
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-            {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
-          </span>
-          @endif
-        </a>
+            <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
+            @if($navbar['pendingApprovalsCount'] > 0)
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
+            </span>
+            @endif
+          </a>
           @endif
           <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
             <i class="bi bi-question-lg"></i>
