@@ -106,7 +106,7 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('director.venues.index') ? 'active' : '' }}"
             href="{{ route('director.venues.index') }}">
-            My Departments
+            My Department
           </a>
         </li>
         @endif
