@@ -74,7 +74,7 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
         </li>
         @endif
 
-        @if($navbar['isAdvisor'] || $navbar['isApprover'])
+        @if($navbar['isAdvisor'] || $navbar['isApprover'] || $navbar['isVenueManager'])
         <li class="nav-item dropdown">
           <a class="nav-link text-nowrap fw-bold dropdown-toggle {{ Route::is('approver.history.index') || Route::is('approver.pending.index') ? 'active' : '' }}"
             href="#" id="requestsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
