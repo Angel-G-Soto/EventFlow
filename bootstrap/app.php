@@ -42,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         })->dailyAt('01:00');
 
         // Perform daily backup at 2:00 AM
-        $schedule->command('backup:dump')->dailyAt('08:00');
+        $schedule->command('backup:dump')->dailyAt('08:10');
 
         // Purge documents older than 4 years daily at 3:00 AM
         $schedule->call(function () {
