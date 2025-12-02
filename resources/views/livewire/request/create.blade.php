@@ -607,8 +607,9 @@
                 <div class="mb-3">
                     <div class="form-text">Upload the documents required for this venue.</div>
                 </div>
+            <div class="mb-3">
 
-                <ul class="row">
+                <ul>
                     @foreach ($requiredDocuments as $doc)
                         <li wire:key="doc-{{ $doc['id'] }}">
                                 <a href="{{$doc['hyperlink']}}" target="_blank" class="event-form-link-btn">
@@ -618,6 +619,7 @@
                         </li>
                     @endforeach
                 </ul>
+            </div>
             @endif
 
             @if ($this->shouldShowRequirementUploads)
