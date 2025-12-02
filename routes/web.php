@@ -78,7 +78,7 @@ Route::middleware([EnsureAuthentication::class])->group(function () {
     ]);
   })->name('events.create');
 
-  Route::get('director', \App\Livewire\Director\VenuesIndex::class)->name('director.venues.index');
+  Route::get('/director', \App\Livewire\Director\VenuesIndex::class)->name('director.venues.index');
 
   //Documents
 

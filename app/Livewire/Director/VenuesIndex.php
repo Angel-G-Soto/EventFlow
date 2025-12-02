@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Director;
 
+use App\Livewire\Traits\HasJustification;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\DepartmentService;
@@ -10,44 +11,45 @@ use App\Services\VenueService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Livewire\Attributes\Validate;
 use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
     use WithPagination;
+    use HasJustification;
 
     public string $paginationTheme = 'bootstrap';
 
-  public ?User $selectedEmployee= null;
   public ?int $depID = null;
   public Department $department;
   public ?int $pendingManagerId = null;
   public string $pendingManagerEmail = '';
   public string $pendingManagerDepartment = '';
+  public string $justification = '';
+  public string $pendingAction = '';
+  public ?int $pendingActionUserId = null;
 
-  #[Validate('required|email:rfc,dns|max:150')]
   public string $email = '';
 
-  #[Validate('required|same:email|max:150')]
   public string $emailConfirmation = '';
 
+  protected array $rules = [
+      'email'             => 'required|email:rfc,dns|max:150',
+      'emailConfirmation' => 'required|same:email|max:150',
+  ];
 
-  public function openModal(User $employee): void
-  {
-        $this->selectedEmployee = $employee;
-        // tell the browser to show the modal
-        $this->dispatch('open-modal', id: 'actionModal');
-  }
-  public function removeManager()
+
+  public function requestManagerRemoval(int $userId): void
   {
       $this->authorize('assign-manager', $this->department);
 
-      app(DepartmentService::class)->removeUserFromDepartment($this->department, $this->selectedEmployee);
-      $this->reset(['email', 'emailConfirmation']);
-      $this->selectedEmployee = null;
-      return $this->redirect(route('director.venues.index'), navigate: false);
+      $user = User::find($userId);
+      if (!$user) {
+          return;
+      }
+
+      $this->openJustificationModal('remove_manager', $user->id);
   }
 
   public function addManager()
@@ -64,7 +66,7 @@ class VenuesIndex extends Component
           return;
       }
 
-      return $this->completeManagerAssignment($user);
+      $this->startAddManagerJustification($user);
 
   }
 
@@ -81,7 +83,7 @@ class VenuesIndex extends Component
       }
 
       $user->loadMissing('department');
-      return $this->completeManagerAssignment($user);
+      $this->startAddManagerJustification($user, ['confirmManagerTransferModal']);
   }
 
   public function cancelManagerTransfer(): void
@@ -106,20 +108,115 @@ class VenuesIndex extends Component
       $this->dispatch('open-modal', id: 'confirmManagerTransferModal');
   }
 
-  protected function completeManagerAssignment(User $user)
+  protected function startAddManagerJustification(User $user, array $additionalModalsToClose = []): void
   {
-      app(DepartmentService::class)->addUserToDepartment($this->department, $user);
+      $this->resetManagerConfirmation();
+
+      $modals = array_unique(array_merge(['emailModal'], $additionalModalsToClose));
+
+      $this->openJustificationModal('add_manager', $user->id, $modals);
+  }
+
+  protected function openJustificationModal(string $action, int $userId, array $closeModals = []): void
+  {
+      $this->pendingAction = $action;
+      $this->pendingActionUserId = $userId;
+      $this->justification = '';
+
+      $this->resetErrorBag(['justification']);
+
+      foreach ($closeModals as $modalId) {
+          $this->dispatch('close-modal', id: $modalId);
+      }
+
+      $this->dispatch('open-modal', id: 'departmentJustificationModal');
+  }
+
+  public function confirmJustification()
+  {
+      $this->validate([
+          'justification' => $this->justificationRules(true),
+      ], [], [
+          'justification' => 'justification',
+      ]);
+
+      $action = $this->pendingAction;
+      $userId = $this->pendingActionUserId;
+      $justification = $this->justification;
+
+      $this->dispatch('close-modal', id: 'departmentJustificationModal');
+      $this->resetJustificationState();
+
+      return match ($action) {
+          'add_manager'    => $this->completeManagerAssignmentById($userId, $justification),
+          'remove_manager' => $this->completeManagerRemovalById($userId, $justification),
+          default          => null,
+      };
+  }
+
+  protected function resetJustificationState(): void
+  {
+      $this->pendingAction = '';
+      $this->pendingActionUserId = null;
+      $this->justification = '';
+  }
+
+  protected function completeManagerAssignmentById(?int $userId, string $justification)
+  {
+      if (!$userId) {
+          return;
+      }
+
+      $user = User::find($userId);
+      if (!$user) {
+          return;
+      }
+
+      $user->loadMissing('department');
+
+      return $this->completeManagerAssignment($user, $justification);
+  }
+
+  protected function completeManagerAssignment(User $user, string $justification)
+  {
+      $this->authorize('assign-manager', $this->department);
+
+      app(DepartmentService::class)->addUserToDepartment($this->department, $user, $justification);
       $this->reset(['email', 'emailConfirmation']);
       $this->resetManagerForms();
       $this->dispatch('close-modal', id: 'emailModal');
       $this->dispatch('close-modal', id: 'confirmManagerTransferModal');
+
+      return $this->redirect(route('director.venues.index'), navigate: false);
+  }
+
+  protected function completeManagerRemovalById(?int $userId, string $justification)
+  {
+      if (!$userId) {
+          return;
+      }
+
+      $user = User::find($userId);
+      if (!$user) {
+          return;
+      }
+
+      return $this->finalizeManagerRemoval($user, $justification);
+  }
+
+  protected function finalizeManagerRemoval(User $user, string $justification)
+  {
+      $this->authorize('assign-manager', $this->department);
+
+      app(DepartmentService::class)->removeUserFromDepartment($this->department, $user, $justification);
+      $this->reset(['email', 'emailConfirmation']);
+
       return $this->redirect(route('director.venues.index'), navigate: false);
   }
 
   protected function resetManagerForms(): void
   {
       $this->email = '';
-      $this->selectedEmployee = null;
       $this->resetManagerConfirmation();
   }
 

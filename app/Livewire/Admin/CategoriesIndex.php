@@ -30,6 +30,7 @@ class CategoriesIndex extends Component
     public ?int $editingId = null;
     public string $formName = '';
     public string $editJustification = '';
+    public string $createJustification = '';
 
     public ?int $deleteId = null;
     public string $deleteName = '';
@@ -139,6 +140,8 @@ class CategoriesIndex extends Component
 
         $this->resetErrorBag(['editJustification']);
         $this->resetValidation(['editJustification']);
+        $this->resetErrorBag(['createJustification']);
+        $this->resetValidation(['createJustification']);
 
         if ($this->editingId) {
             $this->editJustification = '';
@@ -146,7 +149,8 @@ class CategoriesIndex extends Component
             return;
         }
 
-        $this->persistCategory();
+        $this->createJustification = '';
+        $this->dispatch('bs:open', id: 'categoryCreateJustify');
     }
 
     public function cancelForm(): void
@@ -168,18 +172,6 @@ class CategoriesIndex extends Component
         $this->deleteJustification = '';
         $this->resetErrorBag();
         $this->resetValidation();
-        $this->dispatch('bs:open', id: 'categoryConfirmDelete');
-    }
-
-    public function proceedDelete(): void
-    {
-        $this->authorizeManage();
-
-        if (!$this->deleteId) {
-            return;
-        }
-
-        $this->dispatch('bs:close', id: 'categoryConfirmDelete');
         $this->dispatch('bs:open', id: 'categoryJustify');
     }
 
@@ -188,7 +180,6 @@ class CategoriesIndex extends Component
         $this->deleteId = null;
         $this->deleteName = '';
         $this->deleteJustification = '';
-        $this->dispatch('bs:close', id: 'categoryConfirmDelete');
         $this->dispatch('bs:close', id: 'categoryJustify');
     }
 
@@ -235,6 +226,7 @@ class CategoriesIndex extends Component
         $this->editingId = null;
         $this->formName = '';
         $this->editJustification = '';
+        $this->createJustification = '';
     }
 
     /**
@@ -277,6 +269,29 @@ class CategoriesIndex extends Component
     }
 
     /**
+     * Validate justification and persist a new category.
+     */
+    public function confirmCreateSave(): void
+    {
+        $this->authorizeManage();
+
+        if ($this->editingId) {
+            return;
+        }
+
+        $this->validate([
+            'createJustification' => ['required', 'string', 'min:10'],
+        ], [], [
+            'createJustification' => 'justification',
+        ]);
+
+        if ($this->persistCategory($this->createJustification)) {
+            $this->dispatch('bs:close', id: 'categoryCreateJustify');
+            $this->createJustification = '';
+        }
+    }
+
+    /**
      * Validate justification and persist an existing category.
      */
     public function confirmEditSave(): void
@@ -302,7 +317,7 @@ class CategoriesIndex extends Component
     /**
      * Create or update a category through the service layer.
      *
-     * Justification is required for edits (passed through to the service for audit).
+     * Justification is required for both creates and edits (passed to the service for audit logging).
      */
     protected function persistCategory(?string $justification = null): bool
     {
@@ -313,7 +328,7 @@ class CategoriesIndex extends Component
                 $service->updateCategory($this->editingId, $this->formName, (string) $justification);
                 $message = 'Category updated';
             } else {
-                $service->createCategory($this->formName);
+                $service->createCategory($this->formName, (string) $justification);
                 $message = 'Category created';
             }
 

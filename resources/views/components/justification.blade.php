@@ -29,7 +29,7 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">{{ $cancelLabel }}</button>
         <button class="btn btn-primary" type="submit">
-          <i class="bi bi-check2 me-1"></i>Confirm
+          <i class="bi me-1"></i>Confirm
         </button>
       </div>
     </form>
