@@ -1093,9 +1093,22 @@ class EventService
                 $actorName = (string)($user->name ?? ($user->email ?? ''));
             }
             $ctx = ['meta' => [
-                'action'        => (string) $action,
                 'justification' => (string) $justification,
                 'fields'        => array_keys($updates),
+                'changes'       => collect($updates)->map(function ($value, $field) use ($event) {
+                    $before = $event->getOriginal($field);
+                    // Normalize common types for clarity
+                    $norm = function ($v) {
+                        if ($v instanceof \DateTimeInterface) return $v->format('Y-m-d H:i:s');
+                        if (is_bool($v)) return $v ? 'true' : 'false';
+                        return $v;
+                    };
+                    return [
+                        'field' => $field,
+                        'from'  => $norm($before),
+                        'to'    => $norm($value),
+                    ];
+                })->values()->all(),
             ]];
             try {
                 if (function_exists('request') && request()) {
