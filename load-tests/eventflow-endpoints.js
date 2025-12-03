@@ -39,9 +39,9 @@ export const options = {
 
 const defaults = {
     BASE_URL: 'https://eventflow.uprm.edu',
-    SESSION_COOKIE: 'eventflow_session=eyJpdiI6Ikh4OGRHTXFBbE1HTGNORVUxZWZWbEE9PSIsInZhbHVlIjoiU2lXTTdTc0VoQVFJbjViMVR2OXhVM0VZb0k0WUJkNUQ4ZHh1MDlMRDdUN1lSYXZrVHJPZm4vVHVVSzZEVTNvQ2NkS1lRZDRKbit5di8zNFN0Zm1xUFhFc250OXVtSmxndm1zdWVDWHFTbnpPeWx6bEVmWlpiNEkxQVI0WWh4TEsiLCJtYWMiOiJiMTRhY2FiYTE1YWQ0MGIwOGZlY2YxNmE2MGQzZGNhMmRmZGZkZDJlY2MwMTRkYjQyNmM3MWYzNDJhMmYzYWMxIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6IkM5NHlLZk95SitXTzNFcGZUbHpwQ1E9PSIsInZhbHVlIjoiOGt2M1B6bmZMSTRaaUhBVzFyNitsSkRBQUhoaW9QZ3B4bWt6K3kydGdzU2N5MkZyS0g2RWxNa0EvUjRLZGd5Wm9ORDdQeW04UFNJMlF3NEE0T3I4NVVUSXd2dDZnN1NBSU5zUGxtRWtyZWhtaUFSaUlvZzE3N3dtejlSdHdiUkwiLCJtYWMiOiIwMWJhZGQ2YzZjNmFjMmQ3MDM3MGEyMTRiNzE0MmU5MGM3ZTFiMDdhNWRiYzEzOWRiMGE1NWE2YjBiMmM5NjgyIiwidGFnIjoiIn0%3D',
-    APPROVER_HISTORY_EVENT_ID: '48',
-    APPROVER_PENDING_EVENT_ID: '48',
+    SESSION_COOKIE: 'eventflow_session=eyJpdiI6IjMvMDEyNVFWZXRqVVJJYlpYUDVHTkE9PSIsInZhbHVlIjoiekdzTGJYWHlkVmt6aFNkTDhWU0FJVDd1ZzZlVDFpb3owS2tpZlNnZllLN2I3WFhlL09KdkZubkZQOTZZRFkxTmt6TkYxd0ROOGxGWlh4RzNHLzc1WVRyd1RXTWNVUFdQQjJDTnFBTHFMOEhaVW0wUlJkSVVudmZQdFFHRFNpM2ciLCJtYWMiOiIwMGI5NzA3NjUzNDMzMDljMjMwZjAwOGFmZWJhYjFiOGVhNGY2OTA1Y2FjM2Y1MDdmNzU5MjgyZDIwZmUxNDM5IiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6Inhqc3B0WEV4V25QT3pTYmRYRkRjd3c9PSIsInZhbHVlIjoiZVhqVk9ha3kwQjdjdTJablZEUDZHaFJhWDNvSTZ6ek9CUlEyZ0Q0V2htRFBuUWtwbU9wLzI5K010RzVVMzRwcW5wT1ZZb1FCMWM4NDVrWk5VYWQzNk9mK2ljeXdOR0sxcFBmVXY3Z1RxV0VINExLVXQvTUZxV0tyQ2gzeDZMd1QiLCJtYWMiOiJmMGJlMDM3MzJiNWNhZTc1MDc3Y2ViMDVhYjZmMGU3MWNjNGEzOTQ5Nzg0M2FjZjViNTA5NjFiYzg5MDI2OTIwIiwidGFnIjoiIn0%3D',
+    APPROVER_HISTORY_EVENT_ID: '154',
+    APPROVER_PENDING_EVENT_ID: '71',
     ORG_EVENT_ID: '48',
     VENUE_ID: '2',
     DOCUMENT_ID: '55',
@@ -56,32 +56,30 @@ const sessionCookie = __ENV.SESSION_COOKIE || defaults.SESSION_COOKIE;
 if (!sessionCookie) throw new Error('SESSION_COOKIE is required to hit authenticated routes.');
 
 const ids = {
-    approverHistoryEventId: __ENV.APPROVER_HISTORY_EVENT_ID || defaults.APPROVER_HISTORY_EVENT_ID,
-    approverPendingEventId: __ENV.APPROVER_PENDING_EVENT_ID || defaults.APPROVER_PENDING_EVENT_ID,
-    orgEventId: __ENV.ORG_EVENT_ID || defaults.ORG_EVENT_ID,
-    venueId: __ENV.VENUE_ID || defaults.VENUE_ID,
-    documentId: __ENV.DOCUMENT_ID || defaults.DOCUMENT_ID,
+    approverHistoryEventId: defaults.APPROVER_HISTORY_EVENT_ID,
+    approverPendingEventId: defaults.APPROVER_PENDING_EVENT_ID,
+    orgEventId: defaults.ORG_EVENT_ID,
+    venueId: defaults.VENUE_ID,
+    documentId: defaults.DOCUMENT_ID,
 };
 Object.entries(ids).forEach(([key, value]) => {
     if (!value) throw new Error(`Set ${key} to resolve dynamic Livewire routes.`);
 });
 
-const nexoApiKey = __ENV.NEXO_API_KEY || defaults.NEXO_API_KEY;
+const nexoApiKey = defaults.NEXO_API_KEY;
 if (!nexoApiKey) throw new Error('Set NEXO_API_KEY to call /api/nexo-import.');
-const nexoSourceId = __ENV.NEXO_SOURCE_ID || defaults.NEXO_SOURCE_ID;
+const nexoSourceId = defaults.NEXO_SOURCE_ID;
 
 const authHeaders = { Cookie: sessionCookie };
 
 const endpoints = [
     { tag: 'public-calendar', path: '/', requiresAuth: false },
-    // { tag: 'mail-preview', path: '/mail/test', requiresAuth: false },
     { tag: 'admin-users', path: '/admin/users' },
     { tag: 'admin-departments', path: '/admin/departments' },
     { tag: 'admin-venues', path: '/admin/venues' },
     { tag: 'dsca-categories', path: '/dsca/categories' },
     { tag: 'admin-events', path: '/admin/events' },
     { tag: 'admin-audit-log', path: '/admin/audit-log' },
-    { tag: 'admin-audit-download', path: '/admin/audit-log/download' },
     { tag: 'approver-history-index', path: '/approver/requests/history' },
     { tag: 'approver-history-details', path: () => `/approver/requests/history/${ids.approverHistoryEventId}` },
     { tag: 'approver-pending-index', path: '/approver/requests/pending' },
@@ -95,7 +93,6 @@ const endpoints = [
     { tag: 'events-create-alias', path: '/events/create' },
     { tag: 'director-venues', path: '/director' },
     { tag: 'documents-show', path: () => `/documents/${ids.documentId}` },
-    { tag: 'documents-pdf', path: () => `/documents/${ids.documentId}/pdf` },
     {
         tag: 'nexo-import',
         method: 'POST',
