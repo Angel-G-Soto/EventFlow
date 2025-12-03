@@ -108,7 +108,7 @@ class ProcessCsvFileUpload implements ShouldQueue
         $infected = false;
         $scanUnavailable = false;
 
-        try {
+//        try {
             $scannerRaw = (string) config('services.clamav.scan_path');
             // Normalize potential quoted/whitespace-only config values.
             $scanner = trim($scannerRaw);
@@ -134,10 +134,10 @@ class ProcessCsvFileUpload implements ShouldQueue
                     ]);
                 }
             }
-        } catch (\Throwable $e) {
-            $scanUnavailable = true;
-            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
-        }
+//        } catch (\Throwable $e) {
+//            $scanUnavailable = true;
+//            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
+//        }
 
         return [$filePath, $infected, $scanUnavailable];
     }
