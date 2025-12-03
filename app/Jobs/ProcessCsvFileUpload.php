@@ -109,7 +109,12 @@ class ProcessCsvFileUpload implements ShouldQueue
         $scanUnavailable = false;
 
         try {
-            $scanner = trim((string) config('services.clamav.scan_path'));
+            $scannerRaw = (string) config('services.clamav.scan_path');
+            // Normalize potential quoted/whitespace-only config values.
+            $scanner = trim($scannerRaw);
+            $scanner = trim($scanner, "\"'"); // strip surrounding quotes that break Process on Windows
+
+//            $scanner = trim((string) config('services.clamav.scan_path'));
             if ($scanner === '') {
                 // Configured path missing; skip scan gracefully
                 $scanUnavailable = true;
