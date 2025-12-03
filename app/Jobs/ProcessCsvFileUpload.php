@@ -44,22 +44,22 @@ class ProcessCsvFileUpload implements ShouldQueue
 
         // try {
             Cache::put($cacheKey, 'scanning', 600);
-            [$filePath, $infected, $scanUnavailable] = $this->scanFile($cacheKey);
+            // [$filePath, $infected, $scanUnavailable] = $this->scanFile();
 
-            if ($infected) {
-                Cache::put($cacheKey, 'infected', 600);
-                Storage::disk('uploads_temp')->delete($this->file_name);
-                return;
-            }
+            // if ($infected) {
+            //     Cache::put($cacheKey, 'infected', 600);
+            //     Storage::disk('uploads_temp')->delete($this->file_name);
+            //     return;
+            // }
 
-            if ($scanUnavailable) {
-                Cache::put($cacheKey, 'scan-unavailable', 600);
-            }
+            // if ($scanUnavailable) {
+            //     Cache::put($cacheKey, 'scan-unavailable', 600);
+            // }
 
             Cache::put($cacheKey, 'parsing', 600);
 
             // Parse CSV, normalize, and validate content
-            [$parsed, $normalized] = $this->parseAndNormalize($filePath);
+            // [$parsed, $normalized] = $this->parseAndNormalize($filePath);
 
             // Resolve admin user or fail gracefully
             $adminUser = $this->resolveAdminUser($cacheKey);
@@ -69,17 +69,17 @@ class ProcessCsvFileUpload implements ShouldQueue
             }
 
             // Ensure departments referenced in CSV exist
-            $this->ensureDepartmentsExist($parsed, $adminUser);
+            // $this->ensureDepartmentsExist($parsed, $adminUser);
 
             Cache::put($cacheKey, 'importing', 600);
 
             // Import via service
-            $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser, $this->context);
+            // $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser, $this->context);
 
             // Cleanup and done
             Storage::disk('uploads_temp')->delete($this->file_name);
-            $processed = is_array($result) ? count($result) : (is_object($result) && method_exists($result, 'count') ? $result->count() : count($normalized));
-            Cache::put($cacheKey . ':count', (int)$processed, 600);
+            // $processed = is_array($result) ? count($result) : (is_object($result) && method_exists($result, 'count') ? $result->count() : count($normalized));
+            // Cache::put($cacheKey . ':count', (int)$processed, 600);
             Cache::put($cacheKey, 'done', 600);
         // } catch (\Throwable $e) {
         //     Log::error('CSV import job failed', [
@@ -101,7 +101,7 @@ class ProcessCsvFileUpload implements ShouldQueue
      *
      * @return array{0:string,1:bool,2:bool} [$filePath, $infected, $scanUnavailable]
      */
-    protected function scanFile(string $cacheKey): array
+    protected function scanFile(): array
     {
         $filePath = Storage::disk('uploads_temp')->path($this->file_name);
 
