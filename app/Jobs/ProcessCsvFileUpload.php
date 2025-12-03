@@ -42,24 +42,24 @@ class ProcessCsvFileUpload implements ShouldQueue
     {
         $cacheKey = 'venues_import:' . $this->file_name;
 
-        // try {
+        try {
             Cache::put($cacheKey, 'scanning', 600);
-            // [$filePath, $infected, $scanUnavailable] = $this->scanFile();
+            [$filePath, $infected, $scanUnavailable] = $this->scanFile($cacheKey);
 
-            // if ($infected) {
-            //     Cache::put($cacheKey, 'infected', 600);
-            //     Storage::disk('uploads_temp')->delete($this->file_name);
-            //     return;
-            // }
+            if ($infected) {
+                Cache::put($cacheKey, 'infected', 600);
+                Storage::disk('uploads_temp')->delete($this->file_name);
+                return;
+            }
 
-            // if ($scanUnavailable) {
-            //     Cache::put($cacheKey, 'scan-unavailable', 600);
-            // }
+            if ($scanUnavailable) {
+                Cache::put($cacheKey, 'scan-unavailable', 600);
+            }
 
             Cache::put($cacheKey, 'parsing', 600);
 
             // Parse CSV, normalize, and validate content
-            // [$parsed, $normalized] = $this->parseAndNormalize($filePath);
+            [$parsed, $normalized] = $this->parseAndNormalize($filePath);
 
             // Resolve admin user or fail gracefully
             $adminUser = $this->resolveAdminUser($cacheKey);
@@ -69,31 +69,31 @@ class ProcessCsvFileUpload implements ShouldQueue
             }
 
             // Ensure departments referenced in CSV exist
-            // $this->ensureDepartmentsExist($parsed, $adminUser);
+            $this->ensureDepartmentsExist($parsed, $adminUser);
 
             Cache::put($cacheKey, 'importing', 600);
 
             // Import via service
-            // $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser, $this->context);
+            $result = app(VenueService::class)->updateOrCreateFromImportData($normalized, $adminUser, $this->context);
 
             // Cleanup and done
             Storage::disk('uploads_temp')->delete($this->file_name);
-            // $processed = is_array($result) ? count($result) : (is_object($result) && method_exists($result, 'count') ? $result->count() : count($normalized));
-            // Cache::put($cacheKey . ':count', (int)$processed, 600);
+            $processed = is_array($result) ? count($result) : (is_object($result) && method_exists($result, 'count') ? $result->count() : count($normalized));
+            Cache::put($cacheKey . ':count', (int)$processed, 600);
             Cache::put($cacheKey, 'done', 600);
-        // } catch (\Throwable $e) {
-        //     Log::error('CSV import job failed', [
-        //         'file' => $this->file_name,
-        //         'error' => $e->getMessage(),
-        //     ]);
-        //     Cache::put($cacheKey, 'failed', 600);
-        //     Cache::put($cacheKey . ':error', (string)$e->getMessage(), 600);
-        //     // Try to cleanup uploaded file to avoid stale files
-        //     try {
-        //         Storage::disk('uploads_temp')->delete($this->file_name);
-        //     } catch (\Throwable $e2) {
-        //     }
-        // }
+        } catch (\Throwable $e) {
+            Log::error('CSV import job failed', [
+                'file' => $this->file_name,
+                'error' => $e->getMessage(),
+            ]);
+            Cache::put($cacheKey, 'failed', 600);
+            Cache::put($cacheKey . ':error', (string)$e->getMessage(), 600);
+            // Try to cleanup uploaded file to avoid stale files
+            try {
+                Storage::disk('uploads_temp')->delete($this->file_name);
+            } catch (\Throwable $e2) {
+            }
+        }
     }
 
     /**
@@ -101,27 +101,25 @@ class ProcessCsvFileUpload implements ShouldQueue
      *
      * @return array{0:string,1:bool,2:bool} [$filePath, $infected, $scanUnavailable]
      */
-    protected function scanFile(): array
+    protected function scanFile(string $cacheKey): array
     {
         $filePath = Storage::disk('uploads_temp')->path($this->file_name);
 
         $infected = false;
         $scanUnavailable = false;
 
-//        try {
+       try {
             $scannerRaw = (string) config('services.clamav.scan_path');
             // Normalize potential quoted/whitespace-only config values.
             $scanner = trim($scannerRaw);
             $scanner = trim($scanner, "\"'"); // strip surrounding quotes that break Process on Windows
 
-//            $scanner = trim((string) config('services.clamav.scan_path'));
-            if ($scanner === '' || !file_exists($scanner)) {
+           $scanner = trim((string) config('services.clamav.scan_path'));
+            if ($scanner === '') {
                 // Configured path missing; skip scan gracefully
                 $scanUnavailable = true;
-                Log::warning('clamdscan path not configured or missing; skipping AV scan', [
-                    'file' => $this->file_name,
-                    'path' => $scannerRaw,
-                ]);            } else {
+                Log::warning('clamdscan path not configured; skipping AV scan', ['file' => $this->file_name]);
+            } else {
                 $scan = new Process([$scanner, '--fdpass', $filePath]);
                 $scan->run();
                 $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
@@ -136,10 +134,10 @@ class ProcessCsvFileUpload implements ShouldQueue
                     ]);
                 }
             }
-//        } catch (\Throwable $e) {
-//            $scanUnavailable = true;
-//            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
-//        }
+       } catch (\Throwable $e) {
+           $scanUnavailable = true;
+           Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
+       }
 
         return [$filePath, $infected, $scanUnavailable];
     }
@@ -210,7 +208,7 @@ class ProcessCsvFileUpload implements ShouldQueue
         $createdForAudit = [];
 
         foreach ($uniqueDepts as $dept) {
-            // try {
+            try {
                 $byName = $deptSvc->findByName($dept['name']);
                 $byCode = $deptSvc->findByCode($dept['code']);
 
@@ -242,13 +240,13 @@ class ProcessCsvFileUpload implements ShouldQueue
                         ];
                     }
                 }
-            // } catch (\Throwable $e) {
-            //     Log::warning('Unable to ensure/update department during CSV import', [
-            //         'department' => $dept['name'],
-            //         'code' => $dept['code'],
-            //         'error' => $e->getMessage(),
-            //     ]);
-            // }
+            } catch (\Throwable $e) {
+                Log::warning('Unable to ensure/update department during CSV import', [
+                    'department' => $dept['name'],
+                    'code' => $dept['code'],
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         // Emit batch audit summary to mirror DepartmentService::updateOrCreateDepartment behavior.
