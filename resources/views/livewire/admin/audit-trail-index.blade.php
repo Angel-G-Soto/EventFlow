@@ -35,25 +35,18 @@ $downloadParams = array_filter([
   {{-- Filters --}}
   <div class="card shadow-sm mb-3">
     <div class="card-body">
-      <div class="row g-2">
-        <div class="col-6 col-md-3">
+      <div class="row g-3">
+        <div class="col-12 col-md-3 col-lg-2">
           <label class="form-label" for="audit_from">From</label>
           <input id="audit_from" type="date" class="form-control" wire:model.defer="from">
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-12 col-md-3 col-lg-2">
           <label class="form-label" for="audit_to">To</label>
           <input id="audit_to" type="date" class="form-control" wire:model.defer="to">
         </div>
 
-        <div class="col-12 col-md-2 d-flex align-items-end">
-          <button class="btn btn-primary w-100" wire:click="applyDateRange" type="button" aria-label="Apply date range">
-            Apply Date Range
-
-          </button>
-        </div>
-
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-4 col-lg-4">
           <label class="form-label" for="audit_search">Search</label>
           <form wire:submit.prevent="applySearch">
             <div class="input-group">
@@ -66,15 +59,13 @@ $downloadParams = array_filter([
           </form>
         </div>
 
-        {{--<div class="col-12 col-md-2 d-flex align-items-end">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="adminOnly" wire:model.live="adminOnly">
-            <label class="form-check-label" for="adminOnly">Admin only</label>
-          </div>
-        </div>--}}
-
-        <div class="col-12 col-md-1 d-flex align-items-end">
-          <button class="btn btn-secondary w-100" wire:click="clearFilters" type="button" aria-label="Clear filters">
+        <div class="col-12 col-md-auto d-flex align-items-end gap-2">
+          <button class="btn btn-primary text-nowrap" wire:click="applyDateRange" type="button"
+            aria-label="Apply date range">
+            Apply Date Range
+          </button>
+          <button class="btn btn-secondary text-nowrap" wire:click="clearFilters" type="button"
+            aria-label="Clear filters">
             <i class="bi bi-x-circle me-1"></i> Clear
           </button>
         </div>
