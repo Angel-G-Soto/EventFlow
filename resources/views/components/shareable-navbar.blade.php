@@ -65,7 +65,9 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
             Calendar
           </a>
         </li>
+        @endif
 
+        @if($navbar['user'] && ($navbar['showMyRequests'] ?? false))
         <li class="nav-item">
           <a class="nav-link text-nowrap fw-bold {{ Route::is('user.index') ? 'active' : '' }}"
             href="{{ route('user.index') }}">
@@ -159,9 +161,10 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
             @endif
           </a>
           @endif
-          <button class="btn btn-success-subtle p-2 text-white" type="button" title="Help" aria-label="Open help">
+          <a class="btn btn-success-subtle p-2 text-white" href="{{ asset('assets/user guide/Eventflow-Guide-2025.pdf') }}"
+            target="_blank" rel="noopener" title="Help" aria-label="Open help guide (PDF)">
             <i class="bi bi-question-lg"></i>
-          </button>
+          </a>
         </div>
         <div class="ms-auto ms-lg-0">
           @if(auth()->check())

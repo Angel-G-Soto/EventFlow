@@ -29,9 +29,10 @@
             aria-label="Open notifications">
             <i class="bi bi-bell"></i>
           </button>
-          <button class="btn btn-success-subtle text-white p-2" type="button" title="Help" aria-label="Open help">
+          <a class="btn btn-success-subtle text-white p-2" href="{{ asset('assets/user guide/Eventflow-Guide-2025.pdf') }}"
+            target="_blank" rel="noopener" title="Help" aria-label="Open help guide (PDF)">
             <i class="bi bi-question-lg"></i>
-          </button>
+          </a>
           <form method="POST" action="{{ route('logout') }}" class="m-0">
             @csrf
             <button class="btn btn-success-subtle text-white p-2" type="submit" title="Log out" aria-label="Log out">

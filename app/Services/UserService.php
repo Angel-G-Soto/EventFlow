@@ -681,6 +681,7 @@ class UserService
      *  isApprover: bool,
      *  isVenueManager: bool,
      *  isDirector: bool,
+     *  showMyRequests: bool,
      *  shouldShowPendingBell: bool,
      *  pendingApprovalsCount: int
      * }
@@ -697,6 +698,7 @@ class UserService
         $isApprover = $roleNames->contains('event-approver');
         $isVenueManager = $roleNames->contains('venue-manager');
         $isDirector = $roleNames->contains('department-director');
+        $showMyRequests = $roleNames->count() <= 1;
 
         $approverRoleSlugs = collect([
             'advisor',
@@ -718,6 +720,7 @@ class UserService
             'isApprover',
             'isVenueManager',
             'isDirector',
+            'showMyRequests',
             'shouldShowPendingBell',
             'pendingApprovalsCount'
         );
