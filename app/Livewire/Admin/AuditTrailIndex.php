@@ -17,17 +17,25 @@ use Carbon\Carbon;
 #[Layout('layouts.app')]
 class AuditTrailIndex extends Component
 {
-    // Filters / query params
-    public string $search = '';           // Combined search (user/action/target)
-    public ?string $from = null;          // '2025-01-01'
-    public ?string $to = null;            // '2025-01-31'
+    /** @var string Combined search term (user/action/target). */
+    public string $search = '';
+
+    /** @var string|null Filter start date (Y-m-d). */
+    public ?string $from = null;
+
+    /** @var string|null Filter end date (Y-m-d). */
+    public ?string $to = null;
+
+    /** @var int Results per page. */
     public int $pageSize = 25;
 
-    // Pagination state
+    /** @var int Current paginator page. */
     public int $page = 1;
 
-    // View state
-    public ?int $detailsId = null;        // for modal
+    /** @var int|null Selected audit record id for the modal. */
+    public ?int $detailsId = null;
+
+    /** @var array<string,mixed> Normalized audit metadata for the modal. */
     public array $details = [];
 
     // Filter reactions

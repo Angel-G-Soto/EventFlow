@@ -27,19 +27,41 @@ class CategoriesIndex extends Component
      * @var string
      */
     public string $search = '';
+
+    /** @var int Current paginator page. */
     public int $page = 1;
+
+    /** @var int Number of rows to display per page. */
     public int $pageSize = 10;
+
+    /** @var string Active sort field for the listing. */
     public string $sortField = 'name';
+
+    /** @var string Sort direction for the listing. */
     public string $sortDirection = 'asc';
 
+    /** @var int|null Category id currently being edited. */
     public ?int $editingId = null;
+
+    /** @var string Category name input for create/edit. */
     public string $formName = '';
+
+    /** @var string Justification for edits. */
     public string $editJustification = '';
+
+    /** @var string Justification for creates. */
     public string $createJustification = '';
 
+    /** @var int|null Category id pending deletion. */
     public ?int $deleteId = null;
+
+    /** @var string Display name of the category being deleted. */
     public string $deleteName = '';
+
+    /** @var string Justification provided before deletion. */
     public string $deleteJustification = '';
+
+    /** @var bool Whether the create/edit modal is visible. */
     public bool $showModal = false;
 
     /**

@@ -17,7 +17,10 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class Backups extends Component
 {
+    /** @var string|null Error message shown when backups cannot be read. */
     public ?string $errorMessage = null;
+
+    /** @var array<int,mixed> Cached recent backup entries. */
     public array $recentBackups = [];
 
     /**

@@ -30,13 +30,22 @@ class VenuesIndex extends Component
     use VenueFilters, VenueEditState, WithFileUploads, HasJustification;
 
     // Properties / backing stores
+    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null Pending CSV upload. */
     public $csvFile;
+
+    /** @var string|null Cache key for the queued import job. */
     public ?string $importKey = null;
+
+    /** @var string|null Latest import status pulled from cache. */
     public ?string $importStatus = null;
+
+    /** @var string|null Error message captured from import failures. */
     public ?string $importErrorMsg = null;
 
     // Details modal state
+    /** @var int|null Venue id whose details are displayed in the modal. */
     public ?int $detailsId = null;
+    /** @var array<string,mixed> Normalized venue details for the modal. */
     public array $details = [];
 
     private const DAYS_OF_WEEK = [
@@ -50,7 +59,10 @@ class VenuesIndex extends Component
     ];
 
     // Sorting
+    /** @var string Column used for sorting the venue list. */
     public string $sortField = '';
+
+    /** @var string Sort direction for the venue list. */
     public string $sortDirection = 'asc';
 
     // Accessors and Mutators

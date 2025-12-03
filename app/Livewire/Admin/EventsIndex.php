@@ -29,10 +29,13 @@ use Illuminate\Support\Facades\Auth;
 class EventsIndex extends Component
 {
     // For category search in modal
+    /** @var string Search term used to filter categories in the modal. */
     public string $categorySearch = '';
     // For displaying selected category labels
+    /** @var array<int,string> Map of selected category id => label for display. */
     public array $selectedCategoryLabels = [];
     // For filtered categories in modal
+    /** @var array<int,array{id:int,name:string,description:?string}> Filtered category options shown in the modal. */
     public array $filteredCategories = [];
     // Traits / shared state
     use EventFilters, EventEditState, HasJustification;
@@ -63,6 +66,8 @@ class EventsIndex extends Component
 
     /**
      * Initialize the component loading the category pool from the database.
+     *
+     * @return void
      */
     // Lifecycle
     public function mount(): void
@@ -78,7 +83,7 @@ class EventsIndex extends Component
      *
      * @return void
      */
-    public function updatedCategorySearch()
+    public function updatedCategorySearch(): void
     {
         $this->filteredCategories = $this->getFilteredCategories();
     }
@@ -88,7 +93,7 @@ class EventsIndex extends Component
      *
      * @return void
      */
-    public function updatedECategoryIds()
+    public function updatedECategoryIds(): void
     {
         $this->updateSelectedCategoryLabels();
     }
@@ -98,7 +103,7 @@ class EventsIndex extends Component
      *
      * @return void
      */
-    public function clearCategories()
+    public function clearCategories(): void
     {
         $this->eCategoryIds = [];
         $this->updateSelectedCategoryLabels();
@@ -159,7 +164,7 @@ class EventsIndex extends Component
      *
      * @return void
      */
-    public function removeCategory($id)
+    public function removeCategory($id): void
     {
         $this->eCategoryIds = array_values(array_diff($this->eCategoryIds, [(int)$id]));
         $this->updateSelectedCategoryLabels();
@@ -174,7 +179,7 @@ class EventsIndex extends Component
      *
      * @return void
      */
-    public function updatedSearch()
+    public function updatedSearch(): void
     {
         $this->page = 1;
     }

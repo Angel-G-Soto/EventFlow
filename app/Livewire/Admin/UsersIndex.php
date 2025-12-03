@@ -31,7 +31,10 @@ class UsersIndex extends Component
 
 
     // Sorting
+    /** @var string Column used for sorting users. */
     public string $sortField = 'id';
+
+    /** @var string Sort direction for the users list. */
     public string $sortDirection = 'asc';
 
     // Pagination & filter reactions

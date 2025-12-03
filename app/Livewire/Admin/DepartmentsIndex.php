@@ -24,7 +24,10 @@ class DepartmentsIndex extends Component
   // Legacy in-memory store removed; data now comes directly from DB
 
   // Sorting
+  /** @var string Column used for sorting departments. */
   public string $sortField = 'id';
+
+  /** @var string Sort direction for the departments list. */
   public string $sortDirection = 'asc';
 
   // Accessors and Mutators
