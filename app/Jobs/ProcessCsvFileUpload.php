@@ -109,7 +109,7 @@ class ProcessCsvFileUpload implements ShouldQueue
         $scanUnavailable = false;
 
 //        try {
-            $scan = new Process([config('services.clamav.scan_path'), '--fdpass', $filePath]);
+            $scan = new Process([trim((string) config('services.clamav.scan_path')), '--fdpass', $filePath]);
             $scan->run();
             $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
             // dd($output);
