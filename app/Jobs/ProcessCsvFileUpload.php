@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\UserService;
 use App\Services\VenueService;
 use App\Services\DepartmentService;
+use App\Services\AuditService;
 use App\Adapters\VenueCsvParser;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -192,6 +193,9 @@ class ProcessCsvFileUpload implements ShouldQueue
             ->filter(fn($d) => ($d['name'] ?? '') !== '' && ($d['code'] ?? '') !== '')
             ->unique(fn($d) => $d['name'] . '|' . $d['code']);
 
+        $updatedForAudit = [];
+        $createdForAudit = [];
+
         foreach ($uniqueDepts as $dept) {
             try {
                 $byName = $deptSvc->findByName($dept['name']);
@@ -201,16 +205,66 @@ class ProcessCsvFileUpload implements ShouldQueue
                     // Department exists by name but with a different code; update it to match CSV.
                     $byName->code = $dept['code'];
                     $byName->save();
+
+                    $this->logDepartmentAudit($adminUser, 'DEPARTMENT_UPDATED', $byName, $dept, 'csv-import');
+                    $updatedForAudit[] = [
+                        'id' => (int) ($byName->id ?? 0),
+                        'name' => $dept['name'],
+                        'code' => $dept['code'],
+                    ];
                 } elseif (!$byName && !$byCode) {
                     // Department does not exist at all; create it.
                     $deptSvc->updateOrCreateDepartment([
                         ['name' => $dept['name'], 'code' => $dept['code']],
                     ]);
+
+                    // Fetch the created/updated department to include id in audit when possible.
+                    $created = $deptSvc->findByCode($dept['code']) ?? $deptSvc->findByName($dept['name']);
+                    if ($created) {
+                        $this->logDepartmentAudit($adminUser, 'DEPARTMENT_UPDATED', $created, $dept, 'csv-import');
+                        $createdForAudit[] = [
+                            'id' => (int) ($created->id ?? 0),
+                            'name' => $dept['name'],
+                            'code' => $dept['code'],
+                        ];
+                    }
                 }
             } catch (\Throwable $e) {
                 Log::warning('Unable to ensure/update department during CSV import', [
                     'department' => $dept['name'],
                     'code' => $dept['code'],
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Emit batch audit summary to mirror DepartmentService::updateOrCreateDepartment behavior.
+        if (!empty($updatedForAudit) || !empty($createdForAudit)) {
+            try {
+                /** @var AuditService $audit */
+                $audit = app(AuditService::class);
+
+                $meta = [
+                    'updated' => array_values($updatedForAudit),
+                    'created' => array_values($createdForAudit),
+                    'count' => count($updatedForAudit) + count($createdForAudit),
+                    'source' => 'csv-import',
+                ];
+
+                $ctx = ['meta' => $meta];
+                if (function_exists('request') && request()) {
+                    $ctx = $audit->buildContextFromRequest(request(), $meta);
+                }
+
+                $audit->logAdminAction(
+                    $adminUser->id,
+                    'department',
+                    'DEPT_UPSERT_BATCH',
+                    'department-import',
+                    $ctx
+                );
+            } catch (\Throwable $e) {
+                Log::warning('CSV import department batch audit failed', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -292,6 +346,47 @@ class ProcessCsvFileUpload implements ShouldQueue
         if (!empty($duplicateCodes)) {
             $codes = implode(', ', array_keys($duplicateCodes));
             throw new \RuntimeException('CSV contains duplicate venue codes: ' . $codes);
+        }
+    }
+
+    /**
+     * Best-effort audit log for department changes during CSV import.
+     */
+    protected function logDepartmentAudit(User $adminUser, string $action, $department, array $deptPayload, string $source = 'csv-import'): void
+    {
+        try {
+            if (($adminUser->id ?? 0) <= 0) {
+                return;
+            }
+
+            /** @var AuditService $audit */
+            $audit = app(AuditService::class);
+            $meta = [
+                'department_id' => (int) ($department->id ?? 0),
+                'department_name' => (string) ($deptPayload['name'] ?? ($department->name ?? '')),
+                'department_code' => (string) ($deptPayload['code'] ?? ($department->code ?? '')),
+                'source' => $source,
+            ];
+
+            $ctx = ['meta' => $meta];
+            if (function_exists('request') && request()) {
+                $ctx = $audit->buildContextFromRequest(request(), $meta);
+            }
+
+            $targetLabel = (string) ($department->name ?? ($deptPayload['name'] ?? 'department'));
+            $audit->logAdminAction(
+                $adminUser->id,
+                'department',
+                $action,
+                $targetLabel,
+                $ctx
+            );
+        } catch (\Throwable $e) {
+            Log::warning('CSV import audit logging failed for department change', [
+                'department' => $deptPayload['name'] ?? null,
+                'code' => $deptPayload['code'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }
