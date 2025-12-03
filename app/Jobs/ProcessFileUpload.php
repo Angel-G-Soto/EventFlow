@@ -51,15 +51,27 @@ class ProcessFileUpload implements ShouldQueue
             $tempRelative = basename($document->getFilePath());
             $path = Storage::disk('uploads_temp')->path($tempRelative);
 
-            $clamdscanPath = config('services.clamav.scan_path');
+//            $clamdscanPath = config('services.clamav.scan_path');
+
+            $clamdscanPath = rtrim((string) config('services.clamav.scan_path'));
+
+            Log::debug('ClamAV path debug', [
+                'clamdscanPath' => $clamdscanPath,
+                'strlen'        => strlen($clamdscanPath),
+                'is_file'       => is_file($clamdscanPath),
+                'file_exists'   => file_exists($clamdscanPath),
+                'php_sapi'      => php_sapi_name(),
+                'cwd'           => getcwd(),
+                'uid'           => function_exists('posix_getuid') ? posix_getuid() : null,
+            ]);
 
             // if (!$clamdscanPath || !file_exists($clamdscanPath)) {
             //     throw new \RuntimeException("clamdscan executable not found at: {$clamdscanPath}");
             // }
-            Log::info('ProcessFileUpload debug', [
-                'clamPath' => $clamdscanPath,
-                'file' => $this->filePath ?? null,
-            ]);
+//            Log::info('ProcessFileUpload debug', [
+//                'clamPath' => $clamdscanPath,
+//                'file' => $this->filePath ?? null,
+//            ]);
 
 
 
