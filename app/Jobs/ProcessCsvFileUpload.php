@@ -115,11 +115,13 @@ class ProcessCsvFileUpload implements ShouldQueue
             $scanner = trim($scanner, "\"'"); // strip surrounding quotes that break Process on Windows
 
 //            $scanner = trim((string) config('services.clamav.scan_path'));
-            if ($scanner === '') {
+            if ($scanner === '' || !file_exists($scanner)) {
                 // Configured path missing; skip scan gracefully
                 $scanUnavailable = true;
-                Log::warning('clamdscan path not configured; skipping AV scan', ['file' => $this->file_name]);
-            } else {
+                Log::warning('clamdscan path not configured or missing; skipping AV scan', [
+                    'file' => $this->file_name,
+                    'path' => $scannerRaw,
+                ]);            } else {
                 $scan = new Process([$scanner, '--fdpass', $filePath]);
                 $scan->run();
                 $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
