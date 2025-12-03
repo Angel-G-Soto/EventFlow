@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Services\DocumentService;
 use App\Services\EventService;
+use App\Services\UserService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
@@ -51,28 +52,11 @@ class ProcessFileUpload implements ShouldQueue
             $tempRelative = basename($document->getFilePath());
             $path = Storage::disk('uploads_temp')->path($tempRelative);
 
-//            $clamdscanPath = config('services.clamav.scan_path');
-
             $clamdscanPath = rtrim((string) config('services.clamav.scan_path'));
 
-            Log::debug('ClamAV path debug', [
-                'clamdscanPath' => $clamdscanPath,
-                'strlen'        => strlen($clamdscanPath),
-                'is_file'       => is_file($clamdscanPath),
-                'file_exists'   => file_exists($clamdscanPath),
-                'php_sapi'      => php_sapi_name(),
-                'cwd'           => getcwd(),
-                'uid'           => function_exists('posix_getuid') ? posix_getuid() : null,
-            ]);
-
-             if (!$clamdscanPath || !file_exists($clamdscanPath)) {
-                 throw new \RuntimeException("clamdscan executable not found at: {$clamdscanPath}");
-             }
-//            Log::info('ProcessFileUpload debug', [
-//                'clamPath' => $clamdscanPath,
-//                'file' => $this->filePath ?? null,
-//            ]);
-
+            if (!$clamdscanPath || !file_exists($clamdscanPath)) {
+                throw new \RuntimeException("clamdscan executable not found at: {$clamdscanPath}");
+            }
 
 
             // Create scanning process
@@ -80,6 +64,7 @@ class ProcessFileUpload implements ShouldQueue
 
             // Run process
             $scan->run();
+
             // Examine output and take decision (move to documents folder or delete)
             if (Str::contains($scan->getOutput(), 'OK'))
             {
@@ -87,7 +72,6 @@ class ProcessFileUpload implements ShouldQueue
                 $contents = Storage::disk('uploads_temp')->get($tempRelative);
                 Storage::disk('documents')->put($tempRelative, $contents);
                 Storage::disk('uploads_temp')->delete($tempRelative);
-//                $document->file_path = 'documents/'.$tempRelative;
                 $document->file_path = $tempRelative;
                 $document->save();
             }
@@ -154,7 +138,7 @@ class ProcessFileUpload implements ShouldQueue
     {
         $systemUserId = (int) config('eventflow.system_user_id', 0);
         if ($systemUserId > 0) {
-            $systemUser = User::find($systemUserId);
+            $systemUser = app(UserService::class)->findUserById($systemUserId);
             if ($systemUser) {
                 return $systemUser;
             }
