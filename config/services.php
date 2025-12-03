@@ -50,4 +50,8 @@ return [
             'name' => 'real_name',
         ],
     ],
+    'clamav' => [
+        'scan_path' => env('CLAMDSCAN_PATH', '/usr/bin/clamdscan'),
+    ],
+
 ];
