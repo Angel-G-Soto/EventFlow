@@ -42,7 +42,7 @@ class ProcessCsvFileUpload implements ShouldQueue
     {
         $cacheKey = 'venues_import:' . $this->file_name;
 
-        try {
+        // try {
             Cache::put($cacheKey, 'scanning', 600);
             [$filePath, $infected, $scanUnavailable] = $this->scanFile($cacheKey);
 
@@ -81,19 +81,19 @@ class ProcessCsvFileUpload implements ShouldQueue
             $processed = is_array($result) ? count($result) : (is_object($result) && method_exists($result, 'count') ? $result->count() : count($normalized));
             Cache::put($cacheKey . ':count', (int)$processed, 600);
             Cache::put($cacheKey, 'done', 600);
-        } catch (\Throwable $e) {
-            Log::error('CSV import job failed', [
-                'file' => $this->file_name,
-                'error' => $e->getMessage(),
-            ]);
-            Cache::put($cacheKey, 'failed', 600);
-            Cache::put($cacheKey . ':error', (string)$e->getMessage(), 600);
-            // Try to cleanup uploaded file to avoid stale files
-            try {
-                Storage::disk('uploads_temp')->delete($this->file_name);
-            } catch (\Throwable $e2) {
-            }
-        }
+        // } catch (\Throwable $e) {
+        //     Log::error('CSV import job failed', [
+        //         'file' => $this->file_name,
+        //         'error' => $e->getMessage(),
+        //     ]);
+        //     Cache::put($cacheKey, 'failed', 600);
+        //     Cache::put($cacheKey . ':error', (string)$e->getMessage(), 600);
+        //     // Try to cleanup uploaded file to avoid stale files
+        //     try {
+        //         Storage::disk('uploads_temp')->delete($this->file_name);
+        //     } catch (\Throwable $e2) {
+        //     }
+        // }
     }
 
     /**
@@ -208,7 +208,7 @@ class ProcessCsvFileUpload implements ShouldQueue
         $createdForAudit = [];
 
         foreach ($uniqueDepts as $dept) {
-            try {
+            // try {
                 $byName = $deptSvc->findByName($dept['name']);
                 $byCode = $deptSvc->findByCode($dept['code']);
 
@@ -240,13 +240,13 @@ class ProcessCsvFileUpload implements ShouldQueue
                         ];
                     }
                 }
-            } catch (\Throwable $e) {
-                Log::warning('Unable to ensure/update department during CSV import', [
-                    'department' => $dept['name'],
-                    'code' => $dept['code'],
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            // } catch (\Throwable $e) {
+            //     Log::warning('Unable to ensure/update department during CSV import', [
+            //         'department' => $dept['name'],
+            //         'code' => $dept['code'],
+            //         'error' => $e->getMessage(),
+            //     ]);
+            // }
         }
 
         // Emit batch audit summary to mirror DepartmentService::updateOrCreateDepartment behavior.
