@@ -108,25 +108,31 @@ class ProcessCsvFileUpload implements ShouldQueue
         $infected = false;
         $scanUnavailable = false;
 
-//        try {
-            $scan = new Process([trim((string) config('services.clamav.scan_path')), '--fdpass', $filePath]);
-            $scan->run();
-            $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
-            // dd($output);
-            if (Str::contains($output, 'FOUND')) {
-                $infected = true;
-            } elseif (!Str::contains($output, 'OK')) {
-                // clamd not available or misconfigured on this machine
+        try {
+            $scanner = trim((string) config('services.clamav.scan_path'));
+            if ($scanner === '') {
+                // Configured path missing; skip scan gracefully
                 $scanUnavailable = true;
-                Log::warning('clamdscan unavailable or inconclusive; proceeding without AV scan', [
-                    'output' => $output,
-                    'exit_code' => $scan->getExitCode(),
-                ]);
+                Log::warning('clamdscan path not configured; skipping AV scan', ['file' => $this->file_name]);
+            } else {
+                $scan = new Process([$scanner, '--fdpass', $filePath]);
+                $scan->run();
+                $output = $scan->getOutput() . "\n" . $scan->getErrorOutput();
+                if (Str::contains($output, 'FOUND')) {
+                    $infected = true;
+                } elseif (!Str::contains($output, 'OK')) {
+                    // clamd not available or misconfigured on this machine
+                    $scanUnavailable = true;
+                    Log::warning('clamdscan unavailable or inconclusive; proceeding without AV scan', [
+                        'output' => $output,
+                        'exit_code' => $scan->getExitCode(),
+                    ]);
+                }
             }
-//        } catch (\Throwable $e) {
-//            $scanUnavailable = true;
-//            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
-//        }
+        } catch (\Throwable $e) {
+            $scanUnavailable = true;
+            Log::warning('clamdscan failed; proceeding without AV scan', ['error' => $e->getMessage()]);
+        }
 
         return [$filePath, $infected, $scanUnavailable];
     }
