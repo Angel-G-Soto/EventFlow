@@ -8,6 +8,12 @@ use Livewire\Component;
 use App\Livewire\Traits\DepartmentFilters;
 use App\Services\DepartmentService;
 
+/**
+ * Admin Livewire component for browsing and filtering departments.
+ *
+ * Relies on the DepartmentService for pagination while keeping filter/sort
+ * state within the UI layer.
+ */
 #[Layout('layouts.app')]
 class DepartmentsIndex extends Component
 {
@@ -47,6 +53,8 @@ class DepartmentsIndex extends Component
    * set the page number to the maximum of 1 and the minimum of the
    * target and the last page number. If the class has a 'selected'
    * property, it will be cleared when the page changes.
+   *
+   * @return void
    */
   public function goToPage(int $target): void
   {
@@ -59,8 +67,10 @@ class DepartmentsIndex extends Component
    *
    * This function will be called whenever the search filter is updated,
    * and will reset the current page to 1.
+   *
+   * @return void
    */
-  public function applySearch()
+  public function applySearch(): void
   {
     $this->page = 1;
   }
@@ -70,6 +80,8 @@ class DepartmentsIndex extends Component
    * Resets the search filter and the current page to 1.
    *
    * Clears the search filter and resets the current page to 1.
+   *
+   * @return void
    */
   public function clearFilters(): void
   {
@@ -80,6 +92,10 @@ class DepartmentsIndex extends Component
 
   /**
    * Toggle or set the active sort column and direction.
+   *
+   * @param string $field Column key to sort by.
+   *
+   * @return void
    */
   public function sortBy(string $field): void
   {
@@ -132,6 +148,11 @@ class DepartmentsIndex extends Component
     ]);
   }
 
+  /**
+   * Build a paginator for departments using the service layer with current filters.
+   *
+   * @return LengthAwarePaginator
+   */
   protected function departmentsPaginator(): LengthAwarePaginator
   {
     $svc = app(DepartmentService::class);

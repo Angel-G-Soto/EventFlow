@@ -75,6 +75,8 @@ class EventsIndex extends Component
      *
      * Keeps the modal list in sync with the latest DB state without requiring
      * a full page reload.
+     *
+     * @return void
      */
     public function updatedCategorySearch()
     {
@@ -83,6 +85,8 @@ class EventsIndex extends Component
 
     /**
      * Rebuild the selected category label map when IDs change in edit/view state.
+     *
+     * @return void
      */
     public function updatedECategoryIds()
     {
@@ -91,6 +95,8 @@ class EventsIndex extends Component
 
     /**
      * Clear all selected categories from the edit state.
+     *
+     * @return void
      */
     public function clearCategories()
     {
@@ -130,6 +136,8 @@ class EventsIndex extends Component
     /**
      * Build a map of category id => name for currently selected IDs.
      * This keeps labels stable in the UI even if categories change in the DB.
+     *
+     * @return void
      */
     protected function updateSelectedCategoryLabels(): void
     {
@@ -148,6 +156,8 @@ class EventsIndex extends Component
      * Remove a single category from the selected ID list and refresh labels.
      *
      * @param int|string $id
+     *
+     * @return void
      */
     public function removeCategory($id)
     {
@@ -161,6 +171,8 @@ class EventsIndex extends Component
      *
      * This function will be called whenever the search filter is updated,
      * and will reset the current page to 1.
+     *
+     * @return void
      */
     public function updatedSearch()
     {
@@ -169,6 +181,8 @@ class EventsIndex extends Component
 
     /**
      * Explicit applySearch handler so deferred search inputs submit via button/enter.
+     *
+     * @return void
      */
     public function applySearch(): void
     {
@@ -177,6 +191,8 @@ class EventsIndex extends Component
 
     /**
      * Apply the selected date range (from/to) and reset pagination.
+     *
+     * @return void
      */
     public function applyDateRange(): void
     {
@@ -194,6 +210,10 @@ class EventsIndex extends Component
 
     /**
      * Keep venue label ($eVenue) in sync when the selected venue id changes in the edit modal.
+     *
+     * @param mixed $value New venue identifier from Livewire binding.
+     *
+     * @return void
      */
     public function updatedEVenueId($value): void
     {
@@ -212,6 +232,8 @@ class EventsIndex extends Component
      * Clears all filters and resets the current page to 1.
      *
      * This function is called when the user clicks the "Clear" button on the filter form.
+     *
+     * @return void
      */
     public function clearFilters(): void
     {
@@ -233,6 +255,8 @@ class EventsIndex extends Component
      * If the event is not found, the function does nothing.
      * It sets the currently edited event ID and the values of the event to be edited, and then opens the edit event modal.
      * @param int $id The ID of the event to edit
+     *
+     * @return void
      */
     public function openEdit(int $id): void
     {
@@ -251,6 +275,8 @@ class EventsIndex extends Component
      * Open a read-only view modal for a specific request, pre-filling the view state.
      *
      * @param int $id The ID of the request to display.
+     *
+     * @return void
      */
     public function openView(int $id): void
     {
@@ -271,6 +297,8 @@ class EventsIndex extends Component
      * Keeps openEdit/openView DRY and simple.
      *
      * @param array<string,mixed> $request
+     *
+     * @return void
      */
     protected function fillEditFromRequest(array $request): void
     {
@@ -315,6 +343,8 @@ class EventsIndex extends Component
      * Opens the justification modal for saving the event.
      *
      * This function sets the actionType to 'save' and then opens the justification modal.
+     *
+     * @return void
      */
     public function save(): void
     {
@@ -337,6 +367,8 @@ class EventsIndex extends Component
      * Validates the justification and saves the event. If the event is being edited, it dispatches
      * events to close the justification and edit event modals. If the event is being created, it
      * dispatches an event to jump to the last page after creation.
+     *
+     * @return void
      */
     public function confirmSave(): void
     {
@@ -473,6 +505,8 @@ class EventsIndex extends Component
      * Central entry point for the justification modal; routes to delete,
      * advance, approve/deny, or save branches while enforcing justification
      * when required by policy.
+     *
+     * @return void
      */
     public function confirmJustify(): void
     {
@@ -502,6 +536,8 @@ class EventsIndex extends Component
 
     /**
      * Confirm advance with a target. Updates status and stores the target, with a clear toast.
+     *
+     * @return void
      */
     public function confirmAdvance(): void
     {
@@ -516,6 +552,10 @@ class EventsIndex extends Component
     
     /**
      * Navigates to a given page number, clamping within valid bounds.
+     *
+     * @param int $target Desired page number.
+     *
+     * @return void
      */
     public function goToPage(int $target): void
     {
@@ -555,6 +595,11 @@ class EventsIndex extends Component
         ]);
     }
 
+    /**
+     * Build a paginator for events using the current filter set.
+     *
+     * @return LengthAwarePaginator
+     */
     protected function eventsPaginator(): LengthAwarePaginator
     {
         $svc = app(EventService::class);
@@ -608,6 +653,10 @@ class EventsIndex extends Component
     /**
      * Normalize status for UI display (label + variant).
      * Accepts either a canonical status code (preferred) or a raw status string.
+     *
+     * @param string $value Status code or label to normalize.
+     *
+     * @return array{label:string,variant:string}
      */
     public function statusIndicatorData(string $value): array
     {
@@ -721,6 +770,8 @@ class EventsIndex extends Component
 
     /**
      * Ensure eTo is after eFrom; supports both "Y-m-d H:i" and "Y-m-dTH:i".
+     *
+     * @return bool True when the end time is after or equal to the start.
      */
     protected function datesInOrder(): bool
     {
@@ -752,6 +803,10 @@ class EventsIndex extends Component
 
     /**
      * Fetch events via EventService without relying on undefined methods.
+     *
+     * @param int $id Event identifier.
+     *
+     * @return mixed|null Event model or null when not found.
      */
     protected function getEventFromServiceById(int $id)
     {
@@ -770,6 +825,10 @@ class EventsIndex extends Component
      * Documents are mapped to a lightweight array (id, name, label, url)
      * via DocumentService so the Blade template stays decoupled from
      * storage implementation details and concrete model types.
+     *
+     * @param int $eventId Event identifier for which documents are loaded.
+     *
+     * @return void
      */
     protected function loadViewDocuments(int $eventId): void
     {

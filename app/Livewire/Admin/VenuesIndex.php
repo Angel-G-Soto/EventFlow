@@ -16,6 +16,13 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Admin Livewire component for managing venues, including CSV imports.
+ *
+ * Provides filtering, pagination, details modal, bulk CSV upload, and
+ * deactivation flows while delegating persistence and business rules to the
+ * VenueService.
+ */
 #[Layout('layouts.app')]
 class VenuesIndex extends Component
 {
@@ -67,6 +74,11 @@ class VenuesIndex extends Component
 
     // Filters: clear/reset
     // Reset filters and pagination to defaults
+    /**
+     * Clear search/filters and reset pagination.
+     *
+     * @return void
+     */
     public function clearFilters(): void
     {
         $this->search = '';
@@ -77,6 +89,13 @@ class VenuesIndex extends Component
 
     // Pagination & filter reactions
     // Keep pagination within bounds when a page number is chosen
+    /**
+     * Navigate to a specific page number within bounds.
+     *
+     * @param int $target Desired page number (1-indexed).
+     *
+     * @return void
+     */
     public function goToPage(int $target): void
     {
         $this->page = max(1, $target);
@@ -84,6 +103,10 @@ class VenuesIndex extends Component
 
     /**
      * Normalize capMin as user types and reset pagination.
+     *
+     * @param mixed $value Raw value from Livewire input binding.
+     *
+     * @return void
      */
     public function updatedCapMin($value): void
     {
@@ -92,6 +115,11 @@ class VenuesIndex extends Component
 
     // Filters: search update reaction
     // Search change should restart pagination
+    /**
+     * Apply the current search term and reset pagination.
+     *
+     * @return void
+     */
     public function applySearch()
     {
         $this->page = 1;
@@ -99,6 +127,10 @@ class VenuesIndex extends Component
 
     /**
      * Toggle or set the active sort column and direction.
+     *
+     * @param string $field Column key to sort by.
+     *
+     * @return void
      */
     public function sortBy(string $field): void
     {
@@ -118,6 +150,8 @@ class VenuesIndex extends Component
      * This function will reset the csvFile field to its default value and
      * open the CSV modal. It is called when the user clicks the "Add
      * Venues by CSV" button.
+     *
+     * @return void
      */
     public function openCsvModal(): void
     {
@@ -133,6 +167,8 @@ class VenuesIndex extends Component
      * - Validates file type and size
      * - Stores temporarily on uploads_temp disk
      * - Dispatches background job to virus-scan, parse, and import via VenueService
+     *
+     * @return void
      */
     public function uploadCsv(): void
     {
@@ -171,6 +207,8 @@ class VenuesIndex extends Component
 
     /**
      * Poll for background CSV import status via cache
+     *
+     * @return void
      */
     public function checkImportStatus(): void
     {
@@ -208,6 +246,10 @@ class VenuesIndex extends Component
     // Edit workflow
     /**
      * Populate and show the details modal for a venue using the service layer only.
+     *
+     * @param int $id Venue identifier.
+     *
+     * @return void
      */
     public function showDetails(int $id): void
     {
@@ -242,6 +284,13 @@ class VenuesIndex extends Component
         }
     }
 
+    /**
+     * Normalize availability collection into a sorted array for the view.
+     *
+     * @param \Illuminate\Support\Collection $availabilities Availability collection for a venue.
+     *
+     * @return array<int,array{day:string,opens:string,closes:string}>
+     */
     protected function formatAvailabilityForDetails(Collection $availabilities): array
     {
         if ($availabilities->isEmpty()) {
@@ -276,6 +325,8 @@ class VenuesIndex extends Component
      *
      * This function is a helper to validate only the justification length by calling
      * `validateOnly` with the justification field as the parameter.
+     *
+     * @return void
      */
     protected function validateJustification(): void
     {
@@ -288,7 +339,10 @@ class VenuesIndex extends Component
      * Opens the justification modal for the venue with the given ID.
      * This function should be called when the user wants to deactivate a venue.
      * It sets the currently edited venue ID and opens the confirmation modal.
-     * @param int $id The ID of the venue to deactivate
+     *
+     * @param int $id The ID of the venue to deactivate.
+     *
+     * @return void
      */
     public function deactivate(int $id): void
     {
@@ -300,6 +354,8 @@ class VenuesIndex extends Component
 
     /**
      * Proceeds from the deactivate confirmation to the justification modal.
+     *
+     * @return void
      */
     public function proceedDeactivate(): void
     {
@@ -315,6 +371,8 @@ class VenuesIndex extends Component
      * This function will validate the justification entered by the user, and then deactivate the venue with the given ID.
      * After deactivation, it clamps the current page to prevent the page from becoming out of bounds.
      * Finally, it shows a toast message indicating the venue was deactivated.
+     *
+     * @return void
      */
     public function confirmDeactivate(): void
     {
@@ -348,6 +406,8 @@ class VenuesIndex extends Component
      * to the view. It paginates the filtered collection of venues and ensures
      * that the current page is within the bounds of the paginator. It then
      * returns the view with the paginated data and the visible IDs.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
     public function render()
     {
@@ -383,6 +443,11 @@ class VenuesIndex extends Component
         ]);
     }
 
+    /**
+     * Build a paginator for venues using the service layer and current filters.
+     *
+     * @return LengthAwarePaginator
+     */
     protected function venuesPaginator(): LengthAwarePaginator
     {
         $svc = app(VenueService::class);
@@ -430,6 +495,10 @@ class VenuesIndex extends Component
     }
     /**
      * Map a features storage string like "1010" to human labels expected by the UI.
+     *
+     * @param string $features Bitstring of venue features.
+     *
+     * @return array<int,string>
      */
     protected function mapFeaturesStringToLabels(string $features): array
     {

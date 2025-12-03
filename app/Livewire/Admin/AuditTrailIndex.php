@@ -8,6 +8,12 @@ use Livewire\Component;
 use App\Services\AuditService;
 use Carbon\Carbon;
 
+/**
+ * Admin Livewire component for browsing and inspecting audit logs.
+ *
+ * Provides paginated, filterable access to audit trail entries along with a
+ * details modal that surfaces structured metadata for individual records.
+ */
 #[Layout('layouts.app')]
 class AuditTrailIndex extends Component
 {
@@ -29,6 +35,8 @@ class AuditTrailIndex extends Component
      * Keep pagination in sync when filter fields change.
      *
      * @param string $field The Livewire-updated field name.
+     *
+     * @return void
      */
     public function updated($field)
     {
@@ -40,6 +48,8 @@ class AuditTrailIndex extends Component
     // Filters: clear/reset
     /**
      * Reset all filters to their defaults and reset pagination.
+     *
+     * @return void
      */
     public function clearFilters(): void
     {
@@ -52,6 +62,10 @@ class AuditTrailIndex extends Component
 
     /**
      * Navigate to a specific page number from the shared pagination partial.
+     *
+     * @param int $target Target page number (1-indexed).
+     *
+     * @return void
      */
     public function goToPage(int $target): void
     {
@@ -60,6 +74,8 @@ class AuditTrailIndex extends Component
 
     /**
      * Explicit applySearch handler so deferred search inputs submit via button/enter.
+     *
+     * @return void
      */
     public function applySearch(): void
     {
@@ -68,6 +84,8 @@ class AuditTrailIndex extends Component
 
     /**
      * Apply the selected date range with validation, mirroring EventsIndex behavior.
+     *
+     * @return void
      */
     public function applyDateRange(): void
     {
@@ -104,6 +122,13 @@ class AuditTrailIndex extends Component
         ];
     }
 
+    /**
+     * Load a specific audit entry and prepare details for modal display.
+     *
+     * @param int $id Audit trail identifier.
+     *
+     * @return void
+     */
     public function showDetails(int $id): void
     {
         $this->authorize('access-dashboard');
@@ -134,6 +159,13 @@ class AuditTrailIndex extends Component
         $this->dispatch('bs:open', id: 'auditDetails');
     }
 
+    /**
+     * Normalize an audit model instance into a flat details array for the UI.
+     *
+     * @param object $log AuditTrail model instance from the service layer.
+     *
+     * @return array<string,mixed>
+     */
     private function mapAuditToDetails(object $log): array
     {
         // robust meta parsing
@@ -196,6 +228,8 @@ class AuditTrailIndex extends Component
     // Render
     /**
      * Render the Audit Trail list view.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
     public function render()
     {

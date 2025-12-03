@@ -11,6 +11,11 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
+/**
+ * Controller for legacy admin dashboard pages.
+ *
+ * Routes primarily render paginated Blade views for core admin resources.
+ */
 class AdminController extends Controller
 {
   use AuthorizesRequests;
@@ -18,6 +23,7 @@ class AdminController extends Controller
   /**
    * Display the user management dashboard.
    *
+   * @return \Illuminate\Contracts\View\View
    * @throws \Illuminate\Auth\Access\AuthorizationException
    */
   public function usersIndex(): View
@@ -32,6 +38,7 @@ class AdminController extends Controller
   /**
    * Display the departments management dashboard.
    *
+   * @return \Illuminate\Contracts\View\View
    * @throws \Illuminate\Auth\Access\AuthorizationException
    */
   public function departmentsIndex(): View
@@ -47,6 +54,7 @@ class AdminController extends Controller
   /**
    * Display the venues management dashboard.
    *
+   * @return \Illuminate\Contracts\View\View
    * @throws \Illuminate\Auth\Access\AuthorizationException
    */
   public function venuesIndex(): View
@@ -62,6 +70,7 @@ class AdminController extends Controller
   /**
    * Display the event oversight dashboard.
    *
+   * @return \Illuminate\Contracts\View\View
    * @throws \Illuminate\Auth\Access\AuthorizationException
    */
   public function eventsIndex(): View
@@ -77,6 +86,7 @@ class AdminController extends Controller
   /**
    * Display the override management dashboard.
    *
+   * @return \Illuminate\Contracts\View\View
    * @throws \Illuminate\Auth\Access\AuthorizationException
    */
   public function overridesIndex(): View
@@ -90,6 +100,9 @@ class AdminController extends Controller
   /**
    * Perform an administrative override action on an event.
    *
+   * @param \Illuminate\Http\Request $request Incoming override request payload.
+   *
+   * @return RedirectResponse
    * @throws \Illuminate\Auth\Access\AuthorizationException
    */
   public function performOverride(Request $request): RedirectResponse

@@ -21,6 +21,11 @@ class CategoriesIndex extends Component
 {
     use AuthorizesRequests;
 
+    /**
+     * Search term for filtering categories.
+     *
+     * @var string
+     */
     public string $search = '';
     public int $page = 1;
     public int $pageSize = 10;
@@ -39,6 +44,8 @@ class CategoriesIndex extends Component
 
     /**
      * Ensure the current user can manage categories before interacting.
+     *
+     * @return void
      */
     public function mount(): void
     {
@@ -47,6 +54,8 @@ class CategoriesIndex extends Component
 
     /**
      * Render the paginated categories table for admins.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
     public function render()
     {
@@ -59,18 +68,35 @@ class CategoriesIndex extends Component
         ]);
     }
 
+    /**
+     * Move to a specific page number within bounds.
+     *
+     * @param int $target Desired page number (1-indexed).
+     *
+     * @return void
+     */
     public function goToPage(int $target): void
     {
         $this->authorizeManage();
         $this->page = max(1, $target);
     }
 
+    /**
+     * Apply search terms and reset pagination.
+     *
+     * @return void
+     */
     public function applySearch(): void
     {
         $this->authorizeManage();
         $this->page = 1;
     }
 
+    /**
+     * Clear filters and reset pagination to defaults.
+     *
+     * @return void
+     */
     public function clearFilters(): void
     {
         $this->authorizeManage();
@@ -78,6 +104,13 @@ class CategoriesIndex extends Component
         $this->page = 1;
     }
 
+    /**
+     * Toggle or set the active sort column/direction.
+     *
+     * @param string $field Column name to sort by.
+     *
+     * @return void
+     */
     public function sortBy(string $field): void
     {
         $this->authorizeManage();
@@ -92,6 +125,11 @@ class CategoriesIndex extends Component
         $this->page = 1;
     }
 
+    /**
+     * Reset pagination when page size changes.
+     *
+     * @return void
+     */
     public function updatedPageSize(): void
     {
         $this->authorizeManage();
@@ -100,6 +138,8 @@ class CategoriesIndex extends Component
 
     /**
      * Open create modal with a clean form.
+     *
+     * @return void
      */
     public function startCreate(): void
     {
@@ -111,6 +151,10 @@ class CategoriesIndex extends Component
 
     /**
      * Load an existing category into the edit modal.
+     *
+     * @param int $categoryId Target category identifier.
+     *
+     * @return void
      */
     public function startEdit(int $categoryId): void
     {
@@ -129,6 +173,8 @@ class CategoriesIndex extends Component
 
     /**
      * Validate and persist a category; edits require justification.
+     *
+     * @return void
      */
     public function saveCategory(): void
     {
@@ -153,6 +199,11 @@ class CategoriesIndex extends Component
         $this->dispatch('bs:open', id: 'categoryCreateJustify');
     }
 
+    /**
+     * Close the form modal and reset state.
+     *
+     * @return void
+     */
     public function cancelForm(): void
     {
         $this->authorizeManage();
@@ -163,6 +214,10 @@ class CategoriesIndex extends Component
 
     /**
      * Launch the delete confirmation/justification flow for a category.
+     *
+     * @param int $categoryId Target category identifier.
+     *
+     * @return void
      */
     public function confirmDelete(int $categoryId): void
     {
@@ -175,6 +230,11 @@ class CategoriesIndex extends Component
         $this->dispatch('bs:open', id: 'categoryJustify');
     }
 
+    /**
+     * Cancel a pending delete action and close the modal.
+     *
+     * @return void
+     */
     public function cancelDelete(): void
     {
         $this->deleteId = null;
@@ -185,6 +245,8 @@ class CategoriesIndex extends Component
 
     /**
      * Delete a category after justification, delegating to the service layer.
+     *
+     * @return void
      */
     public function deleteCategory(): void
     {
@@ -221,6 +283,11 @@ class CategoriesIndex extends Component
         }
     }
 
+    /**
+     * Reset form-related state to defaults.
+     *
+     * @return void
+     */
     protected function resetForm(): void
     {
         $this->editingId = null;
@@ -233,6 +300,8 @@ class CategoriesIndex extends Component
      * Build a paginator for categories using the service layer.
      *
      * Keeps pagination state in sync when filters/page size change.
+     *
+     * @return LengthAwarePaginator
      */
     protected function categoriesPaginator(): LengthAwarePaginator
     {
@@ -263,6 +332,11 @@ class CategoriesIndex extends Component
         return $paginator;
     }
 
+    /**
+     * Assert the current user can manage categories.
+     *
+     * @return void
+     */
     protected function authorizeManage(): void
     {
         $this->authorize('manage-categories');
@@ -270,6 +344,8 @@ class CategoriesIndex extends Component
 
     /**
      * Validate justification and persist a new category.
+     *
+     * @return void
      */
     public function confirmCreateSave(): void
     {
@@ -293,6 +369,8 @@ class CategoriesIndex extends Component
 
     /**
      * Validate justification and persist an existing category.
+     *
+     * @return void
      */
     public function confirmEditSave(): void
     {
@@ -318,6 +396,10 @@ class CategoriesIndex extends Component
      * Create or update a category through the service layer.
      *
      * Justification is required for both creates and edits (passed to the service for audit logging).
+     *
+     * @param string|null $justification Business justification for the change.
+     *
+     * @return bool True when the service call succeeds.
      */
     protected function persistCategory(?string $justification = null): bool
     {
@@ -347,6 +429,13 @@ class CategoriesIndex extends Component
         return false;
     }
 
+    /**
+     * Resolve a category's display name from its identifier.
+     *
+     * @param int $categoryId Target category identifier.
+     *
+     * @return string Category name or empty string when missing.
+     */
     protected function resolveCategoryName(int $categoryId): string
     {
         try {

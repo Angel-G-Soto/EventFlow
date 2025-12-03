@@ -38,6 +38,10 @@ class UsersIndex extends Component
     // Keep pagination within bounds when a page number is chosen
     /**
      * Toggle or set the active sort column and direction.
+     *
+     * @param string $field Column key to sort by.
+     *
+     * @return void
      */
     public function sortBy(string $field): void
     {
@@ -50,20 +54,24 @@ class UsersIndex extends Component
         $this->page = 1;
     }
 
-/**
- * Resets the current page to 1 when the search form is submitted.
- *
- * This is necessary to prevent the pagination from breaking when a new search query is executed.
- */
+    /**
+     * Resets the current page to 1 when the search form is submitted.
+     *
+     * This is necessary to prevent the pagination from breaking when a new search query is executed.
+     *
+     * @return void
+     */
     public function applySearch(): void
-{
-    $this->page = 1;
-}
+    {
+        $this->page = 1;
+    }
 
 
     // Filters: clear/reset
     /**
      * Clears all user filters and resets pagination.
+     *
+     * @return void
      */
     public function clearFilters(): void
     {
@@ -77,6 +85,8 @@ class UsersIndex extends Component
      * Resets the edit fields to their default values and opens the edit user modal.
      *
      * This function is called when the user clicks the "Add User" button.
+     *
+     * @return void
      */
     public function openCreate(): void
     {
@@ -95,6 +105,8 @@ class UsersIndex extends Component
      * This function is called when the user clicks the "Edit" button next to a user.
      *
      * @param int $id The user ID to open the edit modal for.
+     *
+     * @return void
      */
     public function openEdit(int $id): void
     {
@@ -131,6 +143,8 @@ class UsersIndex extends Component
      * If the email is not taken, it validates the form data and then checks if the user is being created (i.e. the editId is null).
      * If the user is being created, it confirms the save action and then jumps to the last page after creation.
      * If the user is being edited, it opens the justification modal for the user to enter a justification for the edit.
+     *
+     * @return void
      */
     public function save(): void
     {
@@ -153,6 +167,8 @@ class UsersIndex extends Component
      * If the user is being edited, it validates the justification length and then updates the edited_users session.
      * If the user is being created, it updates the new_users session.
      * Finally, it dispatches events to close the justification modal, edit user modal, and show a toast message with a success message.
+     *
+     * @return void
      */
     public function confirmSave(): void
     {
@@ -222,6 +238,8 @@ class UsersIndex extends Component
      * This function should be called when the user wants to delete a user.
      * It sets the currently edited user ID and sets actionType to 'delete', then opens the justification modal.
      * @param int $id The ID of the user to delete
+     *
+     * @return void
      */
     public function clearRoles(int $id): void
     {
@@ -234,6 +252,8 @@ class UsersIndex extends Component
 
     /**
      * Proceeds from the delete confirmation to the justification modal.
+     *
+     * @return void
      */
     public function proceedClearRoles(): void
     {
@@ -249,6 +269,8 @@ class UsersIndex extends Component
      * This function will validate the justification entered by the user, and then delete the user with the given ID.
      * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
      * Finally, it shows a toast message indicating the user was deleted.
+     *
+     * @return void
      */
     public function confirmClearRoles(): void
     {
@@ -277,6 +299,8 @@ class UsersIndex extends Component
 
     /**
      * Unified justification submit handler to route to save/delete.
+     *
+     * @return void
      */
     public function confirmJustify(): void
     {
@@ -298,6 +322,8 @@ class UsersIndex extends Component
      * - required presence of at least one role,
      * - preventing removal of the last remaining admin user, and
      * - requiring a valid department when the role implies departmental ownership.
+     *
+     * @return array<string,mixed>
      */
     protected function rules(): array
     {
@@ -354,6 +380,8 @@ class UsersIndex extends Component
      * department-agnostic from the admin UI's perspective.
      *
      * @param array<int,string> $roles The set of role codes to evaluate.
+     *
+     * @return bool True when the role set requires a department.
      */
     protected function roleRequiresDepartment(array $roles): bool
     {
@@ -364,6 +392,10 @@ class UsersIndex extends Component
 
     /**
      * Fire a UI toast event for the front-end to display a message.
+     *
+     * @param string $message Message to send to the UI toast handler.
+     *
+     * @return void
      */
     protected function toast(string $message): void
     {
@@ -392,12 +424,13 @@ class UsersIndex extends Component
     }
 
 
-
-
-
     /**
      * Resolve department id from the selected department name.
      * Treat empty or placeholder values (e.g., '—') as null. If roles exempt department, also return null.
+     *
+     * @param string|null $name Department name from the UI.
+     *
+     * @return int|null Matching department id or null when none found/required.
      */
     protected function resolveDepartmentIdFromName(?string $name): ?int
     {
@@ -464,12 +497,21 @@ class UsersIndex extends Component
 
     /**
      * Keep pagination controls working with the shared pagination partial.
+     *
+     * @param int $target Desired page number.
+     *
+     * @return void
      */
     public function goToPage(int $target): void
     {
         $this->page = max(1, $target);
     }
 
+    /**
+     * Build a paginator for users using the service layer and current filters.
+     *
+     * @return LengthAwarePaginator
+     */
     protected function usersPaginator(): LengthAwarePaginator
     {
         $svc = app(UserService::class);
