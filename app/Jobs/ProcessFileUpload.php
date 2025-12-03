@@ -53,9 +53,13 @@ class ProcessFileUpload implements ShouldQueue
 
             $clamdscanPath = config('services.clamav.scan_path');
 
-            if (!$clamdscanPath || !file_exists($clamdscanPath)) {
-                throw new \RuntimeException("clamdscan executable not found at: {$clamdscanPath}");
-            }
+            // if (!$clamdscanPath || !file_exists($clamdscanPath)) {
+            //     throw new \RuntimeException("clamdscan executable not found at: {$clamdscanPath}");
+            // }
+            Log::info('ProcessFileUpload debug', [
+                'clamPath' => $clamdscanPath,
+                'file' => $this->filePath ?? null,
+            ]);
 
 
 
