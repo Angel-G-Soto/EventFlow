@@ -132,7 +132,7 @@ class VenuesIndex extends Component
      *
      * @return void
      */
-    public function applySearch()
+    public function applySearch(): void
     {
         $this->page = 1;
     }

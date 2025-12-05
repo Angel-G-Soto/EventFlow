@@ -428,10 +428,11 @@ class EventsIndex extends Component
 
     // Delete workflows
     /**
-     * Opens the justification modal for deleting an event.
+     * Stub for delete action; deletion is disabled in this view.
      *
-     * This function sets the currently edited event ID and the actionType to 'delete', and then opens the justification modal.
-     * @param int $id The ID of the event to delete
+     * @param int $id Event identifier (ignored).
+     *
+     * @return void
      */
     // Delete flows disabled for admin oversight; keep stub for compatibility
     public function delete(int $id): void
@@ -439,11 +440,21 @@ class EventsIndex extends Component
         $this->addError('justification', 'Delete is disabled for this view.');
     }
 
+    /**
+     * Stub for delete confirmation; deletion is disabled in this view.
+     *
+     * @return void
+     */
     public function proceedDelete(): void
     {
         $this->addError('justification', 'Delete is disabled for this view.');
     }
 
+    /**
+     * Stub for delete confirmation with justification; deletion is disabled in this view.
+     *
+     * @return void
+     */
     public function confirmDelete(): void
     {
         $this->addError('justification', 'Delete is disabled for this view.');
@@ -790,6 +801,8 @@ class EventsIndex extends Component
 
     /**
      * Returns an array of validation rules for the justification field.
+     *
+     * @return array<string, array<int,\Illuminate\Validation\Rule|string>>
      */
     protected function rules(): array
     {
@@ -800,6 +813,8 @@ class EventsIndex extends Component
 
     /**
      * Validates only the justification field.
+     *
+     * @return void
      */
     protected function validateJustification(): void
     {

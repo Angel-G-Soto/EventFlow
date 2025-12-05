@@ -234,13 +234,10 @@ class UsersIndex extends Component
         $this->reset(['editId', 'justification', 'editRoles', 'editDepartment']);
     }
 
-
-    // Delete workflows
     /**
-     * Opens the justification modal for the user with the given ID.
-     * This function should be called when the user wants to delete a user.
-     * It sets the currently edited user ID and sets actionType to 'delete', then opens the justification modal.
-     * @param int $id The ID of the user to delete
+     * Open the confirmation modal to clear all roles for a user.
+     *
+     * @param int $id User identifier whose roles will be cleared.
      *
      * @return void
      */
@@ -254,7 +251,9 @@ class UsersIndex extends Component
     }
 
     /**
-     * Proceeds from the delete confirmation to the justification modal.
+     * Continue from confirmation to justification for clearing roles.
+     *
+     * Closes the confirmation modal and opens the justification modal.
      *
      * @return void
      */
@@ -267,11 +266,7 @@ class UsersIndex extends Component
     }
 
     /**
-     * Confirms the deletion of a user.
-     *
-     * This function will validate the justification entered by the user, and then delete the user with the given ID.
-     * After deletion, it clamps the current page to prevent the page from becoming out of bounds.
-     * Finally, it shows a toast message indicating the user was deleted.
+     * Validate justification and clear all roles for the current user.
      *
      * @return void
      */
@@ -301,7 +296,7 @@ class UsersIndex extends Component
     }
 
     /**
-     * Unified justification submit handler to route to save/delete.
+     * Unified justification submit handler to route to save or clear roles.
      *
      * @return void
      */
@@ -316,7 +311,6 @@ class UsersIndex extends Component
         }
     }
 
-    // Private/Protected Helper Methods
     /**
      * Validation rules for the user edit form.
      *
@@ -373,7 +367,6 @@ class UsersIndex extends Component
         ];
     }
 
-    // Removed legacy in-memory ID generator; DB auto-increment IDs are used
 
     /**
      * Determine whether the current role set requires a department assignment.
@@ -407,9 +400,13 @@ class UsersIndex extends Component
     }
 
     /**
-     * Split a full name string into first and last name components.
+     * Splits a full name into first and last name parts.
      *
-     * @return array{0:string,1:string}
+     * @param string $fullName The full name to split.
+     *
+     * @return array<string,string> An array containing the first and last name parts.
+     *   The first element is the first name, and the second element is the last name.
+     *   If the input full name is empty, returns an array with two empty strings.
      */
     protected function splitName(string $fullName): array
     {
