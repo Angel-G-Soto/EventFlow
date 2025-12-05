@@ -21,6 +21,7 @@ use App\Models\Venue;
 use App\Services\VenueAvailabilityService;
 use App\Services\UseRequirementService;
 use App\Services\VenueService;
+use App\Livewire\Traits\HasJustification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -37,6 +38,7 @@ use Livewire\Component;
  */
 class Configure extends Component
 {
+    use HasJustification;
     private const DAYS_OF_WEEK = [
         'Monday',
         'Tuesday',
@@ -390,7 +392,7 @@ protected string $availabilitySnapshot = '';
     public function submitJustification(): void
     {
         $this->validate([
-            'justification' => ['required', 'string', 'min:10', 'max:255'],
+            'justification' => $this->justificationRules(true),
         ], [], [
             'justification' => 'justification',
         ]);

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Livewire\Traits\HasJustification;
 
 /**
  * Admin category management view.
@@ -19,7 +20,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class CategoriesIndex extends Component
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, HasJustification;
 
     /**
      * Search term for filtering categories.
@@ -279,7 +280,7 @@ class CategoriesIndex extends Component
         }
 
         $this->validate([
-            'deleteJustification' => ['required', 'string', 'min:10'],
+            'deleteJustification' => $this->justificationRules(true),
         ], [], [
             'deleteJustification' => 'justification',
         ]);
@@ -378,7 +379,7 @@ class CategoriesIndex extends Component
         }
 
         $this->validate([
-            'createJustification' => ['required', 'string', 'min:10'],
+            'createJustification' => $this->justificationRules(true),
         ], [], [
             'createJustification' => 'justification',
         ]);
@@ -403,7 +404,7 @@ class CategoriesIndex extends Component
         }
 
         $this->validate([
-            'editJustification' => ['required', 'string', 'min:10'],
+            'editJustification' => $this->justificationRules(true),
         ], [], [
             'editJustification' => 'justification',
         ]);

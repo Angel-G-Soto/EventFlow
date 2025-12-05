@@ -23,6 +23,7 @@ use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Livewire\Traits\HasJustification;
 
 /**
  * Class Details
@@ -33,6 +34,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Details extends Component
 {
+    use HasJustification;
 /**
  * @var Event
  */
@@ -56,7 +58,11 @@ class Details extends Component
 
     public function save()
     {
-        $this->validate(['justification' => 'required|min:10']);
+        $this->validate([
+            'justification' => $this->justificationRules(true),
+        ], [], [
+            'justification' => 'justification',
+        ]);
         // ... do your action
         $eventService = app(EventService::class);
         if ($this->event->status === 'approved'){
