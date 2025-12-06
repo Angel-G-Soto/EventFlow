@@ -31,11 +31,13 @@ use App\Services\UserService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Http\Request;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 /**
  * Class Create
@@ -766,42 +768,42 @@ public function removeRequirementFile(int $index): void
             'multimedia_equipment' => trim($this->multimedia_equipment) !== '' ? $this->multimedia_equipment : null,
         ];
 
-        $eventService = $eventService ?? app(EventService::class);
+        $eventService = app(EventService::class);
+        $documentService = $this->docs ?? app(DocumentService::class);
 
-        $event = $eventService->updateOrCreateFromEventForm(
-            data: $data,
-            creator: $user,
-            action: 'publish',
-            categories_ids: $this->category_ids,
-        );
-
-        $data['id'] = $event->id;
-
-            // create document and category models and store on DB. Store them on arrays
-
-        $service = $this->docs ?? app(DocumentService::class);
-
-        foreach ($this->requirementFiles as $file) {
-            // Livewire’s TemporaryUploadedFile generally extends/behaves like UploadedFile.
-            // If your version complains about the type hint, cast defensively:
-            $uploaded = (is_object($file) && method_exists($file, 'toUploadedFile'))
-                ? $file->toUploadedFile()
-                : $file;
-
-            try {
-                $doc = $service->handleUpload(
-                    file:   $uploaded,          // UploadedFile-compatible
-                    userId: Auth::id(),  // or pass the student/submitter id you need
-                    eventId:$event->id
+        try {
+            DB::transaction(function () use ($eventService, $documentService, $user, $data) {
+                $event = $eventService->updateOrCreateFromEventForm(
+                    data: $data,
+                    creator: $user,
+                    action: 'publish',
+                    categories_ids: $this->category_ids,
                 );
 
-                $this->uploadedDocumentIds[] = $doc->id;
+                $this->uploadedDocumentIds = [];
 
-            } catch (\App\Exceptions\StorageException $e) {
-                // Surface a friendly message but keep going (or break—your call)
-                $this->addError('requirementFiles', "Failed to enqueue scan for {$file->getClientOriginalName()}.");
-                report($e);
-            }
+                foreach ($this->requirementFiles as $file) {
+                    $uploaded = (is_object($file) && method_exists($file, 'toUploadedFile'))
+                        ? $file->toUploadedFile()
+                        : $file;
+
+                    $doc = $documentService->handleUpload(
+                        file:   $uploaded,
+                        userId: Auth::id(),
+                        eventId: $event->id
+                    );
+
+                    $this->uploadedDocumentIds[] = $doc->id;
+                }
+            });
+        } catch (ProcessFailedException|\App\Exceptions\StorageException $e) {
+            report($e);
+            $this->addError('requirementFiles', 'We could not finish scanning your documents. Your event was not submitted.');
+            return;
+        } catch (\Throwable $e) {
+            report($e);
+            $this->addError('requirementFiles', 'We could not submit your event. Please try again later.');
+            return;
         }
 
 //        $eventService->updateOrCreateFromEventForm(
