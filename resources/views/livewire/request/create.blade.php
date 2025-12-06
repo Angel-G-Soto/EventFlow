@@ -125,6 +125,7 @@
                         wire:model.defer="multimedia_equipment"
                         placeholder="List any audio/visual or other multimedia equipment you need ready before the event (e.g., projector, microphones, speakers)."
                     ></textarea>
+                    <small class="text-muted">Maximum 2,000 characters.</small>
                     @error('multimedia_equipment') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
