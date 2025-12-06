@@ -97,7 +97,7 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label required">Student Telephone Number</label>
-                    <input type="text" class="form-control" wire:model.defer="creator_phone_number" placeholder="e.g., 787-777-7777">
+                    <input type="text" class="form-control js-phone-format" wire:model.defer="creator_phone_number" placeholder="e.g., 787-777-7777">
                     @error('creator_phone_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-4">
@@ -125,7 +125,7 @@
                         wire:model.defer="multimedia_equipment"
                         placeholder="List any audio/visual or other multimedia equipment you need ready before the event (e.g., projector, microphones, speakers)."
                     ></textarea>
-                    <small class="text-muted">Maximum 2,000 characters.</small>
+                    <small class="text-muted">Minimum 0 characters, maximum 2,000 characters.</small>
                     @error('multimedia_equipment') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -308,7 +308,7 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label required">Advisor Telephone Number</label>
-                    <input type="text" class="form-control" wire:model.defer="organization_advisor_phone" placeholder="e.g., 787-555-1234">
+                    <input type="text" class="form-control js-phone-format" wire:model.defer="organization_advisor_phone" placeholder="e.g., 787-555-1234">
                     @error('organization_advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -830,6 +830,61 @@
 
             event.preventDefault();
         });
+    })();
+
+    (function initializePhoneMask() {
+        const MAX_PHONE_DIGITS = 10;
+
+        const formatPhone = (value) => {
+            const digits = value.replace(/\D/g, '').slice(0, MAX_PHONE_DIGITS);
+
+            if (digits.length <= 3) {
+                return digits;
+            }
+
+            if (digits.length <= 6) {
+                return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+            }
+
+            return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+        };
+
+        const bindPhoneInputs = () => {
+            document.querySelectorAll('.js-phone-format').forEach((input) => {
+                if (input.dataset.phoneMaskBound === 'true') {
+                    return;
+                }
+
+                input.dataset.phoneMaskBound = 'true';
+
+                const updateValue = () => {
+                    const newValue = formatPhone(input.value);
+                    if (input.value !== newValue) {
+                        input.value = newValue;
+                    }
+                };
+
+                input.addEventListener('input', updateValue);
+                input.addEventListener('blur', updateValue);
+                updateValue();
+            });
+        };
+
+        const registerLivewireHook = () => {
+            if (!window.Livewire || typeof window.Livewire.hook !== 'function') {
+                return;
+            }
+
+            window.Livewire.hook('message.processed', bindPhoneInputs);
+        };
+
+        bindPhoneInputs();
+
+        if (window.Livewire) {
+            registerLivewireHook();
+        } else {
+            document.addEventListener('livewire:init', registerLivewireHook);
+        }
     })();
 </script>
 
