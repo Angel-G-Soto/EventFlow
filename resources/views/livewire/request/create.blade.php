@@ -72,6 +72,11 @@
             color: #0d3f7a;
             text-decoration: underline;
         }
+
+        .form-control::placeholder {
+            color: #adb5bd;
+            opacity: 1;
+        }
     </style>
     <ul class="nav nav-pills mb-4 request-step-nav" aria-label="Event creation steps">
         <li class="nav-item"><span class="nav-link {{ $step === 1 ? 'active' : '' }}">1. Event</span></li>
@@ -91,7 +96,7 @@
 
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label required">Student Phone</label>
+                    <label class="form-label required">Student Telephone Number</label>
                     <input type="text" class="form-control" wire:model.defer="creator_phone_number" placeholder="e.g., 787-777-7777">
                     @error('creator_phone_number') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
@@ -107,11 +112,12 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="6" maxlength="2000" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
+                    <textarea class="form-control" rows="6" minlength="10" maxlength="2000" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
+                    <small class="text-muted">Minimum 10 characters, maximum 2,000 characters.</small>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Multimedia equipment needed</label>
+                    <label class="form-label">Multimedia equipment needed <span class="text-muted">(Optional)</span></label>
                     <textarea
                         class="form-control"
                         rows="4"
@@ -119,7 +125,6 @@
                         wire:model.defer="multimedia_equipment"
                         placeholder="List any audio/visual or other multimedia equipment you need ready before the event (e.g., projector, microphones, speakers)."
                     ></textarea>
-                    <small class="text-muted">Optional: share the multimedia setup you need pre-installed.</small>
                     @error('multimedia_equipment') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
 
@@ -133,7 +138,7 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label required">Start time</label>
+                    <label class="form-label required">Date & Start time</label>
                     <input type="datetime-local"
                            class="form-control"
                            wire:model.live="start_time"
@@ -143,7 +148,7 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label required">End time</label>
+                    <label class="form-label required">Date & End time</label>
                     <input type="datetime-local"
                            class="form-control"
                            wire:model.live="end_time"
@@ -154,7 +159,7 @@
 
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-baseline">
-                        <label class="form-label">Event Categories</label>
+                        <label class="form-label required">Event Categories</label>
                         <button type="button" class="btn btn-link btn-sm p-0 event-form-link-btn" wire:click="clearCategories" @disabled(empty($category_ids))>
                             Clear selection
                         </button>
@@ -301,7 +306,7 @@
                     @error('organization_advisor_email') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label required">Advisor phone</label>
+                    <label class="form-label required">Advisor Telephone Number</label>
                     <input type="text" class="form-control" wire:model.defer="organization_advisor_phone" placeholder="e.g., 787-555-1234">
                     @error('organization_advisor_phone') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>
@@ -394,6 +399,8 @@
                     </div>
                 </div>
             </div>
+
+            <p class="fw-semibold">Please select the preferred venue.</p>
 
             <div class="table-responsive mb-2">
                 <table class="table table-hover align-middle shadow-sm">
