@@ -20,7 +20,8 @@
         "livewire/flux": "^2.1.1",
         "livewire/livewire": "^3.6",
         "livewire/volt": "^1.7.0",
-        "socialiteproviders/saml2": "^4.7"
+        "socialiteproviders/saml2": "^4.7",
+        "ext-zlib": "*"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.16",
