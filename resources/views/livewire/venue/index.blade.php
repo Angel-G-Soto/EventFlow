@@ -111,7 +111,7 @@
                                     title="View details for {{ $v['name'] }}"
                                     aria-label="View details for {{ $v['name'] }}"
                                     onclick="window.location='{{ route('venue.show', ['venue' => $v]) }}'">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                <i class="bi bi-info-circle" aria-hidden="true"></i>
                                 <span>View details</span>
                             </button>
                         </div>

@@ -143,7 +143,7 @@
             </td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-info" wire:click="openView({{ $r['id'] }})"
+                <button class="btn btn-secondary" wire:click="openView({{ $r['id'] }})"
                   aria-label="View request {{ $r['id'] }}" title="View request #{{ $r['id'] }}">
                   <i class="bi bi-info-circle"></i>
                 </button>
