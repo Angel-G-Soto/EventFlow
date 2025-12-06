@@ -456,8 +456,13 @@ class VenueService
 
     /**
      * Update a venue's description field.
+     *
+     * @param Venue $venue
+     * @param string $description
+     * @param User $actor
+     * @param string $justification Optional justification appended to audit meta.
      */
-    public function updateVenueDescription(Venue $venue, string $description, User $actor): Venue
+    public function updateVenueDescription(Venue $venue, string $description, User $actor, string $justification = ''): Venue
     {
         $venue->description = $description;
         $venue->save();
@@ -469,6 +474,10 @@ class VenueService
                 'description' => (string) $description,
                 'source'      => 'venue_description_update',
             ];
+            $justification = trim((string) $justification);
+            if ($justification !== '') {
+                $meta['justification'] = $justification;
+            }
             if (function_exists('request') && request()) {
                 $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
             } else {

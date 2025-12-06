@@ -433,7 +433,8 @@ protected string $availabilitySnapshot = '';
             $this->venue = $this->venueService->updateVenueDescription(
                 $this->venue,
                 $newDescription,
-                Auth::user()
+                Auth::user(),
+                $justification
             );
         }
         $this->description = (string) ($this->venue->description ?? $newDescription);
