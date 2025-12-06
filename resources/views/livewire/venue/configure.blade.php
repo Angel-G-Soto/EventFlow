@@ -100,12 +100,6 @@
         <div class="card shadow-sm mb-3">
             <div class="card-header d-flex align-items-center gap-2 justify-content-between flex-wrap">
                 <h2 id="availability-title" class="h5 mb-0">Venue Description & Weekly Availability</h2>
-                <button class="btn {{ $this->detailsDirty ? 'btn-primary' : 'btn-outline-primary' }}"
-                        wire:click="saveAvailability"
-                        @disabled(! $this->detailsDirty)>
-                    <i class="bi bi-save me-1"></i>
-                    Save details
-                </button>
             </div>
 
             <div class="card-body">
@@ -122,6 +116,22 @@
                 </div>
 
                 <div class="table-responsive">
+                    <div class="d-flex justify-content-end gap-2 mb-2">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                wire:click="enableAllDays"
+                                wire:loading.attr="disabled"
+                                wire:target="enableAllDays,disableAllDays">
+                            Select all days
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                wire:click="disableAllDays"
+                                wire:loading.attr="disabled"
+                                wire:target="enableAllDays,disableAllDays">
+                            Clear all
+                        </button>
+                    </div>
                     <table class="table table-sm align-middle">
                         <thead class="table-light">
                         <tr>
@@ -182,7 +192,21 @@
                 @enderror
             </div>
 
-            <div class="card-footer p-0 border-0" aria-hidden="true"></div>
+            <div class="card-footer bg-white d-flex justify-content-end gap-2">
+                <button class="btn {{ $this->detailsDirty ? 'btn-secondary' : 'btn-outline-secondary' }}"
+                        wire:click="saveAvailability"
+                        wire:loading.attr="disabled"
+                        wire:target="saveAvailability"
+                        @disabled(! $this->detailsDirty)>
+                    <span class="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                          wire:loading
+                          wire:target="saveAvailability"></span>
+                    <i class="bi bi-save me-1" wire:loading.remove wire:target="saveAvailability"></i>
+                    Save details
+                </button>
+            </div>
         </div>
     </div>
 
@@ -213,23 +237,6 @@
                         Clear all
                     </button>
                     --}}
-
-                    <button class="btn {{ $this->requirementsDirty ? 'btn-primary' : 'btn-outline-primary' }}"
-                            type="button"
-                            wire:click="save"
-                            wire:loading.attr="disabled"
-                            wire:target="save"
-                            @disabled(! $this->requirementsDirty)>
-                        <span class="spinner-border spinner-border-sm me-2"
-                              role="status"
-                              aria-hidden="true"
-                              wire:loading
-                              wire:target="save"></span>
-                        <i class="bi bi-save me-1"
-                           wire:loading.remove
-                           wire:target="save"></i>
-                        Save changes
-                    </button>
                 </div>
             </div>
         </div>
@@ -343,6 +350,25 @@
                     and select <strong>Save changes</strong>.
                 </p>
             </div>
+        </div>
+
+        <div class="card-footer bg-white d-flex justify-content-end gap-2">
+            <button class="btn {{ $this->requirementsDirty ? 'btn-secondary' : 'btn-outline-secondary' }}"
+                    type="button"
+                    wire:click="save"
+                    wire:loading.attr="disabled"
+                    wire:target="save"
+                    @disabled(! $this->requirementsDirty)>
+                <span class="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                      wire:loading
+                      wire:target="save"></span>
+                <i class="bi bi-save me-1"
+                   wire:loading.remove
+                   wire:target="save"></i>
+                Save changes
+            </button>
         </div>
     </div>
 

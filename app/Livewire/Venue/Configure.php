@@ -126,6 +126,34 @@ protected string $availabilitySnapshot = '';
     }
 
     /**
+     * Enable all days for weekly availability at once.
+     */
+    public function enableAllDays(): void
+    {
+        $this->authorize('update-availability', $this->venue);
+
+        foreach (self::DAYS_OF_WEEK as $day) {
+            $this->availabilityForm[$day]['enabled'] = true;
+        }
+
+        $this->recalculateDetailsDirty();
+    }
+
+    /**
+     * Disable all days for weekly availability at once.
+     */
+    public function disableAllDays(): void
+    {
+        $this->authorize('update-availability', $this->venue);
+
+        foreach (self::DAYS_OF_WEEK as $day) {
+            $this->availabilityForm[$day]['enabled'] = false;
+        }
+
+        $this->recalculateDetailsDirty();
+    }
+
+    /**
      * Remove a requirement row and persist immediately (via justification when clearing).
      */
     public function removeRow(string $uuid): void
@@ -418,8 +446,18 @@ protected string $availabilitySnapshot = '';
     {
         $this->authorize('update-availability', $this->venue);
 
+        // Trim to avoid whitespace-only descriptions and enforce length bounds when provided.
+        $this->description = trim($this->description);
+
+        // If a description existed and is now cleared, treat it as invalid (enforce min length).
+        if ($this->venue->description && $this->description === '') {
+            throw ValidationException::withMessages([
+                'description' => ['Description must be at least 10 characters.'],
+            ]);
+        }
+
         $this->validate([
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string', 'min:10', 'max:2000'],
         ]);
 
         $availabilityChanged = false;
