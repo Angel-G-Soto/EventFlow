@@ -57,6 +57,8 @@ class Configure extends Component
 
     public string $description = '';
     public array $availabilityForm = [];
+    public string $bulkOpensAt = '';
+    public string $bulkClosesAt = '';
     public array $weekDays = [];
 
     public ?string $confirmDeleteUuid = null;
@@ -150,6 +152,53 @@ protected string $availabilitySnapshot = '';
 
         foreach (self::DAYS_OF_WEEK as $day) {
             $this->availabilityForm[$day]['enabled'] = false;
+        }
+
+        $this->recalculateDetailsDirty();
+    }
+
+    /**
+     * Apply the bulk opening/closing times to all currently enabled days.
+     */
+    public function applyBulkAvailability(): void
+    {
+        $this->authorize('update-availability', $this->venue);
+
+        $enabledDays = collect(self::DAYS_OF_WEEK)
+            ->filter(fn (string $day) => (bool) ($this->availabilityForm[$day]['enabled'] ?? false));
+
+        if ($enabledDays->isEmpty()) {
+            throw ValidationException::withMessages([
+                'bulkAvailability' => ['Select at least one day before applying bulk hours.'],
+            ]);
+        }
+
+        $validator = validator(
+            [
+                'bulkOpensAt' => $this->bulkOpensAt,
+                'bulkClosesAt' => $this->bulkClosesAt,
+            ],
+            [
+                'bulkOpensAt' => ['required', 'date_format:H:i'],
+                'bulkClosesAt' => ['required', 'date_format:H:i', 'after:bulkOpensAt'],
+            ],
+            [],
+            [
+                'bulkOpensAt' => 'opens at',
+                'bulkClosesAt' => 'closes at',
+            ]
+        );
+
+        if ($validator->fails()) {
+            throw ValidationException::withMessages($validator->errors()->messages());
+        }
+
+        $opens = $validator->validated()['bulkOpensAt'];
+        $closes = $validator->validated()['bulkClosesAt'];
+
+        foreach ($enabledDays as $day) {
+            $this->availabilityForm[$day]['opens_at'] = $opens;
+            $this->availabilityForm[$day]['closes_at'] = $closes;
         }
 
         $this->recalculateDetailsDirty();
@@ -377,12 +426,6 @@ protected string $availabilitySnapshot = '';
 
         if (! empty($errors)) {
             throw ValidationException::withMessages($errors);
-        }
-
-        if (empty($payload)) {
-            throw ValidationException::withMessages([
-                'availabilityForm' => ['Select at least one day and provide its hours.'],
-            ]);
         }
 
         return $payload;

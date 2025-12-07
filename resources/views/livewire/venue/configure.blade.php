@@ -116,19 +116,61 @@
                 </div>
 
                 <div class="table-responsive">
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-12 col-sm-4 col-md-3">
+                            <label for="bulk_opens_at" class="form-label small mb-1">Set opens at</label>
+                            <input type="time"
+                                   id="bulk_opens_at"
+                                   class="form-control form-control-sm @error('bulkOpensAt') is-invalid @enderror"
+                                   wire:model.lazy="bulkOpensAt">
+                            @error('bulkOpensAt')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-12 col-sm-4 col-md-3">
+                            <label for="bulk_closes_at" class="form-label small mb-1">Set closes at</label>
+                            <input type="time"
+                                   id="bulk_closes_at"
+                                   class="form-control form-control-sm @error('bulkClosesAt') is-invalid @enderror"
+                                   wire:model.lazy="bulkClosesAt">
+                            @error('bulkClosesAt')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-auto">
+                            <button type="button"
+                                    class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1"
+                                    wire:click="applyBulkAvailability"
+                                    wire:loading.attr="disabled"
+                                    wire:target="applyBulkAvailability">
+                                <span wire:loading wire:target="applyBulkAvailability" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <i class="bi bi-calendar2-check" wire:loading.remove wire:target="applyBulkAvailability"></i>
+                                Apply to checked days
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            @error('bulkAvailability')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
+                            <div class="text-muted small">Apply a single opening/closing time to all currently checked days.</div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end gap-2 mb-2">
                         <button type="button"
-                                class="btn btn-sm btn-outline-secondary"
+                                class="btn btn-sm btn-secondary"
                                 wire:click="enableAllDays"
                                 wire:loading.attr="disabled"
                                 wire:target="enableAllDays,disableAllDays">
+                            <i class="bi bi-check2-square me-1"></i>
                             Select all days
                         </button>
                         <button type="button"
-                                class="btn btn-sm btn-outline-secondary"
+                                class="btn btn-sm btn-secondary"
                                 wire:click="disableAllDays"
                                 wire:loading.attr="disabled"
                                 wire:target="enableAllDays,disableAllDays">
+                            <i class="bi bi-eraser me-1"></i>
                             Clear all
                         </button>
                     </div>
@@ -319,10 +361,11 @@
                                            placeholder="https://example.edu/requirements.pdf"
                                            wire:model.lazy="rows.{{ $i }}.hyperlink">
                                     @if (!empty($row['hyperlink']))
-                                        <a class="btn btn-primary"
+                                        <a class="btn btn-secondary"
                                            href="{{ $row['hyperlink'] }}"
                                            target="_blank"
                                            rel="noopener noreferrer">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i>
                                             Open
                                         </a>
                                     @endif
