@@ -52,11 +52,23 @@
     {{-- Department Managers --}}
     <div class="container py-4">
         {{-- Header + Add button to the right --}}
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
             <h1 class="h4 mb-0">Venue Managers</h1>
 
-            {{-- Desktop: button to the right of the title --}}
-            <div class="d-none d-md-flex">
+            {{-- Desktop: actions to the right of the title --}}
+            <div class="d-none d-md-flex align-items-center gap-2">
+                <span class="text-muted small">{{ count($selectedManagerIds) }} selected</span>
+                <button
+                    type="button"
+                    class="btn btn-danger btn-sm d-inline-flex align-items-center gap-2"
+                    wire:click="requestBulkManagerRemoval"
+                    aria-label="Remove selected managers"
+                    title="Remove selected managers"
+                    @disabled(empty($selectedManagerIds))
+                >
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                    <span>Remove Selected</span>
+                </button>
                 <button
                     type="button"
                     class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
@@ -70,8 +82,19 @@
             </div>
         </div>
 
-        {{-- Mobile: full-width button below title --}}
-        <div class="d-flex d-md-none mb-3">
+        {{-- Mobile: full-width buttons below title --}}
+        <div class="d-flex d-md-none flex-column flex-sm-row gap-2 mb-3">
+            <button
+                type="button"
+                class="btn btn-danger btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2"
+                wire:click="requestBulkManagerRemoval"
+                aria-label="Remove selected managers"
+                title="Remove selected managers"
+                @disabled(empty($selectedManagerIds))
+            >
+                <i class="bi bi-trash" aria-hidden="true"></i>
+                <span>Remove Selected ({{ count($selectedManagerIds) }})</span>
+            </button>
             <button
                 type="button"
                 class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2"
@@ -89,6 +112,14 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                     <tr>
+                        <th scope="col" class="text-center" style="width: 48px;">
+                            <input
+                                type="checkbox"
+                                class="form-check-input"
+                                wire:model.live="selectAllManagers"
+                                aria-label="Select all managers on this page"
+                            >
+                        </th>
                         <th scope="col">Name</th>
                         <th scope="col" class="d-none d-sm-table-cell">Email</th>
                         <th scope="col" class="text-center text-sm-end" style="width: 120px;">Actions</th>
@@ -96,7 +127,16 @@
                     </thead>
                     <tbody>
                     @forelse($employees as $employee)
-                        <tr>
+                        <tr wire:key="manager-row-{{ $employee['id'] }}">
+                            <td class="text-center" style="width: 48px;">
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    value="{{ $employee['id'] }}"
+                                    wire:model.live="selectedManagerIds"
+                                    aria-label="Select {{ $employee['first_name'].' '.$employee['last_name'] }}"
+                                >
+                            </td>
                             <td class="fw-medium">
                                 <div>{{ $employee['first_name'].' '.$employee['last_name'] }}</div>
                                 {{-- Mobile-only email under the name --}}

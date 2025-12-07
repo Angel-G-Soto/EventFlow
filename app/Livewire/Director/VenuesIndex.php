@@ -33,6 +33,10 @@ class VenuesIndex extends Component
   public string $email = '';
 
   public string $emailConfirmation = '';
+  public array $selectedManagerIds = [];
+  public array $currentEmployeeIds = [];
+  public bool $selectAllManagers = false;
+  public array $pendingBulkManagerIds = [];
 
   protected array $rules = [
       'email'             => 'required|email:rfc,dns|max:150|regex:/^[^@]+@upr\.edu$/i',
@@ -50,6 +54,22 @@ class VenuesIndex extends Component
       }
 
       $this->openJustificationModal('remove_manager', $user->id);
+  }
+
+  public function requestBulkManagerRemoval(): void
+  {
+      $this->authorize('assign-manager', $this->department);
+
+      $ids = $this->sanitizeManagerIds($this->selectedManagerIds);
+
+      if (empty($ids)) {
+          $this->dispatch('toast', message: 'Select at least one manager to remove.');
+          return;
+      }
+
+      $this->pendingBulkManagerIds = $ids;
+
+      $this->openJustificationModal('remove_manager_bulk');
   }
 
   public function addManager()
@@ -117,7 +137,7 @@ class VenuesIndex extends Component
       $this->openJustificationModal('add_manager', $user->id, $modals);
   }
 
-  protected function openJustificationModal(string $action, int $userId, array $closeModals = []): void
+  protected function openJustificationModal(string $action, ?int $userId = null, array $closeModals = []): void
   {
       $this->pendingAction = $action;
       $this->pendingActionUserId = $userId;
@@ -143,6 +163,7 @@ class VenuesIndex extends Component
       $action = $this->pendingAction;
       $userId = $this->pendingActionUserId;
       $justification = $this->justification;
+      $bulkIds = $this->pendingBulkManagerIds;
 
       $this->dispatch('close-modal', id: 'departmentJustificationModal');
       $this->resetJustificationState();
@@ -150,6 +171,7 @@ class VenuesIndex extends Component
       return match ($action) {
           'add_manager'    => $this->completeManagerAssignmentById($userId, $justification),
           'remove_manager' => $this->completeManagerRemovalById($userId, $justification),
+          'remove_manager_bulk' => $this->completeBulkManagerRemoval($bulkIds, $justification),
           default          => null,
       };
   }
@@ -159,6 +181,7 @@ class VenuesIndex extends Component
       $this->pendingAction = '';
       $this->pendingActionUserId = null;
       $this->justification = '';
+      $this->pendingBulkManagerIds = [];
   }
 
   protected function completeManagerAssignmentById(?int $userId, string $justification)
@@ -180,9 +203,12 @@ class VenuesIndex extends Component
   protected function completeManagerAssignment(User $user, string $justification)
   {
       $this->authorize('assign-manager', $this->department);
-      
+      $user->loadMissing('roles');
 
-      if ($user->department_id === $this->department->id) {
+      $alreadyManager = $user->department_id === $this->department->id
+          && $user->roles->contains(fn ($role) => $role->name === 'venue-manager');
+
+      if ($alreadyManager) {
           $this->dispatch('toast', message: 'User is already part of this department.');
           $this->reset(['email', 'emailConfirmation']);
           $this->resetManagerForms();
@@ -196,7 +222,7 @@ class VenuesIndex extends Component
       $this->resetManagerForms();
       $this->dispatch('close-modal', id: 'emailModal');
       $this->dispatch('close-modal', id: 'confirmManagerTransferModal');
-      return $this->redirect(route('director.venues.index'), navigate: false);
+      $this->dispatch('toast', message: 'Venue manager added.');
       }      
       
 
@@ -224,13 +250,41 @@ class VenuesIndex extends Component
 
       app(DepartmentService::class)->removeUserFromDepartment($this->department, $user, $justification);
       $this->reset(['email', 'emailConfirmation']);
+      $this->selectedManagerIds = array_values(array_diff($this->selectedManagerIds, [$user->id]));
+      $this->selectAllManagers = $this->hasSelectedAllCurrentManagers();
+      $this->dispatch('toast', message: 'Venue manager removed.');
+  }
 
-      return $this->redirect(route('director.venues.index'), navigate: false);
+  protected function completeBulkManagerRemoval(array $userIds, string $justification)
+  {
+      $ids = $this->sanitizeManagerIds($userIds);
+
+      if (empty($ids)) {
+          return;
+      }
+
+      $this->authorize('assign-manager', $this->department);
+
+      $users = User::whereIn('id', $ids)->get();
+
+      if ($users->isEmpty()) {
+          return;
+      }
+
+      foreach ($users as $user) {
+          app(DepartmentService::class)->removeUserFromDepartment($this->department, $user, $justification);
+      }
+
+      $this->selectedManagerIds = array_values(array_diff($this->selectedManagerIds, $ids));
+      $this->selectAllManagers = $this->hasSelectedAllCurrentManagers();
+      $this->pendingBulkManagerIds = [];
+      $this->dispatch('toast', message: 'Selected managers removed.');
   }
 
   protected function resetManagerForms(): void
   {
       $this->email = '';
+      $this->emailConfirmation = '';
       $this->resetManagerConfirmation();
   }
 
@@ -263,9 +317,61 @@ class VenuesIndex extends Component
       $this->depID = Auth::user()->department_id;
       $this->department = app(DepartmentService::class)->getDepartmentByID($this->depID);
 
-      $venues = app(DepartmentService::class)->getDepartmentVenues($this->department);
-      $employees = app(DepartmentService::class)->getDepartmentManagers($this->department);
+      $venues = app(DepartmentService::class)->getDepartmentVenues($this->department, 15, 'venuesPage');
+      $employees = app(DepartmentService::class)->getDepartmentManagers($this->department, 15, 'managersPage');
+      $this->currentEmployeeIds = $employees->getCollection()
+          ->pluck('id')
+          ->map(fn ($id) => (int) $id)
+          ->all();
+      $this->selectedManagerIds = $this->sanitizeManagerIds($this->selectedManagerIds);
+      $this->selectAllManagers = $this->hasSelectedAllCurrentManagers();
 
     return view('livewire.director.venues-index', compact('venues', 'employees'));
+  }
+
+  public function updatedSelectAllManagers($value): void
+  {
+      $value = (bool) $value;
+
+      if ($value) {
+          $this->selectedManagerIds = $this->sanitizeManagerIds(array_merge(
+              $this->selectedManagerIds,
+              $this->currentEmployeeIds
+          ));
+      } else {
+          $this->selectedManagerIds = $this->sanitizeManagerIds(array_values(array_diff(
+              $this->selectedManagerIds,
+              $this->currentEmployeeIds
+          )));
+      }
+
+      $this->selectAllManagers = $value && $this->hasSelectedAllCurrentManagers();
+  }
+
+  public function updatedSelectedManagerIds(): void
+  {
+      $this->selectedManagerIds = $this->sanitizeManagerIds($this->selectedManagerIds);
+      $this->selectAllManagers = $this->hasSelectedAllCurrentManagers();
+  }
+
+  protected function sanitizeManagerIds(array $ids): array
+  {
+      return collect($ids)
+          ->map(fn ($id) => (int) $id)
+          ->filter()
+          ->unique()
+          ->values()
+          ->all();
+  }
+
+  protected function hasSelectedAllCurrentManagers(): bool
+  {
+      if (empty($this->currentEmployeeIds)) {
+          return false;
+      }
+
+      $diff = array_diff($this->currentEmployeeIds, $this->selectedManagerIds);
+
+      return empty($diff);
   }
 }

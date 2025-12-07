@@ -663,11 +663,13 @@ class DepartmentService
      * relationship. If the department does not exist, a ModelNotFoundException is thrown.
      *
      * @param Department $department
-     * @return Collection
+     * @param int $perPage
+     * @param string $pageName
+     * @return LengthAwarePaginator
      */
-    public function getDepartmentVenues(Department $department): LengthAwarePaginator
+    public function getDepartmentVenues(Department $department, int $perPage = 15, string $pageName = 'page'): LengthAwarePaginator
     {
-        return $department->venues()->paginate(15);
+        return $department->venues()->paginate($perPage, ['*'], $pageName);
     }
 
     /**
@@ -744,11 +746,12 @@ class DepartmentService
             ->paginate(15); // or ->paginate(15)
     }
 
-    public function getDepartmentManagers(Department $department): LengthAwarePaginator
-    {        return $department->employees()
+    public function getDepartmentManagers(Department $department, int $perPage = 15, string $pageName = 'page'): LengthAwarePaginator
+    {
+        return $department->employees()
             ->with('roles')
             ->whereHas('roles', fn ($q) => $q->where('name', 'venue-manager'))
-            ->paginate(15); // or ->paginate(15)
+            ->paginate($perPage, ['*'], $pageName); // or ->paginate(15)
     }
 
 
