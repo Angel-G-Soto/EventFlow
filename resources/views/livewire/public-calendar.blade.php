@@ -26,348 +26,320 @@
             <h1 class="h4 mb-0">Events This Week</h1>
 
             @if($canFilterMyVenues)
-                <div class="form-check form-switch">
-                    <input
-                        class="form-check-input filter-my-venues-toggle"
-                        type="checkbox"
-                        id="filterMyVenuesDesktop"
-                        wire:click="toggleFilterMyVenues"
-                        @checked($filterMyVenues)
-                    >
-                    <label class="form-check-label" for="filterMyVenuesDesktop">
-                        Filter By My Venues
-                    </label>
-                </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input filter-my-venues-toggle" type="checkbox" id="filterMyVenuesDesktop"
+                    wire:click="toggleFilterMyVenues" @checked($filterMyVenues)>
+                <label class="form-check-label" for="filterMyVenuesDesktop">
+                    Filter By My Venues
+                </label>
+            </div>
             @endif
         </div>
 
         <div class="d-flex align-items-center gap-2">
             <div class="btn-group">
-                <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    wire:click="goWeek('prev')"
-                    aria-label="Previous week"
-                >
+                <button type="button" class="btn btn-primary btn-sm" wire:click="goWeek('prev')"
+                    aria-label="Previous week">
                     &laquo; Previous
                 </button>
 
-                <span class="btn btn-primary btn-sm disabled">
+                <span class="btn btn-light btn-sm disabled fw-semibold">
                     {{ $weekLabel }}
                 </span>
 
-                <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    wire:click="goWeek('next')"
-                    aria-label="Next week"
-                >
+                <button type="button" class="btn btn-primary btn-sm" wire:click="goWeek('next')" aria-label="Next week">
                     Next &raquo;
                 </button>
             </div>
         </div>
     </div>
 
-    {{-- Mobile header (< md) – toggle on the right, nav full width --}}
-    <div class="d-flex d-md-none flex-column gap-2 mb-3">
+    {{-- Mobile header (< md) – toggle on the right, nav full width --}} <div
+        class="d-flex d-md-none flex-column gap-2 mb-3">
         <div class="d-flex align-items-center">
             <h1 class="h4 mb-0">Events This Week</h1>
 
             @if($canFilterMyVenues)
-                <div class="form-check form-switch ms-auto">
-                    <input
-                        class="form-check-input filter-my-venues-toggle"
-                        type="checkbox"
-                        id="filterMyVenuesMobile"
-                        wire:click="toggleFilterMyVenues"
-                        @checked($filterMyVenues)
-                    >
-                    <label class="form-check-label" for="filterMyVenuesMobile">
-                        Filter By My Venues
-                    </label>
-                </div>
+            <div class="form-check form-switch ms-auto">
+                <input class="form-check-input filter-my-venues-toggle" type="checkbox" id="filterMyVenuesMobile"
+                    wire:click="toggleFilterMyVenues" @checked($filterMyVenues)>
+                <label class="form-check-label" for="filterMyVenuesMobile">
+                    Filter By My Venues
+                </label>
+            </div>
             @endif
         </div>
 
         <div>
             <div class="btn-group w-100" role="group" aria-label="Change week">
-                <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    wire:click="goWeek('prev')"
-                    aria-label="Previous week"
-                >
+                <button type="button" class="btn btn-primary btn-sm" wire:click="goWeek('prev')"
+                    aria-label="Previous week">
                     {{-- Icons on xs, text+icons on sm --}}
                     <span class="d-inline d-sm-none">&laquo;</span>
                     <span class="d-none d-sm-inline">&laquo; Previous</span>
                 </button>
 
-                <span class="btn btn-primary btn-sm disabled text-truncate">
+                <span class="btn btn-light btn-sm disabled text-truncate fw-semibold">
                     {{ $weekLabel }}
                 </span>
 
-                <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    wire:click="goWeek('next')"
-                    aria-label="Next week"
-                >
+                <button type="button" class="btn btn-primary btn-sm" wire:click="goWeek('next')" aria-label="Next week">
                     <span class="d-inline d-sm-none">&raquo;</span>
                     <span class="d-none d-sm-inline">Next &raquo;</span>
                 </button>
             </div>
         </div>
-    </div>
+</div>
 
-    {{-- Simple weekly grid --}}
-    <div class="row row-cols-1 row-cols-md-7 g-2">
-        @foreach($days as $day)
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header py-2">
-                    <strong>{{ $day->format('D') }}</strong>
-                    <span class="text-muted">{{ $day->format('M j') }}</span>
-                </div>
-                <ul class="list-group list-group-flush">
-                    @forelse($eventsByDay[$day->toDateString()] ?? [] as $e)
-                    <li class="list-group-item small d-flex justify-content-between align-items-center">
-                        <button type="button" class="btn btn-link p-0 text-start text-primary flex-grow-1 text-truncate"
-                            wire:click="openEvent({{ $e['id'] }})" aria-label="Open event {{ $e['title'] }} details">
-                            <div class="fw-semibold">{{ $e['title'] }}</div>
-                        </button>
-                        <div class="text-muted ms-3">
-                            {{ \Carbon\Carbon::parse($e['start_time'])->format('g:ia') }}
-                            - {{ \Carbon\Carbon::parse($e['end_time'])->format('g:ia') }}
-                        </div>
-                    </li>
-                    @empty
-                    <li class="list-group-item text-muted small">No events</li>
-                    @endforelse
-                </ul>
+{{-- Simple weekly grid --}}
+<div class="row row-cols-1 row-cols-md-7 g-2">
+    @foreach($days as $day)
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header py-2">
+                <strong>{{ $day->format('D') }}</strong>
+                <span class="text-muted">{{ $day->format('M j') }}</span>
             </div>
-        </div>
-        @endforeach
-    </div>
-
-    <!------------------------------------------------------------------------------------------------------------>
-    <!--------------------------------------------Modals---------------------------------------------------------->
-    <!------------------------------------------------------------------------------------------------------------>
-
-    <!-- Event details modal (generic) -->
-    <div class="modal fade" id="eventDetails" tabindex="-1" wire:ignore.self>
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-calendar-event me-2"></i>
-                        {{ data_get($modal, 'event.title', 'Event') }}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Venue Information -->
-                    <div class="mb-2">
-                        <i class="bi bi-geo-alt me-2"></i>
-                        {{ data_get($modal, 'event.venue.code', 'No venue') }}
-                    </div>
-
-                    <!-- Event Time -->
-                    <div class="mb-3">
-                        <i class="bi bi-clock me-2"></i>
-                        @php
-                        $event = data_get($modal, 'event');
-                        @endphp
-                        @if($event && $event->start_time && $event->end_time)
-                        {{ \Carbon\Carbon::parse($event->start_time)->format('D, M j • g:ia') }} —
-                        {{ \Carbon\Carbon::parse($event->end_time)->format('g:ia') }}
-                        @else
-                        <span class="text-muted">Time not available</span>
-                        @endif
-                    </div>
-
-                    <!-- Organization Name -->
-                    <div class="mb-3">
-                        <i class="bi bi-person-workspace me-2"></i>
-                        Organized by: {{ data_get($modal, 'event.organization_name', 'N/A') }}
-                    </div>
-
-                    <!-- Event Description -->
-                    <label class="mb-2 fw-semibold">Event Description:</label>
-                    <p class="mb-0">{{ data_get($modal, 'event.description', 'No description provided') }}</p>
-                </div>
-                <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">
-                        Close
+            <ul class="list-group list-group-flush">
+                @forelse($eventsByDay[$day->toDateString()] ?? [] as $e)
+                <li class="list-group-item small d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-link p-0 text-start text-primary flex-grow-1 text-truncate"
+                        wire:click="openEvent({{ $e['id'] }})" aria-label="Open event {{ $e['title'] }} details">
+                        <div class="fw-semibold">{{ $e['title'] }}</div>
                     </button>
-                </div>
-            </div>
+                    <div class="text-muted ms-3">
+                        {{ \Carbon\Carbon::parse($e['start_time'])->format('g:ia') }}
+                        - {{ \Carbon\Carbon::parse($e['end_time'])->format('g:ia') }}
+                    </div>
+                </li>
+                @empty
+                <li class="list-group-item text-muted small">No events</li>
+                @endforelse
+            </ul>
         </div>
     </div>
+    @endforeach
+</div>
 
-    <!-- Approvers -->
-    <div class="modal fade" id="eventDetailsApprover" tabindex="-1" wire:ignore.self>
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-calendar-event me-2"></i>
-                        Approver: {{ data_get($modal, 'event.title', 'Event') }}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!------------------------------------------------------------------------------------------------------------>
+<!--------------------------------------------Modals---------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------>
+
+<!-- Event details modal (generic) -->
+<div class="modal fade" id="eventDetails" tabindex="-1" wire:ignore.self>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    {{ data_get($modal, 'event.title', 'Event') }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Venue Information -->
+                <div class="mb-2">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    {{ data_get($modal, 'event.venue.code', 'No venue') }}
                 </div>
-                <div class="modal-body">
+
+                <!-- Event Time -->
+                <div class="mb-3">
+                    <i class="bi bi-clock me-2"></i>
                     @php
                     $event = data_get($modal, 'event');
                     @endphp
-
-                    <!-- Venue Information -->
-                    <div class="mb-2">
-                        <i class="bi bi-geo-alt me-2"></i>
-                        {{ $event && $event->venue ? $event->venue->code : 'No venue' }}
-                    </div>
-
-                    <!-- Event Time -->
-                    <div class="mb-3">
-                        <i class="bi bi-clock me-2"></i>
-                        @if($event && $event->start_time && $event->end_time)
-                        {{ \Carbon\Carbon::parse($event->start_time)->format('D, M j • g:ia') }} —
-                        {{ \Carbon\Carbon::parse($event->end_time)->format('g:ia') }}
-                        @else
-                        <span class="text-muted">Time not available</span>
-                        @endif
-                    </div>
-
-                    <!-- Organization Name -->
-                    <div class="mb-3">
-                        <i class="bi bi-person-workspace me-2"></i>
-                        Organized by: {{ $event->organization_name ?? 'N/A' }}
-                    </div>
-
-                    <!-- Event Description -->
-                    <label class="mb-2 fw-semibold">Event Description:</label>
-                    <p class="mb-0">{{ $event->description ?? 'No description provided' }}</p>
-
-                    <!-- Requester -->
-                    <div>
-                        <span class="mb-2 fw-semibold">Requester: </span>
-                        {{ $event && $event->requester ? ($event->requester->first_name.'
-                        '.$event->requester->last_name) : '' }}
-                    </div>
-                </div>
-                <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" class="btn btn-primary" aria-label="View more details">
-                        View More Details
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Detailed Event View Modal -->
-    <div class="modal fade" id="publicEventDetails" tabindex="-1" aria-hidden="true" wire:ignore.self>
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div>
-                        <h5 class="modal-title mb-0">
-                            <i class="bi bi-eye me-2"></i>{{ optional($modal['event'] ?? null)->title ?: 'Event Details'
-                            }}
-                        </h5>
-                        @if(isset($modal['event']) && $modal['event'])
-                        <small class="text-muted">Event #{{ $modal['event']->id }}</small>
-                        @endif
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    @if(isset($modal['event']) && $modal['event'])
-                    @php
-                    $ev = $modal['event'];
-                    $eventId = $ev->id ?? 'preview';
-                    $from = $ev->start_time ? \Carbon\Carbon::parse($ev->start_time)->format('M j, Y g:i A') : null;
-                    $to = $ev->end_time ? \Carbon\Carbon::parse($ev->end_time)->format('M j, Y g:i A') : null;
-                    $venueName = optional($ev->venue)->name;
-                    $venueCode = trim((string) optional($ev->venue)->code);
-                    if ($venueName && $venueCode) {
-                    $venueLabel = $venueName.' ('.$venueCode.')';
-                    } elseif ($venueName) {
-                    $venueLabel = $venueName;
-                    } else {
-                    $venueLabel = $venueCode ?: 'No venue selected';
-                    }
-                    @endphp
-                    <div class="row g-4">
-                        {{-- Summary --}}
-                        <div class="col-12">
-                            <div class="d-flex flex-wrap align-items-baseline gap-2">
-                                <h5 class="mb-0">{{ $ev->title ?? 'Untitled event' }}</h5>
-                                @if($ev->status)
-                                <span class="badge bg-secondary">{{ ucwords($ev->status) }}</span>
-                                @endif
-                            </div>
-                            <div class="text-muted small mt-1">
-                                Organization: {{ $ev->organization_name ?? 'N/A' }}
-                            </div>
-                        </div>
-
-                        {{-- When & Where --}}
-                        <div class="col-md-6">
-                            <h6 class="text-uppercase text-muted small mb-2">When</h6>
-                            <div class="border rounded p-3">
-                                <div class="mb-2">
-                                    <span class="fw-semibold">From:</span>
-                                    <span class="ms-1">{{ $from ?? 'Not set' }}</span>
-                                </div>
-                                <div>
-                                    <span class="fw-semibold">To:</span>
-                                    <span class="ms-1">{{ $to ?? 'Not set' }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-uppercase text-muted small mb-2">Where</h6>
-                            <div class="border rounded p-3">
-                                <div class="fw-semibold mb-1">{{ $venueLabel }}</div>
-                            </div>
-                        </div>
-
-                        {{-- Description --}}
-                        <div class="col-12">
-                            <h6 class="text-uppercase text-muted small mb-2">Description</h6>
-                            <div class="border rounded p-3 bg-light-subtle">
-                                <p class="mb-0">{{ $ev->description ?? 'No description provided.' }}</p>
-                            </div>
-                        </div>
-
-                        {{-- Documents --}}
-                        <div class="col-12">
-                            <h6 class="text-uppercase text-muted small mb-2">Documents</h6>
-                            <section class="card shadow-sm mb-0" aria-labelledby="event-documents-{{ $eventId }}">
-                                <div class="card-body">
-                                    <h3 id="event-documents-{{ $eventId }}" class="fw-semibold border-bottom pb-2 mb-3">
-                                        Documents
-                                    </h3>
-                                    <livewire:documents.list-with-preview     :docs="$docs"
-                                                                              :key="'docs-'.($modal['event']->id ?? '0')" />
-                                </div>
-                            </section>
-                        </div>
-                    </div>
+                    @if($event && $event->start_time && $event->end_time)
+                    {{ \Carbon\Carbon::parse($event->start_time)->format('D, M j • g:ia') }} —
+                    {{ \Carbon\Carbon::parse($event->end_time)->format('g:ia') }}
                     @else
-                    <div class="alert alert-warning mb-0">No event details available.</div>
+                    <span class="text-muted">Time not available</span>
                     @endif
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" aria-label="Close details">
-                        Close
-                    </button>
+
+                <!-- Organization Name -->
+                <div class="mb-3">
+                    <i class="bi bi-person-workspace me-2"></i>
+                    Organized by: {{ data_get($modal, 'event.organization_name', 'N/A') }}
                 </div>
+
+                <!-- Event Description -->
+                <label class="mb-2 fw-semibold">Event Description:</label>
+                <p class="mb-0">{{ data_get($modal, 'event.description', 'No description provided') }}</p>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">
+                    Close
+                </button>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Approvers -->
+<div class="modal fade" id="eventDetailsApprover" tabindex="-1" wire:ignore.self>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    Approver: {{ data_get($modal, 'event.title', 'Event') }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @php
+                $event = data_get($modal, 'event');
+                @endphp
+
+                <!-- Venue Information -->
+                <div class="mb-2">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    {{ $event && $event->venue ? $event->venue->code : 'No venue' }}
+                </div>
+
+                <!-- Event Time -->
+                <div class="mb-3">
+                    <i class="bi bi-clock me-2"></i>
+                    @if($event && $event->start_time && $event->end_time)
+                    {{ \Carbon\Carbon::parse($event->start_time)->format('D, M j • g:ia') }} —
+                    {{ \Carbon\Carbon::parse($event->end_time)->format('g:ia') }}
+                    @else
+                    <span class="text-muted">Time not available</span>
+                    @endif
+                </div>
+
+                <!-- Organization Name -->
+                <div class="mb-3">
+                    <i class="bi bi-person-workspace me-2"></i>
+                    Organized by: {{ $event->organization_name ?? 'N/A' }}
+                </div>
+
+                <!-- Event Description -->
+                <label class="mb-2 fw-semibold">Event Description:</label>
+                <p class="mb-0">{{ $event->description ?? 'No description provided' }}</p>
+
+                <!-- Requester -->
+                <div>
+                    <span class="mb-2 fw-semibold">Requester: </span>
+                    {{ $event && $event->requester ? ($event->requester->first_name.'
+                    '.$event->requester->last_name) : '' }}
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-primary" aria-label="View more details">
+                    View More Details
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close details">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Event View Modal -->
+<div class="modal fade" id="publicEventDetails" tabindex="-1" aria-hidden="true" wire:ignore.self>
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0">
+                        <i class="bi bi-eye me-2"></i>{{ optional($modal['event'] ?? null)->title ?: 'Event Details'
+                        }}
+                    </h5>
+                    @if(isset($modal['event']) && $modal['event'])
+                    <small class="text-muted">Event #{{ $modal['event']->id }}</small>
+                    @endif
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if(isset($modal['event']) && $modal['event'])
+                @php
+                $ev = $modal['event'];
+                $eventId = $ev->id ?? 'preview';
+                $from = $ev->start_time ? \Carbon\Carbon::parse($ev->start_time)->format('M j, Y g:i A') : null;
+                $to = $ev->end_time ? \Carbon\Carbon::parse($ev->end_time)->format('M j, Y g:i A') : null;
+                $venueName = optional($ev->venue)->name;
+                $venueCode = trim((string) optional($ev->venue)->code);
+                if ($venueName && $venueCode) {
+                $venueLabel = $venueName.' ('.$venueCode.')';
+                } elseif ($venueName) {
+                $venueLabel = $venueName;
+                } else {
+                $venueLabel = $venueCode ?: 'No venue selected';
+                }
+                @endphp
+                <div class="row g-4">
+                    {{-- Summary --}}
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap align-items-baseline gap-2">
+                            <h5 class="mb-0">{{ $ev->title ?? 'Untitled event' }}</h5>
+                            @if($ev->status)
+                            <span class="badge bg-secondary">{{ ucwords($ev->status) }}</span>
+                            @endif
+                        </div>
+                        <div class="text-muted small mt-1">
+                            Organization: {{ $ev->organization_name ?? 'N/A' }}
+                        </div>
+                    </div>
+
+                    {{-- When & Where --}}
+                    <div class="col-md-6">
+                        <h6 class="text-uppercase text-muted small mb-2">When</h6>
+                        <div class="border rounded p-3">
+                            <div class="mb-2">
+                                <span class="fw-semibold">From:</span>
+                                <span class="ms-1">{{ $from ?? 'Not set' }}</span>
+                            </div>
+                            <div>
+                                <span class="fw-semibold">To:</span>
+                                <span class="ms-1">{{ $to ?? 'Not set' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-uppercase text-muted small mb-2">Where</h6>
+                        <div class="border rounded p-3">
+                            <div class="fw-semibold mb-1">{{ $venueLabel }}</div>
+                        </div>
+                    </div>
+
+                    {{-- Description --}}
+                    <div class="col-12">
+                        <h6 class="text-uppercase text-muted small mb-2">Description</h6>
+                        <div class="border rounded p-3 bg-light-subtle">
+                            <p class="mb-0">{{ $ev->description ?? 'No description provided.' }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Documents --}}
+                    <div class="col-12">
+                        <h6 class="text-uppercase text-muted small mb-2">Documents</h6>
+                        <section class="card shadow-sm mb-0" aria-labelledby="event-documents-{{ $eventId }}">
+                            <div class="card-body">
+                                <h3 id="event-documents-{{ $eventId }}" class="fw-semibold border-bottom pb-2 mb-3">
+                                    Documents
+                                </h3>
+                                <livewire:documents.list-with-preview :docs="$docs"
+                                    :key="'docs-'.($modal['event']->id ?? '0')" />
+                            </div>
+                        </section>
+                    </div>
+                </div>
+                @else
+                <div class="alert alert-warning mb-0">No event details available.</div>
+                @endif
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal" aria-label="Close details">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <script>
