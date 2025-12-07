@@ -564,8 +564,17 @@ public function removeRequirementFile(int $index): void
         $this->triggerLiveVenueSearch();
     }
 
-    public function updatedVenueCapacityFilter(): void
+    public function updatedVenueCapacityFilter($value = null): void
     {
+        // Normalize to a non-negative integer or null before querying
+        if ($value === '' || $value === null) {
+            $this->venueCapacityFilter = null;
+        } elseif (is_numeric($value)) {
+            $this->venueCapacityFilter = max(0, (int) $value);
+        } else {
+            $this->venueCapacityFilter = null;
+        }
+
         $this->triggerLiveVenueSearch();
     }
 

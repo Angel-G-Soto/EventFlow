@@ -35,6 +35,10 @@ class DocumentService
      *  2) Create DB record
      *  3) Queue virus scan & move to final storage
      *
+     * @param UploadedFile $file
+     * @param int $userId
+     * @param int $eventId
+     * @return Document
      * @throws StorageException
      */
     public function handleUpload(UploadedFile $file, int $userId, int $eventId): Document
@@ -111,6 +115,8 @@ class DocumentService
     /**
      * Permanently delete a document (file first, then DB row).
      *
+     * @param Document $document
+     * @return bool
      * @throws StorageException
      */
     public function deleteDocument(Document $document): bool
@@ -184,6 +190,7 @@ class DocumentService
      * Get a binary stream for the document's file.
      * Controller builds the actual response() around it.
      *
+     * @param Document $document
      * @return resource
      * @throws FileNotFoundException
      * @throws StorageException
@@ -220,11 +227,23 @@ class DocumentService
         return $stream;
     }
 
+    /**
+     * Disk used to temporarily store newly uploaded files before scanning.
+     *
+     * @return string
+     */
     private function tempDisk(): string
     {
         return 'uploads_temp';
     }
 
+    /**
+     * Render a PDF document inline in the browser.
+     *
+     * @param int $documentId
+     * @return BinaryFileResponse
+     * @throws FileNotFoundException
+     */
     public function showPDF(int $documentId): BinaryFileResponse
     {
         //
@@ -254,11 +273,23 @@ class DocumentService
         ]);
     }
 
+    /**
+     * The storage disk used for finalized documents.
+     *
+     * @return string
+     */
     private function finalDisk(): string
     {
         return 'documents';
     }
 
+    /**
+     * Locate a single document or fail if it does not exist.
+     *
+     * @param int $id
+     * @return Document
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
     public function getDocument(int $id): Document
     {
         return Document::findOrFail($id);
@@ -267,6 +298,9 @@ class DocumentService
     /**
      * Delete documents (and their files) that were created on or before the cutoff.
      * Defaults to purging anything older than four years.
+     *
+     * @param Carbon|null $cutoff
+     * @return int
      */
     public function purgeOldDocuments(?Carbon $cutoff = null): int
     {
@@ -292,6 +326,7 @@ class DocumentService
      * Attach documents to the provided event by updating event_id.
      *
      * @param array<int> $documentIds
+     * @param int $eventId
      */
     public function assignDocumentsToEvent(array $documentIds, int $eventId): void
     {
@@ -345,6 +380,12 @@ class DocumentService
             ]);
         }
     }*/
+    /**
+     * Build the route URL for viewing a document if it has a valid ID.
+     *
+     * @param Document $document
+     * @return string|null
+     */
     public function getDocumentViewUrl(Document $document): ?string
     {
         $id = (int) ($document->id ?? 0);
@@ -356,6 +397,12 @@ class DocumentService
         return route('documents.show', ['documentId' => $id]);
     }
 
+    /**
+     * Get the most recent backup files from a directory.
+     *
+     * @param string $root
+     * @return array<int, array{name: string, size: string, modified: string}>
+     */
     public function getRecentBackups(string $root): array
     {
         return collect(File::files($root))
@@ -374,6 +421,12 @@ class DocumentService
 
     }
 
+    /**
+     * Convert raw bytes into a human-readable size string.
+     *
+     * @param int $bytes
+     * @return string
+     */
     private function formatBytes(int $bytes): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];

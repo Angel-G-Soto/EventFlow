@@ -25,6 +25,7 @@ use App\Services\UserService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Livewire\Traits\HasJustification;
 use App\Policies\EventPolicy;
 use Mockery\Matcher\Not;
 
@@ -37,6 +38,7 @@ use Mockery\Matcher\Not;
 #[Layout('layouts.app')]
 class Details extends Component
 {
+    use HasJustification;
 /**
  * @var Event
  */
@@ -62,7 +64,11 @@ class Details extends Component
     {
 
 
-        $this->validate(['justification' => 'required|min:10|max:255']);
+        $this->validate([
+            'justification' => $this->justificationRules(true),
+        ], [], [
+            'justification' => 'justification',
+        ]);
         // ... do your action
 
 

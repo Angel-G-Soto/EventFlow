@@ -123,7 +123,7 @@
                   @disabled(((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])))
                   aria-label="Clear roles for user {{ $user['name'] }}"
                   title="Clear roles for user {{ $user['name'] }}">
-                  <i class="bi bi-arrow-clockwise"></i>
+                  <i class="bi bi-eraser"></i>
                 </button>
               </div>
             </td>

@@ -22,6 +22,7 @@ use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Livewire\Traits\HasJustification;
 
 /**
  * Class Details
@@ -33,7 +34,7 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Details extends Component
 {
-    use WithPagination;
+    use HasJustification, WithPagination;
 /**
  * @var string
  */
@@ -106,7 +107,11 @@ class Details extends Component
 
     public function save()
     {
-        $this->validate(['justification' => 'required|min:10']);
+        $this->validate([
+            'justification' => $this->justificationRules(true),
+        ], [], [
+            'justification' => 'justification',
+        ]);
         // ... do your action
         $this->redirectRoute('approver.index');
     }

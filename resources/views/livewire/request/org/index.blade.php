@@ -180,7 +180,7 @@
                                     title="View details"
                                     aria-label="View details"
                                     onclick="window.location='{{ route('user.request',['event'=>$event]) }}'">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                <i class="bi bi-info-circle" aria-hidden="true"></i>
                                 <span>View details</span>
                             </button>
                         </td>

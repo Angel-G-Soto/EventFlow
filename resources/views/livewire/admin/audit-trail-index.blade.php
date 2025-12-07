@@ -143,8 +143,8 @@ $downloadParams = array_filter([
               <small class="fw-bold">{{ $r->ip ?? '—' }}</small>
             </td>
             <td class="text-end">
-              <button class="btn btn-info btn-sm" wire:click="showDetails({{ $r->id }})"
-                aria-label="Show details for audit #{{ $r->id }}" title="Show details for audit #{{ $r->id }}">
+              <button class="btn btn-secondary btn-sm" wire:click="showDetails({{ $r->id }})"
+                aria-label="View details for audit #{{ $r->id }}" title="View details for audit #{{ $r->id }}">
                 <i class="bi bi-info-circle"></i>
               </button>
             </td>

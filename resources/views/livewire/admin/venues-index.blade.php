@@ -154,8 +154,8 @@
             <td>{{ $v['capacity'] }}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
-                <button class="btn btn-info" wire:click="showDetails({{ $v['id'] }})"
-                  aria-label="Show details for venue {{ $v['name'] }}" title="Show details">
+                <button class="btn btn-secondary" wire:click="showDetails({{ $v['id'] }})"
+                  aria-label="View details for venue {{ $v['name'] }}" title="View details">
                   <i class="bi bi-info-circle"></i>
                 </button>
                 <button class="btn btn-danger" wire:click="deactivate({{ $v['id'] }})"

@@ -25,6 +25,7 @@ use App\Services\EventService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Livewire\Traits\HasJustification;
 
 /**
  * Class Details
@@ -38,6 +39,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Details extends Component
 {
+    use HasJustification;
     public EventHistory $eventHistory;
     public string $justification = '';
 /**
@@ -58,7 +60,11 @@ class Details extends Component
     {
         $this->authorize('manageMyApprovalHistory', $this->eventHistory);
 
-        $this->validate(['justification' => 'required|min:10|max:255']);
+        $this->validate([
+            'justification' => $this->justificationRules(true),
+        ], [], [
+            'justification' => 'justification',
+        ]);
         // ... do your action
         $eventService = app(EventService::class);
         $eventService->cancelEvent($this->eventHistory->event,Auth::user(),$this->justification);
