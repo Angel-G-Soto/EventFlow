@@ -193,7 +193,7 @@
             </div>
 
             <div class="card-footer bg-white d-flex justify-content-end gap-2">
-                <button class="btn {{ $this->detailsDirty ? 'btn-secondary' : 'btn-outline-secondary' }}"
+                <button class="btn btn-secondary"
                         wire:click="saveAvailability"
                         wire:loading.attr="disabled"
                         wire:target="saveAvailability"
@@ -204,7 +204,7 @@
                           wire:loading
                           wire:target="saveAvailability"></span>
                     <i class="bi bi-save me-1" wire:loading.remove wire:target="saveAvailability"></i>
-                    Save details
+                    Save changes
                 </button>
             </div>
         </div>
@@ -353,7 +353,7 @@
         </div>
 
         <div class="card-footer bg-white d-flex justify-content-end gap-2">
-            <button class="btn {{ $this->requirementsDirty ? 'btn-secondary' : 'btn-outline-secondary' }}"
+            <button class="btn btn-secondary"
                     type="button"
                     wire:click="save"
                     wire:loading.attr="disabled"
