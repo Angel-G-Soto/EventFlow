@@ -112,7 +112,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label required">Event description</label>
-                    <textarea class="form-control" rows="6" minlength="10" maxlength="2000" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
+                    <textarea class="form-control" rows="6" maxlength="2000" wire:model.defer="description" placeholder="e.g., Describe the event purpose and highlights"></textarea>
                     <small class="text-muted">Minimum 10 characters, maximum 2,000 characters.</small>
                     @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
                 </div>

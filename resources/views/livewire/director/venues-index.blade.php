@@ -151,12 +151,15 @@
                     <form wire:submit.prevent="addManager" novalidate>
                         <div class="modal-body">
                             <div class="mb-3">
-                                <label for="emailInput" class="form-label">Email address</label>
+                                <label for="emailInput" class="form-label">Email address <span class="text-danger">*</span></label>
                                 <input id="emailInput"
                                        type="email"
                                        class="form-control @error('email') is-invalid @enderror"
                                        placeholder="name@example.com"
                                        wire:model.defer="email"
+                                       onpaste="return false"
+                                       oncopy="return false"
+                                       oncut="return false"
                                        required
                                        aria-describedby="emailHelp emailError" />
                                 <div id="emailHelp" class="form-text visually-hidden">
@@ -167,12 +170,15 @@
                                 @enderror
                             </div>
                             <div class="mb-3">
-                                <label for="emailConfirmation" class="form-label">Confirm email address</label>
+                                <label for="emailConfirmation" class="form-label">Confirm email address <span class="text-danger">*</span></label>
                                 <input id="emailConfirmation"
                                        type="email"
                                        class="form-control @error('emailConfirmation') is-invalid @enderror"
                                        placeholder="Repeat email address"
                                        wire:model.defer="emailConfirmation"
+                                       onpaste="return false"
+                                       oncopy="return false"
+                                       oncut="return false"
                                        required
                                        aria-describedby="emailConfirmationHelp emailConfirmationError" />
                                 <div id="emailConfirmationHelp" class="form-text visually-hidden">
