@@ -293,9 +293,9 @@
     {{-- Action Buttons --}}
     <div class="d-flex gap-2 mb-5">
         <button type="button"
-                wire:click="approve"
                 class="btn btn-success"
-                wire:target="approve"
+                data-bs-toggle="modal"
+                data-bs-target="#approveModal"
                 aria-label="Approve {{ $event->title }}">
             <i class="bi bi-check-circle"></i>
             Approve
@@ -308,6 +308,43 @@
             <i class="bi bi-x-circle"></i>
             Reject
         </button>
+    </div>
+
+    {{-- Approve Modal --}}
+    <div class="modal fade"
+         id="approveModal"
+         tabindex="-1"
+         aria-labelledby="approveModalLabel"
+         aria-hidden="true"
+         wire:ignore.self
+         wire:key="approve-modal-{{ $event->id ?? 'single' }}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 id="approveModalLabel" class="modal-title">Confirm approval</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Approve this request and move it to the next step?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="button"
+                            class="btn btn-success"
+                            wire:click="approve"
+                            wire:loading.attr="disabled"
+                            wire:target="approve"
+                            data-bs-dismiss="modal">
+                        <span wire:loading wire:target="approve" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Yes, approve</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Deny Modal --}}
