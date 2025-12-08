@@ -49,6 +49,15 @@
   }
 }
 
+/* Lighten placeholder color across the app */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #b0b7c3;
+  font-style: italic;
+  opacity: 1; /* ensure color applies consistently */
+}
+
 /* Mobile: lighten dropdowns (selects and menus) to match navbar accent */
 // @media (max-width: 576px) {
 
