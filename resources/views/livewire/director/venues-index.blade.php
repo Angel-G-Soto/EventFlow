@@ -67,7 +67,7 @@
                 <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
                     wire:click="$dispatch('open-modal', { id: 'emailModal' })" aria-label="Add manager"
                     title="Add manager to department">
-                    <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                    <i class="bi bi-person-plus" aria-hidden="true"></i>
                     <span>Add Venue Manager</span>
                 </button>
             </div>
@@ -86,7 +86,7 @@
                 class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2"
                 wire:click="$dispatch('open-modal', { id: 'emailModal' })" aria-label="Add manager"
                 title="Add manager to department">
-                <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                <i class="bi bi-person-plus" aria-hidden="true"></i>
                 <span>Add Venue Manager</span>
             </button>
         </div>
