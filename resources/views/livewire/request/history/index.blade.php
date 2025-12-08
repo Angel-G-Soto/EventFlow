@@ -118,7 +118,7 @@
                     <th scope="col" class="d-none d-md-table-cell">Organization</th>
                     <th scope="col" class="d-none d-md-table-cell">Action</th>
                     <th scope="col" class="d-none d-md-table-cell">Date Approved</th>
-                    <th scope="col" class="text-end">Actions</th>
+                    <th scope="col">Actions</th>
                 </tr>
                 </thead>
 
@@ -164,7 +164,7 @@
                             {{ $submittedAt }}
                         </td>
 
-                        <td class="fw-medium text-end">
+                        <td class="fw-medium">
                             <button type="button"
                                     class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
                                     data-bs-toggle="tooltip"
@@ -173,7 +173,6 @@
                                     aria-label="View details"
                                     onclick="window.location='{{ route('approver.history.request',['eventHistory'=>$history]) }}'">
                                 <i class="bi bi-info-circle" aria-hidden="true"></i>
-                                <span>View details</span>
                             </button>
                         </td>
                     </tr>

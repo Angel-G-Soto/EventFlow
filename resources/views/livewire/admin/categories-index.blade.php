@@ -46,30 +46,30 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col">Name</th>
-                        <th scope="col" class="text-end" style="width:220px;">Actions</th>
+                        <th scope="col" style="width:220px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($rows as $category)
                         <tr wire:key="cat-{{ $category->id }}">
                             <th class="fw-medium" scope="row">{{ $category->name }}</th>
-                            <td class="text-end">
+                            <td>
                                 <div class="d-flex flex-column flex-md-row justify-content-end align-items-end align-items-md-stretch gap-2"
                                      role="group"
                                      aria-label="Row actions for {{ $category->name }}">
                                     <button type="button"
-                                            class="btn btn-secondary btn-sm d-flex align-items-center justify-content-center gap-1"
+                                            class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center"
                                             wire:click="startEdit({{ $category->id }})"
-                                            title="Edit category {{ $category->name }}">
+                                            title="Edit category {{ $category->name }}"
+                                            aria-label="Edit category {{ $category->name }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
-                                        <span>Edit</span>
                                     </button>
                                     <button type="button"
-                                            class="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-1"
+                                            class="btn btn-danger btn-sm d-inline-flex align-items-center justify-content-center"
                                             wire:click="confirmDelete({{ $category->id }})"
-                                            title="Delete category {{ $category->name }}">
+                                            title="Delete category {{ $category->name }}"
+                                            aria-label="Delete category {{ $category->name }}">
                                         <i class="bi bi-trash3" aria-hidden="true"></i>
-                                        <span>Delete</span>
                                     </button>
                                 </div>
                             </td>

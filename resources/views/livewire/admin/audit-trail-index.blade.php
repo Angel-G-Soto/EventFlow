@@ -103,7 +103,7 @@ $downloadParams = array_filter([
             <th scope="col">Action</th>
             <th scope="col">Target</th>
             <th scope="col">IP</th>
-            <th scope="col" class="text-end">Details</th>
+            <th scope="col">Details</th>
           </tr>
         </thead>
         <tbody>
@@ -142,7 +142,7 @@ $downloadParams = array_filter([
             <td class="text-truncate" style="max-width:130px;">
               <small class="fw-bold">{{ $r->ip ?? '—' }}</small>
             </td>
-            <td class="text-end">
+            <td>
               <button class="btn btn-secondary btn-sm" wire:click="showDetails({{ $r->id }})"
                 aria-label="View details for audit #{{ $r->id }}" title="View details for audit #{{ $r->id }}">
                 <i class="bi bi-info-circle"></i>

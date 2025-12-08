@@ -84,7 +84,7 @@
             <th scope="col">Email</th>
             <th scope="col">Department</th>
             <th scope="col">Roles</th>
-            <th scope="col" class="text-end" style="width:140px;">Actions</th>
+            <th scope="col" style="width:140px;">Actions</th>
           </tr>
         </thead>
 
@@ -110,22 +110,20 @@
               <span class="text-muted">No roles</span>
               @endif
             </td>
-            <td class="text-end">
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-secondary" wire:click="openEdit({{ $user['id'] }})" type="button"
-                  aria-label="Edit user {{ $user['name'] }}" title="Edit user {{ $user['name'] }}">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button @class([ 'btn' , 'btn-outline-danger'=> ((count($user['roles'] ?? []) === 1) && in_array('user',
-                  $user['roles'] ?? [])),
-                  'btn-danger' => !((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])),
-                  ]) wire:click="clearRoles({{ $user['id'] }})" type="button"
-                  @disabled(((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])))
-                  aria-label="Clear roles for user {{ $user['name'] }}"
-                  title="Clear roles for user {{ $user['name'] }}">
-                  <i class="bi bi-eraser"></i>
-                </button>
-              </div>
+            <td>
+              <button class="btn btn-secondary btn-sm" wire:click="openEdit({{ $user['id'] }})" type="button"
+                aria-label="Edit user {{ $user['name'] }}" title="Edit user {{ $user['name'] }}">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button @class([ 'btn btn-sm' , 'btn-outline-danger'=> ((count($user['roles'] ?? []) === 1) && in_array('user',
+                $user['roles'] ?? [])),
+                'btn-danger' => !((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])),
+                ]) wire:click="clearRoles({{ $user['id'] }})" type="button"
+                @disabled(((count($user['roles'] ?? []) === 1) && in_array('user', $user['roles'] ?? [])))
+                aria-label="Clear roles for user {{ $user['name'] }}"
+                title="Clear roles for user {{ $user['name'] }}">
+                <i class="bi bi-eraser"></i>
+              </button>
             </td>
           </tr>
           @empty

@@ -90,7 +90,7 @@
                         </td>
                         <td class="fw-medium d-none d-sm-table-cell">{{ $v['code'] }}</td>
                         <td class="fw-medium d-none d-sm-table-cell">{{ $v['capacity'] }}</td>
-                        <td class="fw-medium text-end text-sm-end" style="width: 120px;">
+                        <td class="fw-medium" style="width: 120px;">
                         <div
                             class="d-flex flex-column flex-sm-row gap-2 align-items-end align-items-sm-center justify-content-sm-end w-100">
                             <button type="button"
@@ -101,7 +101,6 @@
                                     title="Configure {{ $v['name'] }}"
                                     aria-label="Configure {{ $v['name'] }}">
                                 <i class="bi bi-pencil" aria-hidden="true"></i>
-                                <span>Configure</span>
                             </button>
 
                             <button type="button"
@@ -112,7 +111,6 @@
                                     aria-label="View details for {{ $v['name'] }}"
                                     onclick="window.location='{{ route('venue.show', ['venue' => $v]) }}'">
                                 <i class="bi bi-info-circle" aria-hidden="true"></i>
-                                <span>View details</span>
                             </button>
                         </div>
                     </td>

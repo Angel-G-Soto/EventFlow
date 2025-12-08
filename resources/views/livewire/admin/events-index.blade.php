@@ -118,7 +118,7 @@
             <th scope="col">Venue</th>
             <th scope="col">Status</th>
             <th scope="col">Date/Time</th>
-            <th scope="col" class="text-end" style="width:120px;">Actions</th>
+            <th scope="col" style="width:120px;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -141,40 +141,38 @@
               <div class="text-secondary small">→ {{ Str::before($r['to'],' ') }} {{
                 Str::after($r['to'],' ') }}</div>
             </td>
-            <td class="text-end">
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-secondary" wire:click="openView({{ $r['id'] }})"
-                  aria-label="View request {{ $r['id'] }}" title="View request #{{ $r['id'] }}">
-                  <i class="bi bi-info-circle"></i>
-                </button>
-                <button @class([ 'btn' , 'btn-outline-secondary'=> $r['status_is_cancelled'] || $r['status_is_denied']
-                  ||
-                  $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn'],
-                  'btn-secondary' => !($r['status_is_cancelled'] || $r['status_is_denied'] ||
-                  $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn']),
-                  ]) wire:click="openEdit({{ $r['id'] }})"
-                  aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}"
-                  @disabled(
-                  $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_completed'] ||
-                  $r['status_is_approved'] || $r['status_is_withdrawn']
-                  )>
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button @class([ 'btn' , 'btn-outline-danger'=> !$r['status_is_approved'] ||
-                  $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
-                  $r['status_is_completed'],
-                  'btn-danger' => !(!$r['status_is_approved'] ||
-                  $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
-                  $r['status_is_completed']),
-                  ]) wire:click="delete({{ $r['id'] }})"
-                  @disabled(
-                  !$r['status_is_approved'] || $r['status_is_cancelled'] ||
-                  $r['status_is_denied'] || $r['status_is_withdrawn'] || $r['status_is_completed']
-                  )
-                  aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
-                  <i class="bi bi-x-circle"></i>
-                </button>
-              </div>
+            <td>
+              <button class="btn btn-secondary btn-sm" wire:click="openView({{ $r['id'] }})"
+                aria-label="View request {{ $r['id'] }}" title="View request #{{ $r['id'] }}">
+                <i class="bi bi-info-circle"></i>
+              </button>
+              <button @class([ 'btn btn-sm' , 'btn-outline-secondary'=> $r['status_is_cancelled'] || $r['status_is_denied']
+                ||
+                $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn'],
+                'btn-secondary' => !($r['status_is_cancelled'] || $r['status_is_denied'] ||
+                $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn']),
+                ]) wire:click="openEdit({{ $r['id'] }})"
+                aria-label="Edit request {{ $r['id'] }}" title="Edit request #{{ $r['id'] }}"
+                @disabled(
+                $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_completed'] ||
+                $r['status_is_approved'] || $r['status_is_withdrawn']
+                )>
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button @class([ 'btn btn-sm' , 'btn-outline-danger'=> !$r['status_is_approved'] ||
+                $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
+                $r['status_is_completed'],
+                'btn-danger' => !(!$r['status_is_approved'] ||
+                $r['status_is_cancelled'] || $r['status_is_denied'] || $r['status_is_withdrawn'] ||
+                $r['status_is_completed']),
+                ]) wire:click="delete({{ $r['id'] }})"
+                @disabled(
+                !$r['status_is_approved'] || $r['status_is_cancelled'] ||
+                $r['status_is_denied'] || $r['status_is_withdrawn'] || $r['status_is_completed']
+                )
+                aria-label="Cancel request {{ $r['id'] }}" title="Cancel request #{{ $r['id'] }}">
+                <i class="bi bi-x-circle"></i>
+              </button>
             </td>
           </tr>
           @empty

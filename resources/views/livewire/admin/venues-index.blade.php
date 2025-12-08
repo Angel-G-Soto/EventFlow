@@ -141,7 +141,7 @@
                 </span>
               </button>
             </th>
-            <th class="text-end" style="width:140px;">Actions</th>
+            <th style="width:140px;">Actions</th>
           </tr>
         </thead>
 
@@ -152,17 +152,15 @@
             <td>{{ $v['department'] }}</td>
             <td>{{ $v['room'] }}</td>
             <td>{{ $v['capacity'] }}</td>
-            <td class="text-end">
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-secondary" wire:click="showDetails({{ $v['id'] }})"
-                  aria-label="View details for venue {{ $v['name'] }}" title="View details">
-                  <i class="bi bi-info-circle"></i>
-                </button>
-                <button class="btn btn-danger" wire:click="deactivate({{ $v['id'] }})"
-                  aria-label="Deactivate venue {{ $v['name'] }}" title="Deactivate venue {{ $v['name'] }}">
-                  <i class="bi bi-power"></i>
-                </button>
-              </div>
+            <td>
+              <button class="btn btn-secondary btn-sm" wire:click="showDetails({{ $v['id'] }})"
+                aria-label="View details for venue {{ $v['name'] }}" title="View details">
+                <i class="bi bi-info-circle"></i>
+              </button>
+              <button class="btn btn-danger btn-sm ms-1" wire:click="deactivate({{ $v['id'] }})"
+                aria-label="Deactivate venue {{ $v['name'] }}" title="Deactivate venue {{ $v['name'] }}">
+                <i class="bi bi-power"></i>
+              </button>
             </td>
           </tr>
           @empty

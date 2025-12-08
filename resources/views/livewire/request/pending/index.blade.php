@@ -147,7 +147,7 @@
                     <th scope="col" class="d-none d-md-table-cell">Organization</th>
                     <th scope="col" class="d-none d-md-table-cell">Date Submitted</th>
                     <th scope="col" class="d-none d-md-table-cell">Status</th>
-                    <th scope="col" class="text-end text-nowrap" style="width: 170px;">Actions</th>
+                    <th scope="col" class="text-nowrap" style="width: 170px;">Actions</th>
                 </tr>
                 </thead>
 
@@ -215,14 +215,13 @@
                             </span>
                         </td>
 
-                        <td class="fw-medium text-end">
+                        <td class="fw-medium">
                             <button type="button"
                                     class="btn btn-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap table-action-btn"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="View details"
                                     aria-label="View details"
                                     onclick="window.location='{{ route('approver.pending.request',['event'=>$event]) }}'">
                                 <i class="bi bi-info-circle" aria-hidden="true"></i>
-                                <span>View details</span>
                             </button>
                         </td>
                     </tr>
