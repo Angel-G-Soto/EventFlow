@@ -87,7 +87,7 @@ $downloadParams = array_filter([
       </select>
       <a class="btn btn-primary btn-sm" href="{{ route('admin.audit.download', $downloadParams) }}" target="_blank"
         rel="noopener">
-        <i class="bi bi-download me-1"></i> PDF
+        <i class="bi bi-download me-1"></i> CSV
       </a>
     </div>
   </div>

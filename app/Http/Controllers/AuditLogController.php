@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuditService;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\Factory as ViewFactoryContract;
 use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Http\Request;
@@ -72,14 +71,13 @@ class AuditLogController extends Controller
     }
 
     /**
-     * Download a PDF snapshot of the audit log with optional filters.
+     * Download a CSV snapshot of the audit log with optional filters.
      *
      * Query params mirror the Livewire filters:
      *  - user       : string|int|null (id, name, or email)
      *  - action     : string|null
      *  - date_from  : date|null (Y-m-d)
      *  - date_to    : date|null (Y-m-d, >= date_from)
-     *  - limit      : int|null (1..2000, default 500)
      */
     public function download(Request $request): StreamedResponse
     {
@@ -90,7 +88,7 @@ class AuditLogController extends Controller
             'action'    => ['nullable', 'string', 'max:255'],
             'date_from' => ['nullable', 'date'],
             'date_to'   => ['nullable', 'date', 'after_or_equal:date_from'],
-            'limit'     => ['nullable', 'integer', 'min:1', 'max:2000'],
+            // no limit: export all matching rows
         ]);
 
         $filters = array_filter([
@@ -100,13 +98,11 @@ class AuditLogController extends Controller
             'date_to'   => $validated['date_to']   ?? null,
         ], static fn ($v) => $v !== null && $v !== '');
 
-        $limit    = (int) ($validated['limit'] ?? 500);
-        $perPage  = max(1, min($limit, 2000));
-        /** @var \Illuminate\Pagination\LengthAwarePaginator $pageData */
-        $pageData = $this->auditService->getPaginatedLogs($filters, $perPage, 1);
+        // Pull all matching logs (no export row limit)
+        $pageData = $this->auditService->getPaginatedLogs($filters, PHP_INT_MAX, 1);
         $logs     = $pageData->getCollection();
 
-        $filename = 'audit-log-' . now()->format('Ymd_His') . '.pdf';
+        $filename = 'audit-log-' . now()->format('Ymd_His') . '.csv';
 
         // Best-effort audit trail for the export itself
         $actor = $request->user();
@@ -115,7 +111,6 @@ class AuditLogController extends Controller
                 $meta = [
                     'filters'  => $filters,
                     'rowCount' => $logs->count(),
-                    'limit'    => $perPage,
                     'filename' => $filename,
                 ];
                 $ctx = $this->auditService->buildContextFromRequest($request, $meta);
@@ -131,20 +126,60 @@ class AuditLogController extends Controller
             }
         }
 
-        $html = view('admin.audit.pdf', [
-            'logs'    => $logs,
-            'filters' => $filters,
-        ])->render();
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
 
-        $pdf = Pdf::loadHTML($html)->setPaper('letter', 'landscape');
+        $callback = function () use ($logs) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['When', 'User', 'Action', 'Target', 'User Agent', 'IP', 'Meta']);
+            $tz = config('app.timezone');
+            foreach ($logs as $log) {
+                $when = '';
+                try {
+                    $when = \Carbon\Carbon::parse($log->created_at ?? null)->timezone($tz)->format('Y-m-d H:i:s');
+                } catch (\Throwable) {
+                    $when = (string) ($log->created_at ?? '');
+                }
 
-        return response()->streamDownload(
-            static function () use ($pdf) {
-                echo $pdf->output();
-            },
-            $filename,
-            ['Content-Type' => 'application/pdf']
-        );
+                $actor = $log->actor ?? null;
+                $name = null;
+                if ($actor) {
+                    $full = trim(($actor->first_name ?? '') . ' ' . ($actor->last_name ?? ''));
+                    $name = $full !== '' ? $full : ($actor->name ?? ($actor->email ?? null));
+                }
+                $userLabel = $name ?? '—';
+                if (!empty($log->user_id)) {
+                    $userLabel .= ' (#' . $log->user_id . ')';
+                }
+
+                $target = ($log->target_type ? class_basename($log->target_type) : '—');
+                if (!empty($log->target_id)) {
+                    $target .= ' #' . $log->target_id;
+                }
+
+                $meta = $log->meta ?? [];
+                if (!is_array($meta)) {
+                    $decoded = json_decode((string) $meta, true);
+                    $meta = is_array($decoded) ? $decoded : [];
+                }
+                $metaStr = !empty($meta) ? json_encode($meta, JSON_UNESCAPED_SLASHES) : '';
+
+                fputcsv($out, [
+                    $when,
+                    $userLabel,
+                    $log->action ?? '',
+                    $target,
+                    $log->ua ?? ($log->user_agent ?? ''),
+                    $log->ip ?? '',
+                    $metaStr,
+                ]);
+            }
+            fclose($out);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
     }
 
     /**
