@@ -212,6 +212,17 @@ class ProcessCsvFileUpload implements ShouldQueue
                         'name' => $dept['name'],
                         'code' => $dept['code'],
                     ];
+                } elseif ($byCode && $byCode->name !== $dept['name']) {
+                    // Department exists by code but with a different name; update name to match CSV.
+                    $byCode->name = $dept['name'];
+                    $byCode->save();
+
+                    $this->logDepartmentAudit($adminUser, 'DEPARTMENT_UPDATED', $byCode, $dept, 'csv-import');
+                    $updatedForAudit[] = [
+                        'id' => (int) ($byCode->id ?? 0),
+                        'name' => $dept['name'],
+                        'code' => $dept['code'],
+                    ];
                 } elseif (!$byName && !$byCode) {
                     // Department does not exist at all; create it.
                     $deptSvc->updateOrCreateDepartment([
@@ -221,7 +232,7 @@ class ProcessCsvFileUpload implements ShouldQueue
                     // Fetch the created/updated department to include id in audit when possible.
                     $created = $deptSvc->findByCode($dept['code']) ?? $deptSvc->findByName($dept['name']);
                     if ($created) {
-                        $this->logDepartmentAudit($adminUser, 'DEPARTMENT_UPDATED', $created, $dept, 'csv-import');
+                        $this->logDepartmentAudit($adminUser, 'DEPARTMENT_CREATED', $created, $dept, 'csv-import');
                         $createdForAudit[] = [
                             'id' => (int) ($created->id ?? 0),
                             'name' => $dept['name'],
