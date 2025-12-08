@@ -18,6 +18,8 @@ class PublicCalendar extends Component
     public bool $canFilterMyVenues = false;
     public array $managedVenueIds = [];
     public array $docs = [];
+    public string $search = '';
+    public ?int $categoryId = null;
 
     // Read-only public, approved events (mocked for now)
     protected function allApprovedPublic(): array
@@ -33,6 +35,7 @@ class PublicCalendar extends Component
     }
 
     public ?array $modal = null; // {title, venue, time, summary}
+    public array $categories = [];
 
     // Toggle Filter By My Venues
     public function toggleFilterMyVenues(): void
@@ -54,6 +57,12 @@ class PublicCalendar extends Component
             $this->canFilterMyVenues = $user->roles->contains('name', 'venue-manager');
             $this->managedVenueIds = $user->department?->venues->pluck('id')->all() ?? [];
         }
+
+        // Load categories for filter dropdown
+        $this->categories = app(\App\Services\CategoryService::class)
+            ->getAllCategories()
+            ->map(fn($c) => ['id' => $c->id, 'name' => $c->name])
+            ->all();
     }
 
     public function goWeek(string $dir): void
@@ -62,15 +71,22 @@ class PublicCalendar extends Component
         $this->weekStart = $start->modify($dir === 'prev' ? '-7 days' : '+7 days')->toDateString();
     }
 
+    /**
+     * Explicit applySearch handler (matches other search bars).
+     *
+     * @return void
+     */
+    public function applySearch(): void
+    {
+        // Simply trigger a re-render; inputs are already bound via defer.
+    }
+
     protected function weekEvents(): array
     {
         $start = CarbonImmutable::parse($this->weekStart)->startOfDay();
         $end   = $start->addDays(7);
 
-        $events = array_filter($this->allApprovedPublic(), function ($e) use ($start, $end) {
-            $s = CarbonImmutable::parse($e['start_time']);
-            return $s->betweenIncluded($start, $end);
-        });
+        $events = $this->allApprovedPublic();
 
         // Apply "Filter By My Venues" if enabled and user is venue-manager
         if ($this->filterMyVenues && $this->canFilterMyVenues && ! empty($this->managedVenueIds)) {
@@ -81,6 +97,33 @@ class PublicCalendar extends Component
         } elseif ($this->filterMyVenues && $this->canFilterMyVenues) {
             // User is a venue manager but does not manage any venues, so the list should be empty
             $events = [];
+        }
+
+        // Text search by title or organization (case-insensitive)
+        $term = trim(mb_strtolower($this->search));
+        if ($term !== '') {
+            $events = array_filter($events, function ($e) use ($term) {
+                $title = mb_strtolower((string) ($e['title'] ?? ''));
+                $org   = mb_strtolower((string) ($e['organization_name'] ?? ''));
+                return str_contains($title, $term) || str_contains($org, $term);
+            });
+        }
+
+        // Category filter (if provided on the event payload)
+        if ($this->categoryId) {
+            $catId = (int) $this->categoryId;
+            $events = array_filter($events, function ($e) use ($catId) {
+                if (!isset($e['category_id'])) return false;
+                return (int) $e['category_id'] === $catId;
+            });
+        }
+
+        // Week window only applies when no search term is provided
+        if ($term === '') {
+            $events = array_filter($events, function ($e) use ($start, $end) {
+                $s = CarbonImmutable::parse($e['start_time']);
+                return $s->betweenIncluded($start, $end);
+            });
         }
 
         return array_values($events);
@@ -120,22 +163,43 @@ class PublicCalendar extends Component
     public function render()
     {
         $start = CarbonImmutable::parse($this->weekStart);
-        $days  = collect(range(0, 6))->map(fn($i) => $start->addDays($i));
+        $events = $this->weekEvents();
 
-        $eventsByDay = [];
-        foreach ($days as $d) {
-            $eventsByDay[$d->toDateString()] = [];
+        $term = trim($this->search ?? '');
+
+        if ($term !== '' && !empty($events)) {
+            $dates = collect($events)
+                ->map(fn($e) => CarbonImmutable::parse($e['start_time'])->toDateString())
+                ->unique()
+                ->sort()
+                ->values();
+
+            $firstDate = CarbonImmutable::parse($dates->first());
+            $lastDate  = CarbonImmutable::parse($dates->last());
+            $weekLabel = $firstDate->format('M j, Y') . ' – ' . $lastDate->format('M j, Y');
+        } else {
+            $dates = collect(range(0, 6))->map(fn($i) => $start->addDays($i)->toDateString());
+            $weekLabel = $start->format('M j') . ' – ' . $start->addDays(6)->format('M j, Y');
         }
 
-        foreach ($this->weekEvents() as $e) {
+        $eventsByDay = [];
+        foreach ($dates as $date) {
+            $eventsByDay[$date] = [];
+        }
+
+        foreach ($events as $e) {
             $key = CarbonImmutable::parse($e['start_time'])->toDateString();
-            if (isset($eventsByDay[$key])) $eventsByDay[$key][] = $e;
+            if (!array_key_exists($key, $eventsByDay)) {
+                $eventsByDay[$key] = [];
+                $dates = $dates->concat([$key])->unique()->sort()->values();
+            }
+            $eventsByDay[$key][] = $e;
         }
 
         return view('livewire.public-calendar', [
-            'days'        => $days,
+            'days'        => $dates->map(fn($d) => CarbonImmutable::parse($d)),
             'eventsByDay' => $eventsByDay,
-            'weekLabel'   => $start->format('M j') . ' – ' . $start->addDays(6)->format('M j, Y'),
+            'weekLabel'   => $weekLabel,
             'canFilterMyVenues' => $this->canFilterMyVenues,
         ]);
     }

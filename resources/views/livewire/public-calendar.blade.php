@@ -22,18 +22,45 @@
 
     {{-- Desktop header (md+) – original layout preserved --}}
     <div class="d-none d-md-flex align-items-center justify-content-between mb-3">
-        <div>
+        <div class="d-flex flex-column gap-2">
             <h1 class="h4 mb-0">Events This Week</h1>
 
-            @if($canFilterMyVenues)
-            <div class="form-check form-switch">
-                <input class="form-check-input filter-my-venues-toggle" type="checkbox" id="filterMyVenuesDesktop"
-                    wire:click="toggleFilterMyVenues" @checked($filterMyVenues)>
-                <label class="form-check-label" for="filterMyVenuesDesktop">
-                    Filter By My Venues
-                </label>
+            <div class="d-flex flex-wrap gap-3 align-items-end">
+                <div class="mb-0" style="max-width:280px;">
+                    <label class="form-label mb-1" for="calendar_search_desktop">Search</label>
+                    <form wire:submit.prevent="applySearch">
+                        <div class="input-group input-group-sm">
+                            <input id="calendar_search_desktop" type="text" class="form-control" placeholder="Search title or organization"
+                                aria-label="Search events" wire:model.defer="search">
+                            <button class="input-group-text text-white bg-secondary" type="submit" id="searchLabel"
+                                aria-label="Search">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="d-flex align-items-center gap-2" style="min-width: 200px;">
+                    <label class="mb-1" for="categoryFilterDesktop">Category</label>
+                    <select id="categoryFilterDesktop" class="form-select form-select-sm flex-grow-1"
+                        wire:model.live="categoryId">
+                        <option value="">All</option>
+                        @foreach($categories as $cat)
+                        <option value="{{ $cat['id'] }}">{{ $cat['name'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                @if($canFilterMyVenues)
+                <div class="form-check form-switch ms-2">
+                    <input class="form-check-input filter-my-venues-toggle" type="checkbox" id="filterMyVenuesDesktop"
+                        wire:click="toggleFilterMyVenues" @checked($filterMyVenues)>
+                    <label class="form-check-label" for="filterMyVenuesDesktop">
+                        Filter By My Venues
+                    </label>
+                </div>
+                @endif
             </div>
-            @endif
         </div>
 
         <div class="d-flex align-items-center gap-2">
@@ -70,7 +97,31 @@
             @endif
         </div>
 
-        <div>
+        <div class="d-flex flex-column gap-2">
+            <div class="mb-0">
+                <label class="form-label mb-1" for="calendar_search_mobile">Search</label>
+                <form wire:submit.prevent="applySearch">
+                    <div class="input-group input-group-sm">
+                        <input id="calendar_search_mobile" type="text" class="form-control" placeholder="Search title or organization"
+                            aria-label="Search events" wire:model.defer="search">
+                        <button class="input-group-text text-white bg-secondary" type="submit" id="searchLabelMobile"
+                            aria-label="Search">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="d-flex gap-2 align-items-center">
+                <label class="mb-0 small text-secondary" for="categoryFilterMobile">Category</label>
+                <select id="categoryFilterMobile" class="form-select form-select-sm" wire:model.live="categoryId">
+                    <option value="">All</option>
+                    @foreach($categories as $cat)
+                    <option value="{{ $cat['id'] }}">{{ $cat['name'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <div class="btn-group w-100" role="group" aria-label="Change week">
                 <button type="button" class="btn btn-primary btn-sm" wire:click="goWeek('prev')"
                     aria-label="Previous week">
