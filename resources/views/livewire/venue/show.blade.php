@@ -97,7 +97,7 @@
                                                target="_blank"
                                                rel="noopener noreferrer"
                                                class="btn btn-sm btn-primary">
-                                                Open Document
+                                                View Requirement Resource
                                             </a>
                                         @endif
                                     </div>

@@ -57,6 +57,8 @@ class Configure extends Component
 
     public string $description = '';
     public array $availabilityForm = [];
+    public string $bulkOpensAt = '';
+    public string $bulkClosesAt = '';
     public array $weekDays = [];
 
     public ?string $confirmDeleteUuid = null;
@@ -125,6 +127,81 @@ protected string $availabilitySnapshot = '';
     public function saveAvailability(): void
     {
         $this->startJustification('save_availability');
+    }
+
+    /**
+     * Enable all days for weekly availability at once.
+     */
+    public function enableAllDays(): void
+    {
+        $this->authorize('update-availability', $this->venue);
+
+        foreach (self::DAYS_OF_WEEK as $day) {
+            $this->availabilityForm[$day]['enabled'] = true;
+        }
+
+        $this->recalculateDetailsDirty();
+    }
+
+    /**
+     * Disable all days for weekly availability at once.
+     */
+    public function disableAllDays(): void
+    {
+        $this->authorize('update-availability', $this->venue);
+
+        foreach (self::DAYS_OF_WEEK as $day) {
+            $this->availabilityForm[$day]['enabled'] = false;
+        }
+
+        $this->recalculateDetailsDirty();
+    }
+
+    /**
+     * Apply the bulk opening/closing times to all currently enabled days.
+     */
+    public function applyBulkAvailability(): void
+    {
+        $this->authorize('update-availability', $this->venue);
+
+        $enabledDays = collect(self::DAYS_OF_WEEK)
+            ->filter(fn (string $day) => (bool) ($this->availabilityForm[$day]['enabled'] ?? false));
+
+        if ($enabledDays->isEmpty()) {
+            throw ValidationException::withMessages([
+                'bulkAvailability' => ['Select at least one day before applying bulk hours.'],
+            ]);
+        }
+
+        $validator = validator(
+            [
+                'bulkOpensAt' => $this->bulkOpensAt,
+                'bulkClosesAt' => $this->bulkClosesAt,
+            ],
+            [
+                'bulkOpensAt' => ['required', 'date_format:H:i'],
+                'bulkClosesAt' => ['required', 'date_format:H:i', 'after:bulkOpensAt'],
+            ],
+            [],
+            [
+                'bulkOpensAt' => 'opens at',
+                'bulkClosesAt' => 'closes at',
+            ]
+        );
+
+        if ($validator->fails()) {
+            throw ValidationException::withMessages($validator->errors()->messages());
+        }
+
+        $opens = $validator->validated()['bulkOpensAt'];
+        $closes = $validator->validated()['bulkClosesAt'];
+
+        foreach ($enabledDays as $day) {
+            $this->availabilityForm[$day]['opens_at'] = $opens;
+            $this->availabilityForm[$day]['closes_at'] = $closes;
+        }
+
+        $this->recalculateDetailsDirty();
     }
 
     /**
@@ -351,12 +428,6 @@ protected string $availabilitySnapshot = '';
             throw ValidationException::withMessages($errors);
         }
 
-        if (empty($payload)) {
-            throw ValidationException::withMessages([
-                'availabilityForm' => ['Select at least one day and provide its hours.'],
-            ]);
-        }
-
         return $payload;
     }
 
@@ -420,8 +491,18 @@ protected string $availabilitySnapshot = '';
     {
         $this->authorize('update-availability', $this->venue);
 
+        // Trim to avoid whitespace-only descriptions and enforce length bounds when provided.
+        $this->description = trim($this->description);
+
+        // If a description existed and is now cleared, treat it as invalid (enforce min length).
+        if ($this->venue->description && $this->description === '') {
+            throw ValidationException::withMessages([
+                'description' => ['Description must be at least 10 characters.'],
+            ]);
+        }
+
         $this->validate([
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string', 'min:10', 'max:2000'],
         ]);
 
         $availabilityChanged = false;

@@ -41,6 +41,11 @@
                        style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:14px;text-decoration:none;background:#0d6efd;color:#ffffff;padding:8px 12px;border-radius:6px;display:inline-block;">
                         View in EventFlow UPRM
                     </a>
+                    <p style="margin:12px 0 0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#6c757d;">
+                        If the button does not work, copy and paste this link into your browser:
+                        <br>
+                        <a href="{{ $route }}" style="color:#0d6efd;word-break:break-all;">{{ $route }}</a>
+                    </p>
                 </div>
             </td>
         </tr>
