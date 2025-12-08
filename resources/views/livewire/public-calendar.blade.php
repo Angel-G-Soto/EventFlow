@@ -150,9 +150,9 @@
     @php $hasEvents = !empty($eventsByDay[$day->toDateString()] ?? []); @endphp
     <div class="col">
         <div class="card h-100 shadow-sm {{ $hasEvents ? 'border-primary' : '' }}">
-            <div class="card-header py-2 {{ $hasEvents ? 'bg-primary text-white' : '' }}">
+            <div class="card-header py-2 {{ $hasEvents ? 'bg-secondary text-white' : '' }}">
                 <strong>{{ $day->format('D') }}</strong>
-                <span class="{{ $hasEvents ? 'text-white-50' : 'text-muted' }}">{{ $day->format('M j') }}</span>
+                <span class="{{ $hasEvents ? 'text-white' : 'text-muted' }}">{{ $day->format('M j') }}</span>
                 @if($hasEvents)
                 <span class="badge bg-light text-primary ms-2">{{ count($eventsByDay[$day->toDateString()] ?? []) }}
                     events</span>
