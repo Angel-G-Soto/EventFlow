@@ -315,7 +315,7 @@ class Create extends Component
         if ($step === 1) {
             return [
                 'creator_phone_number' => ['required','string','regex:/^\D*(\d\D*){10}$/','max:30'],
-                'creator_institutional_number' => ['required','string','max:30','regex:/^802\d{6}$/' ],
+                'creator_institutional_number' => ['required','string','max:30','regex:/^\d{9}$/'],
                 'title' => ['required','string','max:200'],
                 'description' => ['required','string','min:10','max:2000'],
                 'multimedia_equipment' => ['nullable','string','max:2000'],
