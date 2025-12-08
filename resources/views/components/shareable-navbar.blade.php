@@ -5,27 +5,39 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
 <nav class="navbar navbar-expand-xl navbar-dark" aria-label="Primary site navigation"
   style="background-color: #24324a; border-bottom: 3px solid var(--bs-success)">
   <div class="container">
-    <div class="d-flex align-items-center justify-content-between gap-2 d-xl-none mb-2 w-100">
+    <div class="d-flex align-items-center justify-content-between gap-2 d-xl-none mb-2 w-100 position-relative">
       <a class="navbar-brand fw-semibold" href="https://eventflow.uprm.edu/">
         <img src="{{ asset('assets/images/UPRM-logo.png') }}" alt="UPRM Logo" height="50" class="me-2" loading="lazy">
         EventFlow</a>
-      <div class="d-flex align-items-center gap-1">
+
+      <button
+        class="navbar-toggler d-flex align-items-center d-xl-none position-absolute top-50 start-50 translate-middle"
+        type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false"
+        aria-label="Toggle navigation" style="z-index: 10;">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="d-flex align-items-center gap-2 ms-auto">
         @if($navbar['shouldShowPendingBell'])
         <a href="{{ route('approver.pending.index') }}"
           class="btn btn-success-subtle p-2 text-white position-relative d-inline-flex align-items-center"
           title="Pending approvals" aria-label="View pending approvals ({{ $navbar['pendingApprovalsCount'] }})">
           <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
           @if($navbar['pendingApprovalsCount'] > 0)
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger text-white"
+            style="transform: translate(-40%, -45%); padding: 0.22rem 0.42rem; min-width: 1.4rem;">
             {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
           </span>
           @endif
         </a>
         @endif
-        <button class="navbar-toggler d-flex align-items-center d-xl-none" type="button" data-bs-toggle="collapse"
-          data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
+        @if(auth()->check())
+        <button class="btn p-2 text-white d-inline-flex align-items-center" type="button" title="Log out"
+          aria-label="Log out" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
+          style="border: none; outline: none;">
+          <i class="bi bi-box-arrow-right"></i>
         </button>
+        @endif
       </div>
     </div>
 
@@ -155,18 +167,20 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
             title="Pending approvals" aria-label="View pending approvals ({{ $navbar['pendingApprovalsCount'] }})">
             <i class="bi {{ $navbar['pendingApprovalsCount'] ? 'bi-bell-fill' : 'bi-bell' }}"></i>
             @if($navbar['pendingApprovalsCount'] > 0)
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger text-white"
+              style="transform: translate(-40%, -45%); padding: 0.22rem 0.42rem; min-width: 1.4rem;">
               {{ $navbar['pendingApprovalsCount'] > 99 ? '99+' : $navbar['pendingApprovalsCount'] }}
             </span>
             @endif
           </a>
           @endif
-          <a class="btn btn-success-subtle p-2 text-white" href="{{ asset('assets/user guide/Eventflow-Guide-2025.pdf') }}"
-            target="_blank" rel="noopener" title="Help" aria-label="Open help guide (PDF)">
+          <a class="btn btn-success-subtle p-2 text-white"
+            href="{{ asset('assets/user guide/Eventflow-Guide-2025.pdf') }}" target="_blank" rel="noopener" title="Help"
+            aria-label="Open help guide (PDF)">
             <i class="bi bi-question-lg"></i>
           </a>
         </div>
-        <div class="ms-auto ms-lg-0">
+        <div class="ms-auto ms-lg-0 d-none d-xl-flex">
           @if(auth()->check())
           <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0"
             aria-label="Log out form">
