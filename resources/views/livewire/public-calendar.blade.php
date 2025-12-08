@@ -145,11 +145,15 @@
 {{-- Simple weekly grid --}}
 <div class="row row-cols-1 row-cols-md-7 g-2">
     @foreach($days as $day)
+    @php $hasEvents = !empty($eventsByDay[$day->toDateString()] ?? []); @endphp
     <div class="col">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header py-2">
+        <div class="card h-100 shadow-sm {{ $hasEvents ? 'border-primary' : '' }}">
+            <div class="card-header py-2 {{ $hasEvents ? 'bg-primary text-white' : '' }}">
                 <strong>{{ $day->format('D') }}</strong>
-                <span class="text-muted">{{ $day->format('M j') }}</span>
+                <span class="{{ $hasEvents ? 'text-white-50' : 'text-muted' }}">{{ $day->format('M j') }}</span>
+                @if($hasEvents)
+                <span class="badge bg-light text-primary ms-2">{{ count($eventsByDay[$day->toDateString()] ?? []) }} events</span>
+                @endif
             </div>
             <ul class="list-group list-group-flush">
                 @forelse($eventsByDay[$day->toDateString()] ?? [] as $e)
