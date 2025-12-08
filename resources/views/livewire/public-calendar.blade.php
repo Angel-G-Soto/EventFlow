@@ -33,7 +33,7 @@
                             <input id="calendar_search_desktop" type="text" class="form-control" placeholder="Search title or organization"
                                 aria-label="Search events" wire:model.defer="search">
                             <button class="input-group-text text-white bg-secondary" type="submit" id="searchLabel"
-                                aria-label="Search">
+                                aria-label="Search" title="Search">
                                 <i class="bi bi-search"></i>
                             </button>
                         </div>
@@ -105,7 +105,7 @@
                         <input id="calendar_search_mobile" type="text" class="form-control" placeholder="Search title or organization"
                             aria-label="Search events" wire:model.defer="search">
                         <button class="input-group-text text-white bg-secondary" type="submit" id="searchLabelMobile"
-                            aria-label="Search">
+                            aria-label="Search" title="Search">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
