@@ -199,7 +199,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <div>
-            <h5 class="modal-title mb-0"><i class="bi bi-eye me-2"></i>{{ $eTitle ?: 'View Request' }}</h5>
+            <h5 class="modal-title mb-0"><i class="bi bi-info-circle me-2"></i>{{ $eTitle ?: 'View Request' }}</h5>
             <small class="text-muted">Request #{{ $editId }}</small>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

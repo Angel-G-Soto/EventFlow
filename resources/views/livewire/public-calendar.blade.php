@@ -30,8 +30,9 @@
                     <label class="form-label mb-1" for="calendar_search_desktop">Search</label>
                     <form wire:submit.prevent="applySearch">
                         <div class="input-group input-group-sm">
-                            <input id="calendar_search_desktop" type="text" class="form-control" placeholder="Search title or organization"
-                                aria-label="Search events" wire:model.defer="search">
+                            <input id="calendar_search_desktop" type="text" class="form-control"
+                                placeholder="Search title or organization" aria-label="Search events"
+                                wire:model.defer="search">
                             <button class="input-group-text text-white bg-secondary" type="submit" id="searchLabel"
                                 aria-label="Search" title="Search">
                                 <i class="bi bi-search"></i>
@@ -102,8 +103,9 @@
                 <label class="form-label mb-1" for="calendar_search_mobile">Search</label>
                 <form wire:submit.prevent="applySearch">
                     <div class="input-group input-group-sm">
-                        <input id="calendar_search_mobile" type="text" class="form-control" placeholder="Search title or organization"
-                            aria-label="Search events" wire:model.defer="search">
+                        <input id="calendar_search_mobile" type="text" class="form-control"
+                            placeholder="Search title or organization" aria-label="Search events"
+                            wire:model.defer="search">
                         <button class="input-group-text text-white bg-secondary" type="submit" id="searchLabelMobile"
                             aria-label="Search" title="Search">
                             <i class="bi bi-search"></i>
@@ -152,7 +154,8 @@
                 <strong>{{ $day->format('D') }}</strong>
                 <span class="{{ $hasEvents ? 'text-white-50' : 'text-muted' }}">{{ $day->format('M j') }}</span>
                 @if($hasEvents)
-                <span class="badge bg-light text-primary ms-2">{{ count($eventsByDay[$day->toDateString()] ?? []) }} events</span>
+                <span class="badge bg-light text-primary ms-2">{{ count($eventsByDay[$day->toDateString()] ?? []) }}
+                    events</span>
                 @endif
             </div>
             <ul class="list-group list-group-flush">
@@ -300,7 +303,8 @@
             <div class="modal-header">
                 <div>
                     <h5 class="modal-title mb-0">
-                        <i class="bi bi-eye me-2"></i>{{ optional($modal['event'] ?? null)->title ?: 'Event Details'
+                        <i class="bi bi-info-circle me-2"></i>{{ optional($modal['event'] ?? null)->title ?: 'Event
+                        Details'
                         }}
                     </h5>
                     @if(isset($modal['event']) && $modal['event'])
