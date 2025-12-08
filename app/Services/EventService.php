@@ -657,6 +657,7 @@ class EventService
                 ->whereBetween('end_time', [$yesterdayStart, $yesterdayEnd])
                 ->get();
 
+            $completedIds = [];
             foreach ($events as $event) {
                 $updated = Event::where('id', $event->id)
                     ->where('status', 'approved')
@@ -666,34 +667,39 @@ class EventService
                     continue;
                 }
 
+                $completedIds[] = (int) $event->id;
+
                 try {
                     $this->logAutoCompletion($event);
                 } catch (\Throwable) { /* best-effort */ }
             }
 
             // AUDIT: system batch marked events as completed (yesterday range)
-            try {
-                $systemUserId = (int) config('eventflow.system_user_id', 0);
-                if ($systemUserId > 0) {
-                    $meta = [
-                        'range_start' => (string) $yesterdayStart,
-                        'range_end'   => (string) $yesterdayEnd,
-                        'count'       => $events->count(),
-                    ];
-                    $ctx = ['meta' => $meta];
-                    if (function_exists('request') && request()) {
-                        $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
-                    }
+            if (!empty($completedIds)) {
+                try {
+                    $systemUserId = (int) config('eventflow.system_user_id', 0);
+                    if ($systemUserId > 0) {
+                        $meta = [
+                            'range_start'  => (string) $yesterdayStart,
+                            'range_end'    => (string) $yesterdayEnd,
+                            'count'        => count($completedIds),
+                            'completed_ids'=> $completedIds,
+                        ];
+                        $ctx = ['meta' => $meta];
+                        if (function_exists('request') && request()) {
+                            $ctx = $this->auditService->buildContextFromRequest(request(), $meta);
+                        }
 
-                    $this->auditService->logAdminAction(
-                        $systemUserId,
-                        'event',
-                        'EVENTS_COMPLETED_BATCH',
-                        'batch',
-                        $ctx
-                    );
-                }
-            } catch (\Throwable) { /* best-effort */ }
+                        $this->auditService->logAdminAction(
+                            $systemUserId,
+                            'event',
+                            'EVENTS_COMPLETED_BATCH',
+                            'batch',
+                            $ctx
+                        );
+                    }
+                } catch (\Throwable) { /* best-effort */ }
+            }
 
         });
     }
