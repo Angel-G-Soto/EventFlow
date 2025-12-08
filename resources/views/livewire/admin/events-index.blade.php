@@ -146,7 +146,8 @@
                 aria-label="View request {{ $r['id'] }}" title="View request #{{ $r['id'] }}">
                 <i class="bi bi-info-circle"></i>
               </button>
-              <button @class([ 'btn btn-sm' , 'btn-outline-secondary'=> $r['status_is_cancelled'] || $r['status_is_denied']
+              <button @class([ 'btn btn-sm' , 'btn-outline-secondary'=> $r['status_is_cancelled'] ||
+                $r['status_is_denied']
                 ||
                 $r['status_is_completed'] || $r['status_is_approved'] || $r['status_is_withdrawn'],
                 'btn-secondary' => !($r['status_is_cancelled'] || $r['status_is_denied'] ||
@@ -375,19 +376,19 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label" for="ev_e_title">Title</label>
+              <label class="form-label required" for="ev_e_title">Title</label>
               <input id="ev_e_title" class="form-control @error('eTitle') is-invalid @enderror" wire:model.live="eTitle"
                 placeholder="Event title">
               @error('eTitle')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
-              <label class="form-label" for="ev_e_org">Organization</label>
+              <label class="form-label required" for="ev_e_org">Organization</label>
               <input id="ev_e_org" class="form-control @error('eOrganization') is-invalid @enderror"
                 wire:model.live="eOrganization" placeholder="Organization name">
               @error('eOrganization')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
-              <label class="form-label" for="ev_e_venue">Venue</label>
+              <label class="form-label required" for="ev_e_venue">Venue</label>
               <select id="ev_e_venue" class="form-select @error('eVenueId') is-invalid @enderror"
                 wire:model.live="eVenueId">
                 <option value="0">Select a venue</option>
@@ -397,35 +398,35 @@
               </select>
               @error('eVenueId')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_advisor">Advisor Name</label><input
+            <div class="col-md-3"><label class="form-label required" for="ev_e_advisor">Advisor Name</label><input
                 id="ev_e_advisor" class="form-control" wire:model.live="eAdvisorName" placeholder="Advisor's full name">
             </div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_advisor_email">Advisor Email</label><input
-                id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"
+            <div class="col-md-3"><label class="form-label required" for="ev_e_advisor_email">Advisor
+                Email</label><input id="ev_e_advisor_email" class="form-control" wire:model.live="eAdvisorEmail"
                 placeholder="advisor@example.edu"></div>
             <div class="col-md-3">
-              <label class="form-label" for="ev_e_advisor_phone">Advisor Phone</label>
+              <label class="form-label required" for="ev_e_advisor_phone">Advisor Phone Number</label>
               <input id="ev_e_advisor_phone" class="form-control @error('eAdvisorPhone') is-invalid @enderror"
                 wire:model.live="eAdvisorPhone" placeholder="###-###-####" inputmode="tel" maxlength="12"
                 autocomplete="tel" oninput="formatDash(this)">
               @error('eAdvisorPhone')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_student_number">Student Number</label><input
-                id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber"
-                placeholder="###-###-####" inputmode="tel" maxlength="12" autocomplete="off" oninput="formatDash(this)">
+            <div class="col-md-3"><label class="form-label required" for="ev_e_student_number">Student
+                ID/Number</label><input id="ev_e_student_number" class="form-control" wire:model.live="eStudentNumber"
+                placeholder="###-##-####" inputmode="tel" maxlength="10" autocomplete="off">
             </div>
-            <div class="col-md-3"><label class="form-label" for="ev_e_student_phone">Student Phone</label><input
-                id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone" placeholder="###-###-####"
-                inputmode="tel" maxlength="12" autocomplete="tel" oninput="formatDash(this)">
+            <div class=" col-md-3"><label class="form-label required" for="ev_e_student_phone">Student Phone
+                Number</label><input id="ev_e_student_phone" class="form-control" wire:model.live="eStudentPhone"
+                placeholder="###-###-####" inputmode="tel" maxlength="12" autocomplete="tel" oninput="formatDash(this)">
             </div>
             <div class="col-md-3">
-              <label class="form-label" for="ev_e_from">From</label>
+              <label class="form-label required" for="ev_e_from">From</label>
               <input id="ev_e_from" type="datetime-local" class="form-control @error('eFrom') is-invalid @enderror"
                 wire:model.live="eFrom" min="{{ now()->format('Y-m-d\\TH:i') }}">
               @error('eFrom')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">
-              <label class="form-label" for="ev_e_to">To</label>
+              <label class="form-label required" for="ev_e_to">To</label>
               <input id="ev_e_to" type="datetime-local" class="form-control @error('eTo') is-invalid @enderror"
                 wire:model.live="eTo">
               @error('eTo')<div class="invalid-feedback">{{ $message }}</div>@enderror
