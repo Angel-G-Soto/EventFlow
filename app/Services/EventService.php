@@ -264,21 +264,6 @@ class EventService
             }
 
 
-            try 
-            {
-                if (!empty($data['organization_advisor_email'])) {
-                    $this->notificationService->dispatchApprovalRequiredNotification(
-                        approverEmail: $event->organization_advisor_email,
-                        eventDetails: $eventDetails,
-                    );
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Approval required notifications failed', [
-                    'event_id' => $event->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
             return $event;
         });
     }
@@ -1842,7 +1827,7 @@ class EventService
 
     }
 
-    private function getEventDetails(Event $event):array
+    public function getEventDetails(Event $event):array
     {
         $venue = app(VenueService::class)->getVenueById($event->venue_id);
         $user = app(UserService::class)->findUserById($event->creator_id);

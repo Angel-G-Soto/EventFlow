@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\ProcessFileUpload;
+use App\Jobs\SendApprovalRequiredEmailJob;
 use App\Jobs\SendCancellationEmailJob;
 use App\Models\AuditTrail;
 use App\Models\Document;
@@ -134,6 +135,17 @@ it('cancels the event, audits, and notifies when an infected file is detected', 
         ->and($audit->meta['event_id'] ?? null)->toBe($event->id);
 
     Queue::assertPushed(SendCancellationEmailJob::class);
+});
+
+it('dispatches approval notification after a clean batch passes scanning', function () {
+    Queue::fake();
+
+    $event = Event::factory()->create();
+
+    $job = new ProcessFileUpload(new Collection(), $event->id, true);
+    $job->handle();
+
+    Queue::assertPushed(SendApprovalRequiredEmailJob::class);
 });
 
 class TestableProcessFileUpload extends ProcessFileUpload

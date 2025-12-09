@@ -795,6 +795,12 @@ public function removeRequirementFile(int $index): void
 
                     $this->uploadedDocumentIds[] = $doc->id;
                 }
+
+                $documentService->dispatchVirusScanForDocuments(
+                    event: $event,
+                    documentIds: $this->uploadedDocumentIds,
+                    notifyApproverWhenClean: true,
+                );
             });
         } catch (ProcessFailedException|\App\Exceptions\StorageException $e) {
             report($e);

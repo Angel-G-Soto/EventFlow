@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Services\DocumentService;
 use App\Services\EventService;
+use App\Services\NotificationService;
 use App\Services\UserService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,13 +24,17 @@ class ProcessFileUpload implements ShouldQueue
     use Queueable;
 
     protected Collection $documents;
+    protected ?int $eventId;
+    protected bool $notifyApproverOnClean;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Collection $documents)
+    public function __construct(Collection $documents, ?int $eventId = null, bool $notifyApproverOnClean = false)
     {
         $this->documents = $documents;
+        $this->eventId = $eventId;
+        $this->notifyApproverOnClean = $notifyApproverOnClean;
     }
 
     /**
@@ -43,6 +48,8 @@ class ProcessFileUpload implements ShouldQueue
      */
     public function handle(): void
     {
+        $virusDetected = false;
+
         foreach ($this->documents as $document) {
             // Validate that the collection only has Document elements.
             if (!$document instanceof Document) throw new InvalidArgumentException();
@@ -77,12 +84,17 @@ class ProcessFileUpload implements ShouldQueue
             }
             elseif(Str::contains($scan->getOutput(), 'FOUND'))
             {
+                $virusDetected = true;
                 // Delete file
                 Storage::disk('uploads_temp')->delete($tempRelative);
                 $actor = $this->handleInfectedDocument($document, $scan->getOutput());
                 app(DocumentService::class)->deleteDocument($document, $actor?->id);
             }
             else throw new ProcessFailedException($scan);
+        }
+
+        if ($this->shouldDispatchApprovalNotification($virusDetected)) {
+            $this->dispatchApprovalRequiredNotification();
         }
     }
 
@@ -145,6 +157,44 @@ class ProcessFileUpload implements ShouldQueue
         }
 
         return $event->requester;
+    }
+
+    protected function shouldDispatchApprovalNotification(bool $virusDetected): bool
+    {
+        return $this->notifyApproverOnClean && !$virusDetected && $this->eventId !== null;
+    }
+
+    protected function dispatchApprovalRequiredNotification(): void
+    {
+        if ($this->eventId === null) {
+            return;
+        }
+
+        $event = Event::find($this->eventId);
+
+        if (!$event instanceof Event) {
+            Log::warning('ProcessFileUpload: unable to load event for approval notification.', [
+                'event_id' => $this->eventId,
+            ]);
+            return;
+        }
+
+        if (empty($event->organization_advisor_email)) {
+            return;
+        }
+
+        try {
+            $eventDetails = app(EventService::class)->getEventDetails($event);
+            app(NotificationService::class)->dispatchApprovalRequiredNotification(
+                approverEmail: $event->organization_advisor_email,
+                eventDetails: $eventDetails,
+            );
+        } catch (\Throwable $e) {
+            Log::error('ProcessFileUpload: failed to dispatch approval notification.', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
 }
