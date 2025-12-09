@@ -26,7 +26,7 @@
             <h1 class="h4 mb-0">Events This Week</h1>
 
             <div class="d-flex flex-wrap gap-3 align-items-end">
-                <div class="mb-0" style="max-width:280px;">
+                <div class="mb-0" style="min-width:360px; max-width:520px;">
                     <label class="form-label mb-1" for="calendar_search_desktop">Search</label>
                     <form wire:submit.prevent="applySearch">
                         <div class="input-group input-group-sm">

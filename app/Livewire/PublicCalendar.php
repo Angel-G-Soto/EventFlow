@@ -122,6 +122,9 @@ class PublicCalendar extends Component
 
         // Text search by title or organization (case-insensitive)
         $term = trim(mb_strtolower($this->search));
+        $hasCategoryFilter = ($this->categoryId !== null && $this->categoryId !== '');
+        $hasWideFilter = ($term !== '') || $hasCategoryFilter;
+
         if ($term !== '') {
             $events = array_filter($events, function ($e) use ($term) {
                 $title = mb_strtolower((string) ($e['title'] ?? ''));
@@ -131,16 +134,19 @@ class PublicCalendar extends Component
         }
 
         // Category filter (if provided on the event payload)
-        if ($this->categoryId) {
+        if ($hasCategoryFilter) {
             $catId = (int) $this->categoryId;
             $events = array_filter($events, function ($e) use ($catId) {
-                if (!isset($e['category_id'])) return false;
-                return (int) $e['category_id'] === $catId;
+                $ids = $e['category_ids'] ?? [];
+                if (!is_array($ids)) {
+                    $ids = $ids ? [(int) $ids] : [];
+                }
+                return in_array($catId, array_map('intval', $ids), true);
             });
         }
 
-        // Week window only applies when no search term is provided
-        if ($term === '') {
+        // Week window only applies when no search term or category is provided
+        if (! $hasWideFilter) {
             $events = array_filter($events, function ($e) use ($start, $end) {
                 $s = CarbonImmutable::parse($e['start_time']);
                 return $s->betweenIncluded($start, $end);
@@ -198,8 +204,10 @@ class PublicCalendar extends Component
         $events = $this->weekEvents();
 
         $term = trim($this->search ?? '');
+        $hasCategoryFilter = ($this->categoryId !== null && $this->categoryId !== '');
+        $hasWideFilter = ($term !== '') || $hasCategoryFilter;
 
-        if ($term !== '' && !empty($events)) {
+        if ($hasWideFilter && !empty($events)) {
             $dates = collect($events)
                 ->map(fn($e) => CarbonImmutable::parse($e['start_time'])->toDateString())
                 ->unique()
