@@ -30,23 +30,7 @@ describe('handleUpload', function () {
             ->and($document->name)->not->toBeEmpty();
 
         expect(Storage::disk('uploads_temp')->exists($document->name))->toBeTrue();
-        Queue::assertPushed(ProcessFileUpload::class);
-    });
-
-    it('dispatches job with created document in payload', function () {
-        $event = Event::factory()->create();
-        $file = UploadedFile::fake()->create('payload.pdf', 10);
-
-        $document = $this->service->handleUpload($file, 1, $event->id);
-
-        Queue::assertPushed(ProcessFileUpload::class, function ($job) use ($document) {
-            // Use reflection to access protected $documents
-            $ref = new ReflectionClass($job);
-            $prop = $ref->getProperty('documents');
-            $prop->setAccessible(true);
-            $collection = $prop->getValue($job);
-            return $collection->count() === 1 && $collection->first()->id === $document->id;
-        });
+        Queue::assertNothingPushed();
     });
 
     it('throws StorageException when temp storage fails', function () {
@@ -58,6 +42,56 @@ describe('handleUpload', function () {
 
         expect(fn() => $this->service->handleUpload($file, 1, 1))
             ->toThrow(StorageException::class, 'Failed to write temporary file.');
+    });
+});
+
+describe('dispatchVirusScanForDocuments', function () {
+    it('dispatches scan for entire batch and notifies when requested', function () {
+        $event = Event::factory()->create();
+        $documents = Document::factory()->count(2)->for($event)->create();
+
+        $this->service->dispatchVirusScanForDocuments($event, $documents->pluck('id')->all(), true);
+
+        Queue::assertPushed(ProcessFileUpload::class, function ($job) use ($documents, $event) {
+            $ref = new ReflectionClass($job);
+            $documentsProp = $ref->getProperty('documents');
+            $documentsProp->setAccessible(true);
+            $eventProp = $ref->getProperty('eventId');
+            $eventProp->setAccessible(true);
+            $notifyProp = $ref->getProperty('notifyApproverOnClean');
+            $notifyProp->setAccessible(true);
+
+            $batch = $documentsProp->getValue($job);
+
+            return $batch->pluck('id')->sort()->values()->all() === $documents->pluck('id')->sort()->values()->all()
+                && $eventProp->getValue($job) === $event->id
+                && $notifyProp->getValue($job) === true;
+        });
+    });
+
+    it('does not dispatch when batch is empty and notification disabled', function () {
+        $event = Event::factory()->create();
+
+        $this->service->dispatchVirusScanForDocuments($event, []);
+
+        Queue::assertNothingPushed();
+    });
+
+    it('dispatches notification-only job when batch empty but notification requested', function () {
+        $event = Event::factory()->create();
+
+        $this->service->dispatchVirusScanForDocuments($event, [], true);
+
+        Queue::assertPushed(ProcessFileUpload::class, function ($job) use ($event) {
+            $ref = new ReflectionClass($job);
+            $documentsProp = $ref->getProperty('documents');
+            $documentsProp->setAccessible(true);
+            $eventProp = $ref->getProperty('eventId');
+            $eventProp->setAccessible(true);
+
+            return $documentsProp->getValue($job)->count() === 0
+                && $eventProp->getValue($job) === $event->id;
+        });
     });
 });
 

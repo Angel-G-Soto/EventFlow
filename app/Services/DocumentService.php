@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\StorageException;
 use App\Jobs\ProcessFileUpload;
 use App\Models\Document;
+use App\Models\Event;
 use App\Services\AuditService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
@@ -33,7 +34,7 @@ class DocumentService
      * Process a single file upload end-to-end:
      *  1) Save to a temp location
      *  2) Create DB record
-     *  3) Queue virus scan & move to final storage
+     *  3) Return the document so the caller can enqueue a batched virus scan
      *
      * @param UploadedFile $file
      * @param int $userId
@@ -79,9 +80,6 @@ class DocumentService
             'file_path' => $tmpRelativePath,
         ]);
 
-        // 3) Queue virus scan & move to final storage
-        ProcessFileUpload::dispatch(Document::whereIn('id', [$doc->id])->get());
-
         // AUDIT: document uploaded (best-effort)
         try {
             /** @var AuditService $audit */
@@ -113,13 +111,52 @@ class DocumentService
     }
 
     /**
+     * Dispatch the virus scan job for a batch of uploaded documents.
+     *
+     * @param Event $event Event the documents belong to.
+     * @param array<int> $documentIds Document identifiers to scan.
+     * @param bool $notifyApproverWhenClean Whether to email the approver once the batch passes scanning.
+     */
+    public function dispatchVirusScanForDocuments(Event $event, array $documentIds, bool $notifyApproverWhenClean = false): void
+    {
+        if (!empty($documentIds)) {
+            $documents = Document::whereIn('id', $documentIds)->get();
+        } else {
+            $documents = new Collection();
+        }
+
+        if ($documents->isNotEmpty()) {
+            $uniqueEventIds = $documents->pluck('event_id')->unique()->filter();
+            $targetEventId = (int) $event->id;
+
+            if ($uniqueEventIds->count() !== 1 || (int) $uniqueEventIds->first() !== $targetEventId) {
+                Log::warning('dispatchVirusScanForDocuments: mixed event IDs detected in batch', [
+                    'target_event_id' => $targetEventId,
+                    'batch_event_ids' => $uniqueEventIds->all(),
+                ]);
+
+                $documents = $documents
+                    ->filter(fn(Document $document) => (int) $document->event_id === $targetEventId)
+                    ->values();
+            }
+        }
+
+        if ($documents->isEmpty() && !$notifyApproverWhenClean) {
+            return;
+        }
+
+        ProcessFileUpload::dispatch($documents, $event->id, $notifyApproverWhenClean);
+    }
+
+    /**
      * Permanently delete a document (file first, then DB row).
      *
      * @param Document $document
+     * @param int|null $actorId Optional user responsible for the deletion.
      * @return bool
      * @throws StorageException
      */
-    public function deleteDocument(Document $document): bool
+    public function deleteDocument(Document $document, ?int $actorId = null): bool
     {
         $path = $document->file_path;
 
@@ -155,7 +192,7 @@ class DocumentService
                 /** @var AuditService $audit */
                 $audit = app(AuditService::class);
 
-                $userId = auth()->id() ?? 0;
+                $userId = $actorId ?? auth()->id() ?? 0;
                 if ($userId) {
                     $meta = [
                         'document_id' => (int) ($document->id ?? 0),
