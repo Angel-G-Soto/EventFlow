@@ -35,11 +35,20 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
           style="border: none; outline: none;">
           <i class="bi bi-box-arrow-right"></i>
         </button>
-        @endif
         <button class="navbar-toggler d-flex align-items-center d-xl-none" type="button" data-bs-toggle="collapse"
           data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
+        @else
+        <form method="GET" action="{{ route('saml.login') }}" class="m-0" aria-label="Log in form">
+          @csrf
+          <button class="btn p-2 d-inline-flex align-items-center text-white fw-bold" type="submit" title="Log in"
+            aria-label="Log in" style="border: none; outline: none; transition: all 0.3s ease;">
+            <span class="me-2">Log In</span>
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </form>
+        @endif
       </div>
     </div>
 
