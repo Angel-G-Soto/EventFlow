@@ -296,7 +296,8 @@
         {{-- Action Buttons --}}
         @if(strtolower($eventHistory->event->status)!=='withdrawn' &&
             strtolower($eventHistory->event->status)!=='cancelled' &&
-            strtolower($eventHistory->event->status)!=='completed')
+            strtolower($eventHistory->event->status)!=='completed' &&
+            strtolower($eventHistory->event->status)!=='rejected'))
             <div class="d-flex gap-2 mb-5">
                 <button type="button"
                         class="btn btn-danger"
