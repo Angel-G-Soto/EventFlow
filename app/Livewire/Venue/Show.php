@@ -105,6 +105,11 @@ class Show extends Component
         ]);
     }
 
+    /**
+     * Formats availability slots into a sorted array for display.
+     *
+     * @return array<int,array{day:string,opens:?string,closes:?string}>
+     */
     protected function formatSchedule(): array
     {
         $order = array_flip(self::DAYS_OF_WEEK);
@@ -125,6 +130,11 @@ class Show extends Component
             ->all();
     }
 
+    /**
+     * Formats venue requirements for display.
+     *
+     * @return array<int,array{name:string,description:string,hyperlink:?string}>
+     */
     protected function formatRequirements(): array
     {
         return $this->venue->requirements

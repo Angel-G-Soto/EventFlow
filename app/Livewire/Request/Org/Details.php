@@ -43,19 +43,22 @@ class Details extends Component
  * @var string
  */
     public string $justification = '';
-/**
- * GetIsReadyProperty action.
- * @return bool
- */
+
+    /**
+     * Indicates whether the justification meets the minimum length.
+     *
+     * @return bool
+     */
     public function getIsReadyProperty(): bool
     {
         return strlen(trim($this->justification)) >= 10;
     }
-/**
- * Save action.
- * @return mixed
- */
 
+    /**
+     * Cancels or withdraws the event (depending on status) after validation.
+     *
+     * @return void
+     */
     public function save()
     {
         $this->validate([
@@ -74,31 +77,33 @@ class Details extends Component
         $this->redirectRoute('user.index');
     }
 
-/**
- * Back action.
- * @return mixed
- */
-
+    /**
+     * Returns to the user index without taking action.
+     *
+     * @return void
+     */
     public function back()
     {
         $this->redirectRoute('user.index');
     }
 
-/**
- * Trigger the PDF export for the approved request.
- * @return \Symfony\Component\HttpFoundation\Response
- */
-
+    /**
+     * Triggers a PDF download of the approved request.
+     *
+     * @param EventRequestPdfDownloadService $pdfDownloadService
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function downloadSummary(EventRequestPdfDownloadService $pdfDownloadService)
     {
         return $pdfDownloadService->download($this->event);
     }
-/**
- * Render the venue details Blade view.
- * @return \Illuminate\Contracts\View\View
- */
 
 
+    /**
+     * Renders the organization request details view.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $this->authorize('viewMyRequest', $this->event);

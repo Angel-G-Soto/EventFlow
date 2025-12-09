@@ -47,19 +47,22 @@ class Details extends Component
  * @var string
  */
     public string $justification = '';
-/**
- * GetIsReadyProperty action.
- * @return bool
- */
+
+    /**
+     * Indicates whether the justification meets the minimum length.
+     *
+     * @return bool
+     */
     public function getIsReadyProperty(): bool
     {
         return strlen(trim($this->justification)) >= 10;
     }
-/**
- * Save action.
- * @return mixed
- */
 
+    /**
+     * Rejects the event with a justification and redirects to pending index.
+     *
+     * @return void
+     */
     public function save()
     {
 
@@ -76,11 +79,12 @@ class Details extends Component
 
         $this->redirectRoute('approver.pending.index');
     }
-/**
- * Approve action.
- * @return mixed
- */
 
+    /**
+     * Approves the event and redirects to pending index.
+     *
+     * @return void
+     */
     public function approve()
     {
 
@@ -89,21 +93,22 @@ class Details extends Component
 
         $this->redirectRoute('approver.pending.index');
     }
-/**
- * Back action.
- * @return mixed
- */
 
+    /**
+     * Returns to the pending index without taking action.
+     *
+     * @return void
+     */
     public function back()
     {
         $this->redirectRoute('approver.pending.index');
     }
-/**
- * Render the venue details Blade view.
- * @return \Illuminate\Contracts\View\View
- */
 
-
+    /**
+     * Renders the pending request details view with documents and conflicts.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
 //        dd($this->event);

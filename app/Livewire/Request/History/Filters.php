@@ -29,11 +29,21 @@ class Filters extends Component
     public string $searchTitle = '';
     public string $sortDirection = 'desc';
 
+    /**
+     * Initializes filter defaults.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         // No-op for now; actions are predefined.
     }
 
+    /**
+     * Emits the current filters to the parent component and signals apply.
+     *
+     * @return void
+     */
     public function apply(): void
     {
 //        dd($this->selectedRole);
@@ -47,6 +57,11 @@ class Filters extends Component
         $this->dispatch('filters-applied');
     }
 
+    /**
+     * Resets filters to defaults and reapplies them.
+     *
+     * @return void
+     */
     public function resetFilters(): void
     {
         $this->selectedAction = '';
@@ -55,6 +70,11 @@ class Filters extends Component
         $this->apply();
     }
 
+    /**
+     * Renders the filters view.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function render()
     {
         return view('livewire.request.history.filters');

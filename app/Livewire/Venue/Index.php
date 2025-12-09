@@ -53,12 +53,13 @@ class Index extends Component
     public string $departmentName = '';
 
     protected VenueService $venueService;
-/**
- * Configure action.
- * @param Venue $venue
- * @return mixed
- */
 
+    /**
+     * Navigates to the venue configuration screen after authorization.
+     *
+     * @param Venue $venue
+     * @return void
+     */
     public function configure(Venue $venue){
 
         $this->authorize('update-availability', $venue);
@@ -66,16 +67,23 @@ class Index extends Component
 
         $this->redirectRoute('venue.requirements.edit', ['venue'=>$venue]);
     }
-/**
- * Render the Manage Venues view with venues and managers.
- * @return \Illuminate\Contracts\View\View
- */
+
+    /**
+     * Applies the current search draft to the listing and resets pagination.
+     *
+     * @return void
+     */
     public function applySearch(): void
     {
         $this->searchTerm = trim($this->searchDraft);
         $this->resetPage();
     }
 
+    /**
+     * Clears search terms and resets pagination.
+     *
+     * @return void
+     */
     public function resetSearch(): void
     {
         $this->searchDraft = '';
@@ -83,11 +91,22 @@ class Index extends Component
         $this->resetPage();
     }
 
+    /**
+     * Boots the component with a venue service instance.
+     *
+     * @param VenueService $venueService
+     * @return void
+     */
     public function boot(VenueService $venueService): void
     {
         $this->venueService = $venueService;
     }
 
+    /**
+     * Renders the manage venues view with current department venues.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function render()
     {
         $this->authorize('viewIndex', Venue::class);

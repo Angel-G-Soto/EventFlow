@@ -16,12 +16,22 @@ class Filters extends Component
     public string $searchTitle = '';
     public string $sortDirection = 'desc';
 
+    /**
+     * Loads available organization roles for the authenticated user.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         // Load roles for current user
         $this->roles = app(UserService::class)->rolesOrg(Auth::user());
     }
 
+    /**
+     * Emits the current filters to the parent component and signals apply.
+     *
+     * @return void
+     */
     public function apply(): void
     {
         $this->dispatch('filters-changed', [
@@ -33,6 +43,11 @@ class Filters extends Component
         $this->dispatch('filters-applied');
     }
 
+    /**
+     * Resets filters to defaults and reapplies them.
+     *
+     * @return void
+     */
     public function resetFilters(): void
     {
         $this->selectedRole = '';
@@ -41,6 +56,11 @@ class Filters extends Component
         $this->apply();
     }
 
+    /**
+     * Renders the filters view.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function render()
     {
         return view('livewire.request.org.filters');

@@ -44,6 +44,12 @@ class Index extends Component
         'sortDirection' => 'desc',
     ];
 
+    /**
+     * Receives filter updates from the Filters component and resets pagination.
+     *
+     * @param array{role?: string, searchTitle?: string, sortDirection?: string} $filters
+     * @return void
+     */
     #[On('filters-changed')]
     public function onFiltersChanged(array $filters): void
     {
@@ -61,6 +67,11 @@ class Index extends Component
  * @return \Illuminate\Contracts\View\View
  */
 
+    /**
+     * Builds the filtered request list and renders the view.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function render()
     {
         $q = app(EventService::class)->getMyRequestedEvents(Auth::user());

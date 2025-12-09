@@ -25,6 +25,12 @@ class Index extends Component
         'sortDirection' => 'desc',
     ];
 
+    /**
+     * Receives filter changes from the Filters component and resets pagination.
+     *
+     * @param array{role?: string, searchTitle?: string, sortDirection?: string} $filters
+     * @return void
+     */
     #[On('filters-changed')]
     public function onFiltersChanged(array $filters): void
     {
@@ -36,6 +42,11 @@ class Index extends Component
         $this->resetPage(); // reset pagination
     }
 
+    /**
+     * Builds the filtered pending requests query and renders the index view.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function render()
     {
 

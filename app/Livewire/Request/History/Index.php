@@ -41,6 +41,14 @@ class Index extends Component
         'sortDirection' => 'desc',
     ];
 
+    /**
+     * Updates local filter state when the Filters component emits changes.
+     *
+     * @param string $action
+     * @param string $searchTitle
+     * @param string $sortDirection
+     * @return void
+     */
     #[On('filters-changed')]
     public function onFiltersChanged(string $action = '', string $searchTitle = '', string $sortDirection = 'desc'): void
     {
@@ -53,6 +61,11 @@ class Index extends Component
         $this->resetPage(); // reset pagination when filters change
     }
 
+    /**
+     * Builds the filtered, paginated event history list and renders the view.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function render()
     {
         $this->authorize('viewMyApprovalHistory', EventHistory::class);

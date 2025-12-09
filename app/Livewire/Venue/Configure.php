@@ -78,6 +78,14 @@ protected string $availabilitySnapshot = '';
     protected VenueAvailabilityService $venueAvailabilityService;
     protected UseRequirementService $useRequirementService;
 
+    /**
+     * Dependency injection hook to wire required services.
+     *
+     * @param VenueService $venueService
+     * @param VenueAvailabilityService $venueAvailabilityService
+     * @param UseRequirementService $useRequirementService
+     * @return void
+     */
     public function boot(
         VenueService $venueService,
         VenueAvailabilityService $venueAvailabilityService,
@@ -337,6 +345,11 @@ protected string $availabilitySnapshot = '';
         return view('livewire.venue.configure');
     }
 
+    /**
+     * Loads availability data from storage and snapshots initial state.
+     *
+     * @return void
+     */
     protected function refreshAvailabilityForm(): void
     {
         $records = $this->venueAvailabilityService->listByVenueId((int) $this->venue->id);
@@ -345,6 +358,11 @@ protected string $availabilitySnapshot = '';
         $this->availabilitySnapshot = $this->snapshotAvailability();
     }
 
+    /**
+     * Loads venue requirements into the editable rows array.
+     *
+     * @return void
+     */
     protected function refreshRequirements(): void
     {
         $requirements = $this->useRequirementService->listByVenue((int) $this->venue->id);
@@ -363,6 +381,12 @@ protected string $availabilitySnapshot = '';
         $this->updateRequirementsSnapshot();
     }
 
+    /**
+     * Builds the default availability form structure for all week days.
+     *
+     * @param Collection $availabilities
+     * @return array
+     */
     protected function buildAvailabilityForm(Collection $availabilities): array
     {
         $existing = $availabilities->keyBy('day');
@@ -380,6 +404,11 @@ protected string $availabilitySnapshot = '';
         return $form;
     }
 
+    /**
+     * Validates and normalizes the availability form into a payload.
+     *
+     * @return array<int,array{day:string,opens_at:string,closes_at:string}>
+     */
     protected function normalizeAvailabilityInput(): array
     {
         $payload = [];
@@ -431,6 +460,12 @@ protected string $availabilitySnapshot = '';
         return $payload;
     }
 
+    /**
+     * Finds a requirement row by its UUID.
+     *
+     * @param string $uuid
+     * @return array|null
+     */
     private function findRowByUuid(string $uuid): ?array
     {
         foreach ($this->rows as $row) {
@@ -442,6 +477,11 @@ protected string $availabilitySnapshot = '';
         return null;
     }
 
+    /**
+     * Clears confirmation state for delete dialogs.
+     *
+     * @return void
+     */
     private function resetConfirmDelete(): void
     {
         $this->confirmDeleteAction = '';
@@ -449,6 +489,13 @@ protected string $availabilitySnapshot = '';
         $this->confirmDeleteMessage = '';
     }
 
+    /**
+     * Opens the justification modal for a pending action.
+     *
+     * @param string $action
+     * @param string|null $uuid
+     * @return void
+     */
     public function startJustification(string $action, ?string $uuid = null): void
     {
         $this->pendingAction = $action;
@@ -460,6 +507,11 @@ protected string $availabilitySnapshot = '';
         $this->dispatch('bs:open', id: 'sharedJustification');
     }
 
+    /**
+     * Validates justification text and routes to the requested action handler.
+     *
+     * @return void
+     */
     public function submitJustification(): void
     {
         $this->validate([
@@ -487,6 +539,12 @@ protected string $availabilitySnapshot = '';
         }
     }
 
+    /**
+     * Persists availability changes and description updates.
+     *
+     * @param string $justification
+     * @return void
+     */
     protected function performSaveAvailability(string $justification): void
     {
         $this->authorize('update-availability', $this->venue);
@@ -550,6 +608,12 @@ protected string $availabilitySnapshot = '';
         $this->dispatchGreenToast('Venue details updated.');
     }
 
+    /**
+     * Persists requirement rows after validation.
+     *
+     * @param string $justification
+     * @return void
+     */
     protected function performSaveRequirements(string $justification): void
     {
         $this->authorize('update-availability', $this->venue);
@@ -596,6 +660,12 @@ protected string $availabilitySnapshot = '';
         $this->refreshRequirements();
     }
 
+    /**
+     * Clears all requirements with justification and updates state.
+     *
+     * @param string $justification
+     * @return void
+     */
     protected function performClearRequirements(string $justification): void
     {
         $this->authorize('update-requirements', $this->venue);
@@ -613,6 +683,12 @@ protected string $availabilitySnapshot = '';
         $this->updateRequirementsSnapshot();
     }
 
+    /**
+     * Removes a requirement row locally and reindexes positions.
+     *
+     * @param string $uuid
+     * @return void
+     */
     private function applyRemoveRow(string $uuid): void
     {
         foreach ($this->rows as $i => $row) {
@@ -630,6 +706,12 @@ protected string $availabilitySnapshot = '';
         $this->recalculateRequirementsDirty();
     }
 
+    /**
+     * Helper to dispatch a success toast with consistent styling.
+     *
+     * @param string $message
+     * @return void
+     */
     private function dispatchGreenToast(string $message): void
     {
         $this->dispatch(
@@ -640,17 +722,32 @@ protected string $availabilitySnapshot = '';
         );
     }
 
+    /**
+     * Indicates whether venue details have unsaved changes.
+     *
+     * @return bool
+     */
     public function getDetailsDirtyProperty(): bool
     {
         return $this->detailsDirtyFlag;
     }
 
+    /**
+     * Stores the current details snapshot and clears dirty flag.
+     *
+     * @return void
+     */
     protected function updateDetailsSnapshot(): void
     {
         $this->detailsSnapshot  = $this->snapshotDetails();
         $this->detailsDirtyFlag = false;
     }
 
+    /**
+     * Generates a hash of description and availability form state.
+     *
+     * @return string
+     */
     protected function snapshotDetails(): string
     {
         return md5(serialize([
@@ -659,27 +756,53 @@ protected string $availabilitySnapshot = '';
         ]));
     }
 
+    /**
+     * Generates a hash for availability state only.
+     *
+     * @return string
+     */
     protected function snapshotAvailability(): string
     {
         return md5(serialize($this->normalizedAvailabilityState()));
     }
 
+    /**
+     * Indicates whether requirements have unsaved changes.
+     *
+     * @return bool
+     */
     public function getRequirementsDirtyProperty(): bool
     {
         return $this->requirementsDirtyFlag;
     }
 
+    /**
+     * Stores the current requirements snapshot and clears dirty flag.
+     *
+     * @return void
+     */
     protected function updateRequirementsSnapshot(): void
     {
         $this->requirementsSnapshot = $this->snapshotRows($this->rows);
         $this->requirementsDirtyFlag = false;
     }
 
+    /**
+     * Creates a hash of normalized requirement rows.
+     *
+     * @param array $rows
+     * @return string
+     */
     protected function snapshotRows(array $rows): string
     {
         return md5(serialize($this->normalizedRequirementRows($rows)));
     }
 
+    /**
+     * Normalizes availability form state for comparison/persistence.
+     *
+     * @return array<string,array{enabled:bool,opens_at:string,closes_at:string}>
+     */
     protected function normalizedAvailabilityState(): array
     {
         $state = [];
@@ -696,6 +819,12 @@ protected string $availabilitySnapshot = '';
         return $state;
     }
 
+    /**
+     * Normalizes requirement rows for deterministic hashing and validation.
+     *
+     * @param array $rows
+     * @return array<int,array{id:?int,name:string,description:string,hyperlink:string,position:int}>
+     */
     protected function normalizedRequirementRows(array $rows): array
     {
         $normalized = [];
@@ -719,11 +848,21 @@ protected string $availabilitySnapshot = '';
         return array_values($normalized);
     }
 
+    /**
+     * Updates details dirty flag based on snapshot comparison.
+     *
+     * @return void
+     */
     protected function recalculateDetailsDirty(): void
     {
         $this->detailsDirtyFlag = $this->snapshotDetails() !== $this->detailsSnapshot;
     }
 
+    /**
+     * Updates requirements dirty flag based on snapshot comparison.
+     *
+     * @return void
+     */
     protected function recalculateRequirementsDirty(): void
     {
         $this->requirementsDirtyFlag = $this->snapshotRows($this->rows) !== $this->requirementsSnapshot;

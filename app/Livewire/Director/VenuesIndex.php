@@ -43,7 +43,12 @@ class VenuesIndex extends Component
       'emailConfirmation' => 'required|same:email|max:150',
   ];
 
-
+  /**
+   * Opens the justification modal to remove a single manager.
+   *
+   * @param int $userId
+   * @return void
+   */
   public function requestManagerRemoval(int $userId): void
   {
       $this->authorize('assign-manager', $this->department);
@@ -56,6 +61,11 @@ class VenuesIndex extends Component
       $this->openJustificationModal('remove_manager', $user->id);
   }
 
+  /**
+   * Opens the justification modal to remove multiple managers.
+   *
+   * @return void
+   */
   public function requestBulkManagerRemoval(): void
   {
       $this->authorize('assign-manager', $this->department);
@@ -72,6 +82,11 @@ class VenuesIndex extends Component
       $this->openJustificationModal('remove_manager_bulk');
   }
 
+  /**
+   * Validates and starts the add-manager flow for the given email.
+   *
+   * @return void
+   */
   public function addManager()
   {
 //      dd($this->department, Auth::user()->getRoleNames());
@@ -90,6 +105,11 @@ class VenuesIndex extends Component
 
   }
 
+  /**
+   * Confirms transferring a manager from another department.
+   *
+   * @return void
+   */
   public function confirmManagerTransfer()
   {
       if (!$this->pendingManagerId) {
@@ -106,6 +126,11 @@ class VenuesIndex extends Component
       $this->startAddManagerJustification($user, ['confirmManagerTransferModal']);
   }
 
+  /**
+   * Cancels the transfer flow and returns to the email modal.
+   *
+   * @return void
+   */
   public function cancelManagerTransfer(): void
   {
       $this->resetManagerConfirmation();
@@ -113,12 +138,24 @@ class VenuesIndex extends Component
       $this->dispatch('open-modal', id: 'emailModal');
   }
 
+  /**
+   * Checks whether the user belongs to a different department.
+   *
+   * @param User $user
+   * @return bool
+   */
   protected function needsDepartmentChangeConfirmation(User $user): bool
   {
       return !empty($user->department_id)
           && $user->department_id !== $this->department->id;
   }
 
+  /**
+   * Prepares confirmation data when moving a user between departments.
+   *
+   * @param User $user
+   * @return void
+   */
   protected function prepareDepartmentChangeConfirmation(User $user): void
   {
       $this->pendingManagerId = $user->id;
@@ -128,6 +165,13 @@ class VenuesIndex extends Component
       $this->dispatch('open-modal', id: 'confirmManagerTransferModal');
   }
 
+  /**
+   * Starts the justification process to add a manager.
+   *
+   * @param User $user
+   * @param array $additionalModalsToClose
+   * @return void
+   */
   protected function startAddManagerJustification(User $user, array $additionalModalsToClose = []): void
   {
       $this->resetManagerConfirmation();
@@ -137,6 +181,14 @@ class VenuesIndex extends Component
       $this->openJustificationModal('add_manager', $user->id, $modals);
   }
 
+  /**
+   * Opens the justification modal for the pending action.
+   *
+   * @param string $action
+   * @param int|null $userId
+   * @param array $closeModals
+   * @return void
+   */
   protected function openJustificationModal(string $action, ?int $userId = null, array $closeModals = []): void
   {
       $this->pendingAction = $action;
@@ -152,6 +204,11 @@ class VenuesIndex extends Component
       $this->dispatch('open-modal', id: 'departmentJustificationModal');
   }
 
+  /**
+   * Validates justification text and completes the pending action.
+   *
+   * @return mixed
+   */
   public function confirmJustification()
   {
       $this->validate([
@@ -176,6 +233,11 @@ class VenuesIndex extends Component
       };
   }
 
+  /**
+   * Resets all justification-related state.
+   *
+   * @return void
+   */
   protected function resetJustificationState(): void
   {
       $this->pendingAction = '';
@@ -184,6 +246,13 @@ class VenuesIndex extends Component
       $this->pendingBulkManagerIds = [];
   }
 
+  /**
+   * Completes manager assignment for a user ID if valid.
+   *
+   * @param int|null $userId
+   * @param string $justification
+   * @return mixed
+   */
   protected function completeManagerAssignmentById(?int $userId, string $justification)
   {
       if (!$userId) {
@@ -200,6 +269,13 @@ class VenuesIndex extends Component
       return $this->completeManagerAssignment($user, $justification);
   }
 
+  /**
+   * Adds the user to the department as a manager with justification.
+   *
+   * @param User $user
+   * @param string $justification
+   * @return void
+   */
   protected function completeManagerAssignment(User $user, string $justification)
   {
       $this->authorize('assign-manager', $this->department);
@@ -225,11 +301,18 @@ class VenuesIndex extends Component
       $this->dispatch('toast', message: 'Venue manager added.');
       }      
       
-
+      
 
       
   }
 
+  /**
+   * Removes a manager by user ID with justification.
+   *
+   * @param int|null $userId
+   * @param string $justification
+   * @return mixed
+   */
   protected function completeManagerRemovalById(?int $userId, string $justification)
   {
       if (!$userId) {
@@ -244,6 +327,13 @@ class VenuesIndex extends Component
       return $this->finalizeManagerRemoval($user, $justification);
   }
 
+  /**
+   * Removes the given user from the department.
+   *
+   * @param User $user
+   * @param string $justification
+   * @return void
+   */
   protected function finalizeManagerRemoval(User $user, string $justification)
   {
       $this->authorize('assign-manager', $this->department);
@@ -255,6 +345,13 @@ class VenuesIndex extends Component
       $this->dispatch('toast', message: 'Venue manager removed.');
   }
 
+  /**
+   * Removes multiple managers from the department.
+   *
+   * @param array $userIds
+   * @param string $justification
+   * @return void
+   */
   protected function completeBulkManagerRemoval(array $userIds, string $justification)
   {
       $ids = $this->sanitizeManagerIds($userIds);
@@ -281,6 +378,11 @@ class VenuesIndex extends Component
       $this->dispatch('toast', message: 'Selected managers removed.');
   }
 
+  /**
+   * Resets add-manager form state.
+   *
+   * @return void
+   */
   protected function resetManagerForms(): void
   {
       $this->email = '';
@@ -288,12 +390,23 @@ class VenuesIndex extends Component
       $this->resetManagerConfirmation();
   }
 
+  /**
+   * Clears pending manager confirmation state.
+   *
+   * @return void
+   */
   protected function resetManagerConfirmation(): void
   {
       $this->pendingManagerId = null;
       $this->pendingManagerEmail = '';
       $this->pendingManagerDepartment = '';
   }
+
+  /**
+   * Assigns a venue manager through the legacy assign form.
+   *
+   * @return void
+   */
   public function saveAssign(): void
   {
       $this->authorize('assign-manager', $this->department);
@@ -310,6 +423,11 @@ class VenuesIndex extends Component
     $this->reset(['assignId', 'assignManager']);
   }
 
+  /**
+   * Renders the venues index view for the director.
+   *
+   * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+   */
   public function render()
   {
       $this->authorize('view-department');
@@ -329,6 +447,12 @@ class VenuesIndex extends Component
     return view('livewire.director.venues-index', compact('venues', 'employees'));
   }
 
+  /**
+   * Syncs selected manager IDs when selecting or deselecting all.
+   *
+   * @param mixed $value
+   * @return void
+   */
   public function updatedSelectAllManagers($value): void
   {
       $value = (bool) $value;
@@ -348,12 +472,23 @@ class VenuesIndex extends Component
       $this->selectAllManagers = $value && $this->hasSelectedAllCurrentManagers();
   }
 
+  /**
+   * Cleans the selected manager IDs whenever they change.
+   *
+   * @return void
+   */
   public function updatedSelectedManagerIds(): void
   {
       $this->selectedManagerIds = $this->sanitizeManagerIds($this->selectedManagerIds);
       $this->selectAllManagers = $this->hasSelectedAllCurrentManagers();
   }
 
+  /**
+   * Ensures manager IDs are integers and unique.
+   *
+   * @param array $ids
+   * @return array
+   */
   protected function sanitizeManagerIds(array $ids): array
   {
       return collect($ids)
@@ -364,6 +499,11 @@ class VenuesIndex extends Component
           ->all();
   }
 
+  /**
+   * Checks if every current manager is selected.
+   *
+   * @return bool
+   */
   protected function hasSelectedAllCurrentManagers(): bool
   {
       if (empty($this->currentEmployeeIds)) {

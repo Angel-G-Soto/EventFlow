@@ -42,20 +42,22 @@ class Details extends Component
     use HasJustification;
     public EventHistory $eventHistory;
     public string $justification = '';
-/**
- * GetIsReadyProperty action.
- * @return bool
- */
 
+    /**
+     * Indicates whether the justification has reached the required length.
+     *
+     * @return bool
+     */
     public function getIsReadyProperty(): bool
     {
         return strlen(trim($this->justification)) >= 10;
     }
-/**
- * Save action.
- * @return mixed
- */
 
+    /**
+     * Cancels the event request after validating the justification.
+     *
+     * @return void
+     */
     public function save(): void
     {
         $this->authorize('manageMyApprovalHistory', $this->eventHistory);
@@ -71,32 +73,32 @@ class Details extends Component
         $this->redirectRoute('approver.history.index');
     }
 
-/**
- * Back action. Redirects to request history
- * @return mixed
- */
-
+    /**
+     * Redirects back to the request history index.
+     *
+     * @return void
+     */
     public function back():void
     {
         $this->redirectRoute('approver.history.index');
     }
 
-
-/**
- * Trigger the PDF export for the approved request.
- * @return \Symfony\Component\HttpFoundation\Response
- */
-
+    /**
+     * Triggers the PDF export for the approved request.
+     *
+     * @param EventRequestPdfDownloadService $pdfDownloadService
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function downloadSummary(EventRequestPdfDownloadService $pdfDownloadService)
     {
         return $pdfDownloadService->download($this->eventHistory->event);
     }
-/**
- * Render the Blade view for the venue details page.
- * @return \Illuminate\Contracts\View\View
- */
 
-
+    /**
+     * Renders the request history details view.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $this->authorize('manageMyApprovalHistory', $this->eventHistory);

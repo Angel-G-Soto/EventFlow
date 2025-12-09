@@ -64,6 +64,8 @@ class Details extends Component
 
     /**
      * Build the base query for conflicts (reused for exists() and paginate()).
+     *
+     * @return Builder
      */
     protected function conflictsQuery(): Builder
     {
@@ -81,6 +83,8 @@ class Details extends Component
 
     /**
      * Quick boolean for “show alert/list?” without pulling rows.
+     *
+     * @return bool
      */
     public function getHasConflictsProperty(): bool
     {
@@ -100,10 +104,12 @@ class Details extends Component
     {
         $this->resetPage('conflictsPage');
     }
-/**
- * Save action.
- * @return mixed
- */
+
+    /**
+     * Validates justification and performs the deny action (stub).
+     *
+     * @return void
+     */
 
     public function save()
     {
@@ -115,31 +121,35 @@ class Details extends Component
         // ... do your action
         $this->redirectRoute('approver.index');
     }
-/**
- * Approve action.
- * @return mixed
- */
+
+    /**
+     * Approves the event (stub) and redirects to approver index.
+     *
+     * @return void
+     */
 
     public function approve()
     {
         // ... do your action
         $this->redirectRoute('approver.index');
     }
-/**
- * Back action.
- * @return mixed
- */
+
+    /**
+     * Returns to the pending index without taking action.
+     *
+     * @return void
+     */
 
     public function back()
     {
         $this->redirectRoute('approver.pending.index');
     }
-/**
- * Render the venue details Blade view.
- * @return \Illuminate\Contracts\View\View
- */
 
-
+    /**
+     * Renders the venue manager pending request view with docs and conflicts.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $docs = [
