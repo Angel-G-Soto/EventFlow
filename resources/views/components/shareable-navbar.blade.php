@@ -184,19 +184,12 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
         </div>
         <div class="ms-auto ms-lg-0 d-none d-xl-flex">
           @if(auth()->check())
-          <form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="m-0"
-            aria-label="Log out form">
-            @csrf
-            <button class="btn p-2 d-flex align-items-center text-white fw-bold" type="button" title="Log out"
-              aria-label="Log out" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
-              style="border: none; outline: none; transition: all 0.3s ease;">
-              <span class="me-2">Log Out</span>
-              <i class="bi bi-box-arrow-right"></i>
-            </button>
-          </form>
-          {{-- Confirm logout modal --}}
-          <x-confirm-logout id="logoutConfirmModal" title="Confirm logout" message="Are you sure you want to log out?"
-            formId="navbarLogoutForm" confirmLabel="Log out" />
+          <button class="btn p-2 d-flex align-items-center text-white fw-bold" type="button" title="Log out"
+            aria-label="Log out" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal"
+            style="border: none; outline: none; transition: all 0.3s ease;">
+            <span class="me-2">Log Out</span>
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
           @else
           <form method="GET" action="{{ route('saml.login') }}" class="m-0" aria-label="Log in form">
             @csrf
@@ -212,3 +205,12 @@ $navbar = app(\App\Services\UserService::class)->getNavbarContext();
     </div>
   </div>
 </nav>
+
+@if(auth()->check())
+<form id="navbarLogoutForm" method="POST" action="{{ route('saml.logout') }}" class="d-none" aria-label="Log out form">
+  @csrf
+</form>
+{{-- Confirm logout modal (shared for mobile/desktop) --}}
+<x-confirm-logout id="logoutConfirmModal" title="Confirm logout" message="Are you sure you want to log out?"
+  formId="navbarLogoutForm" confirmLabel="Log out" />
+@endif
