@@ -38,6 +38,11 @@ class PublicCalendar extends Component
     public array $categories = [];
 
     // Toggle Filter By My Venues
+    /**
+     * Toggles the "Filter by My Venues" flag when allowed.
+     *
+     * @return void
+     */
     public function toggleFilterMyVenues(): void
     {
         if (! $this->canFilterMyVenues) {
@@ -47,6 +52,11 @@ class PublicCalendar extends Component
         $this->filterMyVenues = !$this->filterMyVenues;
     }
 
+    /**
+     * Initializes the calendar to the current week and loads category/venue state.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         $monday = now()->startOfWeek(CarbonImmutable::MONDAY);
@@ -65,6 +75,12 @@ class PublicCalendar extends Component
             ->all();
     }
 
+    /**
+     * Moves the week window forward or backward by one week.
+     *
+     * @param string $dir Either "prev" or "next".
+     * @return void
+     */
     public function goWeek(string $dir): void
     {
         $start = CarbonImmutable::parse($this->weekStart);
@@ -81,6 +97,11 @@ class PublicCalendar extends Component
         // Simply trigger a re-render; inputs are already bound via defer.
     }
 
+    /**
+     * Returns events for the current week, applying filters and search.
+     *
+     * @return array<int,array<string,mixed>>
+     */
     protected function weekEvents(): array
     {
         $start = CarbonImmutable::parse($this->weekStart)->startOfDay();
@@ -129,6 +150,12 @@ class PublicCalendar extends Component
         return array_values($events);
     }
 
+    /**
+     * Loads a single event for modal display and opens the appropriate dialog.
+     *
+     * @param int $id
+     * @return void
+     */
     public function openEvent(int $id): void
     {
         // $event =  Event::find($id);
@@ -160,6 +187,11 @@ class PublicCalendar extends Component
 //        $this->dispatch('bs:open', id: 'eventDetails');
     }
 
+    /**
+     * Renders the public calendar view with events grouped by day.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function render()
     {
         $start = CarbonImmutable::parse($this->weekStart);
