@@ -137,11 +137,18 @@ class PublicCalendar extends Component
         if ($hasCategoryFilter) {
             $catId = (int) $this->categoryId;
             $events = array_filter($events, function ($e) use ($catId) {
+                // Support both single category_id column and many-to-many category_ids list
                 $ids = $e['category_ids'] ?? [];
                 if (!is_array($ids)) {
                     $ids = $ids ? [(int) $ids] : [];
                 }
-                return in_array($catId, array_map('intval', $ids), true);
+
+                if (isset($e['category_id']) && $e['category_id'] !== null) {
+                    $ids[] = (int) $e['category_id'];
+                }
+
+                $ids = array_unique(array_map('intval', $ids));
+                return in_array($catId, $ids, true);
             });
         }
 
