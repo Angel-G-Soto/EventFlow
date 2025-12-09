@@ -109,37 +109,6 @@ class PublicCalendar extends Component
 
         $events = $this->allApprovedPublic();
 
-        // Normalize category ids for consistent filtering (supports many-to-many, single column, JSON, or CSV)
-        $events = array_map(function ($e) {
-            $ids = [];
-
-            if (isset($e['category_ids'])) {
-                if (is_array($e['category_ids'])) {
-                    $ids = array_merge($ids, $e['category_ids']);
-                } elseif (is_string($e['category_ids'])) {
-                    $decoded = json_decode($e['category_ids'], true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $ids = array_merge($ids, $decoded);
-                    } else {
-                        $ids = array_merge($ids, array_map('trim', explode(',', $e['category_ids'])));
-                    }
-                } else {
-                    $ids[] = (int) $e['category_ids'];
-                }
-            }
-
-            if (isset($e['categories']) && is_array($e['categories'])) {
-                $ids = array_merge($ids, collect($e['categories'])->pluck('id')->all());
-            }
-
-            if (isset($e['category_id']) && $e['category_id'] !== null) {
-                $ids[] = $e['category_id'];
-            }
-
-            $e['category_ids'] = array_values(array_unique(array_map('intval', $ids)));
-            return $e;
-        }, $events);
-
         // Apply "Filter By My Venues" if enabled and user is venue-manager
         if ($this->filterMyVenues && $this->canFilterMyVenues && ! empty($this->managedVenueIds)) {
             $events = array_filter(

@@ -1868,9 +1868,15 @@ class EventService
     public function getApprovedPublicEvents(): array
     {
         return Event::whereIn('status', ['approved', 'completed'])
+            ->with(['categories:id'])
             ->orderBy('start_time')
             ->orderBy('end_time')
             ->get()
+            ->map(function ($event) {
+                $data = $event->toArray();
+                $data['category_ids'] = $event->categories->pluck('id')->map(fn ($id) => (int) $id)->all();
+                return $data;
+            })
             ->toArray();
     }
 
