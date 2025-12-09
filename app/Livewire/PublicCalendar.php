@@ -166,6 +166,7 @@ class PublicCalendar extends Component
                 $ids = array_unique(array_map('intval', $ids));
                 return in_array($catId, $ids, true);
             });
+            dd($events, $catId);
         }
 
         // Week window only applies when no search term or category is provided
