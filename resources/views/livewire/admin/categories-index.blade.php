@@ -54,7 +54,7 @@
                         <tr wire:key="cat-{{ $category->id }}">
                             <th class="fw-medium" scope="row">{{ $category->name }}</th>
                             <td>
-                                <div class="d-flex flex-column flex-md-row justify-content-end align-items-end align-items-md-stretch gap-2"
+                                <div class="d-flex flex-column flex-md-row justify-content-start align-items-stretch gap-2"
                                      role="group"
                                      aria-label="Row actions for {{ $category->name }}">
                                     <button type="button"
