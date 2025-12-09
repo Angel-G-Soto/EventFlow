@@ -1,0 +1,500 @@
+EventFlow Server Installation & Restore Scripts
+=================================================
+
+This repository includes shell scripts to install and configure the EventFlow application on an Ubuntu server and to restore the EventFlow database and documents from backups.
+
+Scripts
+-------
+
+- eventflow_install_full_v2.sh – Recommended full installer (Nginx 1.28.x from nginx.org + MariaDB 12.x from the official MariaDB repo).
+- eventflow_install_full_v1.sh – Alternative installer using Ubuntu’s default Nginx and MariaDB packages.
+- eventflow_restore.sh        – Standalone restore script for EventFlow database and documents.
+
+IMPORTANT
+---------
+
+Before running any script, you must make it executable with chmod +x.
+Otherwise you will get “Permission denied” errors.
+
+Example (adjust path as needed):
+
+  cd /home/estudiante
+
+  sudo chmod +x eventflow_install_full_v1.sh
+  sudo chmod +x eventflow_install_full_v2.sh
+  sudo chmod +x eventflow_restore.sh
+
+
+--------------------------------------------------
+Step 1 – Prerequisites
+--------------------------------------------------
+
+Make sure you have:
+
+- OS: Ubuntu 24.04 LTS (server).
+- Access: SSH access with a user that can run sudo.
+- DNS: Your domain (e.g. eventflow.uprm.edu) pointed to the server’s public IP.
+- Backups (for restore scenarios):
+  - Database backup: dbdump.sql.gz
+  - Documents backup: documents.zip
+
+Copy the scripts (and backups, if applicable) to your server, for example:
+
+  scp eventflow_install_full_v2.sh estudiante@server:/home/estudiante/
+  scp eventflow_install_full_v1.sh estudiante@server:/home/estudiante/
+  scp eventflow_restore.sh        estudiante@server:/home/estudiante/
+
+  # (optional, if you plan to restore)
+  scp dbdump.sql.gz    estudiante@server:/home/estudiante/
+  scp documents.zip    estudiante@server:/home/estudiante/
+
+
+--------------------------------------------------
+Step 2 – Make the Scripts Executable
+--------------------------------------------------
+
+From the directory where you uploaded the scripts:
+
+  cd /home/estudiante  # adjust as needed
+
+  sudo chmod +x eventflow_install_full_v1.sh
+  sudo chmod +x eventflow_install_full_v2.sh
+  sudo chmod +x eventflow_restore.sh
+
+If you skip this step, trying to run the scripts will result in “Permission denied” errors.
+
+
+--------------------------------------------------
+Step 3 – Configure Script Variables
+--------------------------------------------------
+
+Both installers define configuration variables at the top. Common ones include:
+
+- MARIADB_ROOT_PASSWORD – MariaDB root password (leave empty to be prompted).
+- APP_DB_NAME           – EventFlow database name (e.g. eventflow).
+- APP_DB_USER           – Database user (e.g. eventflow_user).
+- APP_DB_PASSWORD       – Password for APP_DB_USER.
+- APP_REPO_URL          – Git repository URL for EventFlow.
+- APP_DIR               – Laravel application path (e.g. /var/www/EventFlow).
+- APP_WEB_USER          – Web/PHP-FPM user (usually www-data).
+- APP_SYSTEM_USER       – System user that runs Composer/NPM (usually the SSH user).
+- APP_DOMAIN            – Domain for the instance (e.g. eventflow.uprm.edu).
+
+Additional variables:
+
+- ADMIN_FIRST_NAME, ADMIN_LAST_NAME
+- ADMIN_EMAIL
+- ADMIN_PASSWORD_PLAIN
+- ADMIN_AUTH_TYPE (e.g. saml2 or local)
+- CERTBOT_EMAIL – Email for Let’s Encrypt / Certbot notifications
+
+In eventflow_install_full_v2.sh there are also:
+
+- MARIADB_MAJOR_VERSION – MariaDB release (e.g. 12.0.2).
+- UBUNTU_CODENAME       – Ubuntu codename (set automatically via lsb_release).
+
+Before running an installer:
+
+1. Open the script on the server, for example:
+
+     nano eventflow_install_full_v2.sh
+
+2. Update at least:
+
+   - MARIADB_ROOT_PASSWORD
+   - APP_DB_PASSWORD
+   - APP_DOMAIN
+   - ADMIN_EMAIL, ADMIN_PASSWORD_PLAIN
+   - CERTBOT_EMAIL (for production HTTPS)
+
+3. Save and exit.
+
+For eventflow_restore.sh, you can either export MARIADB_ROOT_PASSWORD as an environment variable or let the script prompt you at runtime.
+
+
+--------------------------------------------------
+Step 4 – HTTPS / Domain / Certbot Preparation
+--------------------------------------------------
+
+Both install scripts include a **Certbot step at the end** that is intended to obtain a real TLS certificate for APP_DOMAIN.
+
+- The certbot commands in that step are currently **commented out** so you can safely run the script on local VMs without a real domain.
+- **In production, you should uncomment ONE of the certbot blocks** (with email or without email) so the script will automatically request a certificate during installation.
+
+Before you run either installer, make sure:
+
+1. DNS is correct:
+
+   - The APP_DOMAIN (e.g. eventflow.uprm.edu) has an A record pointing to this server’s public IP.
+   - You can verify from your local machine, for example:
+
+       nslookup eventflow.uprm.edu
+       # or
+       dig eventflow.uprm.edu +short
+
+2. Decide how you want Certbot to register:
+
+   - **Recommended for production:** use CERTBOT_EMAIL and the “with email” block.
+   - For temporary or test installs only, you may use the `--register-unsafely-without-email` block.
+
+3. Edit the Certbot section near the end of the script:
+
+   In eventflow_install_full_v2.sh (Step 20) and eventflow_install_full_v1.sh you will see something like:
+
+     #Certbot with email
+     # IMPORTANT: this must run on a real server where APP_DOMAIN points to this machine.
+     #certbot --nginx \
+     #  --non-interactive \
+     #  --agree-tos \
+     #  --email "${CERT_EMAIL}" \
+     #  -d "${CERT_DOMAIN}" \
+     #  --redirect
+
+   - For a **production server**, remove the leading `#` on this block so that certbot actually runs.
+   - For a **local VM/test server**, leave these lines commented so no certificate request is attempted.
+
+Once DNS is correct and APP_DOMAIN/CERTBOT_EMAIL are set, and you have uncommented the desired certbot block (for production), you are ready to run the installer.
+
+
+--------------------------------------------------
+Step 5 – Install Using eventflow_install_full_v2.sh (Recommended)
+--------------------------------------------------
+
+This is the preferred script for new deployments. It performs, among other things:
+
+- Firewall configuration with UFW:
+  - Enables UFW.
+  - Allows OpenSSH.
+  - Opens ports 80 (HTTP) and 443 (HTTPS).
+- Nginx 1.28.x from nginx.org:
+  - Purges any Ubuntu Nginx packages.
+  - Adds the nginx.org apt repo and signing key.
+  - Installs nginx (targeting version 1.28.*, with fallback to latest).
+- PHP 8.4:
+  - Adds ppa:ondrej/php.
+  - Installs php8.4-fpm and common extensions (mysql, cli, curl, mbstring, xml, zip, etc.).
+- MariaDB 12.x from the official MariaDB repo:
+  - Adds the MariaDB archive repo using MARIADB_MAJOR_VERSION and UBUNTU_CODENAME.
+  - Installs mariadb-server.
+  - Secures the installation (root password, removes test DB and anonymous users).
+- Nginx configuration:
+  - Creates a fastcgi-php.conf snippet.
+  - Creates /etc/nginx/conf.d/eventflow.conf with:
+    - server_name set to APP_DOMAIN.
+    - root set to /var/www/EventFlow/public.
+    - PHP handled via php8.4-fpm.
+    - client_max_body_size 130M.
+  - Disables the default.conf shipped by nginx.
+- EventFlow database and application:
+  - Creates the APP_DB_NAME database and APP_DB_USER with the configured password.
+  - Clones or updates the EventFlow repo at APP_DIR.
+  - Runs composer install as APP_SYSTEM_USER.
+  - Creates .env (if missing), sets DB_* and APP_URL, and runs php artisan key:generate.
+  - Installs Node.js + npm, runs npm install and npm run build.
+  - Sets permissions:
+    - storage and bootstrap/cache owned by APP_WEB_USER and chmod 775.
+  - Runs php artisan migrate --force (warnings if migrations fail).
+- ClamAV:
+  - Creates storage/app/tmp and ensures it is owned by APP_WEB_USER with chmod 770.
+  - Installs clamav and clamav-daemon.
+  - Adds clamav to the APP_WEB_USER group and relaxes AppArmor (aa-complain for clamd).
+- Postfix:
+  - Installs postfix.
+  - Configures basic non-open-relay settings, using APP_DOMAIN and uprm.edu.
+- Scheduler cron:
+  - Adds a cron entry for APP_WEB_USER:
+      * * * * * cd APP_DIR && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+- PHP limits:
+  - Sets upload_max_filesize = 15M and max_file_uploads = 15 for PHP 8.4 (cli and fpm).
+  - Reloads php8.4-fpm.
+- Laravel admin user:
+  - Generates a bcrypt hash for ADMIN_PASSWORD_PLAIN.
+  - Ensures a user with ADMIN_EMAIL exists, sets roles system-admin and user.
+- Queue worker:
+  - Creates a systemd unit eventflow-queue.service that runs:
+      php APP_DIR/artisan queue:work --queue=default --tries=3 --sleep=1
+  - Enables and starts the service.
+- Certbot bootstrapping and (optionally) certificate request:
+  - Removes any apt-based certbot package.
+  - Installs snapd (if needed) and certbot via snap.
+  - Symlinks /usr/bin/certbot -> /snap/bin/certbot.
+  - If you **uncommented** one of the certbot blocks in Step 20, the script will call
+    `certbot --nginx ...` and obtain a certificate for APP_DOMAIN.
+- Timezone:
+  - Sets the system timezone to America/Puerto_Rico.
+- Final status:
+  - Prints versions and active states for Nginx, PHP, and MariaDB.
+
+Run the v2 installer:
+
+  cd /home/estudiante
+  sudo ./eventflow_install_full_v2.sh
+
+Notes:
+
+- The script checks that it runs as root (sudo), so sudo is required.
+- It may prompt for the MariaDB root password if you left MARIADB_ROOT_PASSWORD empty.
+
+
+--------------------------------------------------
+Step 6 – Alternative Install Using eventflow_install_full_v1.sh
+--------------------------------------------------
+
+The original installer is similar in overall flow but uses:
+
+- Nginx and MariaDB from the Ubuntu repositories (apt install nginx, apt install mariadb-server).
+- A classic sites-available/sites-enabled layout for Nginx:
+  - Creates /etc/nginx/snippets/fastcgi-php.conf.
+  - Creates /etc/nginx/sites-available/eventflow.conf.
+  - Symlinks it into /etc/nginx/sites-enabled/eventflow.conf.
+  - Removes the default site from sites-enabled.
+
+It also:
+
+- Configures firewall (UFW) and opens ports 80 and 443.
+- Installs PHP 8.4 and php8.4-fpm with the same extensions as v2.
+- Secures MariaDB root with MARIADB_ROOT_PASSWORD.
+- Creates the EventFlow database and user.
+- Clones the EventFlow repo and performs the same Laravel setup steps
+  (composer install, .env configuration, npm install, npm run build, migrations).
+- Installs and configures ClamAV and Postfix just like v2.
+- Sets the Laravel scheduler cron job for APP_WEB_USER.
+- Adjusts PHP upload limits (upload_max_filesize = 15M, max_file_uploads = 15).
+- Creates the Laravel admin user and the eventflow-queue.service systemd unit.
+- Bootstraps certbot via snap and, if you **uncomment the certbot block** in the script,
+  will obtain a certificate for APP_DOMAIN as part of the install.
+- Sets the timezone to America/Puerto_Rico.
+- Prints final status and basic server configuration summary.
+
+Run v1 installer:
+
+  cd /home/estudiante
+  sudo ./eventflow_install_full_v1.sh
+
+Use this variant if you prefer to stay on the Ubuntu-packaged Nginx/MariaDB stack rather than nginx.org + MariaDB archive, or for a simpler repository configuration.
+
+
+--------------------------------------------------
+Step 7 – Standalone Restore Using eventflow_restore.sh
+--------------------------------------------------
+
+Use this script when:
+
+- EventFlow is already installed (via v1 or v2).
+- You need to restore (or re-restore) the database, the documents, or both on an existing server.
+
+Backup arguments:
+
+- --db-backup <file>     – Full path to database backup.
+- --docs-backup <file>   – Full path to documents backup.
+
+The restore script has three kinds of variables:
+
+1) Core defaults (can be overridden with flags)
+----------------------------------------------
+
+These are defined near the top of the script:
+
+- APP_DB_NAME     – Name of the database to restore into.
+                     Default: eventflow
+
+- APP_DIR         – Path to the Laravel application.
+                     Default: /var/www/EventFlow
+
+- APP_WEB_USER    – Linux user that owns the Laravel files and runs PHP-FPM/Nginx.
+                     Default: www-data
+
+In most cases, these match what the install scripts create. If you changed the
+app location or web user in your install, you should pass the matching values
+to the restore script via flags.
+
+2) Backup file variables (CLI arguments)
+----------------------------------------
+
+The script uses two variables for the backup files:
+
+- DB_BACKUP_FILE   – Path to the gzipped SQL dump file (.sql.gz).
+                      Set with:  --db-backup full/path/to/dump.sql.gz
+
+- DOCS_BACKUP_ZIP  – Path to the ZIP file with the documents.
+                      Set with:  --docs-backup full/path/to/documents.zip
+
+These are NOT hard‑coded; you always provide them when calling the script.
+Example layout on the server:
+
+- /home/estudiante/dbdump.sql.gz
+- /home/estudiante/documents.zip
+
+So a typical restore call looks like:
+
+  sudo ./eventflow_restore.sh \
+    --db-backup /home/estudiante/dbdump.sql.gz \
+    --docs-backup /home/estudiante/documents.zip
+
+3) Other CLI flags and environment variables
+--------------------------------------------
+
+Additional CLI flags:
+
+- --db-name <name>
+    Overrides APP_DB_NAME.
+    Example:
+      --db-name eventflow_staging
+
+- --app-dir <path>
+    Overrides APP_DIR (Laravel root).
+    Example:
+      --app-dir /var/www/EventFlowStaging
+
+- --web-user <user>
+    Overrides APP_WEB_USER (owner for restored documents).
+    Example:
+      --web-user nginx
+
+- --help or -h
+    Prints the usage help and exits.
+
+Environment variable:
+
+- MARIADB_ROOT_PASSWORD
+    MariaDB root password used to pipe the SQL into the database.
+
+    If this variable is set in the environment before calling the script, the
+    script will use it non‑interactively. If it is not set, the script will
+    prompt:
+
+      Enter MariaDB root password:
+
+    Example of non‑interactive usage:
+
+      export MARIADB_ROOT_PASSWORD="your_root_password"
+      sudo -E ./eventflow_restore.sh \
+        --db-backup /home/estudiante/dbdump.sql.gz \
+        --docs-backup /home/estudiante/documents.zip
+
+Usage summary
+-------------
+
+Help:
+
+  sudo ./eventflow_restore.sh --help
+
+Typical full restore (database + documents) with defaults:
+
+  cd /home/estudiante
+
+  sudo ./eventflow_restore.sh \
+    --db-backup /home/estudiante/dbdump.sql.gz \
+    --docs-backup /home/estudiante/documents.zip
+
+What the script actually does
+-----------------------------
+
+1. Ensures it is running as root (sudo).
+2. Reads MARIADB_ROOT_PASSWORD from the environment or prompts you.
+3. If a DB backup file is provided and exists:
+   - Decompresses and pipes the dump into MariaDB, targeting APP_DB_NAME, e.g.:
+
+       gunzip -c /path/to/dump.sql.gz | \
+         mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" "${APP_DB_NAME}"
+
+4. If a documents ZIP is provided and exists:
+   - Ensures unzip is installed (or tells you to install it).
+   - Extracts documents into:
+
+       ${APP_DIR}/storage/app/documents
+
+   - Sets ownership so the web server can read/write them:
+
+       chown -R ${APP_WEB_USER}:${APP_WEB_USER} \
+         ${APP_DIR}/storage/app/documents
+
+5. Prints “EventFlow restore script finished.” when done.
+
+
+--------------------------------------------------
+Step 8 – Quick Health Checks
+--------------------------------------------------
+
+After installation or restore, verify services and the app:
+
+  # Nginx
+  sudo systemctl status nginx
+
+  # PHP-FPM
+  sudo systemctl status php8.4-fpm
+
+  # MariaDB
+  sudo systemctl status mariadb
+
+  # Queue worker
+  sudo systemctl status eventflow-queue.service
+
+  # Cron entries for the web user (scheduler)
+  sudo crontab -u www-data -l
+
+Check the database:
+
+  mariadb -u root -p
+  SHOW DATABASES;
+  USE eventflow;
+  SHOW TABLES;
+
+Then, open your browser and go to:
+
+  http://your-domain
+  https://your-domain   (if HTTPS is configured)
+
+
+--------------------------------------------------
+Step 9 – Troubleshooting Tips
+--------------------------------------------------
+
+Some common issues and quick checks:
+
+- Permission denied when running script
+  - Make sure the script is executable and you’re using sudo:
+
+      sudo chmod +x eventflow_install_full_v2.sh
+      sudo ./eventflow_install_full_v2.sh
+
+- Site not loading / Nginx issues
+  - Check Nginx logs:
+
+      sudo journalctl -u nginx --no-pager | tail
+      sudo tail -n 50 /var/log/nginx/error.log
+
+- PHP errors
+  - Check PHP-FPM logs:
+
+      sudo journalctl -u php8.4-fpm --no-pager | tail
+
+- Database restore errors
+  - Verify:
+    - MARIADB_ROOT_PASSWORD is correct.
+    - The database (eventflow) exists.
+    - The backup file paths (dbdump.sql.gz, documents.zip) are correct and readable.
+
+- Queue / background jobs not running
+  - Check the queue worker service:
+
+      sudo systemctl status eventflow-queue.service
+
+  - Verify scheduler cron is installed for www-data:
+
+      sudo crontab -u www-data -l
+
+
+--------------------------------------------------
+Summary
+--------------------------------------------------
+
+1. Upload scripts and backups to the server.
+2. Make all scripts executable with chmod +x.
+3. Edit installer variables (MARIADB_ROOT_PASSWORD, APP_DOMAIN, CERTBOT_EMAIL, etc.).
+4. Confirm DNS and decide whether to uncomment the certbot block for automatic HTTPS.
+5. Run eventflow_install_full_v2.sh (recommended) or eventflow_install_full_v1.sh.
+6. For production, with DNS pointing correctly and certbot uncommented, the installer will obtain certificates automatically. For dev/test, leave certbot commented or run certbot manually later if needed.
+7. Use eventflow_restore.sh to load or re-load the database and documents.
+8. Verify services and access the application via your configured domain.
+9. Use the troubleshooting tips above if anything fails.
