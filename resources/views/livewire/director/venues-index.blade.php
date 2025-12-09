@@ -56,11 +56,21 @@
             <h1 class="h4 mb-0">Venue Managers</h1>
 
             {{-- Desktop: actions to the right of the title --}}
+            @php($bulkRemovalDisabled = empty($selectedManagerIds))
             <div class="d-none d-md-flex align-items-center gap-2">
                 <span class="text-muted small">{{ count($selectedManagerIds) }} selected</span>
-                <button type="button" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-2"
+                <button type="button"
+                    @class([
+                        'btn',
+                        'btn-sm',
+                        'd-inline-flex',
+                        'align-items-center',
+                        'gap-2',
+                        'btn-danger' => ! $bulkRemovalDisabled,
+                        'btn-outline-danger' => $bulkRemovalDisabled,
+                    ])
                     wire:click="requestBulkManagerRemoval" aria-label="Remove selected managers"
-                    title="Remove selected managers" @disabled(empty($selectedManagerIds))>
+                    title="Remove selected managers" @disabled($bulkRemovalDisabled)>
                     <i class="bi bi-trash" aria-hidden="true"></i>
                     <span>Remove Selected</span>
                 </button>
@@ -76,9 +86,19 @@
         {{-- Mobile: full-width buttons below title --}}
         <div class="d-flex d-md-none flex-column flex-sm-row gap-2 mb-3">
             <button type="button"
-                class="btn btn-danger btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2"
+                @class([
+                    'btn',
+                    'btn-sm',
+                    'w-100',
+                    'd-inline-flex',
+                    'align-items-center',
+                    'justify-content-center',
+                    'gap-2',
+                    'btn-danger' => ! $bulkRemovalDisabled,
+                    'btn-outline-danger' => $bulkRemovalDisabled,
+                ])
                 wire:click="requestBulkManagerRemoval" aria-label="Remove selected managers"
-                title="Remove selected managers" @disabled(empty($selectedManagerIds))>
+                title="Remove selected managers" @disabled($bulkRemovalDisabled)>
                 <i class="bi bi-trash" aria-hidden="true"></i>
                 <span>Remove Selected ({{ count($selectedManagerIds) }})</span>
             </button>

@@ -235,7 +235,9 @@
             </div>
 
             <div class="card-footer bg-white d-flex justify-content-end gap-2">
-                <button class="btn btn-secondary"
+                <button
+                        type="button"
+                        class="btn {{ $this->detailsDirty ? 'btn-secondary' : 'btn-outline-secondary' }}"
                         wire:click="saveAvailability"
                         wire:loading.attr="disabled"
                         wire:target="saveAvailability"
@@ -396,8 +398,9 @@
         </div>
 
         <div class="card-footer bg-white d-flex justify-content-end gap-2">
-            <button class="btn btn-secondary"
+            <button
                     type="button"
+                    class="btn {{ $this->requirementsDirty ? 'btn-secondary' : 'btn-outline-secondary' }}"
                     wire:click="save"
                     wire:loading.attr="disabled"
                     wire:target="save"
