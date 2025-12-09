@@ -181,6 +181,7 @@ class PublicCalendar extends Component
                 $ids = array_unique(array_map('intval', $ids));
                 return in_array($catId, $ids, true);
             });
+<<<<<<< HEAD
 
             // Debug: log the filter context and remaining count to validate category filtering
             try {
@@ -192,6 +193,8 @@ class PublicCalendar extends Component
             } catch (\Throwable) {
                 // best-effort logging only
             }
+=======
+>>>>>>> 9b88c74d82925146ae2b530ae1409c95bbd39343
         }
 
         // Week window only applies when no search term or category is provided
