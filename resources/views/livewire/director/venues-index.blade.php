@@ -151,7 +151,7 @@
                                         wire:click="requestManagerRemoval({{ $employee['id'] }})"
                                         aria-label="Remove manager" title="Remove manager">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
-                                        <span class="d-none d-sm-inline">Remove</span>
+                                        {{-- <span class="d-none d-sm-inline">Remove</span> --}}
                                     </button>
                                 </div>
                             </td>
